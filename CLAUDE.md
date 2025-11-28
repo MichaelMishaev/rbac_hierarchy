@@ -1,0 +1,1 @@
+- for image generation use '/Users/michaelmishayev/Desktop/Projects/corporations/docs/3rdParty/ideogram.md'
