@@ -198,7 +198,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
             border: '2px solid transparent',
             '&:hover': {
               backgroundColor: colors.pastel.redLight || colors.neutral[100],
-              borderColor: colors.pastel.red || colors.status.error,
+              borderColor: colors.pastel.red || colors.error,
             },
             py: 1.5,
             px: 2,
@@ -208,7 +208,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
           <ListItemIcon
             sx={{
               minWidth: 40,
-              color: colors.status.error,
+              color: colors.error,
               marginLeft: isRTL ? 2 : 0,
               marginRight: isRTL ? 0 : 2,
             }}
@@ -220,7 +220,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
             primaryTypographyProps={{
               fontSize: '14px',
               fontWeight: 500,
-              color: colors.status.error,
+              color: colors.error,
               textAlign: isRTL ? 'right' : 'left',
             }}
           />

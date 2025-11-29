@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
+import { listSites } from '@/app/actions/sites';
+import { listCorporations } from '@/app/actions/corporations';
+import SitesClient from '@/app/components/sites/SitesClient';
 
 export default async function SitesPage() {
   const session = await auth();
@@ -15,10 +18,35 @@ export default async function SitesPage() {
     redirect('/login');
   }
 
-  // TODO: Implement sites listing and management
-  // - Fetch sites based on user role
-  // - Display sites table with filters
-  // - Add create/edit/delete functionality
+  // Only SuperAdmin and Manager can access this page
+  if (session.user.role === 'SUPERVISOR') {
+    return (
+      <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
+        <Typography variant="h5" color="error">
+          {isRTL ? 'גישה נדחתה. רק מנהלים יכולים לצפות באתרים.' : 'Access denied. Only managers can view sites.'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Fetch sites and corporations
+  const [sitesResult, corporationsResult] = await Promise.all([
+    listSites({}),
+    listCorporations({}),
+  ]);
+
+  if (!sitesResult.success) {
+    return (
+      <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
+        <Typography variant="h5" color="error">
+          {tCommon('error')}: {sitesResult.error}
+        </Typography>
+      </Box>
+    );
+  }
+
+  const sites = sitesResult.sites || [];
+  const corporations = corporationsResult.corporations || [];
 
   return (
     <Box
@@ -30,7 +58,11 @@ export default async function SitesPage() {
       }}
     >
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          mb: 4,
+        }}
+      >
         <Typography
           variant="h4"
           sx={{
@@ -39,7 +71,7 @@ export default async function SitesPage() {
             mb: 0.5,
           }}
         >
-          {isRTL ? 'אתרים' : 'Sites'}
+          {t('title')}
         </Typography>
         <Typography
           variant="body1"
@@ -48,28 +80,15 @@ export default async function SitesPage() {
             fontWeight: 500,
           }}
         >
-          {isRTL ? 'ניהול אתרים בארגון' : 'Manage organizational sites'}
+          {t('description')}
         </Typography>
       </Box>
 
-      {/* Placeholder Content */}
-      <Box
-        sx={{
-          p: 4,
-          background: colors.neutral[0],
-          borderRadius: 2,
-          textAlign: 'center',
-        }}
-      >
-        <Typography variant="h6" sx={{ color: colors.neutral[600] }}>
-          {isRTL ? 'דף זה בבנייה' : 'This page is under construction'}
-        </Typography>
-        <Typography variant="body2" sx={{ color: colors.neutral[500], mt: 1 }}>
-          {isRTL
-            ? 'ניהול אתרים יתווסף בקרוב'
-            : 'Sites management will be added soon'}
-        </Typography>
-      </Box>
+      {/* Client Component with Modals */}
+      <SitesClient 
+        sites={sites} 
+        corporations={corporations.map(c => ({ id: c.id, name: c.name, code: c.code }))} 
+      />
     </Box>
   );
 }
