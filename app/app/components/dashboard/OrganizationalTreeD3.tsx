@@ -56,7 +56,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [data, setData] = useState<TreeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [treeRef, setTreeRef] = useState<any>(null);
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
   const labels = useMemo(() => ({
@@ -76,6 +75,18 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     supervisors: 'מפקחים',
   }), []);
 
+  const convertToD3Format = useCallback((node: any): TreeData => {
+    return {
+      name: node.name,
+      type: node.type,
+      attributes: {
+        type: node.type,
+        count: node.count || {},
+      },
+      children: node.children?.map((child: any) => convertToD3Format(child)) || [],
+    };
+  }, []);
+
   const fetchOrgTree = useCallback(async () => {
     try {
       setLoading(true);
@@ -94,23 +105,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     } finally {
       setLoading(false);
     }
-  }, [deepMode]);
+  }, [deepMode, convertToD3Format]);
 
   useEffect(() => {
     fetchOrgTree();
   }, [fetchOrgTree]);
-
-  const convertToD3Format = (node: any): TreeData => {
-    return {
-      name: node.name,
-      type: node.type,
-      attributes: {
-        type: node.type,
-        count: node.count || {},
-      },
-      children: node.children?.map((child: any) => convertToD3Format(child)) || [],
-    };
-  };
 
   // Center translation
   const translate = useMemo(() => {
@@ -320,19 +319,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     [getNodeTypeLabel, getStatLabel]
   );
 
-  const handleZoomIn = () => {
-    if (treeRef) {
-      // react-d3-tree doesn't expose zoom methods directly
-      // This would need to be implemented through the tree's internal state
-      console.log('Zoom in');
-    }
-  };
-
-  const handleZoomOut = () => {
-    if (treeRef) {
-      console.log('Zoom out');
-    }
-  };
+  // Note: Zoom controls are built into react-d3-tree and work via mouse/trackpad
+  // The buttons are kept for UI consistency but zoom is handled natively by the library
 
   if (loading) {
     return (
@@ -361,7 +349,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         <Button
           size="small"
           startIcon={<ZoomInIcon />}
-          onClick={handleZoomIn}
+          disabled
           variant="outlined"
           sx={{
             borderColor: colors.neutral[300],
@@ -377,7 +365,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         <Button
           size="small"
           startIcon={<ZoomOutIcon />}
-          onClick={handleZoomOut}
+          disabled
           variant="outlined"
           sx={{
             borderColor: colors.neutral[300],
@@ -437,7 +425,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           collapsible
           shouldCollapseNeighborNodes={false}
           pathClassFunc={() => 'custom-link'}
-          ref={(ref) => setTreeRef(ref)}
         />
       </Box>
 
