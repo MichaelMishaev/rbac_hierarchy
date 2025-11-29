@@ -21,3 +21,8 @@ restartPolicyMaxRetries = 10
 path = "/"
 timeout = 100
 interval = 10
+
+# Service settings
+[service]
+# Root directory where package.json lives
+rootDirectory = "app"
