@@ -45,12 +45,12 @@ RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy public folder
-COPY --from=builder /app/app/public ./app/public
-
 # Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/app/.next/static ./app/.next/static
+
+# Set up public directory (create if doesn't exist)
+RUN mkdir -p ./app/public
 
 USER nextjs
 
