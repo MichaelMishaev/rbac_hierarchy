@@ -4,6 +4,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const nextConfig: NextConfig = {
+  output: 'standalone', // Enable standalone output for Docker
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
