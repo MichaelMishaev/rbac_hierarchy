@@ -55,3 +55,8 @@ prisma/migrations/
 # Misc
 .turbo/
 .vercel/
+
+# Playwright
+playwright-report/
+test-results/
+.playwright-mcp/

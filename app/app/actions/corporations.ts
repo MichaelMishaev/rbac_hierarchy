@@ -1,0 +1,703 @@
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { getCurrentUser, requireSuperAdmin } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
+
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
+
+export type CreateCorporationInput = {
+  name: string;
+  code: string;
+  description?: string;
+  logo?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  isActive?: boolean;
+};
+
+export type UpdateCorporationInput = {
+  name?: string;
+  code?: string;
+  description?: string;
+  logo?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  isActive?: boolean;
+};
+
+export type ListCorporationsFilters = {
+  search?: string;
+  isActive?: boolean;
+};
+
+// ============================================
+// CREATE CORPORATION
+// ============================================
+
+/**
+ * Create a new corporation
+ *
+ * Permissions:
+ * - SUPERADMIN: Can create corporations
+ * - MANAGER: Cannot create corporations
+ * - SUPERVISOR: Cannot create corporations
+ */
+export async function createCorporation(data: CreateCorporationInput) {
+  try {
+    // Only SUPERADMIN can create corporations
+    const currentUser = await requireSuperAdmin();
+
+    // Validate code uniqueness
+    const existingCorp = await prisma.corporation.findUnique({
+      where: { code: data.code },
+    });
+
+    if (existingCorp) {
+      return {
+        success: false,
+        error: 'Corporation code already exists',
+      };
+    }
+
+    // Create corporation
+    const newCorporation = await prisma.corporation.create({
+      data: {
+        name: data.name,
+        code: data.code,
+        description: data.description,
+        logo: data.logo,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        isActive: data.isActive ?? true,
+      },
+      include: {
+        _count: {
+          select: {
+            managers: true,
+            sites: true,
+            invitations: true,
+          },
+        },
+      },
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'CREATE_CORPORATION',
+        entity: 'Corporation',
+        entityId: newCorporation.id,
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        userRole: currentUser.role,
+        oldValue: undefined,
+        newValue: {
+          id: newCorporation.id,
+          name: newCorporation.name,
+          code: newCorporation.code,
+          isActive: newCorporation.isActive,
+        },
+      },
+    });
+
+    revalidatePath('/corporations');
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      corporation: newCorporation,
+    };
+  } catch (error) {
+    console.error('Error creating corporation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create corporation',
+    };
+  }
+}
+
+// ============================================
+// LIST CORPORATIONS
+// ============================================
+
+/**
+ * List corporations with proper filtering based on role
+ *
+ * Permissions:
+ * - SUPERADMIN: Can see all corporations
+ * - MANAGER: Can see only their corporation
+ * - SUPERVISOR: Can see only their corporation
+ */
+export async function listCorporations(filters: ListCorporationsFilters = {}) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Build where clause based on role and filters
+    const where: any = {};
+
+    // Role-based filtering
+    if (currentUser.role !== 'SUPERADMIN') {
+      // Non-superadmins can only see their own corporation
+      where.id = currentUser.corporationId;
+    }
+
+    // Apply additional filters
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { code: { contains: filters.search, mode: 'insensitive' } },
+        { description: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    // Query corporations
+    const corporations = await prisma.corporation.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            managers: true,
+            sites: true,
+            invitations: true,
+          },
+        },
+      },
+      orderBy: [
+        { isActive: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    return {
+      success: true,
+      corporations,
+      count: corporations.length,
+    };
+  } catch (error) {
+    console.error('Error listing corporations:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list corporations',
+      corporations: [],
+      count: 0,
+    };
+  }
+}
+
+// ============================================
+// GET CORPORATION BY ID
+// ============================================
+
+/**
+ * Get a specific corporation by ID with access validation
+ *
+ * Permissions:
+ * - SUPERADMIN: Can view any corporation
+ * - MANAGER: Can view only their corporation
+ * - SUPERVISOR: Can view only their corporation
+ */
+export async function getCorporationById(corporationId: string) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Non-superadmins can only view their own corporation
+    if (currentUser.role !== 'SUPERADMIN') {
+      if (corporationId !== currentUser.corporationId) {
+        return {
+          success: false,
+          error: 'Access denied',
+        };
+      }
+    }
+
+    const corporation = await prisma.corporation.findUnique({
+      where: { id: corporationId },
+      include: {
+        managers: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        sites: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            isActive: true,
+            _count: {
+              select: {
+                workers: true,
+                supervisorAssignments: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: {
+          select: {
+            managers: true,
+            sites: true,
+            invitations: true,
+          },
+        },
+      },
+    });
+
+    if (!corporation) {
+      return {
+        success: false,
+        error: 'Corporation not found',
+      };
+    }
+
+    return {
+      success: true,
+      corporation,
+    };
+  } catch (error) {
+    console.error('Error getting corporation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get corporation',
+    };
+  }
+}
+
+// ============================================
+// UPDATE CORPORATION
+// ============================================
+
+/**
+ * Update corporation information
+ *
+ * Permissions:
+ * - SUPERADMIN: Can update any corporation (all fields)
+ * - MANAGER: Can update only their corporation (limited fields)
+ * - SUPERVISOR: Cannot update corporations
+ */
+export async function updateCorporation(corporationId: string, data: UpdateCorporationInput) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // SUPERVISOR cannot update corporations
+    if (currentUser.role === 'SUPERVISOR') {
+      return {
+        success: false,
+        error: 'Supervisors cannot update corporations',
+      };
+    }
+
+    // Get existing corporation
+    const existingCorp = await prisma.corporation.findUnique({
+      where: { id: corporationId },
+    });
+
+    if (!existingCorp) {
+      return {
+        success: false,
+        error: 'Corporation not found',
+      };
+    }
+
+    // Validate MANAGER constraints
+    if (currentUser.role === 'MANAGER') {
+      // Can only update their own corporation
+      if (corporationId !== currentUser.corporationId) {
+        return {
+          success: false,
+          error: 'Cannot update other corporations',
+        };
+      }
+
+      // Managers cannot change isActive status or code
+      if (data.isActive !== undefined || data.code !== undefined) {
+        return {
+          success: false,
+          error: 'Managers cannot change corporation status or code',
+        };
+      }
+    }
+
+    // Check code uniqueness if code is being updated
+    if (data.code && data.code !== existingCorp.code) {
+      const codeExists = await prisma.corporation.findUnique({
+        where: { code: data.code },
+      });
+
+      if (codeExists) {
+        return {
+          success: false,
+          error: 'Corporation code already exists',
+        };
+      }
+    }
+
+    // Update corporation
+    const updatedCorporation = await prisma.corporation.update({
+      where: { id: corporationId },
+      data: {
+        name: data.name,
+        code: data.code,
+        description: data.description,
+        logo: data.logo,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        isActive: data.isActive,
+      },
+      include: {
+        _count: {
+          select: {
+            managers: true,
+            sites: true,
+            invitations: true,
+          },
+        },
+      },
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'UPDATE_CORPORATION',
+        entity: 'Corporation',
+        entityId: updatedCorporation.id,
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        userRole: currentUser.role,
+        oldValue: {
+          name: existingCorp.name,
+          code: existingCorp.code,
+          description: existingCorp.description,
+          isActive: existingCorp.isActive,
+        },
+        newValue: {
+          name: updatedCorporation.name,
+          code: updatedCorporation.code,
+          description: updatedCorporation.description,
+          isActive: updatedCorporation.isActive,
+        },
+      },
+    });
+
+    revalidatePath('/corporations');
+    revalidatePath(`/corporations/${corporationId}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      corporation: updatedCorporation,
+    };
+  } catch (error) {
+    console.error('Error updating corporation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update corporation',
+    };
+  }
+}
+
+// ============================================
+// DELETE CORPORATION
+// ============================================
+
+/**
+ * Delete a corporation (hard delete)
+ *
+ * Permissions:
+ * - SUPERADMIN: Can delete any corporation
+ * - MANAGER: Cannot delete corporations
+ * - SUPERVISOR: Cannot delete corporations
+ *
+ * WARNING: This will cascade delete all related data!
+ */
+export async function deleteCorporation(corporationId: string) {
+  try {
+    // Only SUPERADMIN can delete corporations
+    const currentUser = await requireSuperAdmin();
+
+    // Get corporation to delete
+    const corpToDelete = await prisma.corporation.findUnique({
+      where: { id: corporationId },
+      include: {
+        _count: {
+          select: {
+            managers: true,
+            sites: true,
+          },
+        },
+      },
+    });
+
+    if (!corpToDelete) {
+      return {
+        success: false,
+        error: 'Corporation not found',
+      };
+    }
+
+    // Warning if corporation has data
+    if (corpToDelete._count.managers > 0 || corpToDelete._count.sites > 0) {
+      console.warn(
+        `Deleting corporation ${corpToDelete.name} with ${corpToDelete._count.managers} managers and ${corpToDelete._count.sites} sites`
+      );
+    }
+
+    // Delete corporation (cascades to sites, managers, etc.)
+    await prisma.corporation.delete({
+      where: { id: corporationId },
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'DELETE_CORPORATION',
+        entity: 'Corporation',
+        entityId: corporationId,
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        userRole: currentUser.role,
+        oldValue: {
+          id: corpToDelete.id,
+          name: corpToDelete.name,
+          code: corpToDelete.code,
+          managerCount: corpToDelete._count.managers,
+          siteCount: corpToDelete._count.sites,
+        },
+        newValue: undefined,
+      },
+    });
+
+    revalidatePath('/corporations');
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      message: 'Corporation deleted successfully',
+    };
+  } catch (error) {
+    console.error('Error deleting corporation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete corporation',
+    };
+  }
+}
+
+// ============================================
+// GET CORPORATION STATS
+// ============================================
+
+/**
+ * Get detailed statistics for a corporation
+ *
+ * Permissions:
+ * - SUPERADMIN: Can get stats for any corporation
+ * - MANAGER: Can get stats for their corporation only
+ * - SUPERVISOR: Can get stats for their corporation only
+ */
+export async function getCorporationStats(corporationId: string) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Validate access
+    if (currentUser.role !== 'SUPERADMIN') {
+      if (corporationId !== currentUser.corporationId) {
+        return {
+          success: false,
+          error: 'Access denied',
+        };
+      }
+    }
+
+    const [
+      corporation,
+      managerCount,
+      supervisorCount,
+      siteCount,
+      activeSiteCount,
+      workerCount,
+      pendingInvitations,
+      recentManagers,
+      recentSites,
+    ] = await Promise.all([
+      prisma.corporation.findUnique({
+        where: { id: corporationId },
+      }),
+      prisma.user.count({
+        where: {
+          corporationId,
+          role: 'MANAGER',
+        },
+      }),
+      prisma.user.count({
+        where: {
+          corporationId,
+          role: 'SUPERVISOR',
+        },
+      }),
+      prisma.site.count({
+        where: { corporationId },
+      }),
+      prisma.site.count({
+        where: {
+          corporationId,
+          isActive: true,
+        },
+      }),
+      prisma.worker.count({
+        where: {
+          site: {
+            corporationId,
+          },
+        },
+      }),
+      prisma.invitation.count({
+        where: {
+          corporationId,
+          status: 'PENDING',
+        },
+      }),
+      prisma.user.findMany({
+        where: {
+          corporationId,
+          role: 'MANAGER',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+        },
+      }),
+      prisma.site.findMany({
+        where: { corporationId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          isActive: true,
+          _count: {
+            select: {
+              workers: true,
+              supervisorAssignments: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (!corporation) {
+      return {
+        success: false,
+        error: 'Corporation not found',
+      };
+    }
+
+    return {
+      success: true,
+      stats: {
+        corporation,
+        managerCount,
+        supervisorCount,
+        siteCount,
+        activeSiteCount,
+        workerCount,
+        pendingInvitations,
+        recentManagers,
+        recentSites,
+      },
+    };
+  } catch (error) {
+    console.error('Error getting corporation stats:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get corporation stats',
+    };
+  }
+}
+
+// ============================================
+// TOGGLE CORPORATION STATUS
+// ============================================
+
+/**
+ * Toggle corporation active status (soft enable/disable)
+ *
+ * Permissions:
+ * - SUPERADMIN: Can toggle any corporation
+ * - MANAGER: Cannot toggle corporation status
+ * - SUPERVISOR: Cannot toggle corporation status
+ */
+export async function toggleCorporationStatus(corporationId: string) {
+  try {
+    // Only SUPERADMIN can toggle status
+    const currentUser = await requireSuperAdmin();
+
+    const corporation = await prisma.corporation.findUnique({
+      where: { id: corporationId },
+    });
+
+    if (!corporation) {
+      return {
+        success: false,
+        error: 'Corporation not found',
+      };
+    }
+
+    const updatedCorporation = await prisma.corporation.update({
+      where: { id: corporationId },
+      data: {
+        isActive: !corporation.isActive,
+      },
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: corporation.isActive ? 'DEACTIVATE_CORPORATION' : 'ACTIVATE_CORPORATION',
+        entity: 'Corporation',
+        entityId: corporationId,
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        userRole: currentUser.role,
+        oldValue: { isActive: corporation.isActive },
+        newValue: { isActive: updatedCorporation.isActive },
+      },
+    });
+
+    revalidatePath('/corporations');
+    revalidatePath(`/corporations/${corporationId}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      corporation: updatedCorporation,
+    };
+  } catch (error) {
+    console.error('Error toggling corporation status:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to toggle corporation status',
+    };
+  }
+}
