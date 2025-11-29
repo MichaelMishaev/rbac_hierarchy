@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -48,11 +48,7 @@ export default function OrganizationalTreeCSS({ deepMode = false }: { deepMode?:
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['root']));
 
-  useEffect(() => {
-    fetchOrgTree();
-  }, [deepMode]);
-
-  const fetchOrgTree = async () => {
+  const fetchOrgTree = useCallback(async () => {
     try {
       setLoading(true);
       const apiEndpoint = deepMode ? '/api/org-tree-deep' : '/api/org-tree';
@@ -70,7 +66,11 @@ export default function OrganizationalTreeCSS({ deepMode = false }: { deepMode?:
     } finally {
       setLoading(false);
     }
-  };
+  }, [deepMode]);
+
+  useEffect(() => {
+    fetchOrgTree();
+  }, [fetchOrgTree]);
 
   const toggleExpand = (nodeId: string) => {
     setExpanded(prev => {

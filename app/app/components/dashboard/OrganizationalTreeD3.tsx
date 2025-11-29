@@ -59,7 +59,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [treeRef, setTreeRef] = useState<any>(null);
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
-  const labels = {
+  const labels = useMemo(() => ({
     zoomIn: 'הגדל',
     zoomOut: 'הקטן',
     fitToScreen: 'התאם למסך',
@@ -74,13 +74,9 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     workers: 'עובדים',
     managers: 'מנהלים',
     supervisors: 'מפקחים',
-  };
+  }), []);
 
-  useEffect(() => {
-    fetchOrgTree();
-  }, [deepMode]);
-
-  const fetchOrgTree = async () => {
+  const fetchOrgTree = useCallback(async () => {
     try {
       setLoading(true);
       const apiEndpoint = deepMode ? '/api/org-tree-deep' : '/api/org-tree';
@@ -98,7 +94,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     } finally {
       setLoading(false);
     }
-  };
+  }, [deepMode]);
+
+  useEffect(() => {
+    fetchOrgTree();
+  }, [fetchOrgTree]);
 
   const convertToD3Format = (node: any): TreeData => {
     return {
@@ -357,7 +357,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   return (
     <Box>
       {/* Control Buttons */}
-      <Box display="flex" gap={2} mb={3} justifyContent="flex-start" direction="rtl">
+      <Box display="flex" gap={2} mb={3} justifyContent="flex-start" sx={{ direction: 'rtl' }}>
         <Button
           size="small"
           startIcon={<ZoomInIcon />}
