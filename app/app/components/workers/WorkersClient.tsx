@@ -14,8 +14,6 @@ import {
   Chip,
   Avatar,
   Tooltip,
-  FormControl,
-  InputLabel,
   Select,
   Table,
   TableBody,
@@ -342,6 +340,7 @@ export default function WorkersClient({
         }}
       >
         <Box sx={{ display: 'flex', gap: 2, flex: 1, flexDirection: { xs: 'column', sm: 'row' }, flexWrap: 'wrap' }}>
+          {/* Search Bar - Pill Shape per Style Guide */}
           <TextField
             placeholder={isRTL ? 'חיפוש עובדים...' : 'Search workers...'}
             value={searchQuery}
@@ -352,69 +351,117 @@ export default function WorkersClient({
               minWidth: 200,
               maxWidth: { sm: 300 },
               '& .MuiOutlinedInput-root': {
-                borderRadius: borderRadius['2xl'], // 20px - style guide
+                height: '44px', // Style guide height
+                borderRadius: '22px', // Perfect pill (height / 2)
                 backgroundColor: colors.neutral[0],
-                boxShadow: shadows.inner, // Inner shadow per style guide
+                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)', // Inner shadow
                 '& fieldset': {
-                  borderColor: colors.neutral[200],
+                  borderColor: 'transparent', // No visible border
                 },
                 '&:hover fieldset': {
-                  borderColor: colors.primary.main,
+                  borderColor: colors.neutral[300],
                 },
-                '&.Mui-focused': {
-                  '& fieldset': {
-                    borderColor: colors.primary.main,
-                    borderWidth: 2,
-                  },
-                  boxShadow: `${shadows.inner}, 0 0 0 3px ${colors.pastel.blueLight}`,
+                '&.Mui-focused fieldset': {
+                  borderColor: colors.primary.main,
+                  borderWidth: 2,
                 },
               },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: colors.neutral[400], fontSize: 20 }} />
+                  <SearchIcon sx={{ color: '#A1A7B3', fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
           />
           
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>{isRTL ? 'סינון לפי אתר' : 'Filter by Site'}</InputLabel>
-            <Select
-              value={filterSite}
-              onChange={(e) => setFilterSite(e.target.value)}
-              label={isRTL ? 'סינון לפי אתר' : 'Filter by Site'}
-              sx={{
-                borderRadius: borderRadius.lg,
-                backgroundColor: colors.neutral[0],
-              }}
-            >
-              <MenuItem value="all">{isRTL ? 'כל האתרים' : 'All Sites'}</MenuItem>
-              {sites.map((site) => (
-                <MenuItem key={site.id} value={site.id}>
-                  {site.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Filter by Site - Clean style without floating label */}
+          <Select
+            value={filterSite}
+            onChange={(e) => setFilterSite(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={{
+              minWidth: 180,
+              height: '44px',
+              borderRadius: borderRadius['2xl'], // 20px pill shape
+              backgroundColor: colors.neutral[0],
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', // Inner shadow like search
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'transparent',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.neutral[300],
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.primary.main,
+                borderWidth: 2,
+              },
+              '& .MuiSelect-select': {
+                fontWeight: 500,
+                color: filterSite === 'all' ? colors.neutral[500] : colors.neutral[900],
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  borderRadius: borderRadius.lg,
+                  boxShadow: shadows.large,
+                  mt: 1,
+                },
+              },
+            }}
+          >
+            <MenuItem value="all">{isRTL ? 'כל האתרים' : 'All Sites'}</MenuItem>
+            {sites.map((site) => (
+              <MenuItem key={site.id} value={site.id}>
+                {site.name}
+              </MenuItem>
+            ))}
+          </Select>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>{isRTL ? 'סטטוס' : 'Status'}</InputLabel>
-            <Select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              label={isRTL ? 'סטטוס' : 'Status'}
-              sx={{
-                borderRadius: borderRadius.lg,
-                backgroundColor: colors.neutral[0],
-              }}
-            >
-              <MenuItem value="all">{isRTL ? 'הכל' : 'All'}</MenuItem>
-              <MenuItem value="active">{isRTL ? 'פעילים' : 'Active'}</MenuItem>
-              <MenuItem value="inactive">{isRTL ? 'לא פעילים' : 'Inactive'}</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Status Filter - Clean style without floating label */}
+          <Select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={{
+              minWidth: 130,
+              height: '44px',
+              borderRadius: borderRadius['2xl'], // 20px pill shape
+              backgroundColor: colors.neutral[0],
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', // Inner shadow like search
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'transparent',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.neutral[300],
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.primary.main,
+                borderWidth: 2,
+              },
+              '& .MuiSelect-select': {
+                fontWeight: 500,
+                color: filterStatus === 'all' ? colors.neutral[500] : colors.neutral[900],
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  borderRadius: borderRadius.lg,
+                  boxShadow: shadows.large,
+                  mt: 1,
+                },
+              },
+            }}
+          >
+            <MenuItem value="all">{isRTL ? 'הכל' : 'All'}</MenuItem>
+            <MenuItem value="active">{isRTL ? 'פעילים' : 'Active'}</MenuItem>
+            <MenuItem value="inactive">{isRTL ? 'לא פעילים' : 'Inactive'}</MenuItem>
+          </Select>
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>

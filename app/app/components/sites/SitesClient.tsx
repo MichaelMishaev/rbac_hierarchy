@@ -14,8 +14,6 @@ import {
   Chip,
   Avatar,
   Tooltip,
-  FormControl,
-  InputLabel,
   Select,
 } from '@mui/material';
 import { useTranslations, useLocale } from 'next-intl';
@@ -261,6 +259,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
         }}
       >
         <Box sx={{ display: 'flex', gap: 2, flex: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
+          {/* Search Bar - Pill Shape per Style Guide */}
           <TextField
             placeholder={isRTL ? 'חיפוש אתרים...' : 'Search sites...'}
             value={searchQuery}
@@ -270,54 +269,75 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
               flex: 1,
               maxWidth: { sm: 350 },
               '& .MuiOutlinedInput-root': {
-                borderRadius: borderRadius['2xl'], // 20px - style guide
+                height: '44px', // Style guide height
+                borderRadius: '22px', // Perfect pill (height / 2)
                 backgroundColor: colors.neutral[0],
-                boxShadow: shadows.inner, // Inner shadow per style guide
+                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)', // Inner shadow
                 '& fieldset': {
-                  borderColor: colors.neutral[200],
+                  borderColor: 'transparent', // No visible border
                 },
-                '&:hover': {
-                  '& fieldset': {
-                    borderColor: colors.primary.main,
-                  },
+                '&:hover fieldset': {
+                  borderColor: colors.neutral[300],
                 },
-                '&.Mui-focused': {
-                  '& fieldset': {
-                    borderColor: colors.primary.main,
-                    borderWidth: 2,
-                  },
-                  boxShadow: `${shadows.inner}, 0 0 0 3px ${colors.pastel.blueLight}`,
+                '&.Mui-focused fieldset': {
+                  borderColor: colors.primary.main,
+                  borderWidth: 2,
                 },
               },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: colors.neutral[400], fontSize: 20 }} />
+                  <SearchIcon sx={{ color: '#A1A7B3', fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
           />
           
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>{isRTL ? 'סינון לפי תאגיד' : 'Filter by Corporation'}</InputLabel>
-            <Select
-              value={filterCorporation}
-              onChange={(e) => setFilterCorporation(e.target.value)}
-              label={isRTL ? 'סינון לפי תאגיד' : 'Filter by Corporation'}
-              sx={{
-                borderRadius: borderRadius.lg,
-                backgroundColor: colors.neutral[0],
-              }}
-            >
-              <MenuItem value="all">{isRTL ? 'כל התאגידים' : 'All Corporations'}</MenuItem>
-              {corporations.map((corp) => (
-                <MenuItem key={corp.id} value={corp.id}>
-                  {corp.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Filter Dropdown - Clean style without floating label */}
+          <Select
+            value={filterCorporation}
+            onChange={(e) => setFilterCorporation(e.target.value)}
+            displayEmpty
+            size="small"
+            sx={{
+              minWidth: 200,
+              height: '44px',
+              borderRadius: borderRadius['2xl'], // 20px pill shape
+              backgroundColor: colors.neutral[0],
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', // Inner shadow like search
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'transparent',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.neutral[300],
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: colors.primary.main,
+                borderWidth: 2,
+              },
+              '& .MuiSelect-select': {
+                fontWeight: 500,
+                color: filterCorporation === 'all' ? colors.neutral[500] : colors.neutral[900],
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  borderRadius: borderRadius.lg,
+                  boxShadow: shadows.large,
+                  mt: 1,
+                },
+              },
+            }}
+          >
+            <MenuItem value="all">{isRTL ? 'כל התאגידים' : 'All Corporations'}</MenuItem>
+            {corporations.map((corp) => (
+              <MenuItem key={corp.id} value={corp.id}>
+                {corp.name}
+              </MenuItem>
+            ))}
+          </Select>
         </Box>
 
         <Button
