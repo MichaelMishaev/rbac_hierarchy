@@ -55,6 +55,7 @@ prisma/migrations/
 # Misc
 .turbo/
 .vercel/
+*.backup
 
 # Playwright
 playwright-report/
