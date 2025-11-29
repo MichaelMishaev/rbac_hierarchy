@@ -4,16 +4,19 @@
   "description": "Multi-tenant organizational management system for corporations",
   "private": true,
   "scripts": {
+    "dev": "cd app && npm run dev",
+    "build": "cd app && npm run build",
+    "start": "cd app && npm run start",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "playwright:install": "playwright install",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio",
-    "db:reset": "prisma db push --force-reset && npm run db:seed"
+    "db:generate": "cd app && npx prisma generate",
+    "db:push": "cd app && npx prisma db push",
+    "db:seed": "cd app && npx tsx prisma/seed.ts",
+    "db:studio": "cd app && npx prisma studio",
+    "db:reset": "cd app && npx prisma db push --force-reset && npm run db:seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
