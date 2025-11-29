@@ -3,16 +3,16 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # Copy package files from both root and app directory
 COPY package*.json ./
 COPY app/package*.json ./app/
 
-# Install dependencies in both locations
-RUN npm ci --only=production --ignore-scripts
-RUN cd app && npm ci --only=production
+# Install ALL dependencies (including devDependencies needed for build)
+RUN npm ci --ignore-scripts
+RUN cd app && npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -25,10 +25,12 @@ COPY --from=deps /app/app/node_modules ./app/node_modules
 # Copy all source files
 COPY . .
 
-# Generate Prisma Client
+# Copy Prisma schema and generate client
+COPY app/prisma ./app/prisma
 RUN cd app && npx prisma generate
 
 # Build the Next.js application
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN cd app && npm run build
 
 # Production image, copy all the files and run next
@@ -36,18 +38,17 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN apk add --no-cache openssl
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files
+# Copy public folder
 COPY --from=builder /app/app/public ./app/public
 
-# Set the correct permission for prerender cache
-RUN mkdir -p ./app/.next
-RUN chown nextjs:nodejs ./app/.next
-
-# Automatically leverage output traces to reduce image size
+# Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/app/.next/static ./app/.next/static
 
