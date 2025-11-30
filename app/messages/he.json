@@ -22,10 +22,21 @@
   "navigation": {
     "dashboard": "לוח בקרה",
     "corporations": "תאגידים",
+    "managers": "מנהלים",
+    "supervisors": "מפקחים",
     "users": "משתמשים",
     "sites": "אתרים",
     "workers": "עובדים",
-    "invitations": "הזמנות"
+    "invitations": "הזמנות",
+    "groupPrimary": "ראשי",
+    "groupManagement": "ניהול",
+    "groupSystem": "מערכת",
+    "viewDetails": "צפה במלואו",
+    "quickView": "צפייה מהירה",
+    "edit": "ערוך",
+    "delete": "מחק",
+    "contactInfo": "פרטי יצירת קשר",
+    "recentActivity": "פעילות אחרונה"
   },
   "dashboard": {
     "welcome": "שלום, {name}!",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Card,
@@ -56,6 +56,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [data, setData] = useState<TreeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(0.9);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
   const labels = useMemo(() => ({
@@ -111,10 +113,27 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     fetchOrgTree();
   }, [fetchOrgTree]);
 
-  // Center translation
-  const translate = useMemo(() => {
-    if (typeof window === 'undefined') return { x: 0, y: 0 };
-    return { x: window.innerWidth / 2 - 200, y: 80 };
+  // Initialize center translation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setTranslate({ x: window.innerWidth / 2 - 200, y: 80 });
+    }
+  }, []);
+
+  // Zoom controls
+  const handleZoomIn = useCallback(() => {
+    setZoom((prev) => Math.min(prev + 0.2, 2));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((prev) => Math.max(prev - 0.2, 0.1));
+  }, []);
+
+  const handleFitToScreen = useCallback(() => {
+    setZoom(0.9);
+    if (typeof window !== 'undefined') {
+      setTranslate({ x: window.innerWidth / 2 - 200, y: 80 });
+    }
   }, []);
 
   // Get node color based on type
@@ -349,8 +368,9 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         <Button
           size="small"
           startIcon={<ZoomInIcon />}
-          disabled
+          onClick={handleZoomIn}
           variant="outlined"
+          disabled={zoom >= 2}
           sx={{
             borderColor: colors.neutral[300],
             color: colors.neutral[700],
@@ -365,8 +385,9 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         <Button
           size="small"
           startIcon={<ZoomOutIcon />}
-          disabled
+          onClick={handleZoomOut}
           variant="outlined"
+          disabled={zoom <= 0.1}
           sx={{
             borderColor: colors.neutral[300],
             color: colors.neutral[700],
@@ -381,6 +402,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         <Button
           size="small"
           startIcon={<FitScreenIcon />}
+          onClick={handleFitToScreen}
           variant="outlined"
           sx={{
             borderColor: colors.neutral[300],
@@ -412,7 +434,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           orientation="vertical"
           translate={translate}
           pathFunc="step"
-          zoom={0.9}
+          zoom={zoom}
           separation={{ siblings: 1.5, nonSiblings: 2 }}
           nodeSize={{ x: 280, y: 240 }}
           renderCustomNodeElement={renderCustomNode}
