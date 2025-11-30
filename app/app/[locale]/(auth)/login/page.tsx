@@ -41,12 +41,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        setError('כתובת אימייל או סיסמה שגויים');
       } else {
         window.location.href = '/dashboard';
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError('אירעה שגיאה. נסה שנית.');
     } finally {
       setLoading(false);
     }
@@ -105,12 +105,17 @@ export default function LoginPage() {
                 fontWeight: 700,
                 color: colors.neutral[800],
                 letterSpacing: '-0.02em',
+                direction: 'rtl',
               }}
             >
-              Welcome Back!
+              !ברוכים הבאים
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Sign in to continue
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ fontWeight: 500, direction: 'rtl' }}
+            >
+              התחבר כדי להמשיך
             </Typography>
           </Stack>
         </Stack>
@@ -136,7 +141,7 @@ export default function LoginPage() {
             {/* Email Input - Inset shadow */}
             <TextField
               fullWidth
-              label="Email Address"
+              label="כתובת אימייל"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -154,6 +159,12 @@ export default function LoginPage() {
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: colors.neutral[50],
                   boxShadow: shadows.innerMedium,
+                  direction: 'ltr',
+                },
+                '& .MuiInputLabel-root': {
+                  right: 35,
+                  left: 'auto',
+                  transformOrigin: 'right',
                 },
               }}
             />
@@ -161,12 +172,12 @@ export default function LoginPage() {
             {/* Password Input - Inset shadow */}
             <TextField
               fullWidth
-              label="Password"
+              label="סיסמה"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Enter your password"
+              placeholder="הכנס סיסמה"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -189,6 +200,12 @@ export default function LoginPage() {
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: colors.neutral[50],
                   boxShadow: shadows.innerMedium,
+                  direction: 'ltr',
+                },
+                '& .MuiInputLabel-root': {
+                  right: 35,
+                  left: 'auto',
+                  transformOrigin: 'right',
                 },
               }}
             />
@@ -212,7 +229,7 @@ export default function LoginPage() {
                 },
               }}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'מתחבר...' : 'התחבר'}
             </Button>
           </Stack>
         </form>
@@ -225,9 +242,10 @@ export default function LoginPage() {
               fontWeight: 600,
               color: colors.neutral[500],
               letterSpacing: '0.5px',
+              direction: 'rtl',
             }}
           >
-            QUICK ACCESS
+            גישה מהירה
           </Typography>
         </Box>
 
@@ -235,7 +253,7 @@ export default function LoginPage() {
         <Stack spacing={2}>
           {/* SuperAdmin */}
           <Box
-            onClick={() => quickLogin('superadmin@hierarchy.test', 'admin123', 'SuperAdmin')}
+            onClick={() => quickLogin('admin@rbac.shop', 'admin123', 'מנהל מערכת')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -261,20 +279,20 @@ export default function LoginPage() {
               >
                 SA
               </Avatar>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                  SuperAdmin
+                  מנהל מערכת ראשי
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  superadmin@hierarchy.test
+                <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
+                  admin@rbac.shop
                 </Typography>
               </Box>
             </Stack>
           </Box>
 
-          {/* Manager */}
+          {/* Manager - Electra Tech */}
           <Box
-            onClick={() => quickLogin('manager@acme.com', 'manager123', 'Manager')}
+            onClick={() => quickLogin('david.cohen@electra-tech.co.il', 'manager123', 'מנהל')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -300,12 +318,12 @@ export default function LoginPage() {
               >
                 M
               </Avatar>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                  Manager
+                  מנהל - טכנולוגיות אלקטרה
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  manager@acme.com
+                <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
+                  david.cohen@electra-tech.co.il
                 </Typography>
               </Box>
             </Stack>
@@ -313,7 +331,9 @@ export default function LoginPage() {
 
           {/* Supervisor */}
           <Box
-            onClick={() => quickLogin('supervisor@acme.com', 'supervisor123', 'Supervisor')}
+            onClick={() =>
+              quickLogin('moshe.israeli@electra-tech.co.il', 'supervisor123', 'מפקח')
+            }
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -339,12 +359,12 @@ export default function LoginPage() {
               >
                 S
               </Avatar>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                  Supervisor
+                  מפקח - משה ישראלי
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  supervisor@acme.com
+                <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
+                  moshe.israeli@electra-tech.co.il
                 </Typography>
               </Box>
             </Stack>
