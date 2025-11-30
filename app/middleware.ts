@@ -19,24 +19,20 @@ export default auth((req) => {
 
   const isOnLoginPage = pathnameWithoutLocale.startsWith('/login');
   const isOnPublicPage = pathnameWithoutLocale === '/' ||
-                         pathnameWithoutLocale.startsWith('/invite');
+                         pathnameWithoutLocale.startsWith('/invite') ||
+                         isOnLoginPage; // Login page is public!
 
   // Apply i18n middleware first
   const response = intlMiddleware(req as NextRequest);
 
-  // Allow public pages
+  // Allow public pages (including login)
   if (isOnPublicPage) {
     return response;
   }
 
-  // Redirect to login if not authenticated
-  if (!isLoggedIn && !isOnLoginPage) {
+  // Redirect to login if not authenticated and trying to access protected page
+  if (!isLoggedIn) {
     return NextResponse.redirect(new URL('/login', req.url));
-  }
-
-  // Redirect to dashboard if logged in and on login page
-  if (isLoggedIn && isOnLoginPage) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return response;
