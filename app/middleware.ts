@@ -1,7 +1,7 @@
-import { auth } from '@/auth.config';
 import createIntlMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { auth } from '@/auth.config';
 
 const intlMiddleware = createIntlMiddleware({
   locales: ['he', 'en'],
@@ -10,33 +10,35 @@ const intlMiddleware = createIntlMiddleware({
   localeDetection: false, // Disable automatic locale detection from browser
 });
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   // Remove locale prefix for checking
   const pathnameWithoutLocale = pathname.replace(/^\/(he|en)/, '') || '/';
 
+  // Public pages that don't require authentication
   const isOnLoginPage = pathnameWithoutLocale.startsWith('/login');
   const isOnPublicPage = pathnameWithoutLocale === '/' ||
                          pathnameWithoutLocale.startsWith('/invite') ||
-                         isOnLoginPage; // Login page is public!
+                         isOnLoginPage;
 
   // Apply i18n middleware first
-  const response = intlMiddleware(req as NextRequest);
+  const response = intlMiddleware(req);
 
-  // Allow public pages (including login)
+  // Allow public pages without auth check
   if (isOnPublicPage) {
     return response;
   }
 
-  // Redirect to login if not authenticated and trying to access protected page
-  if (!isLoggedIn) {
+  // Check authentication for protected pages
+  const session = await auth();
+
+  if (!session) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return response;
-});
+}
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
