@@ -141,6 +141,7 @@ export default function LoginPage() {
             {/* Email Input - Inset shadow */}
             <TextField
               fullWidth
+              name="email"
               label="כתובת אימייל"
               type="email"
               value={email}
@@ -172,6 +173,7 @@ export default function LoginPage() {
             {/* Password Input - Inset shadow */}
             <TextField
               fullWidth
+              name="password"
               label="סיסמה"
               type={showPassword ? 'text' : 'password'}
               value={password}

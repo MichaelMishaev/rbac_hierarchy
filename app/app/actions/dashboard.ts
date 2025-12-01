@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, getUserCorporations } from '@/lib/auth';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -19,6 +19,7 @@ export type SuperAdminStats = {
   activeCorporations: number;
   totalManagers: number;
   totalSupervisors: number;
+  totalAreaManagers: number;
   totalSites: number;
   activeSites: number;
   totalWorkers: number;
@@ -90,7 +91,17 @@ export async function getDashboardStats(): Promise<{
     if (currentUser.role === 'SUPERADMIN') {
       stats.superadmin = await getSuperAdminStats();
     } else if (currentUser.role === 'MANAGER') {
-      stats.manager = await getManagerStats(currentUser.corporationId!);
+      // Get first corporation ID for manager
+      const managerCorpId = currentUser.managerOf[0]?.corporationId;
+      if (managerCorpId) {
+        stats.manager = await getManagerStats(managerCorpId);
+      }
+    } else if (currentUser.role === 'AREA_MANAGER') {
+      // Get first corporation ID for area manager
+      const areaManagerCorpId = currentUser.areaManager?.corporations[0]?.id;
+      if (areaManagerCorpId) {
+        stats.manager = await getManagerStats(areaManagerCorpId);
+      }
     } else if (currentUser.role === 'SUPERVISOR') {
       stats.supervisor = await getSupervisorStats(currentUser.id);
     }
@@ -121,6 +132,7 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
     activeCorporations,
     totalManagers,
     totalSupervisors,
+    totalAreaManagers,
     totalSites,
     activeSites,
     totalWorkers,
@@ -130,8 +142,9 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
   ] = await Promise.all([
     prisma.corporation.count(),
     prisma.corporation.count({ where: { isActive: true } }),
-    prisma.user.count({ where: { role: 'MANAGER' } }),
-    prisma.user.count({ where: { role: 'SUPERVISOR' } }),
+    prisma.corporationManager.count(),
+    prisma.siteManager.count(),
+    prisma.areaManager.count(),
     prisma.site.count(),
     prisma.site.count({ where: { isActive: true } }),
     prisma.worker.count(),
@@ -156,6 +169,7 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
     activeCorporations,
     totalManagers,
     totalSupervisors,
+    totalAreaManagers,
     totalSites,
     activeSites,
     totalWorkers,
@@ -194,16 +208,14 @@ async function getManagerStats(corporationId: string): Promise<ManagerStats> {
         },
       },
     }),
-    prisma.user.count({
+    prisma.corporationManager.count({
       where: {
         corporationId,
-        role: 'MANAGER',
       },
     }),
-    prisma.user.count({
+    prisma.siteManager.count({
       where: {
         corporationId,
-        role: 'SUPERVISOR',
       },
     }),
     prisma.site.count({
@@ -408,17 +420,29 @@ async function getRecentActivity(currentUser: any): Promise<RecentActivity[]> {
   const where: any = {};
 
   // Filter activity based on role
-  if (currentUser.role === 'MANAGER') {
-    // Managers see activity from their corporation (via userId)
-    where.userId = {
-      in: await prisma.user
-        .findMany({
-          where: { corporationId: currentUser.corporationId },
-          select: { id: true },
-        })
-        .then((users) => users.map((u) => u.id)),
-    };
-  } else if (currentUser.role === 'SUPERVISOR') {
+  const userCorps = getUserCorporations(currentUser);
+  if (userCorps !== 'all') {
+    // Get all user IDs in these corporations
+    const [managers, supervisors] = await Promise.all([
+      prisma.corporationManager.findMany({
+        where: { corporationId: { in: userCorps } },
+        select: { userId: true },
+      }),
+      prisma.siteManager.findMany({
+        where: { corporationId: { in: userCorps } },
+        select: { userId: true },
+      }),
+    ]);
+
+    const userIds = [...new Set([
+      ...managers.map(m => m.userId),
+      ...supervisors.map(s => s.userId),
+    ])];
+
+    where.userId = { in: userIds };
+  }
+
+  if (currentUser.role === 'SUPERVISOR') {
     // Supervisors see only their own activity
     where.userId = currentUser.id;
   }
@@ -560,17 +584,29 @@ export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'm
       },
     };
 
-    if (currentUser.role === 'MANAGER') {
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
       // Filter by corporation
-      where.userId = {
-        in: await prisma.user
-          .findMany({
-            where: { corporationId: currentUser.corporationId },
-            select: { id: true },
-          })
-          .then((users) => users.map((u) => u.id)),
-      };
-    } else if (currentUser.role === 'SUPERVISOR') {
+      const [managers, supervisors] = await Promise.all([
+        prisma.corporationManager.findMany({
+          where: { corporationId: { in: userCorps } },
+          select: { userId: true },
+        }),
+        prisma.siteManager.findMany({
+          where: { corporationId: { in: userCorps } },
+          select: { userId: true },
+        }),
+      ]);
+
+      const userIds = [...new Set([
+        ...managers.map(m => m.userId),
+        ...supervisors.map(s => s.userId),
+      ])];
+
+      where.userId = { in: userIds };
+    }
+
+    if (currentUser.role === 'SUPERVISOR') {
       // Only supervisor's own actions
       where.userId = currentUser.id;
     }
@@ -668,8 +704,10 @@ export async function getQuickStats() {
       ]);
 
       stats = { corporations, users, sites, workers };
-    } else if (currentUser.role === 'MANAGER') {
-      if (!currentUser.corporationId) {
+    } else if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      const userCorps = getUserCorporations(currentUser);
+
+      if (!Array.isArray(userCorps) || userCorps.length === 0) {
         return {
           success: false,
           error: 'Manager must be assigned to a corporation',
@@ -677,19 +715,19 @@ export async function getQuickStats() {
       }
 
       const [managers, supervisors, sites, workers] = await Promise.all([
-        prisma.user.count({
-          where: { corporationId: currentUser.corporationId, role: 'MANAGER' },
+        prisma.corporationManager.count({
+          where: { corporationId: { in: userCorps } },
         }),
-        prisma.user.count({
-          where: { corporationId: currentUser.corporationId, role: 'SUPERVISOR' },
+        prisma.siteManager.count({
+          where: { corporationId: { in: userCorps } },
         }),
         prisma.site.count({
-          where: { corporationId: currentUser.corporationId, isActive: true },
+          where: { corporationId: { in: userCorps }, isActive: true },
         }),
         prisma.worker.count({
           where: {
             isActive: true,
-            site: { corporationId: currentUser.corporationId },
+            site: { corporationId: { in: userCorps } },
           },
         }),
       ]);

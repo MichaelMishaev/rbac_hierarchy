@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireManager } from '@/lib/auth';
+import { getCurrentUser, requireManager, hasAccessToCorporation } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 // ============================================
@@ -53,10 +53,10 @@ export async function createSite(data: CreateSiteInput) {
     // Only SUPERADMIN and MANAGER can create sites
     const currentUser = await requireManager();
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      // Can only create sites in their own corporation
-      if (data.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Can only create sites in corporations they have access to
+      if (!hasAccessToCorporation(currentUser, data.corporationId)) {
         return {
           success: false,
           error: 'Cannot create site for different corporation',
@@ -161,9 +161,13 @@ export async function listSites(filters: ListSitesFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'MANAGER') {
-      // Managers can only see sites in their corporation
-      where.corporationId = currentUser.corporationId;
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Get user's corporation IDs
+      const userCorps = currentUser.role === 'AREA_MANAGER' && currentUser.areaManager
+        ? currentUser.areaManager.corporations.map(c => c.id)
+        : currentUser.managerOf.map(m => m.corporationId);
+
+      where.corporationId = { in: userCorps };
     } else if (currentUser.role === 'SUPERVISOR') {
       // Supervisors can only see sites they are assigned to
       const supervisorSites = await prisma.supervisorSite.findMany({
@@ -304,21 +308,19 @@ export async function getSiteById(siteId: string) {
     }
 
     // Validate access permissions
-    if (currentUser.role === 'MANAGER') {
-      if (site.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
           error: 'Access denied',
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this site
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      // Check if supervisor has access to this site (v1.3: use findFirst since unique constraint changed)
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: site.id,
-          },
+          supervisorId: currentUser.id,
+          siteId: site.id,
         },
       });
 
@@ -372,10 +374,10 @@ export async function updateSite(siteId: string, data: UpdateSiteInput) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      // Can only update sites in their own corporation
-      if (existingSite.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Can only update sites in corporations they have access to
+      if (!hasAccessToCorporation(currentUser, existingSite.corporationId)) {
         return {
           success: false,
           error: 'Cannot update site from different corporation',
@@ -492,9 +494,9 @@ export async function deleteSite(siteId: string) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      if (siteToDelete.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, siteToDelete.corporationId)) {
         return {
           success: false,
           error: 'Cannot delete site from different corporation',
@@ -582,21 +584,19 @@ export async function getSiteStats(siteId: string) {
     }
 
     // Validate access
-    if (currentUser.role === 'MANAGER') {
-      if (site.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
           error: 'Access denied',
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this site
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      // Check if supervisor has access to this site (v1.3: use findFirst since unique constraint changed)
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: site.id,
-          },
+          supervisorId: currentUser.id,
+          siteId: site.id,
         },
       });
 
@@ -695,9 +695,9 @@ export async function toggleSiteStatus(siteId: string) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      if (site.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
           error: 'Cannot toggle site from different corporation',

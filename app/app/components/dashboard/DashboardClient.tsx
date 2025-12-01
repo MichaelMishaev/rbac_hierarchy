@@ -53,7 +53,7 @@ export default function DashboardClient({ cards }: DashboardClientProps) {
 
   return (
     <>
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 4 }} data-testid="dashboard-kpi-cards">
         {cards.map((card, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
             <KPICard
@@ -63,6 +63,7 @@ export default function DashboardClient({ cards }: DashboardClientProps) {
               color={card.color}
               icon={card.icon}
               onClick={() => handleCardClick(card)}
+              data-testid={`kpi-card-${index}`}
             />
           </Grid>
         ))}

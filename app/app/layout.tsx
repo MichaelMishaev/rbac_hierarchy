@@ -7,13 +7,19 @@ export const metadata: Metadata = {
   description: 'Premium multi-tenant organizational management system',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale?: string }>;
 }>) {
+  const { locale } = await params;
+  const lang = locale || 'he'; // Default to Hebrew (Hebrew-first system)
+  const dir = lang === 'he' ? 'rtl' : 'ltr';
+
   return (
-    <html lang="en">
+    <html lang={lang} dir={dir}>
       <body>
         <Providers>{children}</Providers>
       </body>

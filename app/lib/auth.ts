@@ -11,10 +11,28 @@ export async function getCurrentUser() {
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      corporation: true,
+      areaManager: {
+        include: {
+          corporations: true,
+        },
+      },
+      managerOf: {
+        include: {
+          corporation: true,
+        },
+      },
+      supervisorOf: {
+        include: {
+          corporation: true,
+        },
+      },
       supervisorSites: {
         include: {
-          site: true,
+          site: {
+            include: {
+              corporation: true,
+            },
+          },
         },
       },
     },
@@ -41,10 +59,49 @@ export async function requireSuperAdmin() {
   return requireRole(['SUPERADMIN']);
 }
 
+export async function requireAreaManager() {
+  return requireRole(['SUPERADMIN', 'AREA_MANAGER']);
+}
+
 export async function requireManager() {
-  return requireRole(['SUPERADMIN', 'MANAGER']);
+  return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'MANAGER']);
 }
 
 export async function requireSupervisor() {
-  return requireRole(['SUPERADMIN', 'MANAGER', 'SUPERVISOR']);
+  return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'MANAGER', 'SUPERVISOR']);
+}
+
+/**
+ * Get all corporation IDs that a user has access to
+ * Returns 'all' for SUPERADMIN, array of corporation IDs for others
+ */
+export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUser>>): string[] | 'all' {
+  if (user.role === 'SUPERADMIN') {
+    return 'all';
+  }
+
+  if (user.role === 'AREA_MANAGER' && user.areaManager) {
+    return user.areaManager.corporations.map(c => c.id);
+  }
+
+  if (user.role === 'MANAGER') {
+    return user.managerOf.map(m => m.corporationId);
+  }
+
+  if (user.role === 'SUPERVISOR') {
+    // Get unique corporation IDs from supervisorOf and supervisorSites
+    const corpsFromRole = user.supervisorOf.map(s => s.corporationId);
+    const corpsFromSites = user.supervisorSites.map(ss => ss.site.corporation.id);
+    return [...new Set([...corpsFromRole, ...corpsFromSites])];
+  }
+
+  return [];
+}
+
+/**
+ * Check if user has access to a specific corporation
+ */
+export function hasAccessToCorporation(user: Awaited<ReturnType<typeof getCurrentUser>>, corporationId: string): boolean {
+  const userCorps = getUserCorporations(user);
+  return userCorps === 'all' || userCorps.includes(corporationId);
 }

@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireSupervisor } from '@/lib/auth';
+import { getCurrentUser, requireSupervisor, hasAccessToCorporation, getUserCorporations } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 // ============================================
@@ -80,9 +80,9 @@ export async function createWorker(data: CreateWorkerInput) {
     }
 
     // Validate access based on role
-    if (currentUser.role === 'MANAGER') {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
       // Managers can only create workers in their corporation's sites
-      if (site.corporationId !== currentUser.corporationId) {
+      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
           error: 'Cannot create worker for site in different corporation',
@@ -90,12 +90,10 @@ export async function createWorker(data: CreateWorkerInput) {
       }
     } else if (currentUser.role === 'SUPERVISOR') {
       // Supervisors can only create workers in their assigned sites
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: data.siteId,
-          },
+          supervisorId: currentUser.id,
+          siteId: data.siteId,
         },
       });
 
@@ -141,6 +139,7 @@ export async function createWorker(data: CreateWorkerInput) {
         endDate: data.endDate,
         notes: data.notes,
         tags: data.tags ?? [],
+        corporationId: site.corporationId,
         siteId: data.siteId,
         supervisorId,
         isActive: data.isActive ?? true,
@@ -227,12 +226,16 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'MANAGER') {
-      // Managers can see workers in their corporation's sites
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
+      // Non-superadmins can only see workers in their corporations
       where.site = {
-        corporationId: currentUser.corporationId,
+        corporationId: { in: userCorps },
       };
-    } else if (currentUser.role === 'SUPERVISOR') {
+    }
+
+    // Additional SUPERVISOR filtering
+    if (currentUser.role === 'SUPERVISOR') {
       // Supervisors can only see workers in their assigned sites
       const supervisorSites = await prisma.supervisorSite.findMany({
         where: { supervisorId: currentUser.id },
@@ -364,8 +367,8 @@ export async function getWorkerById(workerId: string) {
     }
 
     // Validate access permissions
-    if (currentUser.role === 'MANAGER') {
-      if (worker.site.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, worker.site.corporationId)) {
         return {
           success: false,
           error: 'Access denied',
@@ -373,12 +376,10 @@ export async function getWorkerById(workerId: string) {
       }
     } else if (currentUser.role === 'SUPERVISOR') {
       // Check if supervisor has access to this worker's site
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: worker.siteId,
-          },
+          supervisorId: currentUser.id,
+          siteId: worker.siteId,
         },
       });
 
@@ -435,8 +436,8 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
     }
 
     // Validate access based on role
-    if (currentUser.role === 'MANAGER') {
-      if (existingWorker.site.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, existingWorker.site.corporationId)) {
         return {
           success: false,
           error: 'Cannot update worker from different corporation',
@@ -444,12 +445,10 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       }
     } else if (currentUser.role === 'SUPERVISOR') {
       // Check if supervisor has access to this worker's site
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: existingWorker.siteId,
-          },
+          supervisorId: currentUser.id,
+          siteId: existingWorker.siteId,
         },
       });
 
@@ -482,9 +481,9 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
         };
       }
 
-      // Managers can only move workers within their corporation
-      if (currentUser.role === 'MANAGER') {
-        if (newSite.corporationId !== currentUser.corporationId) {
+      // Managers can only move workers within their corporations
+      if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+        if (!hasAccessToCorporation(currentUser, newSite.corporationId)) {
           return {
             success: false,
             error: 'Cannot move worker to site in different corporation',
@@ -610,8 +609,8 @@ export async function deleteWorker(workerId: string) {
     }
 
     // Validate access based on role
-    if (currentUser.role === 'MANAGER') {
-      if (workerToDelete.site.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, workerToDelete.site.corporationId)) {
         return {
           success: false,
           error: 'Cannot delete worker from different corporation',
@@ -619,12 +618,10 @@ export async function deleteWorker(workerId: string) {
       }
     } else if (currentUser.role === 'SUPERVISOR') {
       // Check if supervisor has access to this worker's site
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: workerToDelete.siteId,
-          },
+          supervisorId: currentUser.id,
+          siteId: workerToDelete.siteId,
         },
       });
 
@@ -717,8 +714,8 @@ export async function toggleWorkerStatus(workerId: string) {
     }
 
     // Validate access
-    if (currentUser.role === 'MANAGER') {
-      if (worker.site.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, worker.site.corporationId)) {
         return {
           success: false,
           error: 'Cannot toggle worker from different corporation',
@@ -726,12 +723,10 @@ export async function toggleWorkerStatus(workerId: string) {
       }
     } else if (currentUser.role === 'SUPERVISOR') {
       // Check if supervisor has access to this worker's site
-      const supervisorSite = await prisma.supervisorSite.findUnique({
+      const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId_siteId: {
-            supervisorId: currentUser.id,
-            siteId: worker.siteId,
-          },
+          supervisorId: currentUser.id,
+          siteId: worker.siteId,
         },
       });
 
@@ -863,11 +858,15 @@ export async function getWorkerStats() {
     const where: any = {};
 
     // Apply role-based filtering
-    if (currentUser.role === 'MANAGER') {
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
       where.site = {
-        corporationId: currentUser.corporationId,
+        corporationId: { in: userCorps },
       };
-    } else if (currentUser.role === 'SUPERVISOR') {
+    }
+
+    // Additional SUPERVISOR filtering
+    if (currentUser.role === 'SUPERVISOR') {
       // Supervisors can only see stats for their assigned sites
       const supervisorSites = await prisma.supervisorSite.findMany({
         where: { supervisorId: currentUser.id },
@@ -910,10 +909,8 @@ export async function getWorkerStats() {
         },
       }),
       prisma.site.findMany({
-        where: currentUser.role === 'MANAGER' && currentUser.corporationId
-          ? { corporationId: currentUser.corporationId }
-          : currentUser.role === 'SUPERVISOR'
-          ? { id: { in: where.siteId?.in || [] } }
+        where: userCorps !== 'all'
+          ? { corporationId: { in: userCorps } }
           : {},
         select: {
           id: true,

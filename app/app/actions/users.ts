@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireRole } from '@/lib/auth';
+import { getCurrentUser, requireRole, getUserCorporations, hasAccessToCorporation } from '@/lib/auth';
 import { hash } from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { Role } from '@prisma/client';
@@ -61,8 +61,8 @@ export async function createUser(data: CreateUserInput) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
       // Must provide corporation ID
       if (!data.corporationId) {
         return {
@@ -71,19 +71,19 @@ export async function createUser(data: CreateUserInput) {
         };
       }
 
-      // Can only create users in their own corporation
-      if (data.corporationId !== currentUser.corporationId) {
+      // Can only create users in corporations they have access to
+      if (!hasAccessToCorporation(currentUser, data.corporationId)) {
         return {
           success: false,
           error: 'Cannot create user for different corporation',
         };
       }
 
-      // Cannot create SUPERADMIN
-      if (data.role === 'SUPERADMIN') {
+      // Cannot create SUPERADMIN or AREA_MANAGER
+      if (data.role === 'SUPERADMIN' || data.role === 'AREA_MANAGER') {
         return {
           success: false,
-          error: 'Cannot create SuperAdmin users',
+          error: 'Cannot create SuperAdmin or Area Manager users',
         };
       }
     }
@@ -111,12 +111,29 @@ export async function createUser(data: CreateUserInput) {
         phone: data.phone,
         password: hashedPassword,
         role: data.role,
-        corporationId: data.corporationId,
-      },
-      include: {
-        corporation: true,
       },
     });
+
+    // Create role-specific record if corporation is provided
+    if (data.corporationId) {
+      if (data.role === 'MANAGER') {
+        await prisma.corporationManager.create({
+          data: {
+            userId: newUser.id,
+            corporationId: data.corporationId,
+            title: 'Manager',
+          },
+        });
+      } else if (data.role === 'SUPERVISOR') {
+        await prisma.siteManager.create({
+          data: {
+            userId: newUser.id,
+            corporationId: data.corporationId,
+            title: 'Supervisor',
+          },
+        });
+      }
+    }
 
     // Create audit log
     await prisma.auditLog.create({
@@ -133,7 +150,7 @@ export async function createUser(data: CreateUserInput) {
           email: newUser.email,
           name: newUser.name,
           role: newUser.role,
-          corporationId: newUser.corporationId,
+          corporationId: data.corporationId,
         },
       },
     });
@@ -174,25 +191,14 @@ export async function listUsers(filters: ListUsersFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'MANAGER') {
-      // Managers can only see users in their corporation
-      where.corporationId = currentUser.corporationId;
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can see users in their assigned sites
-      // This requires fetching their assigned sites first
-      const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
-        select: { siteId: true },
-      });
-
-      const siteIds = supervisorSites.map(ss => ss.siteId);
-
-      // Filter to users who are supervisors in those sites
-      where.supervisorSites = {
-        some: {
-          siteId: { in: siteIds },
-        },
-      };
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
+      // Non-superadmins can only see users in their corporations
+      where.OR = [
+        { managerOf: { some: { corporationId: { in: userCorps } } } },
+        { supervisorOf: { some: { corporationId: { in: userCorps } } } },
+        { areaManager: { corporations: { some: { id: { in: userCorps } } } } },
+      ];
     }
 
     // Apply additional filters
@@ -201,7 +207,11 @@ export async function listUsers(filters: ListUsersFilters = {}) {
     }
 
     if (filters.corporationId && currentUser.role === 'SUPERADMIN') {
-      where.corporationId = filters.corporationId;
+      where.OR = [
+        { managerOf: { some: { corporationId: filters.corporationId } } },
+        { supervisorOf: { some: { corporationId: filters.corporationId } } },
+        { areaManager: { corporations: { some: { id: filters.corporationId } } } },
+      ];
     }
 
     if (filters.siteId) {
@@ -225,11 +235,19 @@ export async function listUsers(filters: ListUsersFilters = {}) {
     const users = await prisma.user.findMany({
       where,
       include: {
-        corporation: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
+        areaManager: {
+          include: {
+            corporations: true,
+          },
+        },
+        managerOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        supervisorOf: {
+          include: {
+            corporation: true,
           },
         },
         supervisorSites: {
@@ -297,7 +315,21 @@ export async function getUserById(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        corporation: true,
+        areaManager: {
+          include: {
+            corporations: true,
+          },
+        },
+        managerOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        supervisorOf: {
+          include: {
+            corporation: true,
+          },
+        },
         supervisorSites: {
           include: {
             site: {
@@ -326,28 +358,16 @@ export async function getUserById(userId: string) {
     }
 
     // Validate access permissions
-    if (currentUser.role === 'MANAGER') {
-      if (user.corporationId !== currentUser.corporationId) {
-        return {
-          success: false,
-          error: 'Access denied',
-        };
-      }
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if the target user is assigned to any of the current supervisor's sites
-      const currentUserSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
-        select: { siteId: true },
-      });
+    const userCorps = getUserCorporations(currentUser);
+    const targetUserCorps = getUserCorporations(user);
 
-      const currentUserSiteIds = currentUserSites.map(ss => ss.siteId);
-      const targetUserSiteIds = user.supervisorSites.map(ss => ss.siteId);
-
-      const hasCommonSite = targetUserSiteIds.some(siteId =>
-        currentUserSiteIds.includes(siteId)
+    if (userCorps !== 'all' && targetUserCorps !== 'all') {
+      // Check if there's any overlap in corporations
+      const hasAccess = Array.isArray(targetUserCorps) && targetUserCorps.some(corpId =>
+        Array.isArray(userCorps) && userCorps.includes(corpId)
       );
 
-      if (!hasCommonSite) {
+      if (!hasAccess) {
         return {
           success: false,
           error: 'Access denied',
@@ -407,21 +427,60 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      // Can only update users in their own corporation
-      if (existingUser.corporationId !== currentUser.corporationId) {
+    // Get user corporations for validation
+    const existingUserCorps = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        managerOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        supervisorOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        areaManager: { include: { corporations: true } },
+        supervisorSites: {
+          include: {
+            site: {
+              include: {
+                corporation: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingUserCorps) {
+      return {
+        success: false,
+        error: 'User not found',
+      };
+    }
+
+    // Validate MANAGER/AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Check if current user has access to any of the target user's corporations
+      const targetCorps = getUserCorporations(existingUserCorps);
+      const hasAccess = targetCorps === 'all' ? false : Array.isArray(targetCorps) && targetCorps.some(corpId =>
+        hasAccessToCorporation(currentUser, corpId)
+      );
+
+      if (!hasAccess) {
         return {
           success: false,
           error: 'Cannot update user from different corporation',
         };
       }
 
-      // Cannot change role to SUPERADMIN
-      if (data.role === 'SUPERADMIN') {
+      // Cannot change role to SUPERADMIN or AREA_MANAGER
+      if (data.role === 'SUPERADMIN' || data.role === 'AREA_MANAGER') {
         return {
           success: false,
-          error: 'Cannot set role to SuperAdmin',
+          error: 'Cannot set role to SuperAdmin or Area Manager',
         };
       }
 
@@ -448,7 +507,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
       }
     }
 
-    // Update user
+    // Update user basic fields
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -456,11 +515,24 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
         phone: data.phone,
         email: data.email,
         avatar: data.avatar,
-        corporationId: data.corporationId,
         role: data.role,
       },
       include: {
-        corporation: true,
+        areaManager: {
+          include: {
+            corporations: true,
+          },
+        },
+        managerOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        supervisorOf: {
+          include: {
+            corporation: true,
+          },
+        },
         supervisorSites: {
           include: {
             site: true,
@@ -468,6 +540,39 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
         },
       },
     });
+
+    // Update corporation assignment if provided and role changed
+    if (data.corporationId && data.role) {
+      // Remove old role assignments
+      if (existingUser.role === 'MANAGER') {
+        await prisma.corporationManager.deleteMany({
+          where: { userId },
+        });
+      } else if (existingUser.role === 'SUPERVISOR') {
+        await prisma.siteManager.deleteMany({
+          where: { userId },
+        });
+      }
+
+      // Create new role assignment
+      if (data.role === 'MANAGER') {
+        await prisma.corporationManager.create({
+          data: {
+            userId,
+            corporationId: data.corporationId,
+            title: 'Manager',
+          },
+        });
+      } else if (data.role === 'SUPERVISOR') {
+        await prisma.siteManager.create({
+          data: {
+            userId,
+            corporationId: data.corporationId,
+            title: 'Supervisor',
+          },
+        });
+      }
+    }
 
     // Create audit log
     await prisma.auditLog.create({
@@ -483,14 +588,12 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
           email: existingUser.email,
           phone: existingUser.phone,
           role: existingUser.role,
-          corporationId: existingUser.corporationId,
         },
         newValue: {
           name: updatedUser.name,
           email: updatedUser.email,
           phone: updatedUser.phone,
           role: updatedUser.role,
-          corporationId: updatedUser.corporationId,
         },
       },
     });
@@ -549,6 +652,28 @@ export async function deleteUser(userId: string) {
     // Get user to delete
     const userToDelete = await prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        managerOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        supervisorOf: {
+          include: {
+            corporation: true,
+          },
+        },
+        areaManager: { include: { corporations: true } },
+        supervisorSites: {
+          include: {
+            site: {
+              include: {
+                corporation: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!userToDelete) {
@@ -558,21 +683,26 @@ export async function deleteUser(userId: string) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      // Can only delete users in their own corporation
-      if (userToDelete.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER/AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Check if current user has access to any of the target user's corporations
+      const targetCorps = getUserCorporations(userToDelete);
+      const hasAccess = targetCorps === 'all' ? false : Array.isArray(targetCorps) && targetCorps.some(corpId =>
+        hasAccessToCorporation(currentUser, corpId)
+      );
+
+      if (!hasAccess) {
         return {
           success: false,
           error: 'Cannot delete user from different corporation',
         };
       }
 
-      // Cannot delete other managers or superadmins
-      if (userToDelete.role === 'MANAGER' || userToDelete.role === 'SUPERADMIN') {
+      // Cannot delete other managers, superadmins, or area managers
+      if (userToDelete.role === 'MANAGER' || userToDelete.role === 'SUPERADMIN' || userToDelete.role === 'AREA_MANAGER') {
         return {
           success: false,
-          error: 'Cannot delete managers or superadmins',
+          error: 'Cannot delete managers, area managers, or superadmins',
         };
       }
     }
@@ -596,7 +726,6 @@ export async function deleteUser(userId: string) {
           email: userToDelete.email,
           name: userToDelete.name,
           role: userToDelete.role,
-          corporationId: userToDelete.corporationId,
         },
         newValue: undefined,
       },
@@ -637,23 +766,13 @@ export async function getUserStats() {
     const where: any = {};
 
     // Apply role-based filtering
-    if (currentUser.role === 'MANAGER') {
-      where.corporationId = currentUser.corporationId;
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Get supervisor's assigned sites
-      const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
-        select: { siteId: true },
-      });
-
-      const siteIds = supervisorSites.map(ss => ss.siteId);
-
-      // Filter to users assigned to those sites
-      where.supervisorSites = {
-        some: {
-          siteId: { in: siteIds },
-        },
-      };
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
+      where.OR = [
+        { managerOf: { some: { corporationId: { in: userCorps } } } },
+        { supervisorOf: { some: { corporationId: { in: userCorps } } } },
+        { areaManager: { corporations: { some: { id: { in: userCorps } } } } },
+      ];
     }
 
     const [
@@ -675,14 +794,27 @@ export async function getUserStats() {
           email: true,
           role: true,
           createdAt: true,
-          corporation: {
-            select: {
-              name: true,
+          managerOf: {
+            include: {
+              corporation: {
+                select: {
+                  name: true,
+                },
+              },
             },
           },
-          supervisorSites: {
+          supervisorOf: {
             include: {
-              site: {
+              corporation: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          areaManager: {
+            include: {
+              corporations: {
                 select: {
                   name: true,
                 },

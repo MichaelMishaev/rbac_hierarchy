@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireSuperAdmin } from '@/lib/auth';
+import { getCurrentUser, requireSuperAdmin, getUserCorporations, hasAccessToCorporation } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 // ============================================
@@ -79,7 +79,8 @@ export async function createCorporation(data: CreateCorporationInput) {
       include: {
         _count: {
           select: {
-            managers: true,
+            managers: true,     // Counts CorporationManager records
+            supervisors: true,  // Counts SiteManager records
             sites: true,
             invitations: true,
           },
@@ -142,9 +143,10 @@ export async function listCorporations(filters: ListCorporationsFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role !== 'SUPERADMIN') {
-      // Non-superadmins can only see their own corporation
-      where.id = currentUser.corporationId;
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
+      // Non-superadmins can only see their corporations
+      where.id = { in: userCorps };
     }
 
     // Apply additional filters
@@ -166,7 +168,8 @@ export async function listCorporations(filters: ListCorporationsFilters = {}) {
       include: {
         _count: {
           select: {
-            managers: true,
+            managers: true,     // Counts CorporationManager records
+            supervisors: true,  // Counts SiteManager records
             sites: true,
             invitations: true,
           },
@@ -210,14 +213,12 @@ export async function getCorporationById(corporationId: string) {
   try {
     const currentUser = await getCurrentUser();
 
-    // Non-superadmins can only view their own corporation
-    if (currentUser.role !== 'SUPERADMIN') {
-      if (corporationId !== currentUser.corporationId) {
-        return {
-          success: false,
-          error: 'Access denied',
-        };
-      }
+    // Non-superadmins can only view their corporations
+    if (!hasAccessToCorporation(currentUser, corporationId)) {
+      return {
+        success: false,
+        error: 'Access denied',
+      };
     }
 
     const corporation = await prisma.corporation.findUnique({
@@ -226,10 +227,15 @@ export async function getCorporationById(corporationId: string) {
         managers: {
           select: {
             id: true,
-            name: true,
-            email: true,
-            role: true,
             createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -250,7 +256,8 @@ export async function getCorporationById(corporationId: string) {
         },
         _count: {
           select: {
-            managers: true,
+            managers: true,     // Counts CorporationManager records
+            supervisors: true,  // Counts SiteManager records
             sites: true,
             invitations: true,
           },
@@ -314,18 +321,18 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      // Can only update their own corporation
-      if (corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Can only update corporations they have access to
+      if (!hasAccessToCorporation(currentUser, corporationId)) {
         return {
           success: false,
           error: 'Cannot update other corporations',
         };
       }
 
-      // Managers cannot change isActive status or code
-      if (data.isActive !== undefined || data.code !== undefined) {
+      // Managers cannot change isActive status or code (but Area Managers can)
+      if (currentUser.role === 'MANAGER' && (data.isActive !== undefined || data.code !== undefined)) {
         return {
           success: false,
           error: 'Managers cannot change corporation status or code',
@@ -363,7 +370,8 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
       include: {
         _count: {
           select: {
-            managers: true,
+            managers: true,     // Counts CorporationManager records
+            supervisors: true,  // Counts SiteManager records
             sites: true,
             invitations: true,
           },
@@ -516,13 +524,11 @@ export async function getCorporationStats(corporationId: string) {
     const currentUser = await getCurrentUser();
 
     // Validate access
-    if (currentUser.role !== 'SUPERADMIN') {
-      if (corporationId !== currentUser.corporationId) {
-        return {
-          success: false,
-          error: 'Access denied',
-        };
-      }
+    if (!hasAccessToCorporation(currentUser, corporationId)) {
+      return {
+        success: false,
+        error: 'Access denied',
+      };
     }
 
     const [
@@ -539,16 +545,14 @@ export async function getCorporationStats(corporationId: string) {
       prisma.corporation.findUnique({
         where: { id: corporationId },
       }),
-      prisma.user.count({
+      prisma.corporationManager.count({
         where: {
           corporationId,
-          role: 'MANAGER',
         },
       }),
-      prisma.user.count({
+      prisma.siteManager.count({
         where: {
           corporationId,
-          role: 'SUPERVISOR',
         },
       }),
       prisma.site.count({
@@ -573,17 +577,20 @@ export async function getCorporationStats(corporationId: string) {
           status: 'PENDING',
         },
       }),
-      prisma.user.findMany({
+      prisma.corporationManager.findMany({
         where: {
           corporationId,
-          role: 'MANAGER',
         },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
-          id: true,
-          name: true,
-          email: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
           createdAt: true,
         },
       }),

@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireManager } from '@/lib/auth';
+import { getCurrentUser, requireManager, hasAccessToCorporation, getUserCorporations } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { Role, InvitationStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
@@ -88,20 +88,20 @@ export async function createInvitation(data: CreateInvitationInput) {
     const currentUser = await requireManager();
 
     // Validate role-based constraints
-    if (currentUser.role === 'MANAGER') {
-      // Managers can only invite within their corporation
-      if (!data.corporationId || data.corporationId !== currentUser.corporationId) {
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      // Managers can only invite within their corporations
+      if (!data.corporationId || !hasAccessToCorporation(currentUser, data.corporationId)) {
         return {
           success: false,
-          error: 'Must specify your corporation for invitations',
+          error: 'Must specify a corporation you have access to for invitations',
         };
       }
 
-      // Managers cannot invite SUPERADMIN
-      if (data.role === 'SUPERADMIN') {
+      // Managers cannot invite SUPERADMIN or AREA_MANAGER
+      if (data.role === 'SUPERADMIN' || data.role === 'AREA_MANAGER') {
         return {
           success: false,
-          error: 'Cannot invite SuperAdmin users',
+          error: 'Cannot invite SuperAdmin or Area Manager users',
         };
       }
     }
@@ -248,8 +248,9 @@ export async function listInvitations(filters: ListInvitationsFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'MANAGER') {
-      where.corporationId = currentUser.corporationId;
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
+      where.corporationId = { in: userCorps };
     }
 
     // Apply additional filters
@@ -442,9 +443,29 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
           phone: data.phone,
           password: hashedPassword,
           role: invitation.role,
-          corporationId: invitation.corporationId,
         },
       });
+
+      // Create role-specific record if corporation is provided
+      if (invitation.corporationId) {
+        if (invitation.role === 'MANAGER') {
+          await tx.corporationManager.create({
+            data: {
+              userId: newUser.id,
+              corporationId: invitation.corporationId,
+              title: 'Manager',
+            },
+          });
+        } else if (invitation.role === 'SUPERVISOR') {
+          await tx.siteManager.create({
+            data: {
+              userId: newUser.id,
+              corporationId: invitation.corporationId,
+              title: 'Supervisor',
+            },
+          });
+        }
+      }
 
       // Update invitation status
       const updatedInvitation = await tx.invitation.update({
@@ -539,9 +560,9 @@ export async function revokeInvitation(invitationId: string) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      if (invitation.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (invitation.corporationId && !hasAccessToCorporation(currentUser, invitation.corporationId)) {
         return {
           success: false,
           error: 'Cannot revoke invitation from different corporation',
@@ -637,9 +658,9 @@ export async function resendInvitation(invitationId: string) {
       };
     }
 
-    // Validate MANAGER constraints
-    if (currentUser.role === 'MANAGER') {
-      if (invitation.corporationId !== currentUser.corporationId) {
+    // Validate MANAGER and AREA_MANAGER constraints
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (invitation.corporationId && !hasAccessToCorporation(currentUser, invitation.corporationId)) {
         return {
           success: false,
           error: 'Cannot resend invitation from different corporation',
@@ -726,8 +747,9 @@ export async function getInvitationStats() {
     const where: any = {};
 
     // Apply role-based filtering
-    if (currentUser.role === 'MANAGER') {
-      where.corporationId = currentUser.corporationId;
+    const userCorps = getUserCorporations(currentUser);
+    if (userCorps !== 'all') {
+      where.corporationId = { in: userCorps };
     }
 
     const [

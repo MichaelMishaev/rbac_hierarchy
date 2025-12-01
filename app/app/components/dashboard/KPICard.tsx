@@ -17,6 +17,7 @@ export type KPICardProps = {
   icon?: React.ReactNode;
   color: 'blue' | 'purple' | 'green' | 'orange' | 'red';
   onClick?: () => void;
+  'data-testid'?: string;
 };
 
 export default function KPICard({
@@ -27,6 +28,7 @@ export default function KPICard({
   icon,
   color,
   onClick,
+  'data-testid': dataTestId,
 }: KPICardProps) {
   // Color mapping
   const colorMap = {
@@ -62,6 +64,7 @@ export default function KPICard({
   return (
     <Card
       onClick={onClick}
+      data-testid={dataTestId}
       sx={{
         background: currentColor.bg,
         border: `2px solid ${currentColor.main}40`,

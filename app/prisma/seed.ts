@@ -4,147 +4,589 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log('🌱 Starting comprehensive seed with full hierarchy...');
 
-  // Create SuperAdmin user
+  // ========================
+  // LEVEL 1: SuperAdmin
+  // ========================
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'superadmin@hierarchy.test' },
+    where: { email: 'admin@rbac.shop' },
     update: {},
     create: {
-      email: 'superadmin@hierarchy.test',
+      email: 'admin@rbac.shop',
       name: 'Super Admin',
       password: hashedPassword,
       role: 'SUPERADMIN',
       phone: '+972-50-000-0000',
+      isActive: true,
+      isSuperAdmin: true,
     },
   });
 
-  console.log('✅ SuperAdmin created:', superAdmin.email);
+  console.log('✅ Level 1: SuperAdmin created:', superAdmin.email);
 
-  // Create test corporation
-  const corp1 = await prisma.corporation.upsert({
-    where: { code: 'ACME' },
+  // ========================
+  // LEVEL 2: Area Manager
+  // ========================
+  const areaManagerUser = await prisma.user.upsert({
+    where: { email: 'regional@rbac.shop' },
     update: {},
     create: {
-      name: 'Acme Corporation',
-      code: 'ACME',
-      description: 'Leading provider of innovative solutions',
-      email: 'info@acme.com',
-      phone: '+972-3-000-0000',
-      address: 'Tel Aviv, Israel',
+      email: 'regional@rbac.shop',
+      name: 'יוסי כהן',
+      password: await bcrypt.hash('area123', 10),
+      role: 'AREA_MANAGER',
+      phone: '+972-50-100-0000',
       isActive: true,
     },
   });
 
-  console.log('✅ Corporation created:', corp1.name);
-
-  // Create test manager
-  const manager = await prisma.user.upsert({
-    where: { email: 'manager@acme.com' },
+  const areaManager = await prisma.areaManager.upsert({
+    where: { userId: areaManagerUser.id },
     update: {},
     create: {
-      email: 'manager@acme.com',
-      name: 'David Cohen',
+      userId: areaManagerUser.id,
+      regionName: 'מרכז ישראל',
+      regionCode: 'IL-CENTRAL',
+      isActive: true,
+      metadata: {
+        description: 'מנהל אזורי אחראי על כל התאגידים במרכז הארץ',
+      },
+    },
+  });
+
+  console.log('✅ Level 2: Area Manager created:', areaManager.regionName);
+
+  // ========================
+  // LEVEL 3-7: Multiple Corporations with Full Hierarchy
+  // ========================
+
+  // Corporation 1: טכנולוגיות אלקטרה
+  const corp1 = await prisma.corporation.upsert({
+    where: { code: 'ELECTRA' },
+    update: {},
+    create: {
+      name: 'טכנולוגיות אלקטרה בע"מ',
+      code: 'ELECTRA',
+      description: 'חברת טכנולוגיה מובילה בתחום האלקטרוניקה והמחשוב',
+      email: 'info@electra-tech.co.il',
+      phone: '+972-3-555-0001',
+      address: 'רחוב רוטשילד 1, תל אביב',
+      isActive: true,
+      areaManagerId: areaManager.id,
+    },
+  });
+
+  // Corporation 1 - Manager
+  const manager1User = await prisma.user.upsert({
+    where: { email: 'david.cohen@electra-tech.co.il' },
+    update: {},
+    create: {
+      email: 'david.cohen@electra-tech.co.il',
+      name: 'דוד כהן',
       password: await bcrypt.hash('manager123', 10),
       role: 'MANAGER',
-      corporationId: corp1.id,
-      phone: '+972-50-111-1111',
+      phone: '+972-50-111-0001',
+      isActive: true,
     },
   });
 
-  console.log('✅ Manager created:', manager.email);
-
-  // Create test site
-  const site1 = await prisma.site.upsert({
-    where: { id: 'default-site-id' },
+  await prisma.corporationManager.upsert({
+    where: {
+      corporationId_userId: {
+        corporationId: corp1.id,
+        userId: manager1User.id,
+      },
+    },
     update: {},
     create: {
-      id: 'default-site-id',
-      name: 'Tel Aviv HQ',
-      address: 'Rothschild Blvd 1',
-      city: 'Tel Aviv',
-      country: 'Israel',
-      phone: '+972-3-111-1111',
-      email: 'tlv@acme.com',
+      corporationId: corp1.id,
+      userId: manager1User.id,
+      title: 'מנהל כללי',
+      isActive: true,
+    },
+  });
+
+  // Corporation 1 - Sites and Supervisors
+  const site1 = await prisma.site.upsert({
+    where: { id: 'electra-tlv-hq' },
+    update: {},
+    create: {
+      id: 'electra-tlv-hq',
+      name: 'משרד ראשי - תל אביב',
+      address: 'רחוב רוטשילד 1',
+      city: 'תל אביב',
+      country: 'ישראל',
+      phone: '+972-3-555-0101',
+      email: 'tlv@electra-tech.co.il',
       corporationId: corp1.id,
       isActive: true,
     },
   });
 
-  console.log('✅ Site created:', site1.name);
-
-  // Create test supervisor
-  const supervisor = await prisma.user.upsert({
-    where: { email: 'supervisor@acme.com' },
+  const site2 = await prisma.site.upsert({
+    where: { id: 'electra-haifa' },
     update: {},
     create: {
-      email: 'supervisor@acme.com',
-      name: 'Sarah Levi',
-      password: await bcrypt.hash('supervisor123', 10),
-      role: 'SUPERVISOR',
+      id: 'electra-haifa',
+      name: 'סניף חיפה',
+      address: 'שדרות הנשיא 50',
+      city: 'חיפה',
+      country: 'ישראל',
+      phone: '+972-4-855-0201',
+      email: 'haifa@electra-tech.co.il',
       corporationId: corp1.id,
-      phone: '+972-50-222-2222',
+      isActive: true,
     },
   });
 
-  console.log('✅ Supervisor created:', supervisor.email);
+  // Supervisor for Corp 1
+  const supervisor1User = await prisma.user.upsert({
+    where: { email: 'moshe.israeli@electra-tech.co.il' },
+    update: {},
+    create: {
+      email: 'moshe.israeli@electra-tech.co.il',
+      name: 'משה ישראלי',
+      password: await bcrypt.hash('supervisor123', 10),
+      role: 'SUPERVISOR',
+      phone: '+972-50-222-0001',
+      isActive: true,
+    },
+  });
 
-  // Assign supervisor to site (M2M relationship)
-  const supervisorSite = await prisma.supervisorSite.upsert({
+  const siteManager1 = await prisma.siteManager.upsert({
     where: {
-      supervisorId_siteId: {
-        supervisorId: supervisor.id,
+      corporationId_userId: {
+        corporationId: corp1.id,
+        userId: supervisor1User.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp1.id,
+      userId: supervisor1User.id,
+      title: 'מפקח ראשי',
+      isActive: true,
+    },
+  });
+
+  // Assign supervisor to sites
+  await prisma.supervisorSite.upsert({
+    where: {
+      siteManagerId_siteId: {
+        siteManagerId: siteManager1.id,
         siteId: site1.id,
       },
     },
     update: {},
     create: {
-      supervisorId: supervisor.id,
+      corporationId: corp1.id,
+      supervisorId: supervisor1User.id,
       siteId: site1.id,
+      siteManagerId: siteManager1.id,
       assignedBy: superAdmin.id,
     },
   });
 
-  console.log('✅ Supervisor assigned to site:', site1.name);
-
-  // Create test workers
-  const worker1 = await prisma.worker.create({
+  // Workers for Corp 1
+  await prisma.worker.create({
     data: {
-      name: 'Moshe Israeli',
-      phone: '+972-50-333-3333',
-      email: 'moshe@example.com',
-      position: 'Technician',
+      name: 'רונית לוי',
+      phone: '+972-50-333-0001',
+      email: 'ronit.levi@example.com',
+      position: 'מהנדסת תוכנה',
+      corporationId: corp1.id,
       siteId: site1.id,
-      supervisorId: supervisor.id,
-      startDate: new Date('2024-01-01'),
+      supervisorId: supervisor1User.id,
+      startDate: new Date('2024-01-15'),
       isActive: true,
-      tags: ['Electrician', 'Safety Certified'],
+      tags: ['Full Stack', 'React', 'Node.js'],
     },
   });
 
-  const worker2 = await prisma.worker.create({
+  await prisma.worker.create({
     data: {
-      name: 'Yael Cohen',
-      phone: '+972-50-444-4444',
-      email: 'yael@example.com',
-      position: 'Engineer',
+      name: 'אבי כהן',
+      phone: '+972-50-333-0002',
+      email: 'avi.cohen@example.com',
+      position: 'טכנאי אלקטרוניקה',
+      corporationId: corp1.id,
       siteId: site1.id,
-      supervisorId: supervisor.id,
-      startDate: new Date('2024-02-15'),
+      supervisorId: supervisor1User.id,
+      startDate: new Date('2024-02-01'),
       isActive: true,
-      tags: ['Civil Engineer', 'Project Management'],
+      tags: ['Electronics', 'Certified'],
     },
   });
 
-  console.log('✅ Workers created:', worker1.name, worker2.name);
+  console.log('✅ Corporation 1: טכנולוגיות אלקטרה - Complete hierarchy created');
 
-  console.log('\n🎉 Seed completed successfully!');
+  // Corporation 2: קבוצת בינוי
+  const corp2 = await prisma.corporation.upsert({
+    where: { code: 'BINUY' },
+    update: {},
+    create: {
+      name: 'קבוצת בינוי בע"מ',
+      code: 'BINUY',
+      description: 'קבוצת בנייה ונדל"ן מובילה בישראל',
+      email: 'info@binuy.co.il',
+      phone: '+972-3-666-0001',
+      address: 'דרך מנחם בגין 125, תל אביב',
+      isActive: true,
+      areaManagerId: areaManager.id,
+    },
+  });
+
+  // Corporation 2 - Manager
+  const manager2User = await prisma.user.upsert({
+    where: { email: 'sara.levi@binuy.co.il' },
+    update: {},
+    create: {
+      email: 'sara.levi@binuy.co.il',
+      name: 'שרה לוי',
+      password: await bcrypt.hash('manager123', 10),
+      role: 'MANAGER',
+      phone: '+972-50-111-0002',
+      isActive: true,
+    },
+  });
+
+  await prisma.corporationManager.upsert({
+    where: {
+      corporationId_userId: {
+        corporationId: corp2.id,
+        userId: manager2User.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp2.id,
+      userId: manager2User.id,
+      title: 'מנהלת תפעול',
+      isActive: true,
+    },
+  });
+
+  // Corporation 2 - Sites
+  const site3 = await prisma.site.upsert({
+    where: { id: 'binuy-project-a' },
+    update: {},
+    create: {
+      id: 'binuy-project-a',
+      name: 'אתר בנייה - פרויקט א',
+      address: 'שדרות יצחק רבין 10',
+      city: 'תל אביב',
+      country: 'ישראל',
+      phone: '+972-3-666-0101',
+      email: 'projecta@binuy.co.il',
+      corporationId: corp2.id,
+      isActive: true,
+    },
+  });
+
+  const site4 = await prisma.site.upsert({
+    where: { id: 'binuy-project-b' },
+    update: {},
+    create: {
+      id: 'binuy-project-b',
+      name: 'אתר בנייה - פרויקט ב',
+      address: 'כביש החוף 45',
+      city: 'הרצליה',
+      country: 'ישראל',
+      phone: '+972-9-955-0201',
+      email: 'projectb@binuy.co.il',
+      corporationId: corp2.id,
+      isActive: true,
+    },
+  });
+
+  // Supervisor for Corp 2
+  const supervisor2User = await prisma.user.upsert({
+    where: { email: 'yossi.mizrahi@binuy.co.il' },
+    update: {},
+    create: {
+      email: 'yossi.mizrahi@binuy.co.il',
+      name: 'יוסי מזרחי',
+      password: await bcrypt.hash('supervisor123', 10),
+      role: 'SUPERVISOR',
+      phone: '+972-50-222-0002',
+      isActive: true,
+    },
+  });
+
+  const siteManager2 = await prisma.siteManager.upsert({
+    where: {
+      corporationId_userId: {
+        corporationId: corp2.id,
+        userId: supervisor2User.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp2.id,
+      userId: supervisor2User.id,
+      title: 'מנהל אתר',
+      isActive: true,
+    },
+  });
+
+  await prisma.supervisorSite.upsert({
+    where: {
+      siteManagerId_siteId: {
+        siteManagerId: siteManager2.id,
+        siteId: site3.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp2.id,
+      supervisorId: supervisor2User.id,
+      siteId: site3.id,
+      siteManagerId: siteManager2.id,
+      assignedBy: superAdmin.id,
+    },
+  });
+
+  // Workers for Corp 2
+  await prisma.worker.create({
+    data: {
+      name: 'דני בן דוד',
+      phone: '+972-50-444-0001',
+      email: 'danny.bendavid@example.com',
+      position: 'מנהל פרויקט',
+      corporationId: corp2.id,
+      siteId: site3.id,
+      supervisorId: supervisor2User.id,
+      startDate: new Date('2023-11-01'),
+      isActive: true,
+      tags: ['Project Management', 'Civil Engineer'],
+    },
+  });
+
+  await prisma.worker.create({
+    data: {
+      name: 'מיכל אברהם',
+      phone: '+972-50-444-0002',
+      email: 'michal.abraham@example.com',
+      position: 'מהנדסת בניין',
+      corporationId: corp2.id,
+      siteId: site3.id,
+      supervisorId: supervisor2User.id,
+      startDate: new Date('2024-01-10'),
+      isActive: true,
+      tags: ['Structural Engineering', 'Safety'],
+    },
+  });
+
+  await prisma.worker.create({
+    data: {
+      name: 'אלי שמעון',
+      phone: '+972-50-444-0003',
+      email: 'eli.shimon@example.com',
+      position: 'מנהל עבודות',
+      corporationId: corp2.id,
+      siteId: site4.id,
+      supervisorId: supervisor2User.id,
+      startDate: new Date('2023-10-15'),
+      isActive: true,
+      tags: ['Construction', 'Heavy Equipment'],
+    },
+  });
+
+  console.log('✅ Corporation 2: קבוצת בינוי - Complete hierarchy created');
+
+  // Corporation 3: רשת מזון טעים
+  const corp3 = await prisma.corporation.upsert({
+    where: { code: 'TAIM' },
+    update: {},
+    create: {
+      name: 'רשת מזון טעים בע"מ',
+      code: 'TAIM',
+      description: 'רשת מסעדות ובתי קפה ארצית',
+      email: 'info@taim-food.co.il',
+      phone: '+972-3-777-0001',
+      address: 'רחוב דיזנגוף 100, תל אביב',
+      isActive: true,
+      areaManagerId: areaManager.id,
+    },
+  });
+
+  // Corporation 3 - Manager
+  const manager3User = await prisma.user.upsert({
+    where: { email: 'orna.hadad@taim-food.co.il' },
+    update: {},
+    create: {
+      email: 'orna.hadad@taim-food.co.il',
+      name: 'אורנה חדד',
+      password: await bcrypt.hash('manager123', 10),
+      role: 'MANAGER',
+      phone: '+972-50-111-0003',
+      isActive: true,
+    },
+  });
+
+  await prisma.corporationManager.upsert({
+    where: {
+      corporationId_userId: {
+        corporationId: corp3.id,
+        userId: manager3User.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp3.id,
+      userId: manager3User.id,
+      title: 'מנהלת רשת',
+      isActive: true,
+    },
+  });
+
+  // Corporation 3 - Sites
+  const site5 = await prisma.site.upsert({
+    where: { id: 'taim-tlv-center' },
+    update: {},
+    create: {
+      id: 'taim-tlv-center',
+      name: 'סניף תל אביב מרכז',
+      address: 'רחוב דיזנגוף 100',
+      city: 'תל אביב',
+      country: 'ישראל',
+      phone: '+972-3-777-0101',
+      email: 'tlv@taim-food.co.il',
+      corporationId: corp3.id,
+      isActive: true,
+    },
+  });
+
+  const site6 = await prisma.site.upsert({
+    where: { id: 'taim-jerusalem' },
+    update: {},
+    create: {
+      id: 'taim-jerusalem',
+      name: 'סניף ירושלים',
+      address: 'רחוב יפו 45',
+      city: 'ירושלים',
+      country: 'ישראל',
+      phone: '+972-2-624-0101',
+      email: 'jerusalem@taim-food.co.il',
+      corporationId: corp3.id,
+      isActive: true,
+    },
+  });
+
+  // Supervisors for Corp 3
+  const supervisor3User = await prisma.user.upsert({
+    where: { email: 'tal.golan@taim-food.co.il' },
+    update: {},
+    create: {
+      email: 'tal.golan@taim-food.co.il',
+      name: 'טל גולן',
+      password: await bcrypt.hash('supervisor123', 10),
+      role: 'SUPERVISOR',
+      phone: '+972-50-222-0003',
+      isActive: true,
+    },
+  });
+
+  const siteManager3 = await prisma.siteManager.upsert({
+    where: {
+      corporationId_userId: {
+        corporationId: corp3.id,
+        userId: supervisor3User.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp3.id,
+      userId: supervisor3User.id,
+      title: 'מנהל סניף',
+      isActive: true,
+    },
+  });
+
+  await prisma.supervisorSite.upsert({
+    where: {
+      siteManagerId_siteId: {
+        siteManagerId: siteManager3.id,
+        siteId: site5.id,
+      },
+    },
+    update: {},
+    create: {
+      corporationId: corp3.id,
+      supervisorId: supervisor3User.id,
+      siteId: site5.id,
+      siteManagerId: siteManager3.id,
+      assignedBy: superAdmin.id,
+    },
+  });
+
+  // Workers for Corp 3
+  await prisma.worker.create({
+    data: {
+      name: 'נועה כהן',
+      phone: '+972-50-555-0001',
+      email: 'noa.cohen@example.com',
+      position: 'מלצרית ראשית',
+      corporationId: corp3.id,
+      siteId: site5.id,
+      supervisorId: supervisor3User.id,
+      startDate: new Date('2023-08-01'),
+      isActive: true,
+      tags: ['Customer Service', 'Shift Manager'],
+    },
+  });
+
+  await prisma.worker.create({
+    data: {
+      name: 'יניב שרון',
+      phone: '+972-50-555-0002',
+      email: 'yaniv.sharon@example.com',
+      position: 'שף ראשי',
+      corporationId: corp3.id,
+      siteId: site5.id,
+      supervisorId: supervisor3User.id,
+      startDate: new Date('2023-06-15'),
+      isActive: true,
+      tags: ['Chef', 'Italian Cuisine', 'Kitchen Management'],
+    },
+  });
+
+  await prisma.worker.create({
+    data: {
+      name: 'ליאור עמית',
+      phone: '+972-50-555-0003',
+      email: 'lior.amit@example.com',
+      position: 'מלצר',
+      corporationId: corp3.id,
+      siteId: site6.id,
+      supervisorId: supervisor3User.id,
+      startDate: new Date('2024-03-01'),
+      isActive: true,
+      tags: ['Waiter', 'Customer Service'],
+    },
+  });
+
+  console.log('✅ Corporation 3: רשת מזון טעים - Complete hierarchy created');
+
+  console.log('\n🎉 Comprehensive seed completed successfully!');
   console.log('\n📝 Test credentials:');
-  console.log('SuperAdmin: superadmin@hierarchy.test / admin123');
-  console.log('Manager:    manager@acme.com / manager123');
-  console.log('Supervisor: supervisor@acme.com / supervisor123');
+  console.log('SuperAdmin:       admin@rbac.shop / admin123');
+  console.log('Area Manager:     regional@rbac.shop / area123');
+  console.log('Manager (Corp 1): david.cohen@electra-tech.co.il / manager123');
+  console.log('Manager (Corp 2): sara.levi@binuy.co.il / manager123');
+  console.log('Manager (Corp 3): orna.hadad@taim-food.co.il / manager123');
+  console.log('Supervisor (C1):  moshe.israeli@electra-tech.co.il / supervisor123');
+  console.log('Supervisor (C2):  yossi.mizrahi@binuy.co.il / supervisor123');
+  console.log('Supervisor (C3):  tal.golan@taim-food.co.il / supervisor123');
+  console.log('\n🏢 Complete Hierarchy Created:');
+  console.log('SuperAdmin → Area Manager (מרכז ישראל)');
+  console.log('  → Corporation 1: טכנולוגיות אלקטרה (2 sites, 1 manager, 1 supervisor, 2 workers)');
+  console.log('  → Corporation 2: קבוצת בינוי (2 sites, 1 manager, 1 supervisor, 3 workers)');
+  console.log('  → Corporation 3: רשת מזון טעים (2 sites, 1 manager, 1 supervisor, 3 workers)');
+  console.log('\n✨ Total: 1 SuperAdmin, 1 Area Manager, 3 Corporations, 6 Sites, 3 Managers, 3 Supervisors, 8 Workers');
 }
 
 main()

@@ -141,13 +141,21 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     switch (type) {
       case 'superadmin':
         return colors.pastel.purple;
+      case 'areamanager':
+        return colors.pastel.blueLight;
       case 'corporation':
         return colors.pastel.blue;
+      case 'managers-group':
+        return colors.pastel.greenLight;
+      case 'manager':
+        return colors.pastel.green;
+      case 'supervisors-group':
+        return colors.pastel.yellowLight;
+      case 'supervisor':
+        return colors.pastel.yellow;
       case 'site':
         return colors.pastel.orange;
-      case 'department':
-        return colors.pastel.green;
-      case 'team':
+      case 'worker':
         return colors.pastel.pink;
       default:
         return colors.neutral[300];
@@ -159,14 +167,20 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     switch (type) {
       case 'superadmin':
         return <SupervisorIcon sx={{ fontSize: 20 }} />;
+      case 'areamanager':
+        return <DepartmentIcon sx={{ fontSize: 20 }} />;
       case 'corporation':
         return <BusinessIcon sx={{ fontSize: 20 }} />;
+      case 'managers-group':
+      case 'manager':
+        return <SupervisorIcon sx={{ fontSize: 20 }} />;
+      case 'supervisors-group':
+      case 'supervisor':
+        return <SupervisorIcon sx={{ fontSize: 18 }} />;
       case 'site':
         return <LocationOnIcon sx={{ fontSize: 20 }} />;
-      case 'department':
-        return <DepartmentIcon sx={{ fontSize: 20 }} />;
-      case 'team':
-        return <TeamIcon sx={{ fontSize: 20 }} />;
+      case 'worker':
+        return <TeamIcon sx={{ fontSize: 18 }} />;
       default:
         return null;
     }
@@ -175,14 +189,18 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   // Get translated node type
   const getNodeTypeLabel = useCallback((type: string) => {
     const typeLabels: Record<string, string> = {
-      superadmin: labels.superadmin,
-      corporation: labels.corporation,
-      site: labels.site,
-      department: labels.department,
-      team: labels.team,
+      superadmin: 'מנהל על',
+      areamanager: 'מנהל אזורי',
+      corporation: 'תאגיד',
+      'managers-group': 'קבוצת מנהלים',
+      manager: 'מנהל',
+      'supervisors-group': 'קבוצת מפקחים',
+      supervisor: 'מפקח',
+      site: 'אתר',
+      worker: 'עובד',
     };
     return typeLabels[type] || type;
-  }, [labels]);
+  }, []);
 
   // Get translated stat key
   const getStatLabel = useCallback((key: string) => {

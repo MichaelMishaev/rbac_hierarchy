@@ -63,6 +63,8 @@ export default function NavigationClient({ role }: NavigationClientProps) {
 
   return (
     <Box
+      component="nav"
+      data-testid="navigation-sidebar"
       sx={{
         width: { xs: '100%', md: 260 },
         height: { xs: 'auto', md: '100vh' },
@@ -121,7 +123,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
                 color: colors.neutral[900],
               }}
             >
-              תאגידים
+              מערכת ניהול
             </Box>
             <Box
               sx={{
@@ -143,13 +145,14 @@ export default function NavigationClient({ role }: NavigationClientProps) {
       </Box>
 
       {/* Navigation Links */}
-      <List sx={{ p: 2, flex: 1 }}>
+      <List sx={{ p: 2, flex: 1 }} data-testid="navigation-links">
         {routes.map((route) => {
           const isActive = currentPath === route.path;
           return (
             <ListItem key={route.path} disablePadding sx={{ mb: 1 }}>
               <Link href={route.path} style={{ textDecoration: 'none', width: '100%' }}>
                 <ListItemButton
+                  data-testid={`nav-link-${route.path.replace('/', '')}`}
                   sx={{
                     borderRadius: borderRadius.lg,
                     backgroundColor: isActive ? colors.pastel.blueLight : 'transparent',

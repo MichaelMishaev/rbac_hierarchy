@@ -25,8 +25,9 @@ type User = {
   name: string;
   email: string;
   phone: string | null;
-  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
-  corporationId: string | null;
+  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN' | 'AREA_MANAGER';
+  // Note: corporationId is derived from role tables, not stored directly on User
+  corporationId?: string | null;
 };
 
 type Corporation = {
@@ -41,7 +42,7 @@ type UserModalProps = {
   onSuccess: () => void;
   user?: User | null;
   corporations: Corporation[];
-  currentUserRole: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR';
+  currentUserRole: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR' | 'AREA_MANAGER';
   currentUserCorporationId?: string | null;
 };
 
@@ -50,7 +51,7 @@ type FormData = {
   email: string;
   phone: string;
   password: string;
-  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
+  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN' | 'AREA_MANAGER';
   corporationId: string;
 };
 

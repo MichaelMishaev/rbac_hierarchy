@@ -36,15 +36,21 @@ type User = {
   email: string;
   phone: string | null;
   avatar: string | null;
-  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
-  corporationId: string | null;
+  role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
   lastLoginAt: Date | null;
   createdAt: Date;
-  corporation?: {
-    id: string;
-    name: string;
-    code: string;
+  isActive: boolean;
+  // Role-specific relations
+  areaManager?: {
+    regionName: string;
+    corporations: { id: string; name: string }[];
   } | null;
+  managerOf?: {
+    corporation: { id: string; name: string; code: string };
+  }[];
+  supervisorOf?: {
+    corporation: { id: string; name: string; code: string };
+  }[];
   supervisorSites?: {
     site: {
       id: string;
@@ -63,7 +69,7 @@ type Corporation = {
 type UsersClientProps = {
   users: User[];
   corporations: Corporation[];
-  currentUserRole: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR';
+  currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
 };
 
 export default function UsersClient({ users, corporations, currentUserRole }: UsersClientProps) {
@@ -121,9 +127,8 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
   };
 
   // Get current user corporation ID for filtering
-  const currentUserCorporationId = currentUserRole !== 'SUPERADMIN'
-    ? users.find(u => u.role === currentUserRole)?.corporationId
-    : null;
+  // TODO: Derive from role tables (managerOf, supervisorOf, etc.)
+  const currentUserCorporationId: string | null = null;
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -305,7 +310,8 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
                   {/* Corporation */}
                   <TableCell>
                     <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                      {user.corporation?.name || '-'}
+                      {/* TODO: Display from managerOf/supervisorOf/areaManager */}
+                      {'-'}
                     </Typography>
                   </TableCell>
 

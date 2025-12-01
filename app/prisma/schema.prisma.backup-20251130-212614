@@ -1,0 +1,253 @@
+// Prisma Schema for Corporations MVP
+// Premium UI Hierarchical Organization Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS TABLE
+// ============================================
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  name     String
+  phone    String?
+  avatar   String? // URL to uploaded image
+  password String // Hashed password
+  role     Role    @default(SUPERVISOR)
+
+  // Relationships
+  corporationId String?      @map("corporation_id")
+  corporation   Corporation? @relation(fields: [corporationId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  // Relations
+  supervisorSites SupervisorSite[] @relation("SupervisorAssignments")
+  workers         Worker[]
+  invitationsSent Invitation[]     @relation("InvitationCreator")
+
+  @@index([corporationId])
+  @@index([email])
+  @@map("users")
+}
+
+enum Role {
+  SUPERADMIN
+  MANAGER
+  SUPERVISOR
+}
+
+// ============================================
+// CORPORATIONS TABLE
+// ============================================
+model Corporation {
+  id          String  @id @default(uuid())
+  name        String
+  code        String  @unique // Short code (e.g., "ACME")
+  description String?
+  logo        String? // URL to uploaded logo
+
+  // Contact info
+  email   String?
+  phone   String?
+  address String?
+
+  // Settings
+  isActive Boolean @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  managers    User[]
+  sites       Site[]
+  invitations Invitation[]
+
+  @@index([code])
+  @@index([isActive])
+  @@map("corporations")
+}
+
+// ============================================
+// SITES TABLE
+// ============================================
+model Site {
+  id      String  @id @default(uuid())
+  name    String
+  address String?
+  city    String?
+  country String? @default("Israel")
+
+  // Contact
+  phone String?
+  email String?
+
+  // Settings
+  isActive Boolean @default(true) @map("is_active")
+
+  // Relationships
+  corporationId String      @map("corporation_id")
+  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  supervisorAssignments SupervisorSite[]
+  workers               Worker[]
+
+  @@index([corporationId])
+  @@index([isActive])
+  @@map("sites")
+}
+
+// ============================================
+// SUPERVISOR-SITE ASSIGNMENTS (M2M JOIN TABLE)
+// ============================================
+model SupervisorSite {
+  id String @id @default(uuid())
+
+  // Relationships
+  supervisorId String @map("supervisor_id")
+  supervisor   User   @relation("SupervisorAssignments", fields: [supervisorId], references: [id], onDelete: Cascade)
+
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Assignment metadata
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") // User ID who made the assignment
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([supervisorId, siteId]) // Supervisor cannot be assigned to same site twice
+  @@index([supervisorId])
+  @@index([siteId])
+  @@map("supervisor_sites")
+}
+
+// ============================================
+// WORKERS TABLE
+// ============================================
+model Worker {
+  id       String  @id @default(uuid())
+  name     String
+  phone    String?
+  email    String?
+  position String? // Job title
+  avatar   String?
+
+  // Employment details
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  isActive  Boolean   @default(true) @map("is_active")
+
+  // Additional info
+  notes String? // Supervisor notes
+  tags  String[] @default([]) // Skills, certifications, etc.
+
+  // Relationships
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  supervisorId String @map("supervisor_id")
+  supervisor   User   @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([siteId])
+  @@index([supervisorId])
+  @@index([isActive])
+  @@index([phone])
+  @@map("workers")
+}
+
+// ============================================
+// INVITATIONS TABLE
+// ============================================
+model Invitation {
+  id     String           @id @default(uuid())
+  email  String
+  role   Role
+  status InvitationStatus @default(PENDING)
+  token  String           @unique // Unique invitation token
+
+  // Invitation details
+  message   String? // Optional message to invitee
+  expiresAt DateTime @map("expires_at")
+
+  // Relationships
+  corporationId String?      @map("corporation_id")
+  corporation   Corporation? @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+
+  createdById String @map("created_by_id")
+  createdBy   User   @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Acceptance tracking
+  acceptedAt DateTime? @map("accepted_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([corporationId])
+  @@map("invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+// ============================================
+// AUDIT LOGS TABLE (Optional for MVP)
+// ============================================
+model AuditLog {
+  id       String @id @default(uuid())
+  action   String // "CREATE_CORPORATION", "INVITE_MANAGER", etc.
+  entity   String // "Corporation", "User", "Site"
+  entityId String @map("entity_id")
+
+  // Changes
+  oldValue Json? @map("old_value")
+  newValue Json? @map("new_value")
+
+  // Actor
+  userId    String? @map("user_id")
+  userEmail String? @map("user_email")
+  userRole  String? @map("user_role")
+
+  // Context
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
