@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -38,12 +38,24 @@ import {
   createSite,
   updateSite,
   deleteSite,
+  listSupervisorsByCorporation,
 } from '@/app/actions/sites';
 
 type Corporation = {
   id: string;
   name: string;
   code: string;
+};
+
+type Supervisor = {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  title?: string | null;
+  siteCount: number;
+  workerCount: number;
 };
 
 type Site = {
@@ -83,6 +95,8 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
 
   // Filtered sites based on search and corporation filter
   const filteredSites = useMemo(() => {
@@ -125,6 +139,34 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
     setAnchorEl(null);
   };
 
+  // Fetch supervisors for a specific corporation
+  const fetchSupervisors = async (corporationId: string) => {
+    setLoadingSupervisors(true);
+    try {
+      const result = await listSupervisorsByCorporation(corporationId);
+      if (result.success) {
+        setSupervisors(result.supervisors);
+      } else {
+        console.error('Failed to fetch supervisors:', result.error);
+        setSupervisors([]);
+      }
+    } catch (error) {
+      console.error('Error fetching supervisors:', error);
+      setSupervisors([]);
+    } finally {
+      setLoadingSupervisors(false);
+    }
+  };
+
+  // Open create modal and fetch supervisors for first corporation
+  const handleOpenCreateModal = async () => {
+    const corpId = filterCorporation !== 'all' ? filterCorporation : corporations[0]?.id;
+    if (corpId) {
+      await fetchSupervisors(corpId);
+    }
+    setCreateModalOpen(true);
+  };
+
   const handleCreateSite = async (data: SiteFormData) => {
     const result = await createSite(data);
     if (result.success && result.site) {
@@ -134,7 +176,10 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
     }
   };
 
-  const handleEditClick = () => {
+  const handleEditClick = async () => {
+    if (selectedSite) {
+      await fetchSupervisors(selectedSite.corporationId);
+    }
     setEditModalOpen(true);
     handleMenuClose();
   };
@@ -343,7 +388,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => setCreateModalOpen(true)}
+          onClick={handleOpenCreateModal}
           sx={{
             background: colors.gradients.primary,
             color: colors.neutral[0],
@@ -429,7 +474,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setCreateModalOpen(true)}
+              onClick={handleOpenCreateModal}
               sx={{
                 background: colors.gradients.primary,
                 px: 4,
@@ -756,6 +801,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
         onSubmit={handleCreateSite}
         mode="create"
         corporations={corporations}
+        supervisors={supervisors}
       />
 
       {/* Edit Modal */}
@@ -775,10 +821,12 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
             phone: selectedSite.phone || '',
             email: selectedSite.email || '',
             corporationId: selectedSite.corporationId,
+            supervisorId: '', // TODO: Fetch current supervisor assignment
             isActive: selectedSite.isActive,
           }}
           mode="edit"
           corporations={corporations}
+          supervisors={supervisors}
         />
       )}
 

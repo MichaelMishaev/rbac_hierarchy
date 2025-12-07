@@ -29,19 +29,44 @@ export async function POST(request: Request) {
     const superAdmin = await prisma.user.upsert({
       where: { email: 'admin@rbac.shop' },
       update: {
-        name: 'Super Admin',
-        password: hashedPassword,
+        fullName: 'Super Admin',
+        passwordHash: hashedPassword,
       },
       create: {
         email: 'admin@rbac.shop',
-        name: 'Super Admin',
-        password: hashedPassword,
+        fullName: 'Super Admin',
+        passwordHash: hashedPassword,
         role: 'SUPERADMIN',
         phone: '+972-50-000-0000',
       },
     });
 
     console.log('✅ SuperAdmin created:', superAdmin.email);
+
+    // v1.4: Create Area Manager first (required for corporations)
+    const areaManagerUser = await prisma.user.upsert({
+      where: { email: 'areamanager@rbac.shop' },
+      update: {},
+      create: {
+        email: 'areamanager@rbac.shop',
+        fullName: 'מנהל אזור מרכז',
+        passwordHash: hashedPassword,
+        role: 'AREA_MANAGER',
+        phone: '+972-50-000-0001',
+      },
+    });
+
+    const areaManager = await prisma.areaManager.upsert({
+      where: { userId: areaManagerUser.id },
+      update: {},
+      create: {
+        userId: areaManagerUser.id,
+        regionCode: 'IL-CENTER',
+        regionName: 'מרכז',
+      },
+    });
+
+    console.log('✅ Area Manager created');
 
     // Create 3 corporations
     const corp1 = await prisma.corporation.upsert({
@@ -55,6 +80,7 @@ export async function POST(request: Request) {
         phone: '+972-3-500-0001',
         address: 'רחוב הברזל 1, תל אביב',
         isActive: true,
+        areaManagerId: areaManager.id, // v1.4: Required
       },
     });
 
@@ -69,6 +95,7 @@ export async function POST(request: Request) {
         phone: '+972-3-600-0002',
         address: 'שדרות רוטשילד 50, תל אביב',
         isActive: true,
+        areaManagerId: areaManager.id, // v1.4: Required
       },
     });
 
@@ -83,6 +110,7 @@ export async function POST(request: Request) {
         phone: '+972-9-700-0003',
         address: 'דרך בגין 100, רמת גן',
         isActive: true,
+        areaManagerId: areaManager.id, // v1.4: Required
       },
     });
 
@@ -94,8 +122,8 @@ export async function POST(request: Request) {
       update: {},
       create: {
         email: 'david.cohen@electra-tech.co.il',
-        name: 'דוד כהן',
-        password: await bcrypt.hash('manager123', 10),
+        fullName: 'דוד כהן',
+        passwordHash: await bcrypt.hash('manager123', 10),
         role: 'MANAGER',
         phone: '+972-50-100-0001',
       },
@@ -123,8 +151,8 @@ export async function POST(request: Request) {
       update: {},
       create: {
         email: 'sarah.levi@binui.co.il',
-        name: 'שרה לוי',
-        password: await bcrypt.hash('manager123', 10),
+        fullName: 'שרה לוי',
+        passwordHash: await bcrypt.hash('manager123', 10),
         role: 'MANAGER',
         phone: '+972-50-200-0002',
       },
@@ -152,8 +180,8 @@ export async function POST(request: Request) {
       update: {},
       create: {
         email: 'yossi.mizrahi@taim-food.co.il',
-        name: 'יוסי מזרחי',
-        password: await bcrypt.hash('manager123', 10),
+        fullName: 'יוסי מזרחי',
+        passwordHash: await bcrypt.hash('manager123', 10),
         role: 'MANAGER',
         phone: '+972-50-300-0003',
       },
@@ -224,20 +252,20 @@ export async function POST(request: Request) {
     const supervisor1_1 = await prisma.user.upsert({
       where: { email: 'moshe.israeli@electra-tech.co.il' },
       update: {
-        name: 'משה ישראלי',
-        password: await bcrypt.hash('supervisor123', 10),
+        fullName: 'משה ישראלי',
+        passwordHash: await bcrypt.hash('supervisor123', 10),
       },
       create: {
         email: 'moshe.israeli@electra-tech.co.il',
-        name: 'משה ישראלי',
-        password: await bcrypt.hash('supervisor123', 10),
+        fullName: 'משה ישראלי',
+        passwordHash: await bcrypt.hash('supervisor123', 10),
         role: 'SUPERVISOR',
         phone: '+972-50-400-1001',
       },
     });
 
-    // Create SiteManager record for supervisor1_1
-    const siteManager1_1 = await prisma.siteManager.upsert({
+    // Create Supervisor record for supervisor1_1
+    const supervisorRecord1_1 = await prisma.supervisor.upsert({
       where: {
         corporationId_userId: {
           corporationId: corp1.id,
@@ -259,20 +287,20 @@ export async function POST(request: Request) {
     const supervisor2_1 = await prisma.user.upsert({
       where: { email: 'avi.shapira@binui.co.il' },
       update: {
-        name: 'אבי שפירא',
-        password: await bcrypt.hash('supervisor123', 10),
+        fullName: 'אבי שפירא',
+        passwordHash: await bcrypt.hash('supervisor123', 10),
       },
       create: {
         email: 'avi.shapira@binui.co.il',
-        name: 'אבי שפירא',
-        password: await bcrypt.hash('supervisor123', 10),
+        fullName: 'אבי שפירא',
+        passwordHash: await bcrypt.hash('supervisor123', 10),
         role: 'SUPERVISOR',
         phone: '+972-50-500-2001',
       },
     });
 
-    // Create SiteManager record for supervisor2_1
-    const siteManager2_1 = await prisma.siteManager.upsert({
+    // Create Supervisor record for supervisor2_1
+    const supervisorRecord2_1 = await prisma.supervisor.upsert({
       where: {
         corporationId_userId: {
           corporationId: corp2.id,
@@ -294,20 +322,20 @@ export async function POST(request: Request) {
     const supervisor3_1 = await prisma.user.upsert({
       where: { email: 'chen.amar@taim-food.co.il' },
       update: {
-        name: 'חן עמר',
-        password: await bcrypt.hash('supervisor123', 10),
+        fullName: 'חן עמר',
+        passwordHash: await bcrypt.hash('supervisor123', 10),
       },
       create: {
         email: 'chen.amar@taim-food.co.il',
-        name: 'חן עמר',
-        password: await bcrypt.hash('supervisor123', 10),
+        fullName: 'חן עמר',
+        passwordHash: await bcrypt.hash('supervisor123', 10),
         role: 'SUPERVISOR',
         phone: '+972-50-600-3001',
       },
     });
 
-    // Create SiteManager record for supervisor3_1
-    const siteManager3_1 = await prisma.siteManager.upsert({
+    // Create Supervisor record for supervisor3_1
+    const supervisorRecord3_1 = await prisma.supervisor.upsert({
       where: {
         corporationId_userId: {
           corporationId: corp3.id,
@@ -328,12 +356,12 @@ export async function POST(request: Request) {
 
     console.log('✅ Supervisors created');
 
-    // Assign supervisors to sites (v1.3 compliant with composite FKs)
+    // Assign supervisors to sites (v1.4 compliant with composite FKs)
     await prisma.supervisorSite.create({
       data: {
         corporationId: corp1.id,
-        supervisorId: supervisor1_1.id,
-        siteManagerId: siteManager1_1.id,
+        supervisorId: supervisorRecord1_1.id,
+        legacySupervisorUserId: supervisor1_1.id,
         siteId: site1_1.id,
         assignedBy: manager1.id,
       },
@@ -342,8 +370,8 @@ export async function POST(request: Request) {
     await prisma.supervisorSite.create({
       data: {
         corporationId: corp2.id,
-        supervisorId: supervisor2_1.id,
-        siteManagerId: siteManager2_1.id,
+        supervisorId: supervisorRecord2_1.id,
+        legacySupervisorUserId: supervisor2_1.id,
         siteId: site2_1.id,
         assignedBy: manager2.id,
       },
@@ -352,8 +380,8 @@ export async function POST(request: Request) {
     await prisma.supervisorSite.create({
       data: {
         corporationId: corp3.id,
-        supervisorId: supervisor3_1.id,
-        siteManagerId: siteManager3_1.id,
+        supervisorId: supervisorRecord3_1.id,
+        legacySupervisorUserId: supervisor3_1.id,
         siteId: site3_1.id,
         assignedBy: manager3.id,
       },
@@ -364,13 +392,13 @@ export async function POST(request: Request) {
     // Create workers
     await prisma.worker.create({
       data: {
-        name: 'יוסי אבוחצירא',
+        fullName: 'יוסי אבוחצירא',
         phone: '+972-50-700-0001',
         email: 'yossi.a@example.com',
         position: 'טכנאי אלקטרוניקה',
         corporationId: corp1.id,
         siteId: site1_1.id,
-        supervisorId: supervisor1_1.id,
+        supervisorId: supervisorRecord1_1.id,
         startDate: new Date('2024-01-15'),
         isActive: true,
         tags: ['אלקטרוניקה', 'תעודת בטיחות'],
@@ -379,13 +407,13 @@ export async function POST(request: Request) {
 
     await prisma.worker.create({
       data: {
-        name: 'דני אברהם',
+        fullName: 'דני אברהם',
         phone: '+972-50-800-0001',
         email: 'danny.a@example.com',
         position: 'מנהל פרויקט',
         corporationId: corp2.id,
         siteId: site2_1.id,
-        supervisorId: supervisor2_1.id,
+        supervisorId: supervisorRecord2_1.id,
         startDate: new Date('2023-12-01'),
         isActive: true,
         tags: ['ניהול פרויקטים', 'בנייה'],
@@ -394,13 +422,13 @@ export async function POST(request: Request) {
 
     await prisma.worker.create({
       data: {
-        name: 'יאיר כהן',
+        fullName: 'יאיר כהן',
         phone: '+972-50-900-0001',
         email: 'yair.c@example.com',
         position: 'שף ראשי',
         corporationId: corp3.id,
         siteId: site3_1.id,
-        supervisorId: supervisor3_1.id,
+        supervisorId: supervisorRecord3_1.id,
         startDate: new Date('2023-09-01'),
         isActive: true,
         tags: ['בישול', 'ניהול מטבח'],

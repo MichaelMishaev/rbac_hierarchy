@@ -34,11 +34,11 @@ export default async function WorkersPage() {
     },
     select: {
       id: true,
-      name: true,
+      fullName: true,
       email: true,
     },
     orderBy: {
-      name: 'asc',
+      fullName: 'asc',
     },
   });
 
@@ -103,17 +103,25 @@ export default async function WorkersPage() {
           } : undefined,
           supervisor: w.supervisor ? {
             id: w.supervisor.id,
-            name: w.supervisor.name,
-            email: w.supervisor.email,
+            user: {
+              fullName: w.supervisor.user.fullName,
+              email: w.supervisor.user.email,
+            },
           } : undefined,
         }))}
-        sites={sites.map(s => ({ 
-          id: s.id, 
-          name: s.name, 
+        sites={sites.map(s => ({
+          id: s.id,
+          name: s.name,
           corporationId: s.corporationId,
           corporation: s.corporation,
-        }))} 
-        supervisors={supervisors}
+        }))}
+        supervisors={supervisors.map(s => ({
+          id: s.id,
+          user: {
+            fullName: s.fullName,
+            email: s.email,
+          },
+        }))}
         currentUserId={session.user.id}
       />
     </Box>

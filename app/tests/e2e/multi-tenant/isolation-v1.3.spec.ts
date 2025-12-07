@@ -39,7 +39,7 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
   test('Corp2 Manager cannot see Corp1 workers', async ({ page }) => {
     // Login as Manager from Corporation 2 (קבוצת בינוי)
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'sarah.levi@binui.co.il');
+    await page.fill('input[name="email"]', 'sara.levi@binuy.co.il');
     await page.fill('input[name="password"]', 'manager123');
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard', { timeout: 10000 });
@@ -64,7 +64,7 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
   test('Corp3 Manager cannot see Corp1/Corp2 supervisors', async ({ page }) => {
     // Login as Manager from Corporation 3 (רשת מזון טעים)
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'yossi.mizrahi@taim-food.co.il');
+    await page.fill('input[name="email"]', 'orna.hadad@taim-food.co.il');
     await page.fill('input[name="password"]', 'manager123');
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard', { timeout: 10000 });
@@ -73,11 +73,11 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
 
     // Should see Corp3 data only
     // Should NOT see Corp1 supervisor: משה ישראלי
-    // Should NOT see Corp2 supervisor: אבי שפירא
+    // Should NOT see Corp2 supervisor: יוסי מזרחי
 
     expect(pageContent).toBeTruthy();
     expect(!pageContent?.includes('משה ישראלי')).toBeTruthy(); // Corp1
-    expect(!pageContent?.includes('אבי שפירא')).toBeTruthy(); // Corp2
+    expect(!pageContent?.includes('יוסי מזרחי')).toBeTruthy(); // Corp2
 
     console.log('✅ Corp3 Manager cannot see Corp1/Corp2 supervisors');
   });
@@ -108,9 +108,9 @@ test.describe('Supervisor Site Isolation - Composite FK', () => {
   });
 
   test('Corp2 Supervisor cannot access Corp1 sites', async ({ page }) => {
-    // Login as Supervisor from Corp2 (אבי שפירא)
+    // Login as Supervisor from Corp2 (יוסי מזרחי)
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'avi.shapira@binui.co.il');
+    await page.fill('input[name="email"]', 'yossi.mizrahi@binuy.co.il');
     await page.fill('input[name="password"]', 'supervisor123');
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard', { timeout: 10000 });

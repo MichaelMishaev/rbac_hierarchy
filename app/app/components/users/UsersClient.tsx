@@ -32,10 +32,10 @@ import { useRouter } from 'next/navigation';
 
 type User = {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
   phone: string | null;
-  avatar: string | null;
+  avatarUrl: string | null;
   role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
   lastLoginAt: Date | null;
   createdAt: Date;
@@ -43,7 +43,7 @@ type User = {
   // Role-specific relations
   areaManager?: {
     regionName: string;
-    corporations: { id: string; name: string }[];
+    regionCode: string | null;
   } | null;
   managerOf?: {
     corporation: { id: string; name: string; code: string };
@@ -133,6 +133,8 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'SUPERADMIN':
+        return colors.status.purple;
+      case 'AREA_MANAGER':
         return colors.status.purple;
       case 'MANAGER':
         return colors.status.blue;
@@ -262,7 +264,7 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar
-                        src={user.avatar || undefined}
+                        src={user.avatarUrl || undefined}
                         sx={{
                           width: 40,
                           height: 40,
@@ -270,10 +272,10 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
                           color: colors.primary.main,
                         }}
                       >
-                        {user.name.charAt(0).toUpperCase()}
+                        {user.fullName.charAt(0).toUpperCase()}
                       </Avatar>
                       <Typography sx={{ fontWeight: 500, color: colors.neutral[800] }}>
-                        {user.name}
+                        {user.fullName}
                       </Typography>
                     </Box>
                   </TableCell>

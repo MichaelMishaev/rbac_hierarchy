@@ -22,12 +22,13 @@ import { createUser, updateUser } from '@/app/actions/users';
 
 type User = {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
   phone: string | null;
-  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN' | 'AREA_MANAGER';
+  role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
   // Note: corporationId is derived from role tables, not stored directly on User
   corporationId?: string | null;
+  regionName?: string | null; // For Area Manager
 };
 
 type Corporation = {
@@ -42,7 +43,7 @@ type UserModalProps = {
   onSuccess: () => void;
   user?: User | null;
   corporations: Corporation[];
-  currentUserRole: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR' | 'AREA_MANAGER';
+  currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
   currentUserCorporationId?: string | null;
 };
 
@@ -51,8 +52,9 @@ type FormData = {
   email: string;
   phone: string;
   password: string;
-  role: 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN' | 'AREA_MANAGER';
+  role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
   corporationId: string;
+  regionName: string; // For Area Manager
 };
 
 export default function UserModal({
@@ -70,12 +72,13 @@ export default function UserModal({
   const isEdit = !!user;
 
   const [formData, setFormData] = useState<FormData>({
-    name: user?.name || '',
+    name: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
     password: '',
     role: user?.role || 'SUPERVISOR',
     corporationId: user?.corporationId || currentUserCorporationId || '',
+    regionName: user?.regionName || '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -85,12 +88,13 @@ export default function UserModal({
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name,
+        name: user.fullName,
         email: user.email,
         phone: user.phone || '',
         password: '',
         role: user.role,
         corporationId: user.corporationId || currentUserCorporationId || '',
+        regionName: user.regionName || '',
       });
     } else {
       setFormData({
@@ -100,6 +104,7 @@ export default function UserModal({
         password: '',
         role: 'SUPERVISOR',
         corporationId: currentUserCorporationId || '',
+        regionName: '',
       });
     }
     setError(null);
@@ -145,8 +150,16 @@ export default function UserModal({
       return false;
     }
 
-    // Corporation required for MANAGER/SUPERVISOR
+    // Region name required for AREA_MANAGER
+    if (formData.role === 'AREA_MANAGER' && !formData.regionName.trim()) {
+      setError('שם אזור הוא שדה חובה עבור מנהל אזור');
+      return false;
+    }
+
+    // Corporation required for MANAGER/SUPERVISOR (not for SUPERADMIN or AREA_MANAGER)
     if (
+      formData.role !== 'SUPERADMIN' &&
+      formData.role !== 'AREA_MANAGER' &&
       (formData.role === 'MANAGER' || formData.role === 'SUPERVISOR') &&
       !formData.corporationId
     ) {
@@ -171,22 +184,24 @@ export default function UserModal({
       if (isEdit) {
         // Update user
         result = await updateUser(user.id, {
-          name: formData.name,
+          fullName: formData.name,
           email: formData.email,
           phone: formData.phone || undefined,
           role: formData.role,
           corporationId: formData.corporationId || undefined,
+          regionName: formData.role === 'AREA_MANAGER' ? formData.regionName : undefined,
           ...(formData.password && { password: formData.password }),
         });
       } else {
         // Create user
         result = await createUser({
-          name: formData.name,
+          fullName: formData.name,
           email: formData.email,
           phone: formData.phone || undefined,
           password: formData.password,
           role: formData.role,
           corporationId: formData.corporationId || undefined,
+          regionName: formData.role === 'AREA_MANAGER' ? formData.regionName : undefined,
         });
       }
 
@@ -216,6 +231,7 @@ export default function UserModal({
     currentUserRole === 'SUPERADMIN'
       ? [
           { value: 'SUPERADMIN', label: t('superadmin') },
+          { value: 'AREA_MANAGER', label: t('area_manager') },
           { value: 'MANAGER', label: t('manager') },
           { value: 'SUPERVISOR', label: t('supervisor') },
         ]
@@ -348,6 +364,24 @@ export default function UserModal({
               </MenuItem>
             ))}
           </TextField>
+
+          {/* Region Name (for AREA_MANAGER) */}
+          {formData.role === 'AREA_MANAGER' && (
+            <TextField
+              label="שם אזור"
+              value={formData.regionName}
+              onChange={handleChange('regionName')}
+              fullWidth
+              required
+              disabled={loading}
+              helperText="למשל: מרכז, דרום, צפון"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md,
+                },
+              }}
+            />
+          )}
 
           {/* Corporation (for MANAGER/SUPERVISOR) */}
           {(formData.role === 'MANAGER' || formData.role === 'SUPERVISOR') && (

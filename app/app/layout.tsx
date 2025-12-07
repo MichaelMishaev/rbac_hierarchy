@@ -19,7 +19,7 @@ export default async function RootLayout({
   const dir = lang === 'he' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={lang} dir={dir}>
+    <html lang={lang} dir={dir} suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
       </body>

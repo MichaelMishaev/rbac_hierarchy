@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -36,6 +36,7 @@ import {
   createCorporation,
   updateCorporation,
   deleteCorporation,
+  getAreaManagers,
 } from '@/app/actions/corporations';
 
 type Corporation = {
@@ -47,10 +48,24 @@ type Corporation = {
   address: string | null;
   description: string | null;
   isActive: boolean;
+  areaManager?: {
+    id: string;
+    regionName: string;
+    user: {
+      fullName: string;
+    };
+  };
   _count?: {
     managers: number;
     sites: number;
   };
+};
+
+type AreaManager = {
+  id: string;
+  regionName: string;
+  fullName: string;
+  email: string;
 };
 
 type CorporationsClientProps = {
@@ -71,6 +86,18 @@ export default function CorporationsClient({ corporations: initialCorporations }
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedCorp, setSelectedCorp] = useState<Corporation | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [areaManagers, setAreaManagers] = useState<AreaManager[]>([]); // v1.4: Area Managers list
+
+  // v1.4: Fetch area managers on mount
+  useEffect(() => {
+    const fetchAreaManagers = async () => {
+      const result = await getAreaManagers();
+      if (result.success && result.areaManagers) {
+        setAreaManagers(result.areaManagers);
+      }
+    };
+    fetchAreaManagers();
+  }, []);
 
   // Filtered corporations based on search
   const filteredCorporations = useMemo(() => {
@@ -434,18 +461,34 @@ export default function CorporationsClient({ corporations: initialCorporations }
                         >
                           {corp.name}
                         </Typography>
-                        <Chip
-                          label={corp.code}
-                          size="small"
-                          sx={{
-                            backgroundColor: colors.neutral[0],
-                            color: colors.neutral[600],
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            fontFamily: 'monospace',
-                            height: 24,
-                          }}
-                        />
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Chip
+                            label={corp.code}
+                            size="small"
+                            sx={{
+                              backgroundColor: colors.neutral[0],
+                              color: colors.neutral[600],
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              fontFamily: 'monospace',
+                              height: 24,
+                            }}
+                          />
+                          {/* v1.4: Area Manager Badge */}
+                          {corp.areaManager && (
+                            <Chip
+                              label={`אזור: ${corp.areaManager.regionName}`}
+                              size="small"
+                              sx={{
+                                backgroundColor: colors.pastel.orangeLight,
+                                color: colors.pastel.orange,
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 24,
+                              }}
+                            />
+                          )}
+                        </Box>
                       </Box>
                     </Box>
                   </Box>
@@ -664,6 +707,7 @@ export default function CorporationsClient({ corporations: initialCorporations }
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateCorporation}
         mode="create"
+        areaManagers={areaManagers}
       />
 
       {/* Edit Modal */}
@@ -683,8 +727,10 @@ export default function CorporationsClient({ corporations: initialCorporations }
             address: selectedCorp.address || '',
             description: selectedCorp.description || '',
             isActive: selectedCorp.isActive,
+            areaManagerId: selectedCorp.areaManager?.id || '', // v1.4: Pass current Area Manager ID
           }}
           mode="edit"
+          areaManagers={areaManagers}
         />
       )}
 

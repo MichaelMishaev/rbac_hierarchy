@@ -28,6 +28,7 @@
     "sites": "אתרים",
     "workers": "עובדים",
     "invitations": "הזמנות",
+    "systemRules": "כללי מערכת",
     "groupPrimary": "ראשי",
     "groupManagement": "ניהול",
     "groupSystem": "מערכת",
@@ -73,7 +74,9 @@
     "editTitle": "ערוך תאגיד",
     "deleteTitle": "מחק תאגיד",
     "deleteConfirm": "האם אתה בטוח שברצונך למחוק את התאגיד הזה? פעולה זו תמחק גם את כל האתרים והעובדים המשוייכים.",
-    "accessDenied": "גישה נדחתה. רק מנהל על יכול לצפות בתאגידים."
+    "accessDenied": "גישה נדחתה. רק מנהל על יכול לצפות בתאגידים.",
+    "corporationDetails": "פרטי תאגיד",
+    "contactAndLocation": "יצירת קשר ומיקום"
   },
   "users": {
     "title": "משתמשים",
@@ -89,8 +92,11 @@
     "site": "אתר",
     "lastLogin": "כניסה אחרונה",
     "superadmin": "מנהל על",
+    "area_manager": "מנהל אזור",
     "manager": "מנהל",
     "supervisor": "מפקח",
+    "regionName": "שם האזור",
+    "regionNamePlaceholder": "לדוגמה: אזור מרכז",
     "noUsers": "אין משתמשים עדיין",
     "createFirst": "צור את המשתמש הראשון כדי להתחיל",
     "actions": "פעולות",
@@ -119,7 +125,10 @@
     "editTitle": "ערוך אתר",
     "deleteTitle": "מחק אתר",
     "deleteConfirm": "האם אתה בטוח שברצונך למחוק את האתר הזה? פעולה זו תמחק גם את כל העובדים המשוייכים.",
-    "accessDenied": "גישה נדחתה. רק מנהלים יכולים לצפות באתרים."
+    "accessDenied": "גישה נדחתה. רק מנהלים יכולים לצפות באתרים.",
+    "siteDetails": "פרטי האתר",
+    "location": "מיקום",
+    "contactInfo": "יצירת קשר"
   },
   "workers": {
     "title": "עובדים",
@@ -142,7 +151,10 @@
     "editTitle": "ערוך עובד",
     "deleteTitle": "מחק עובד",
     "deleteConfirm": "האם אתה בטוח שברצונך למחוק את העובד הזה?",
-    "accessDenied": "גישה נדחתה."
+    "accessDenied": "גישה נדחתה.",
+    "workerDetails": "פרטי עובד",
+    "contactInfo": "יצירת קשר",
+    "additionalDetails": "פרטים נוספים"
   },
   "invitations": {
     "title": "הזמנות",
@@ -155,5 +167,27 @@
     "accepted": "התקבל",
     "expired": "פג תוקף",
     "revoked": "בוטל"
+  },
+  "systemRules": {
+    "title": "כללי מערכת",
+    "description": "כללי הרשאות ותפעול המערכת",
+    "workerCreation": {
+      "title": "הרשאות יצירת עובדים",
+      "description": "מי יכול ליצור עובדים במערכת",
+      "superAdmin": "מנהל על",
+      "areaManager": "מנהל אזור",
+      "corporationManager": "מנהל תאגיד",
+      "supervisor": "מפקח",
+      "worker": "עובד",
+      "canCreate": "יכול ליצור",
+      "cannotCreate": "לא יכול ליצור",
+      "reasons": {
+        "superAdmin": "לא צריך לנהל נתונים תפעוליים",
+        "areaManager": "תחום ההתמחות הוא ניהולי, לא משאבי אנוש",
+        "corporationManager": "אחראי על משאבי אנוש, אתרים, מפקחים ועובדים",
+        "supervisor": "יכול לנהל אך לא ליצור עובדים",
+        "worker": "ללא הרשאות"
+      }
+    }
   }
 }

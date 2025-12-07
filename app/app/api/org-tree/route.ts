@@ -22,7 +22,7 @@ export async function GET() {
       include: {
         user: {
           select: {
-            name: true,
+            fullName: true,
             email: true,
           },
         },
@@ -38,7 +38,7 @@ export async function GET() {
               include: {
                 user: {
                   select: {
-                    name: true,
+                    fullName: true,
                     email: true,
                   },
                 },
@@ -51,7 +51,7 @@ export async function GET() {
               include: {
                 user: {
                   select: {
-                    name: true,
+                    fullName: true,
                     email: true,
                   },
                 },
@@ -77,17 +77,17 @@ export async function GET() {
                   },
                   select: {
                     id: true,
-                    name: true,
+                    fullName: true,
                     position: true,
                   },
                 },
                 supervisorAssignments: {
                   include: {
-                    siteManager: {
+                    supervisor: {
                       include: {
                         user: {
                           select: {
-                            name: true,
+                            fullName: true,
                           },
                         },
                       },
@@ -112,14 +112,14 @@ export async function GET() {
       count: {
         areaManagers: areaManagers.length,
       },
-      children: areaManagers.map(areaManager => ({
+      children: areaManagers.map((areaManager: any) => ({
         id: areaManager.id,
-        name: `${areaManager.user.name} - ${areaManager.regionName}`,
+        name: `${areaManager.user.fullName} - ${areaManager.regionName}`,
         type: 'areamanager' as const,
         count: {
-          corporations: areaManager.corporations.length,
+          corporations: areaManager.corporations?.length || 0,
         },
-        children: areaManager.corporations.map(corp => ({
+        children: (areaManager.corporations || []).map((corp: any) => ({
           id: corp.id,
           name: corp.name,
           type: 'corporation' as const,
@@ -137,9 +137,9 @@ export async function GET() {
                     name: `מנהלים (${corp.managers.length})`,
                     type: 'managers-group' as const,
                     count: {},
-                    children: corp.managers.map(manager => ({
+                    children: corp.managers.map((manager: any) => ({
                       id: manager.id,
-                      name: `${manager.user.name} - ${manager.title}`,
+                      name: `${manager.user.fullName} - ${manager.title}`,
                       type: 'manager' as const,
                       count: {},
                     })),
@@ -154,29 +154,29 @@ export async function GET() {
                     name: `מפקחים (${corp.supervisors.length})`,
                     type: 'supervisors-group' as const,
                     count: {},
-                    children: corp.supervisors.map(supervisor => ({
+                    children: corp.supervisors.map((supervisor: any) => ({
                       id: supervisor.id,
-                      name: `${supervisor.user.name} - ${supervisor.title}`,
+                      name: `${supervisor.user.fullName} - ${supervisor.title}`,
                       type: 'supervisor' as const,
                       count: {
-                        sites: supervisor.siteAssignments.length,
+                        sites: supervisor.siteAssignments?.length || 0,
                       },
                     })),
                   },
                 ]
               : []),
             // Sites branch
-            ...corp.sites.map(site => ({
+            ...corp.sites.map((site: any) => ({
               id: site.id,
               name: site.name,
               type: 'site' as const,
               count: {
-                workers: site.workers.length,
-                supervisors: site.supervisorAssignments.length,
+                workers: site.workers?.length || 0,
+                supervisors: site.supervisorAssignments?.length || 0,
               },
-              children: site.workers.map(worker => ({
+              children: (site.workers || []).map((worker: any) => ({
                 id: worker.id,
-                name: `${worker.name} - ${worker.position}`,
+                name: `${worker.fullName} - ${worker.position}`,
                 type: 'worker' as const,
                 count: {},
               })),

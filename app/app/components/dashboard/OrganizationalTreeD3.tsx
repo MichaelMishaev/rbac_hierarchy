@@ -12,6 +12,8 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
@@ -22,6 +24,8 @@ import {
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
   FitScreen as FitScreenIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import dynamic from 'next/dynamic';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
@@ -58,6 +62,10 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(0.9);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [matchedNodePaths, setMatchedNodePaths] = useState<string[]>([]);
+  const treeRef = useRef<any>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
   const labels = useMemo(() => ({
@@ -75,6 +83,10 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     workers: 'עובדים',
     managers: 'מנהלים',
     supervisors: 'מפקחים',
+    searchPlaceholder: 'חפש צומת בעץ...',
+    noMatch: 'לא נמצאו תוצאות',
+    matchesFound: 'נמצאו',
+    matches: 'תוצאות',
   }), []);
 
   const convertToD3Format = useCallback((node: any): TreeData => {
@@ -109,32 +121,140 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     }
   }, [deepMode, convertToD3Format]);
 
+  // Search tree recursively to find all matching nodes
+  const searchTree = useCallback((node: TreeData, term: string, path: string[] = [], matches: string[][] = []): string[][] => {
+    if (!term.trim()) return [];
+
+    const currentPath = [...path, node.name];
+
+    // Check if current node matches (case-insensitive, trimmed)
+    const nodeName = node.name.toLowerCase().trim();
+    const searchTerm = term.toLowerCase().trim();
+
+    if (nodeName.includes(searchTerm)) {
+      matches.push(currentPath);
+    }
+
+    // Search in children
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        searchTree(child, term, currentPath, matches);
+      }
+    }
+
+    return matches;
+  }, []);
+
+  // Calculate node position in tree for centering
+  const calculateNodePosition = useCallback((matchPath: string[]) => {
+    const depth = matchPath.length - 1;
+
+    // Tree configuration from Tree component props
+    const depthFactor = 260;  // vertical spacing between levels
+    const nodeSize = { x: 280, y: 240 };  // horizontal spacing
+
+    // Calculate Y position (vertical) based on depth
+    const yPosition = depth * depthFactor;
+
+    // Calculate X position (horizontal) - this is an approximation
+    // For more precise positioning, we'd need the full tree structure
+    const xPosition = 0; // Center horizontally for now
+
+    // Calculate translate to center this position in viewport
+    if (typeof window !== 'undefined') {
+      const viewportCenterX = window.innerWidth / 2;
+      const viewportCenterY = 350; // Tree container is 700px, so center is 350px
+
+      return {
+        x: viewportCenterX - xPosition,
+        y: viewportCenterY - yPosition - 100 // Adjust for node height
+      };
+    }
+
+    return { x: 0, y: 0 };
+  }, []);
+
+  // Handle search
+  useEffect(() => {
+    if (!data || !searchTerm.trim()) {
+      setMatchedNodePaths([]);
+      return;
+    }
+
+    console.log('Searching for:', searchTerm);
+    const matches = searchTree(data, searchTerm);
+    console.log('Found matches:', matches.length, matches);
+
+    if (matches.length > 0) {
+      // Store all matched paths as flattened strings
+      const pathStrings = matches.map(path => path.join('->'));
+      setMatchedNodePaths(pathStrings);
+
+      // Center on the first matched node
+      const firstMatch = matches[0];
+      const newTranslate = calculateNodePosition(firstMatch);
+      setTranslate(newTranslate);
+
+      // Optionally adjust zoom to ensure node is visible
+      if (firstMatch.length > 3) {
+        setZoom(0.7); // Zoom out for deeper nodes
+      } else {
+        setZoom(0.9); // Normal zoom for shallow nodes
+      }
+    } else {
+      setMatchedNodePaths([]);
+    }
+  }, [searchTerm, data, searchTree, calculateNodePosition]);
+
   useEffect(() => {
     fetchOrgTree();
   }, [fetchOrgTree]);
 
-  // Initialize center translation
+  // Initialize center translation and measure dimensions
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setTranslate({ x: window.innerWidth / 2 - 200, y: 80 });
-    }
-  }, []);
+      const updateDimensions = () => {
+        // Get the container width (accounting for padding/margins)
+        const containerWidth = Math.min(window.innerWidth - 100, 1400); // Max width with padding
+        const containerHeight = 700;
+        setDimensions({ width: containerWidth, height: containerHeight });
 
-  // Zoom controls
+        if (!searchTerm) {
+          setTranslate({ x: containerWidth / 2, y: 80 });
+        }
+      };
+
+      updateDimensions();
+      window.addEventListener('resize', updateDimensions);
+      return () => window.removeEventListener('resize', updateDimensions);
+    }
+  }, [searchTerm]);
+
+  // Zoom controls with smooth increments
   const handleZoomIn = useCallback(() => {
-    setZoom((prev) => Math.min(prev + 0.2, 2));
+    setZoom((prev) => {
+      const newZoom = Math.min(prev + 0.15, 2);
+      console.log('Zooming in:', prev, '→', newZoom);
+      return newZoom;
+    });
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoom((prev) => Math.max(prev - 0.2, 0.1));
+    setZoom((prev) => {
+      const newZoom = Math.max(prev - 0.15, 0.3);
+      console.log('Zooming out:', prev, '→', newZoom);
+      return newZoom;
+    });
   }, []);
 
   const handleFitToScreen = useCallback(() => {
+    console.log('Resetting to default view');
     setZoom(0.9);
-    if (typeof window !== 'undefined') {
-      setTranslate({ x: window.innerWidth / 2 - 200, y: 80 });
-    }
-  }, []);
+    setTranslate({
+      x: dimensions.width > 0 ? dimensions.width / 2 : window.innerWidth / 2,
+      y: 80
+    });
+  }, [dimensions]);
 
   // Get node color based on type
   const getNodeColor = (type: string) => {
@@ -214,12 +334,30 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     return statLabels[key] || key;
   }, [labels]);
 
+  // Build node path from nodeDatum
+  const buildNodePath = useCallback((nodeDatum: any): string => {
+    const path: string[] = [];
+    let current = nodeDatum;
+
+    // Traverse up the tree to build the full path
+    while (current) {
+      path.unshift(current.name);
+      current = current.parent;
+    }
+
+    return path.join('->');
+  }, []);
+
   // Custom node renderer with Material-UI components
   const renderCustomNode = useCallback(
     ({ nodeDatum }: any) => {
       const nodeType = nodeDatum.attributes?.type || 'unknown';
       const nodeColor = getNodeColor(nodeType);
       const count = nodeDatum.attributes?.count || {};
+
+      // Check if this node matches the search term by checking its name
+      const isMatched = searchTerm.trim() &&
+        nodeDatum.name.toLowerCase().trim().includes(searchTerm.toLowerCase().trim());
 
       return (
         <g>
@@ -231,22 +369,31 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                 padding: '12px',
                 borderRadius: '12px',
                 background: nodeColor,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                border: `2px solid ${nodeColor}`,
+                boxShadow: isMatched
+                  ? '0 0 20px 4px rgba(255, 215, 0, 0.8), 0 4px 12px rgba(0,0,0,0.15)'
+                  : '0 4px 12px rgba(0,0,0,0.15)',
+                border: isMatched
+                  ? '3px solid #FFD700'
+                  : `2px solid ${nodeColor}`,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px',
                 fontFamily: 'Roboto, sans-serif',
                 transition: 'all 0.3s ease',
                 direction: 'rtl', // Hebrew-first system
+                transform: isMatched ? 'scale(1.05)' : 'scale(1)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
+                if (!isMatched) {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                if (!isMatched) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                }
               }}
             >
               {/* Header with icon */}
@@ -353,7 +500,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         </g>
       );
     },
-    [getNodeTypeLabel, getStatLabel]
+    [getNodeTypeLabel, getStatLabel, searchTerm]
   );
 
   // Note: Zoom controls are built into react-d3-tree and work via mouse/trackpad
@@ -381,8 +528,83 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
   return (
     <Box>
-      {/* Control Buttons */}
-      <Box display="flex" gap={2} mb={3} justifyContent="flex-start" sx={{ direction: 'rtl' }}>
+      {/* Search Bar */}
+      <Box sx={{ mb: 3, direction: 'rtl' }}>
+        <TextField
+          fullWidth
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={labels.searchPlaceholder}
+          variant="outlined"
+          size="medium"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: colors.neutral[500] }} />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton
+                  size="small"
+                  onClick={() => setSearchTerm('')}
+                  sx={{
+                    color: colors.neutral[500],
+                    '&:hover': {
+                      backgroundColor: colors.pastel.redLight,
+                      color: colors.error,
+                    },
+                  }}
+                >
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            direction: 'rtl',
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: colors.neutral[0],
+              '&:hover fieldset': {
+                borderColor: colors.primary,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: colors.primary,
+              },
+            },
+          }}
+        />
+        {searchTerm && matchedNodePaths.length === 0 && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mt: 1,
+              color: colors.error,
+              textAlign: 'right',
+            }}
+          >
+            {labels.noMatch}
+          </Typography>
+        )}
+        {searchTerm && matchedNodePaths.length > 0 && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mt: 1,
+              color: colors.status.green,
+              textAlign: 'right',
+              fontWeight: 600,
+            }}
+          >
+            {labels.matchesFound} {matchedNodePaths.length} {labels.matches}
+          </Typography>
+        )}
+      </Box>
+
+      {/* Control Buttons with current zoom level display */}
+      <Box display="flex" gap={2} mb={3} justifyContent="flex-start" alignItems="center" sx={{ direction: 'rtl' }}>
         <Button
           size="small"
           startIcon={<ZoomInIcon />}
@@ -396,6 +618,10 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
               borderColor: colors.primary,
               backgroundColor: colors.pastel.blue,
             },
+            '&.Mui-disabled': {
+              borderColor: colors.neutral[200],
+              color: colors.neutral[400],
+            },
           }}
         >
           {labels.zoomIn}
@@ -405,13 +631,17 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           startIcon={<ZoomOutIcon />}
           onClick={handleZoomOut}
           variant="outlined"
-          disabled={zoom <= 0.1}
+          disabled={zoom <= 0.3}
           sx={{
             borderColor: colors.neutral[300],
             color: colors.neutral[700],
             '&:hover': {
               borderColor: colors.primary,
               backgroundColor: colors.pastel.blue,
+            },
+            '&.Mui-disabled': {
+              borderColor: colors.neutral[200],
+              color: colors.neutral[400],
             },
           }}
         >
@@ -433,6 +663,18 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         >
           {labels.fitToScreen}
         </Button>
+
+        {/* Zoom level indicator */}
+        <Chip
+          label={`${Math.round(zoom * 100)}%`}
+          size="small"
+          sx={{
+            marginInlineStart: 2,
+            fontWeight: 600,
+            backgroundColor: colors.pastel.blue,
+            color: colors.neutral[900],
+          }}
+        />
       </Box>
 
       {/* React D3 Tree */}
@@ -453,13 +695,25 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           translate={translate}
           pathFunc="step"
           zoom={zoom}
+          onUpdate={(state: any) => {
+            // Sync internal zoom state with our controlled state
+            if (state?.zoom && Math.abs(state.zoom - zoom) > 0.01) {
+              setZoom(state.zoom);
+            }
+            if (state?.translate && (
+              Math.abs(state.translate.x - translate.x) > 1 ||
+              Math.abs(state.translate.y - translate.y) > 1
+            )) {
+              setTranslate(state.translate);
+            }
+          }}
           separation={{ siblings: 1.5, nonSiblings: 2 }}
           nodeSize={{ x: 280, y: 240 }}
           renderCustomNodeElement={renderCustomNode}
           enableLegacyTransitions
           transitionDuration={500}
           depthFactor={260}
-          scaleExtent={{ min: 0.1, max: 2 }}
+          scaleExtent={{ min: 0.3, max: 2 }}
           zoomable
           draggable
           collapsible
@@ -481,6 +735,18 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           height: 100%;
         }
 
+        /* Ensure SVG is properly sized and zoomable */
+        .rd3t-svg {
+          width: 100% !important;
+          height: 100% !important;
+          cursor: grab;
+          transition: transform 0.3s ease-out;
+        }
+
+        .rd3t-svg:active {
+          cursor: grabbing;
+        }
+
         .rd3t-node circle {
           display: none !important;
         }
@@ -490,6 +756,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         .rd3t-node circle {
           fill: transparent !important;
           stroke: transparent !important;
+        }
+
+        /* Ensure zoom controls don't interfere with tree interaction */
+        .rd3t-g {
+          pointer-events: all;
         }
       `}</style>
     </Box>

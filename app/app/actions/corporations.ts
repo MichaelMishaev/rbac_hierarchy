@@ -17,6 +17,7 @@ export type CreateCorporationInput = {
   phone?: string;
   address?: string;
   isActive?: boolean;
+  areaManagerId: string; // v1.4: Required - Area Manager assignment
 };
 
 export type UpdateCorporationInput = {
@@ -28,6 +29,7 @@ export type UpdateCorporationInput = {
   phone?: string;
   address?: string;
   isActive?: boolean;
+  areaManagerId?: string; // v1.4: Allow changing Area Manager assignment
 };
 
 export type ListCorporationsFilters = {
@@ -64,17 +66,37 @@ export async function createCorporation(data: CreateCorporationInput) {
       };
     }
 
+    // v1.4: Validate that Area Manager exists and is active
+    const areaManager = await prisma.areaManager.findUnique({
+      where: { id: data.areaManagerId },
+    });
+
+    if (!areaManager) {
+      return {
+        success: false,
+        error: 'Selected Area Manager not found.',
+      };
+    }
+
+    if (!areaManager.isActive) {
+      return {
+        success: false,
+        error: 'Selected Area Manager is not active.',
+      };
+    }
+
     // Create corporation
     const newCorporation = await prisma.corporation.create({
       data: {
         name: data.name,
         code: data.code,
         description: data.description,
-        logo: data.logo,
+        logoUrl: data.logo,
         email: data.email,
         phone: data.phone,
         address: data.address,
         isActive: data.isActive ?? true,
+        areaManagerId: data.areaManagerId, // v1.4: Required field from user input
       },
       include: {
         _count: {
@@ -97,8 +119,8 @@ export async function createCorporation(data: CreateCorporationInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: undefined,
-        newValue: {
+        before: undefined,
+        after: {
           id: newCorporation.id,
           name: newCorporation.name,
           code: newCorporation.code,
@@ -231,7 +253,7 @@ export async function getCorporationById(corporationId: string) {
             user: {
               select: {
                 id: true,
-                name: true,
+                fullName: true,
                 email: true,
                 role: true,
               },
@@ -354,6 +376,27 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
       }
     }
 
+    // v1.4: Validate Area Manager if areaManagerId is being updated
+    if (data.areaManagerId !== undefined) {
+      const areaManager = await prisma.areaManager.findUnique({
+        where: { id: data.areaManagerId },
+      });
+
+      if (!areaManager) {
+        return {
+          success: false,
+          error: 'Selected Area Manager not found.',
+        };
+      }
+
+      if (!areaManager.isActive) {
+        return {
+          success: false,
+          error: 'Selected Area Manager is not active.',
+        };
+      }
+    }
+
     // Update corporation
     const updatedCorporation = await prisma.corporation.update({
       where: { id: corporationId },
@@ -361,11 +404,12 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
         name: data.name,
         code: data.code,
         description: data.description,
-        logo: data.logo,
+        logoUrl: data.logo,
         email: data.email,
         phone: data.phone,
         address: data.address,
         isActive: data.isActive,
+        areaManagerId: data.areaManagerId, // v1.4: Update Area Manager if provided
       },
       include: {
         _count: {
@@ -388,17 +432,19 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           name: existingCorp.name,
           code: existingCorp.code,
           description: existingCorp.description,
           isActive: existingCorp.isActive,
+          areaManagerId: existingCorp.areaManagerId, // v1.4: Track Area Manager changes
         },
-        newValue: {
+        after: {
           name: updatedCorporation.name,
           code: updatedCorporation.code,
           description: updatedCorporation.description,
           isActive: updatedCorporation.isActive,
+          areaManagerId: updatedCorporation.areaManagerId, // v1.4: Track Area Manager changes
         },
       },
     });
@@ -480,14 +526,14 @@ export async function deleteCorporation(corporationId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           id: corpToDelete.id,
           name: corpToDelete.name,
           code: corpToDelete.code,
           managerCount: corpToDelete._count.managers,
           siteCount: corpToDelete._count.sites,
         },
-        newValue: undefined,
+        after: undefined,
       },
     });
 
@@ -550,7 +596,7 @@ export async function getCorporationStats(corporationId: string) {
           corporationId,
         },
       }),
-      prisma.siteManager.count({
+      prisma.supervisor.count({
         where: {
           corporationId,
         },
@@ -587,7 +633,7 @@ export async function getCorporationStats(corporationId: string) {
           user: {
             select: {
               id: true,
-              name: true,
+              fullName: true,
               email: true,
             },
           },
@@ -687,8 +733,8 @@ export async function toggleCorporationStatus(corporationId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: { isActive: corporation.isActive },
-        newValue: { isActive: updatedCorporation.isActive },
+        before: { isActive: corporation.isActive },
+        after: { isActive: updatedCorporation.isActive },
       },
     });
 
@@ -705,6 +751,64 @@ export async function toggleCorporationStatus(corporationId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to toggle corporation status',
+    };
+  }
+}
+
+// ============================================
+// GET AREA MANAGERS
+// ============================================
+
+/**
+ * Get all Area Managers for dropdown selection
+ *
+ * Permissions:
+ * - SUPERADMIN: Can see all area managers
+ */
+export async function getAreaManagers() {
+  try {
+    // Only SUPERADMIN can access area managers list
+    await requireSuperAdmin();
+
+    const areaManagers = await prisma.areaManager.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: {
+            corporations: true,
+          },
+        },
+      },
+      orderBy: {
+        regionName: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      areaManagers: areaManagers.map((am) => ({
+        id: am.id,
+        regionName: am.regionName,
+        regionCode: am.regionCode,
+        fullName: am.user.fullName,
+        email: am.user.email,
+        corporationCount: am._count.corporations,
+      })),
+    };
+  } catch (error) {
+    console.error('Error fetching area managers:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch area managers',
+      areaManagers: [],
     };
   }
 }

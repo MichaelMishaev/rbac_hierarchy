@@ -12,6 +12,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import GroupIcon from '@mui/icons-material/Group';
 import MailIcon from '@mui/icons-material/Mail';
 import LogoutIcon from '@mui/icons-material/Logout';
+import RuleIcon from '@mui/icons-material/Rule';
 import LanguageSwitcher from './LanguageSwitcher';
 import { signOut } from 'next-auth/react';
 
@@ -37,6 +38,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
     { path: '/sites', label: t('sites'), icon: <LocationOnIcon /> },
     { path: '/workers', label: t('workers'), icon: <GroupIcon /> },
     { path: '/invitations', label: t('invitations'), icon: <MailIcon /> },
+    { path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> },
   ];
 
   const managerRoutes = [

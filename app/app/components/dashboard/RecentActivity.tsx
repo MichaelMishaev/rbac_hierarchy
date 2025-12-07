@@ -157,8 +157,9 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                   </Box>
                 }
                 secondary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                     <Typography
+                      component="span"
                       variant="caption"
                       sx={{
                         color: colors.neutral[500],
@@ -167,6 +168,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                       by {activity.userEmail || 'System'}
                     </Typography>
                     <Typography
+                      component="span"
                       variant="caption"
                       sx={{
                         color: colors.neutral[400],
@@ -175,6 +177,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                       •
                     </Typography>
                     <Typography
+                      component="span"
                       variant="caption"
                       sx={{
                         color: colors.neutral[500],
@@ -184,6 +187,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                     </Typography>
                   </Box>
                 }
+                secondaryTypographyProps={{ component: 'div' }}
               />
             </ListItem>
           ))}

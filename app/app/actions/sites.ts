@@ -16,6 +16,7 @@ export type CreateSiteInput = {
   phone?: string;
   email?: string;
   corporationId: string;
+  supervisorId: string; // REQUIRED: Supervisor must be assigned at creation
   isActive?: boolean;
 };
 
@@ -76,34 +77,84 @@ export async function createSite(data: CreateSiteInput) {
       };
     }
 
-    // Create site
-    const newSite = await prisma.site.create({
-      data: {
-        name: data.name,
-        address: data.address,
-        city: data.city,
-        country: data.country ?? 'Israel',
-        phone: data.phone,
-        email: data.email,
+    // Validate supervisor is provided
+    if (!data.supervisorId) {
+      return {
+        success: false,
+        error: 'Supervisor is required when creating a site',
+      };
+    }
+
+    // Verify supervisor exists and belongs to the same corporation
+    const supervisor = await prisma.supervisor.findFirst({
+      where: {
+        id: data.supervisorId,
         corporationId: data.corporationId,
-        isActive: data.isActive ?? true,
+        isActive: true,
       },
       include: {
-        corporation: {
+        user: {
           select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        _count: {
-          select: {
-            supervisorAssignments: true,
-            workers: true,
+            fullName: true,
+            email: true,
           },
         },
       },
     });
+
+    if (!supervisor) {
+      return {
+        success: false,
+        error: 'Supervisor not found or belongs to different corporation',
+      };
+    }
+
+    // Create site + supervisor assignment in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create site
+      const newSite = await tx.site.create({
+        data: {
+          name: data.name,
+          address: data.address,
+          city: data.city,
+          country: data.country ?? 'Israel',
+          phone: data.phone,
+          email: data.email,
+          corporationId: data.corporationId,
+          isActive: data.isActive ?? true,
+        },
+        include: {
+          corporation: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          _count: {
+            select: {
+              supervisorAssignments: true,
+              workers: true,
+            },
+          },
+        },
+      });
+
+      // 2. Create supervisor assignment
+      await tx.supervisorSite.create({
+        data: {
+          siteId: newSite.id,
+          supervisorId: data.supervisorId,
+          corporationId: data.corporationId,
+          legacySupervisorUserId: supervisor.userId,
+          assignedBy: currentUser.id,
+        },
+      });
+
+      return newSite;
+    });
+
+    const newSite = result;
 
     // Create audit log
     await prisma.auditLog.create({
@@ -114,13 +165,15 @@ export async function createSite(data: CreateSiteInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: undefined,
-        newValue: {
+        before: undefined,
+        after: {
           id: newSite.id,
           name: newSite.name,
           city: newSite.city,
           corporationId: newSite.corporationId,
           isActive: newSite.isActive,
+          supervisorId: data.supervisorId,
+          supervisorName: supervisor.user.fullName,
         },
       },
     });
@@ -270,9 +323,13 @@ export async function getSiteById(siteId: string) {
             supervisor: {
               select: {
                 id: true,
-                name: true,
-                email: true,
-                phone: true,
+                user: {
+                  select: {
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
                 createdAt: true,
               },
             },
@@ -283,7 +340,7 @@ export async function getSiteById(siteId: string) {
           where: { isActive: true },
           select: {
             id: true,
-            name: true,
+            fullName: true,
             position: true,
             phone: true,
             isActive: true,
@@ -423,13 +480,13 @@ export async function updateSite(siteId: string, data: UpdateSiteInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           name: existingSite.name,
           address: existingSite.address,
           city: existingSite.city,
           isActive: existingSite.isActive,
         },
-        newValue: {
+        after: {
           name: updatedSite.name,
           address: updatedSite.address,
           city: updatedSite.city,
@@ -525,14 +582,14 @@ export async function deleteSite(siteId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           id: siteToDelete.id,
           name: siteToDelete.name,
           city: siteToDelete.city,
           supervisorCount: siteToDelete._count.supervisorAssignments,
           workerCount: siteToDelete._count.workers,
         },
-        newValue: undefined,
+        after: undefined,
       },
     });
 
@@ -634,14 +691,18 @@ export async function getSiteStats(siteId: string) {
         take: 10,
         select: {
           id: true,
-          name: true,
+          fullName: true,
           position: true,
           phone: true,
           isActive: true,
           createdAt: true,
           supervisor: {
             select: {
-              name: true,
+              user: {
+                select: {
+                  fullName: true,
+                },
+              },
             },
           },
         },
@@ -730,8 +791,8 @@ export async function toggleSiteStatus(siteId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: { isActive: site.isActive },
-        newValue: { isActive: updatedSite.isActive },
+        before: { isActive: site.isActive },
+        after: { isActive: updatedSite.isActive },
       },
     });
 
@@ -748,6 +809,102 @@ export async function toggleSiteStatus(siteId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to toggle site status',
+    };
+  }
+}
+
+// ============================================
+// LIST SUPERVISORS BY CORPORATION
+// ============================================
+
+/**
+ * Get all active supervisors for a corporation
+ * Used to populate supervisor dropdown when creating/editing sites
+ *
+ * Permissions:
+ * - SUPERADMIN: Can list supervisors from any corporation
+ * - MANAGER: Can list supervisors from their corporation only
+ * - SUPERVISOR: Can list supervisors from their corporation only
+ */
+export async function listSupervisorsByCorporation(corporationId: string) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Validate access to corporation
+    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, corporationId)) {
+        return {
+          success: false,
+          error: 'Cannot list supervisors from different corporation',
+          supervisors: [],
+        };
+      }
+    } else if (currentUser.role === 'SUPERVISOR') {
+      // Supervisors can only see other supervisors in their corporation
+      const supervisorRecord = await prisma.supervisor.findFirst({
+        where: {
+          userId: currentUser.id,
+          corporationId,
+        },
+      });
+
+      if (!supervisorRecord) {
+        return {
+          success: false,
+          error: 'Access denied',
+          supervisors: [],
+        };
+      }
+    }
+
+    // Fetch supervisors
+    const supervisors = await prisma.supervisor.findMany({
+      where: {
+        corporationId,
+        isActive: true,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+        _count: {
+          select: {
+            siteAssignments: true,
+            workers: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      supervisors: supervisors.map(s => ({
+        id: s.id,
+        userId: s.user.id,
+        fullName: s.user.fullName,
+        email: s.user.email,
+        phone: s.user.phone,
+        avatarUrl: s.user.avatarUrl,
+        title: s.title,
+        siteCount: s._count.siteAssignments,
+        workerCount: s._count.workers,
+      })),
+    };
+  } catch (error) {
+    console.error('Error listing supervisors:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list supervisors',
+      supervisors: [],
     };
   }
 }

@@ -39,7 +39,11 @@ export async function getCurrentUser() {
   });
 
   if (!dbUser) {
-    throw new Error('User not found');
+    // User exists in session but not in database (stale JWT token)
+    // This can happen after database resets/seeds
+    console.error(`[Auth Error] Session contains invalid user ID: ${session.user.id}`);
+    console.error('[Auth Error] User needs to sign out and sign back in');
+    throw new Error('SESSION_INVALID: User session is stale. Please sign out and sign back in.');
   }
 
   return dbUser;

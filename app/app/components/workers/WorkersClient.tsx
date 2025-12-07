@@ -62,25 +62,27 @@ type Site = {
 
 type Supervisor = {
   id: string;
-  name: string;
-  email: string;
+  user: {
+    fullName: string;
+    email: string;
+  };
 };
 
 type Worker = {
   id: string;
-  name: string;
+  fullName: string;
   phone: string | null;
   email: string | null;
   position: string | null;
-  avatar: string | null;
+  avatarUrl: string | null;
   notes: string | null;
   tags: string[];
   isActive: boolean;
   startDate: Date | null;
   siteId: string;
-  supervisorId: string;
+  supervisorId: string | null;
   site?: Site;
-  supervisor?: Supervisor;
+  supervisor?: Supervisor | null;
 };
 
 type WorkersClientProps = {
@@ -133,7 +135,7 @@ export default function WorkersClient({
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (worker) =>
-          worker.name.toLowerCase().includes(query) ||
+          worker.fullName.toLowerCase().includes(query) ||
           worker.phone?.toLowerCase().includes(query) ||
           worker.email?.toLowerCase().includes(query) ||
           worker.position?.toLowerCase().includes(query) ||
@@ -164,7 +166,7 @@ export default function WorkersClient({
 
   const handleCreateWorker = async (data: WorkerFormData) => {
     const result = await createWorker({
-      name: data.name,
+      fullName: data.name,
       phone: data.phone || undefined,
       email: data.email || undefined,
       position: data.position || undefined,
@@ -198,7 +200,7 @@ export default function WorkersClient({
     if (!selectedWorker) return;
 
     const result = await updateWorker(selectedWorker.id, {
-      name: data.name,
+      fullName: data.name,
       phone: data.phone || undefined,
       email: data.email || undefined,
       position: data.position || undefined,
@@ -603,7 +605,7 @@ export default function WorkersClient({
       ) : viewMode === 'grid' ? (
         <Grid container spacing={3}>
           {filteredWorkers.map((worker) => {
-            const avatarColor = getAvatarColor(worker.name);
+            const avatarColor = getAvatarColor(worker.fullName);
             return (
               <Grid item xs={12} sm={6} lg={4} xl={3} key={worker.id}>
                 <Box
@@ -652,7 +654,7 @@ export default function WorkersClient({
                     {/* Avatar and Name */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar
-                        src={worker.avatar || undefined}
+                        src={worker.avatarUrl || undefined}
                         sx={{
                           width: 56,
                           height: 56,
@@ -664,7 +666,7 @@ export default function WorkersClient({
                           boxShadow: shadows.medium,
                         }}
                       >
-                        {!worker.avatar && getInitials(worker.name)}
+                        {!worker.avatarUrl && getInitials(worker.fullName)}
                       </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0, pr: isRTL ? 0 : 5, pl: isRTL ? 5 : 0 }}>
                         <Typography
@@ -678,7 +680,7 @@ export default function WorkersClient({
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {worker.name}
+                          {worker.fullName}
                         </Typography>
                         {worker.position && (
                           <Chip
@@ -845,7 +847,7 @@ export default function WorkersClient({
                 {filteredWorkers
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((worker) => {
-                    const avatarColor = getAvatarColor(worker.name);
+                    const avatarColor = getAvatarColor(worker.fullName);
                     return (
                       <TableRow 
                         key={worker.id}
@@ -858,7 +860,7 @@ export default function WorkersClient({
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Avatar
-                              src={worker.avatar || undefined}
+                              src={worker.avatarUrl || undefined}
                               sx={{
                                 width: 40,
                                 height: 40,
@@ -868,11 +870,11 @@ export default function WorkersClient({
                                 fontSize: '0.9rem',
                               }}
                             >
-                              {!worker.avatar && getInitials(worker.name)}
+                              {!worker.avatarUrl && getInitials(worker.fullName)}
                             </Avatar>
                             <Box>
                               <Typography sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                                {worker.name}
+                                {worker.fullName}
                               </Typography>
                               {worker.email && (
                                 <Typography variant="body2" sx={{ color: colors.neutral[500] }}>
@@ -1013,17 +1015,17 @@ export default function WorkersClient({
           }}
           onSubmit={handleEditWorker}
           initialData={{
-            name: selectedWorker.name,
+            name: selectedWorker.fullName,
             phone: selectedWorker.phone || '',
             email: selectedWorker.email || '',
             position: selectedWorker.position || '',
             notes: selectedWorker.notes || '',
             tags: selectedWorker.tags || [],
             siteId: selectedWorker.siteId,
-            supervisorId: selectedWorker.supervisorId,
+            supervisorId: selectedWorker.supervisorId || undefined,
             isActive: selectedWorker.isActive,
-            startDate: selectedWorker.startDate 
-              ? new Date(selectedWorker.startDate).toISOString().split('T')[0] 
+            startDate: selectedWorker.startDate
+              ? new Date(selectedWorker.startDate).toISOString().split('T')[0]
               : undefined,
           }}
           mode="edit"
@@ -1042,10 +1044,10 @@ export default function WorkersClient({
           }}
           onConfirm={handleDeleteWorker}
           title={isRTL ? 'מחיקת עובד' : 'Delete Worker'}
-          message={isRTL 
+          message={isRTL
             ? 'האם אתה בטוח שברצונך למחוק את העובד הזה?'
             : 'Are you sure you want to delete this worker?'}
-          itemName={selectedWorker.name}
+          itemName={selectedWorker.fullName}
         />
       )}
     </Box>

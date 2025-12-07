@@ -1,6 +1,6 @@
-// Prisma Schema for Corporations MVP v1.1
+// Prisma Schema for Corporations MVP v1.4
 // Premium UI Hierarchical Organization Management System
-// WITH AREA MANAGER SUPPORT
+// FULLY COMPLIANT with v1.4 Specification
 
 generator client {
   provider = "prisma-client-js"
@@ -15,17 +15,21 @@ datasource db {
 // USERS TABLE
 // ============================================
 model User {
-  id       String  @id @default(uuid())
-  email    String  @unique
-  name     String
-  phone    String?
-  avatar   String? // URL to uploaded image
-  password String // Hashed password
-  role     Role    @default(SUPERVISOR)
+  id String @id @default(uuid())
+
+  // v1.4: Renamed fields
+  email        String  @unique
+  fullName     String  @map("full_name")
+  phone        String?
+  avatarUrl    String? @map("avatar_url")
+  passwordHash String? @map("password_hash") // Nullable for external IdP support
+
+  // Role (keep enum for convenience, v1.4 uses separate tables + is_super_admin flag)
+  role Role @default(SUPERVISOR)
 
   // Status
   isActive     Boolean @default(true) @map("is_active")
-  isSuperAdmin Boolean @default(false) @map("is_super_admin") // v1.3 compliance
+  isSuperAdmin Boolean @default(false) @map("is_super_admin")
 
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -35,14 +39,14 @@ model User {
   // Relations
   areaManager     AreaManager?         @relation("AreaManagerUser")
   managerOf       CorporationManager[]
-  supervisorOf    SiteManager[]
+  supervisorOf    Supervisor[] // v1.4: Renamed from SiteManager
   supervisorSites SupervisorSite[]     @relation("SupervisorAssignments")
-  workers         Worker[]
   invitationsSent Invitation[]         @relation("InvitationCreator")
   tokens          UserToken[]          @relation("UserTokens")
 
   @@index([email])
   @@index([isActive])
+  @@index([isSuperAdmin])
   @@map("users")
 }
 
@@ -84,7 +88,7 @@ enum TokenType {
 }
 
 // ============================================
-// AREA MANAGERS TABLE (NEW)
+// AREA MANAGERS TABLE
 // ============================================
 model AreaManager {
   id String @id @default(uuid())
@@ -93,9 +97,9 @@ model AreaManager {
   userId String @unique @map("user_id")
   user   User   @relation("AreaManagerUser", fields: [userId], references: [id], onDelete: Cascade)
 
-  // Area details
-  regionName String  @map("region_name")
-  regionCode String? @map("region_code") // e.g., "US-WEST", "EU-CENTRAL"
+  // v1.4: region_code is NOT NULL and UNIQUE
+  regionCode String @unique @map("region_code") // e.g., "IL-CENTER", "US-WEST"
+  regionName String @map("region_name")         // Human-readable name
 
   // Status
   isActive Boolean @default(true) @map("is_active")
@@ -113,6 +117,7 @@ model AreaManager {
   @@index([userId])
   @@index([isActive])
   @@index([regionName])
+  @@index([regionCode])
   @@map("area_managers")
 }
 
@@ -124,13 +129,15 @@ model Corporation {
   name        String
   code        String  @unique // Short code (e.g., "ACME")
   description String?
-  logo        String? // URL to uploaded logo
 
-  // NEW: Area Manager relationship
-  areaManagerId String?      @map("area_manager_id")
-  areaManager   AreaManager? @relation(fields: [areaManagerId], references: [id], onDelete: SetNull)
+  // v1.4: Renamed logo → logoUrl, area_manager_id is NOT NULL
+  logoUrl String? @map("logo_url")
 
-  // Contact info
+  // v1.4: Area Manager is REQUIRED (NOT NULL)
+  areaManagerId String      @map("area_manager_id")
+  areaManager   AreaManager @relation(fields: [areaManagerId], references: [id], onDelete: Restrict)
+
+  // Contact info (v1.4 includes these fields)
   email   String?
   phone   String?
   address String?
@@ -146,7 +153,7 @@ model Corporation {
 
   // Relations
   managers    CorporationManager[]
-  supervisors SiteManager[]
+  supervisors Supervisor[] // v1.4: Renamed from SiteManager
   sites       Site[]
   invitations Invitation[]
   workers     Worker[]
@@ -158,7 +165,7 @@ model Corporation {
 }
 
 // ============================================
-// CORPORATION MANAGERS TABLE (NEW)
+// CORPORATION MANAGERS TABLE
 // ============================================
 model CorporationManager {
   id String @id @default(uuid())
@@ -191,9 +198,9 @@ model CorporationManager {
 }
 
 // ============================================
-// SITE MANAGERS TABLE (Supervisors)
+// SUPERVISORS TABLE (v1.4: Renamed from site_managers)
 // ============================================
-model SiteManager {
+model Supervisor {
   id String @id @default(uuid())
 
   // Relationships
@@ -218,21 +225,24 @@ model SiteManager {
 
   // Relations
   siteAssignments SupervisorSite[]
+  workers         Worker[] // v1.4: Workers can reference supervisor
 
   @@unique([corporationId, userId]) // User can be supervisor once per corporation
-  @@unique([id, corporationId]) // v1.3 compliance: composite FK support
+  @@unique([id, corporationId])     // v1.4 compliance: composite FK support
   @@index([corporationId])
   @@index([userId])
   @@index([isActive])
-  @@map("site_managers")
+  @@map("supervisors") // v1.4: Changed from site_managers
 }
 
 // ============================================
 // SITES TABLE
 // ============================================
 model Site {
-  id      String  @id @default(uuid())
-  name    String
+  id   String  @id @default(uuid())
+  name String
+
+  // v1.4: Includes all these fields
   address String?
   city    String?
   country String? @default("Israel")
@@ -261,7 +271,7 @@ model Site {
   supervisorAssignments SupervisorSite[]
   workers               Worker[]
 
-  @@unique([id, corporationId]) // v1.3 compliance: composite FK support
+  @@unique([id, corporationId]) // v1.4 compliance: composite FK support
   @@index([corporationId])
   @@index([isActive])
   @@map("sites")
@@ -273,32 +283,32 @@ model Site {
 model SupervisorSite {
   id String @id @default(uuid())
 
-  // v1.3 Compliance: Corporation ID for composite FK
+  // v1.4 Compliance: Corporation ID for composite FK
   corporationId String @map("corporation_id")
 
-  // Relationships with composite FKs
-  siteManagerId String      @map("site_manager_id")
-  siteManager   SiteManager @relation(fields: [siteManagerId, corporationId], references: [id, corporationId], onDelete: Cascade)
+  // v1.4: Relationships with composite FKs (references Supervisor, not SiteManager)
+  supervisorId String     @map("supervisor_id")
+  supervisor   Supervisor @relation(fields: [supervisorId, corporationId], references: [id, corporationId], onDelete: Cascade)
 
   siteId String @map("site_id")
   site   Site   @relation(fields: [siteId, corporationId], references: [id, corporationId], onDelete: Cascade)
 
-  // Legacy: Keep supervisor user link for backward compatibility
-  supervisorId String @map("supervisor_id")
-  supervisor   User   @relation("SupervisorAssignments", fields: [supervisorId], references: [id], onDelete: Cascade)
+  // Legacy: Keep user link for backward compatibility with existing code
+  legacySupervisorUserId String @map("legacy_supervisor_user_id")
+  legacySupervisorUser   User   @relation("SupervisorAssignments", fields: [legacySupervisorUserId], references: [id], onDelete: Cascade)
 
   // Assignment metadata
   assignedAt DateTime @default(now()) @map("assigned_at")
   assignedBy String?  @map("assigned_by") // User ID who made the assignment
-  metadata   Json?    // v1.3 spec includes metadata
+  metadata   Json?    // v1.4 spec includes metadata
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([siteManagerId, siteId]) // v1.3 composite PK (site_manager + site)
+  @@unique([supervisorId, siteId]) // v1.4 composite PK (supervisor + site)
+  @@index([legacySupervisorUserId])
   @@index([supervisorId])
-  @@index([siteManagerId])
   @@index([siteId])
   @@index([corporationId])
   @@map("supervisor_sites")
@@ -308,19 +318,21 @@ model SupervisorSite {
 // WORKERS TABLE
 // ============================================
 model Worker {
-  id       String  @id @default(uuid())
-  name     String
-  phone    String?
-  email    String?
-  position String? // Job title
-  avatar   String?
+  id String @id @default(uuid())
 
-  // Employment details
+  // v1.4: Renamed name → fullName, avatar → avatarUrl
+  fullName  String  @map("full_name")
+  phone     String?
+  email     String?
+  position  String? // Job title
+  avatarUrl String? @map("avatar_url")
+
+  // Employment details (v1.4 includes these fields)
   startDate DateTime? @map("start_date")
   endDate   DateTime? @map("end_date")
   isActive  Boolean   @default(true) @map("is_active")
 
-  // Additional info
+  // Additional info (v1.4 includes these fields)
   notes    String?  // Supervisor notes
   tags     String[] @default([]) // Skills, certifications, etc.
   metadata Json?    // Flexible data storage
@@ -332,13 +344,16 @@ model Worker {
   siteId String @map("site_id")
   site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
-  supervisorId String @map("supervisor_id")
-  supervisor   User   @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  // v1.4: supervisor_id is NULLABLE (worker can be temporarily unassigned)
+  supervisorId String?     @map("supervisor_id")
+  supervisor   Supervisor? @relation(fields: [supervisorId, corporationId], references: [id, corporationId], onDelete: SetNull)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // v1.4: Unique constraint on (site_id, full_name, phone)
+  @@unique([siteId, fullName, phone])
   @@index([corporationId])
   @@index([siteId])
   @@index([supervisorId])
@@ -373,8 +388,8 @@ model Invitation {
   // Acceptance tracking
   acceptedAt DateTime? @map("accepted_at")
 
-  // Metadata
-  metadata Json? @default("{}") // Can store area manager region info, etc.
+  // Metadata (v1.4: can store region info for Area Manager)
+  metadata Json? @default("{}")
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -400,13 +415,13 @@ enum InvitationStatus {
 // ============================================
 model AuditLog {
   id       String @id @default(uuid())
-  action   String // "CREATE_CORPORATION", "INVITE_MANAGER", etc.
-  entity   String // "Corporation", "User", "Site"
+  action   String // "CREATE", "UPDATE", "DELETE"
+  entity   String // "Corporation", "User", "Site", "Worker"
   entityId String @map("entity_id")
 
-  // Changes
-  oldValue Json? @map("old_value")
-  newValue Json? @map("new_value")
+  // v1.4: Renamed oldValue → before, newValue → after
+  before Json? // JSON snapshot before change
+  after  Json? // JSON snapshot after change
 
   // Actor
   userId    String? @map("user_id")
@@ -422,6 +437,7 @@ model AuditLog {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([action])
+  @@index([entity])
   @@index([entityId])
   @@index([userId])
   @@index([corporationId])

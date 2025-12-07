@@ -151,7 +151,7 @@ async function main() {
   const startTime3 = Date.now();
   await prisma.supervisorSite.findMany({
     include: {
-      siteManager: true,
+      supervisor: true,
       site: true,
     },
     take: 50,

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
-import { listCorporations } from '@/app/actions/corporations';
+import { prisma } from '@/lib/prisma';
 import CorporationsClient from '@/app/components/corporations/CorporationsClient';
 
 export default async function CorporationsPage() {
@@ -28,20 +28,32 @@ export default async function CorporationsPage() {
     );
   }
 
-  // Fetch corporations
-  const result = await listCorporations({});
-
-  if (!result.success) {
-    return (
-      <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
-        <Typography variant="h5" color="error">
-          {tCommon('error')}: {result.error}
-        </Typography>
-      </Box>
-    );
-  }
-
-  const corporations = result.corporations || [];
+  // v1.4: Fetch corporations with areaManager relation
+  const corporations = await prisma.corporation.findMany({
+    include: {
+      areaManager: {
+        include: {
+          user: {
+            select: {
+              fullName: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          managers: true,
+          supervisors: true,
+          sites: true,
+          invitations: true,
+        },
+      },
+    },
+    orderBy: [
+      { isActive: 'desc' },
+      { createdAt: 'desc' },
+    ],
+  });
 
   return (
     <Box

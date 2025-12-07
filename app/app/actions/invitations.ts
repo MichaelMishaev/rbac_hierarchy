@@ -178,7 +178,7 @@ export async function createInvitation(data: CreateInvitationInput) {
         createdBy: {
           select: {
             id: true,
-            name: true,
+            fullName: true,
             email: true,
           },
         },
@@ -202,8 +202,8 @@ export async function createInvitation(data: CreateInvitationInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: undefined,
-        newValue: {
+        before: undefined,
+        after: {
           id: newInvitation.id,
           email: newInvitation.email,
           role: newInvitation.role,
@@ -287,7 +287,7 @@ export async function listInvitations(filters: ListInvitationsFilters = {}) {
         createdBy: {
           select: {
             id: true,
-            name: true,
+            fullName: true,
             email: true,
           },
         },
@@ -333,12 +333,12 @@ export async function getInvitationByToken(token: string) {
             id: true,
             name: true,
             code: true,
-            logo: true,
+            logoUrl: true,
           },
         },
         createdBy: {
           select: {
-            name: true,
+            fullName: true,
             email: true,
           },
         },
@@ -439,9 +439,9 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
       const newUser = await tx.user.create({
         data: {
           email: invitation.email,
-          name: data.name,
+          fullName: data.name,
           phone: data.phone,
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           role: invitation.role,
         },
       });
@@ -457,7 +457,7 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
             },
           });
         } else if (invitation.role === 'SUPERVISOR') {
-          await tx.siteManager.create({
+          await tx.supervisor.create({
             data: {
               userId: newUser.id,
               corporationId: invitation.corporationId,
@@ -485,10 +485,10 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
           userId: newUser.id,
           userEmail: newUser.email,
           userRole: newUser.role,
-          oldValue: {
+          before: {
             status: 'PENDING',
           },
-          newValue: {
+          after: {
             status: 'ACCEPTED',
             userId: newUser.id,
             acceptedAt: updatedInvitation.acceptedAt,
@@ -587,10 +587,10 @@ export async function revokeInvitation(invitationId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           status: invitation.status,
         },
-        newValue: {
+        after: {
           status: 'REVOKED',
         },
       },
@@ -700,12 +700,12 @@ export async function resendInvitation(invitationId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           token: invitation.token,
           expiresAt: invitation.expiresAt,
           status: invitation.status,
         },
-        newValue: {
+        after: {
           token: newToken,
           expiresAt: newExpiresAt,
           status: 'PENDING',

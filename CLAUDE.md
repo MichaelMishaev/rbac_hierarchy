@@ -148,9 +148,9 @@ SuperAdmin (system-wide access)
 - Full CRUD: Managers, Supervisors, Sites, Workers (within their corp)
 - Cannot access other corporations
 
-**Supervisor** (DB: `site_managers`, UX: "Supervisor"):
+**Supervisor** (DB: `supervisors`):
 - Scoped to single corporation
-- Assigned to specific sites via M2M (`site_manager_sites`)
+- Assigned to specific sites via M2M (`supervisor_sites`)
 - Can only manage workers in assigned sites
 - Cannot manage managers, supervisors, or sites
 
@@ -172,7 +172,7 @@ SuperAdmin (system-wide access)
 
 **Data Isolation**:
 - All queries MUST filter by `corporation_id` except for SuperAdmin
-- Supervisors can only access sites in `site_manager_sites` table
+- Supervisors can only access sites in `supervisor_sites` table
 - Use Prisma middleware or NestJS interceptors to enforce corporation filters
 - Test cross-corporation isolation thoroughly
 
@@ -184,8 +184,8 @@ SuperAdmin (system-wide access)
 - `corporations` - Multi-tenant root entities
 - `sites` - Physical locations within corporations
 - `corporation_managers` - Manager role assignments
-- `site_managers` - Supervisor role assignments
-- `site_manager_sites` - M2M relationship (supervisor ↔ sites)
+- `supervisors` - Supervisor role assignments (v1.4: renamed from site_managers)
+- `supervisor_sites` - M2M relationship (supervisor ↔ sites)
 - `workers` - Non-login worker data entities
 - `user_invitations` - Invitation system with tokens
 - `audit_logs` - Complete change tracking
@@ -194,7 +194,7 @@ SuperAdmin (system-wide access)
 
 - All role tables: `UNIQUE (corporation_id, user_id)`
 - Workers: `UNIQUE (site_id, full_name, phone)`
-- M2M junction references composite FKs: `(site_manager_id, corporation_id)` and `(site_id, corporation_id)`
+- M2M junction references composite FKs: `(supervisor_id, corporation_id)` and `(site_id, corporation_id)`
 - Cascade delete from corporation (except audit logs → SET NULL)
 
 ### PostgreSQL Extensions (Auto-installed)
@@ -264,7 +264,7 @@ npm run test:e2e:debug     # Run in debug mode
 
 ### Invitation & Onboarding
 
-1. Admin (SuperAdmin/Manager) creates invitation with `target_type` (corporation_manager or site_manager)
+1. Admin (SuperAdmin/Manager) creates invitation with `target_type` (corporation_manager or supervisor)
 2. System generates unique token → stored in `user_invitations`
 3. Email sent via SMTP (MailHog in dev)
 4. User clicks link → token validated
@@ -334,7 +334,7 @@ Every mutation logs to `audit_logs`:
 - **ALWAYS** include `corporation_id` in WHERE clauses (except SuperAdmin)
 - **NEVER** expose `is_super_admin` flag in public APIs
 - Validate corporation_id matches user's scope on every API request
-- Supervisors must validate site access via `site_manager_sites` join
+- Supervisors must validate site access via `supervisor_sites` join
 - Test cross-corporation data leakage thoroughly in E2E tests
 
 ### Authentication & Authorization
@@ -374,13 +374,15 @@ Every mutation logs to `audit_logs`:
 5. Ensure all UI is responsive and mobile-friendly
 6. Test with `he-IL` locale enabled
 
-### Terminology Mapping
+### Terminology (v1.4 Unified Naming)
 
-**IMPORTANT**: Dual naming exists throughout:
-- **UX/PRD Term**: "Supervisor"
-- **Database/Code Term**: "site_manager"
+**IMPORTANT**: As of v1.4, naming is UNIFIED across all layers:
+- **UX/UI**: "Supervisor"
+- **Database**: `supervisors` table (renamed from `site_managers`)
+- **Code**: `Supervisor` model, `supervisor` variables
+- **Junction Table**: `supervisor_sites` (renamed from `site_manager_sites`)
 
-Always use "Supervisor" in UI/UX, always use "site_manager" in backend code and database.
+**Historical Note**: Pre-v1.4 used dual naming (UX: "Supervisor", DB: "site_manager"). This caused confusion and was unified in v1.4 for consistency.
 
 ## File Structure (When Implementing)
 

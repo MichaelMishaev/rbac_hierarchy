@@ -12,21 +12,23 @@ import { Role } from '@prisma/client';
 
 export type CreateUserInput = {
   email: string;
-  name: string;
+  fullName: string;
   phone?: string;
   password: string;
   role: Role;
   corporationId?: string;
+  regionName?: string; // Required for AREA_MANAGER role
 };
 
 export type UpdateUserInput = {
-  name?: string;
+  fullName?: string;
   phone?: string;
   email?: string;
-  avatar?: string;
+  avatarUrl?: string;
   corporationId?: string;
   role?: Role;
   password?: string;
+  regionName?: string; // For AREA_MANAGER role updates
 };
 
 export type ListUsersFilters = {
@@ -61,10 +63,26 @@ export async function createUser(data: CreateUserInput) {
       };
     }
 
+    // Only SUPERADMIN can create AREA_MANAGER users
+    if (data.role === 'AREA_MANAGER' && currentUser.role !== 'SUPERADMIN') {
+      return {
+        success: false,
+        error: 'Only SuperAdmin can create Area Manager users',
+      };
+    }
+
+    // AREA_MANAGER requires region name
+    if (data.role === 'AREA_MANAGER' && !data.regionName) {
+      return {
+        success: false,
+        error: 'Region name is required for Area Manager',
+      };
+    }
+
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      // Must provide corporation ID
-      if (!data.corporationId) {
+      // Must provide corporation ID for MANAGER/SUPERVISOR roles
+      if ((data.role === 'MANAGER' || data.role === 'SUPERVISOR') && !data.corporationId) {
         return {
           success: false,
           error: 'Corporation ID is required',
@@ -72,7 +90,7 @@ export async function createUser(data: CreateUserInput) {
       }
 
       // Can only create users in corporations they have access to
-      if (!hasAccessToCorporation(currentUser, data.corporationId)) {
+      if (data.corporationId && !hasAccessToCorporation(currentUser, data.corporationId)) {
         return {
           success: false,
           error: 'Cannot create user for different corporation',
@@ -107,15 +125,27 @@ export async function createUser(data: CreateUserInput) {
     const newUser = await prisma.user.create({
       data: {
         email: data.email,
-        name: data.name,
+        fullName: data.fullName,
         phone: data.phone,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: data.role,
       },
     });
 
-    // Create role-specific record if corporation is provided
-    if (data.corporationId) {
+    // Create role-specific record based on role type
+    if (data.role === 'AREA_MANAGER' && data.regionName) {
+      // v1.4: AreaManager requires regionCode (unique identifier)
+      const regionCode = `REGION-${Date.now()}`; // Generate unique code
+
+      // Create AreaManager record for AREA_MANAGER role
+      await prisma.areaManager.create({
+        data: {
+          userId: newUser.id,
+          regionName: data.regionName,
+          regionCode, // v1.4: Required field
+        },
+      });
+    } else if (data.corporationId) {
       if (data.role === 'MANAGER') {
         await prisma.corporationManager.create({
           data: {
@@ -125,7 +155,7 @@ export async function createUser(data: CreateUserInput) {
           },
         });
       } else if (data.role === 'SUPERVISOR') {
-        await prisma.siteManager.create({
+        await prisma.supervisor.create({
           data: {
             userId: newUser.id,
             corporationId: data.corporationId,
@@ -144,11 +174,11 @@ export async function createUser(data: CreateUserInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: undefined,
-        newValue: {
+        before: undefined,
+        after: {
           id: newUser.id,
           email: newUser.email,
-          name: newUser.name,
+          fullName: newUser.fullName,
           role: newUser.role,
           corporationId: data.corporationId,
         },
@@ -225,7 +255,7 @@ export async function listUsers(filters: ListUsersFilters = {}) {
 
     if (filters.search) {
       where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
+        { fullName: { contains: filters.search, mode: 'insensitive' } },
         { email: { contains: filters.search, mode: 'insensitive' } },
         { phone: { contains: filters.search, mode: 'insensitive' } },
       ];
@@ -263,7 +293,6 @@ export async function listUsers(filters: ListUsersFilters = {}) {
         },
         _count: {
           select: {
-            workers: true,
             invitationsSent: true,
           },
         },
@@ -276,7 +305,7 @@ export async function listUsers(filters: ListUsersFilters = {}) {
 
     // Remove password from response
     const sanitizedUsers = users.map((user) => {
-      const { password, ...userWithoutPassword } = user;
+      const { passwordHash, ...userWithoutPassword } = user;
       return userWithoutPassword;
     });
 
@@ -343,7 +372,6 @@ export async function getUserById(userId: string) {
         },
         _count: {
           select: {
-            workers: true,
             invitationsSent: true,
           },
         },
@@ -376,7 +404,7 @@ export async function getUserById(userId: string) {
     }
 
     // Remove password from response
-    const { password, ...userWithoutPassword } = user;
+    const { passwordHash, ...userWithoutPassword } = user;
 
     return {
       success: true,
@@ -511,10 +539,10 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        name: data.name,
+        fullName: data.fullName,
         phone: data.phone,
         email: data.email,
-        avatar: data.avatar,
+        avatarUrl: data.avatarUrl,
         role: data.role,
       },
       include: {
@@ -538,6 +566,11 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
             site: true,
           },
         },
+        _count: {
+          select: {
+            invitationsSent: true,
+          },
+        },
       },
     });
 
@@ -549,7 +582,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
           where: { userId },
         });
       } else if (existingUser.role === 'SUPERVISOR') {
-        await prisma.siteManager.deleteMany({
+        await prisma.supervisor.deleteMany({
           where: { userId },
         });
       }
@@ -564,7 +597,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
           },
         });
       } else if (data.role === 'SUPERVISOR') {
-        await prisma.siteManager.create({
+        await prisma.supervisor.create({
           data: {
             userId,
             corporationId: data.corporationId,
@@ -583,14 +616,14 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
-          name: existingUser.name,
+        before: {
+          fullName: existingUser.fullName,
           email: existingUser.email,
           phone: existingUser.phone,
           role: existingUser.role,
         },
-        newValue: {
-          name: updatedUser.name,
+        after: {
+          fullName: updatedUser.fullName,
           email: updatedUser.email,
           phone: updatedUser.phone,
           role: updatedUser.role,
@@ -602,7 +635,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
     revalidatePath(`/users/${userId}`);
 
     // Remove password from response
-    const { password, ...userWithoutPassword } = updatedUser;
+    const { passwordHash, ...userWithoutPassword } = updatedUser;
 
     return {
       success: true,
@@ -721,13 +754,13 @@ export async function deleteUser(userId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           id: userToDelete.id,
           email: userToDelete.email,
-          name: userToDelete.name,
+          fullName: userToDelete.fullName,
           role: userToDelete.role,
         },
-        newValue: undefined,
+        after: undefined,
       },
     });
 
@@ -790,7 +823,7 @@ export async function getUserStats() {
         take: 5,
         select: {
           id: true,
-          name: true,
+          fullName: true,
           email: true,
           role: true,
           createdAt: true,

@@ -143,7 +143,7 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
     prisma.corporation.count(),
     prisma.corporation.count({ where: { isActive: true } }),
     prisma.corporationManager.count(),
-    prisma.siteManager.count(),
+    prisma.supervisor.count(),
     prisma.areaManager.count(),
     prisma.site.count(),
     prisma.site.count({ where: { isActive: true } }),
@@ -213,7 +213,7 @@ async function getManagerStats(corporationId: string): Promise<ManagerStats> {
         corporationId,
       },
     }),
-    prisma.siteManager.count({
+    prisma.supervisor.count({
       where: {
         corporationId,
       },
@@ -372,7 +372,7 @@ async function getSupervisorStats(supervisorId: string): Promise<SupervisorStats
       take: 10,
       select: {
         id: true,
-        name: true,
+        fullName: true,
         position: true,
         phone: true,
         isActive: true,
@@ -428,7 +428,7 @@ async function getRecentActivity(currentUser: any): Promise<RecentActivity[]> {
         where: { corporationId: { in: userCorps } },
         select: { userId: true },
       }),
-      prisma.siteManager.findMany({
+      prisma.supervisor.findMany({
         where: { corporationId: { in: userCorps } },
         select: { userId: true },
       }),
@@ -459,8 +459,8 @@ async function getRecentActivity(currentUser: any): Promise<RecentActivity[]> {
       userEmail: true,
       userRole: true,
       createdAt: true,
-      oldValue: true,
-      newValue: true,
+      before: true,
+      after: true,
     },
   });
 
@@ -592,7 +592,7 @@ export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'm
           where: { corporationId: { in: userCorps } },
           select: { userId: true },
         }),
-        prisma.siteManager.findMany({
+        prisma.supervisor.findMany({
           where: { corporationId: { in: userCorps } },
           select: { userId: true },
         }),
@@ -718,7 +718,7 @@ export async function getQuickStats() {
         prisma.corporationManager.count({
           where: { corporationId: { in: userCorps } },
         }),
-        prisma.siteManager.count({
+        prisma.supervisor.count({
           where: { corporationId: { in: userCorps } },
         }),
         prisma.site.count({

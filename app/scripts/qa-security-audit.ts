@@ -48,8 +48,8 @@ async function main() {
   });
 
   // Check 2: Password hashing
-  const users = await prisma.user.findMany({ select: { password: true } });
-  const allHashed = users.every((u) => u.password.startsWith('$2a$'));
+  const users = await prisma.user.findMany({ select: { passwordHash: true } });
+  const allHashed = users.every((u: any) => u.passwordHash.startsWith('$2a$'));
 
   addCheck({
     category: 'Database',
@@ -167,13 +167,17 @@ async function main() {
   // Check 8: Cascade delete protection
   const supervisorSites = await prisma.supervisorSite.findMany({
     include: {
-      siteManager: true,
+      supervisor: {
+        include: {
+          user: true,
+        },
+      },
       site: true,
     },
   });
 
   const hasOrphans = supervisorSites.some(
-    (ss) => !ss.siteManager || !ss.site
+    (ss: any) => !ss.supervisor || !ss.site
   );
 
   addCheck({
@@ -191,7 +195,7 @@ async function main() {
 
   // Check 9: Unique constraints
   const workers = await prisma.worker.findMany();
-  const workerKeys = workers.map((w) => `${w.siteId}-${w.name}-${w.phone}`);
+  const workerKeys = workers.map((w: any) => `${w.siteId}-${w.fullName}-${w.phone}`);
   const hasDuplicates = workerKeys.length !== new Set(workerKeys).size;
 
   addCheck({

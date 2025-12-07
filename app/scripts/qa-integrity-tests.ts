@@ -102,9 +102,9 @@ async function main() {
       details: {
         totalWorkers: workers.length,
         violations: integrityViolations.length,
-        integrityViolations: integrityViolations.map((w) => ({
+        integrityViolations: integrityViolations.map((w: any) => ({
           workerId: w.id,
-          workerName: w.name,
+          workerName: w.fullName,
           workerCorpId: w.corporationId,
           siteCorpId: w.site.corporationId,
         })),
@@ -116,14 +116,18 @@ async function main() {
   await runTest('SupervisorSite Composite FK Integrity', async () => {
     const assignments = await prisma.supervisorSite.findMany({
       include: {
-        siteManager: true,
+        supervisor: {
+          include: {
+            user: true,
+          },
+        },
         site: true,
       },
     });
 
     const violations = assignments.filter(
-      (a) =>
-        a.corporationId !== a.siteManager.corporationId ||
+      (a: any) =>
+        a.corporationId !== a.supervisor.corporationId ||
         a.corporationId !== a.site.corporationId
     );
 
@@ -136,10 +140,10 @@ async function main() {
       details: {
         totalAssignments: assignments.length,
         violations: violations.length,
-        violationDetails: violations.map((a) => ({
+        violationDetails: violations.map((a: any) => ({
           assignmentId: a.id,
           assignmentCorpId: a.corporationId,
-          siteManagerCorpId: a.siteManager.corporationId,
+          supervisorCorpId: a.supervisor.corporationId,
           siteCorpId: a.site.corporationId,
         })),
       },
@@ -149,20 +153,20 @@ async function main() {
   // Test 5: Composite unique indexes exist
   await runTest('Composite Unique Indexes', async () => {
     // Try to violate composite unique constraint (should fail)
-    const siteManager = await prisma.siteManager.findFirst();
+    const supervisor = await prisma.supervisor.findFirst();
 
-    if (!siteManager) {
+    if (!supervisor) {
       return {
         pass: false,
-        message: 'No SiteManager found to test',
+        message: 'No Supervisor found to test',
       };
     }
 
     try {
-      // Try to create duplicate with same id and corporationId (should fail)
+      // Try to create duplicate with same userId and corporationId (should fail)
       await prisma.$queryRaw`
-        SELECT 1 FROM site_managers
-        WHERE (id, corporation_id) = (${siteManager.id}, ${siteManager.corporationId})
+        SELECT 1 FROM supervisors
+        WHERE (id, corporation_id) = (${supervisor.id}, ${supervisor.corporationId})
       `;
 
       return {

@@ -9,11 +9,11 @@ import { revalidatePath } from 'next/cache';
 // ============================================
 
 export type CreateWorkerInput = {
-  name: string;
+  fullName: string;
   phone?: string;
   email?: string;
   position?: string;
-  avatar?: string;
+  avatarUrl?: string;
   startDate?: Date;
   endDate?: Date;
   notes?: string;
@@ -24,11 +24,11 @@ export type CreateWorkerInput = {
 };
 
 export type UpdateWorkerInput = {
-  name?: string;
+  fullName?: string;
   phone?: string;
   email?: string;
   position?: string;
-  avatar?: string;
+  avatarUrl?: string;
   startDate?: Date;
   endDate?: Date;
   notes?: string;
@@ -130,11 +130,11 @@ export async function createWorker(data: CreateWorkerInput) {
     // Create worker
     const newWorker = await prisma.worker.create({
       data: {
-        name: data.name,
+        fullName: data.fullName,
         phone: data.phone,
         email: data.email,
         position: data.position,
-        avatar: data.avatar,
+        avatarUrl: data.avatarUrl,
         startDate: data.startDate,
         endDate: data.endDate,
         notes: data.notes,
@@ -161,8 +161,12 @@ export async function createWorker(data: CreateWorkerInput) {
         supervisor: {
           select: {
             id: true,
-            name: true,
-            email: true,
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -177,10 +181,10 @@ export async function createWorker(data: CreateWorkerInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: undefined,
-        newValue: {
+        before: undefined,
+        after: {
           id: newWorker.id,
-          name: newWorker.name,
+          fullName: newWorker.fullName,
           position: newWorker.position,
           siteId: newWorker.siteId,
           supervisorId: newWorker.supervisorId,
@@ -256,7 +260,7 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
 
     if (filters.search) {
       where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
+        { fullName: { contains: filters.search, mode: 'insensitive' } },
         { phone: { contains: filters.search, mode: 'insensitive' } },
         { email: { contains: filters.search, mode: 'insensitive' } },
         { position: { contains: filters.search, mode: 'insensitive' } },
@@ -297,8 +301,12 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
         supervisor: {
           select: {
             id: true,
-            name: true,
-            email: true,
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -351,9 +359,13 @@ export async function getWorkerById(workerId: string) {
         supervisor: {
           select: {
             id: true,
-            name: true,
-            email: true,
-            phone: true,
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+                phone: true,
+              },
+            },
           },
         },
       },
@@ -368,7 +380,7 @@ export async function getWorkerById(workerId: string) {
 
     // Validate access permissions
     if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, worker.site.corporationId)) {
+      if (!worker.site || !hasAccessToCorporation(currentUser, worker.site.corporationId)) {
         return {
           success: false,
           error: 'Access denied',
@@ -496,11 +508,11 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
     const updatedWorker = await prisma.worker.update({
       where: { id: workerId },
       data: {
-        name: data.name,
+        fullName: data.fullName,
         phone: data.phone,
         email: data.email,
         position: data.position,
-        avatar: data.avatar,
+        avatarUrl: data.avatarUrl,
         startDate: data.startDate,
         endDate: data.endDate,
         notes: data.notes,
@@ -526,8 +538,12 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
         supervisor: {
           select: {
             id: true,
-            name: true,
-            email: true,
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -542,14 +558,14 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
-          name: existingWorker.name,
+        before: {
+          fullName: existingWorker.fullName,
           position: existingWorker.position,
           siteId: existingWorker.siteId,
           isActive: existingWorker.isActive,
         },
-        newValue: {
-          name: updatedWorker.name,
+        after: {
+          fullName: updatedWorker.fullName,
           position: updatedWorker.position,
           siteId: updatedWorker.siteId,
           isActive: updatedWorker.isActive,
@@ -651,14 +667,14 @@ export async function deleteWorker(workerId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: {
+        before: {
           id: workerToDelete.id,
-          name: workerToDelete.name,
+          fullName: workerToDelete.fullName,
           position: workerToDelete.position,
           siteId: workerToDelete.siteId,
           isActive: workerToDelete.isActive,
         },
-        newValue: {
+        after: {
           isActive: false,
           endDate: deletedWorker.endDate,
         },
@@ -754,7 +770,11 @@ export async function toggleWorkerStatus(workerId: string) {
         supervisor: {
           select: {
             id: true,
-            name: true,
+            user: {
+              select: {
+                fullName: true,
+              },
+            },
           },
         },
       },
@@ -769,8 +789,8 @@ export async function toggleWorkerStatus(workerId: string) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        oldValue: { isActive: worker.isActive },
-        newValue: { isActive: updatedWorker.isActive },
+        before: { isActive: worker.isActive },
+        after: { isActive: updatedWorker.isActive },
       },
     });
 
@@ -892,18 +912,24 @@ export async function getWorkerStats() {
         take: 10,
         select: {
           id: true,
-          name: true,
+          fullName: true,
           position: true,
           isActive: true,
           createdAt: true,
           site: {
             select: {
+              id: true,
               name: true,
             },
           },
           supervisor: {
             select: {
-              name: true,
+              id: true,
+              user: {
+                select: {
+                  fullName: true,
+                },
+              },
             },
           },
         },

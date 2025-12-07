@@ -3,14 +3,15 @@
 import { createTheme } from '@mui/material/styles';
 import { colors, typography, borderRadius, shadows } from './design-system';
 
-export const lightTheme = createTheme({
-  direction: 'ltr',
+// Base theme configuration that supports both RTL and LTR
+const createBaseTheme = (direction: 'rtl' | 'ltr' = 'rtl') => createTheme({
+  direction, // Hebrew-first system uses RTL by default
   palette: {
     mode: 'light',
     primary: {
-      main: colors.pastel.blue,
-      light: colors.pastel.blueLight,
-      dark: '#5789E8',
+      main: colors.primary.main,
+      light: colors.primary.light,
+      dark: colors.primary.dark,
       contrastText: '#fff',
     },
     secondary: {
@@ -99,9 +100,64 @@ export const lightTheme = createTheme({
     },
   },
   shape: {
-    borderRadius: 20, // Extra round!
+    borderRadius: parseInt(borderRadius.lg.replace('rem', '')) * 16, // Convert rem to px (12px)
   },
+  spacing: 8, // MUI default spacing unit (1 = 8px)
   components: {
+    // ========================================
+    // DIALOG COMPONENTS (Modals)
+    // ========================================
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: borderRadius['2xl'],
+          boxShadow: shadows.xl,
+          padding: 0,
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontWeight: typography.fontWeight.bold,
+          fontSize: typography.fontSize['3xl'],
+          color: colors.neutral[900],
+          paddingBottom: '8px',
+          paddingTop: '32px',
+          paddingLeft: '32px',
+          paddingRight: '32px',
+          letterSpacing: '-0.02em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        },
+      },
+    },
+    MuiDialogContent: {
+      styleOverrides: {
+        root: {
+          paddingTop: '24px !important',
+          paddingLeft: '32px',
+          paddingRight: '32px',
+          paddingBottom: '24px',
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '24px 32px 32px 32px',
+          gap: '12px',
+          borderTop: `1px solid ${colors.neutral[100]}`,
+          backgroundColor: colors.neutral[50],
+        },
+      },
+    },
+
+    // ========================================
+    // BUTTON COMPONENTS
+    // ========================================
     MuiButton: {
       styleOverrides: {
         root: {
@@ -130,12 +186,13 @@ export const lightTheme = createTheme({
         },
         outlined: {
           borderWidth: '2px',
-          borderColor: colors.neutral[200],
+          borderColor: colors.neutral[300],
+          color: colors.neutral[700],
           backgroundColor: colors.neutral[0],
           '&:hover': {
             borderWidth: '2px',
-            borderColor: colors.pastel.blue,
-            backgroundColor: colors.pastel.blueLight,
+            borderColor: colors.neutral[400],
+            backgroundColor: colors.neutral[50],
           },
         },
         sizeLarge: {
@@ -145,10 +202,164 @@ export const lightTheme = createTheme({
         },
       },
     },
+
+    // ========================================
+    // FORM COMPONENTS
+    // ========================================
+    MuiTextField: {
+      defaultProps: {
+        variant: 'outlined',
+      },
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: borderRadius.xl,
+            backgroundColor: colors.neutral[0],
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            fontSize: typography.fontSize.base,
+            '& fieldset': {
+              borderColor: colors.neutral[200],
+              borderWidth: '1.5px',
+              transition: 'all 300ms ease',
+            },
+            '&:hover fieldset': {
+              borderColor: colors.primary.main,
+              borderWidth: '1.5px',
+            },
+            '&.Mui-focused': {
+              backgroundColor: colors.neutral[0],
+              '& fieldset': {
+                borderColor: colors.primary.main,
+                borderWidth: '2px',
+                boxShadow: `0 0 0 4px ${colors.pastel.blueLight}`,
+              },
+            },
+            '& input': {
+              padding: '14px 16px',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            fontWeight: typography.fontWeight.semibold,
+            color: colors.neutral[600],
+            fontSize: typography.fontSize.sm,
+            '&.Mui-focused': {
+              color: colors.primary.main,
+              fontWeight: typography.fontWeight.bold,
+            },
+          },
+          '& .MuiInputAdornment-root': {
+            color: colors.neutral[500],
+          },
+        },
+      },
+    },
+
+    MuiSelect: {
+      styleOverrides: {
+        root: {
+          borderRadius: borderRadius.lg,
+          '& fieldset': {
+            borderColor: colors.neutral[200],
+            borderWidth: '2px',
+          },
+          '&:hover fieldset': {
+            borderColor: colors.pastel.blue,
+          },
+          '&.Mui-focused fieldset': {
+            borderColor: colors.pastel.blue,
+            borderWidth: '2px',
+          },
+        },
+      },
+    },
+
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          borderRadius: borderRadius.md,
+          margin: '4px 8px',
+          '&:hover': {
+            backgroundColor: colors.pastel.blueLight,
+          },
+          '&.Mui-selected': {
+            backgroundColor: colors.pastel.blueLight,
+            '&:hover': {
+              backgroundColor: colors.pastel.blueLight,
+            },
+          },
+        },
+      },
+    },
+
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          '& .MuiInputLabel-root': {
+            fontWeight: typography.fontWeight.medium,
+            color: colors.neutral[600],
+          },
+        },
+      },
+    },
+
+    MuiFormControlLabel: {
+      styleOverrides: {
+        root: {
+          marginLeft: 0,
+          marginRight: 0,
+        },
+        label: {
+          fontWeight: typography.fontWeight.medium,
+          color: colors.neutral[700],
+        },
+      },
+    },
+
+    MuiSwitch: {
+      styleOverrides: {
+        root: {
+          '& .MuiSwitch-switchBase.Mui-checked': {
+            color: colors.pastel.green,
+          },
+          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+            backgroundColor: colors.pastel.green,
+          },
+        },
+      },
+    },
+
+    // ========================================
+    // AUTOCOMPLETE (for tags in WorkerModal)
+    // ========================================
+    MuiAutocomplete: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: borderRadius.lg,
+          },
+        },
+        listbox: {
+          '& .MuiAutocomplete-option': {
+            borderRadius: borderRadius.md,
+            margin: '4px 8px',
+            '&:hover': {
+              backgroundColor: colors.pastel.blueLight,
+            },
+            '&[aria-selected="true"]': {
+              backgroundColor: colors.pastel.blueLight,
+            },
+          },
+        },
+      },
+    },
+
+    // ========================================
+    // CARD & PAPER COMPONENTS
+    // ========================================
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: borderRadius['2xl'], // Extra thick!
+          borderRadius: borderRadius['2xl'],
           boxShadow: shadows.soft,
           border: `1px solid ${colors.neutral[200]}`,
           backgroundColor: colors.neutral[0],
@@ -160,34 +371,7 @@ export const lightTheme = createTheme({
         },
       },
     },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: borderRadius.lg,
-            backgroundColor: colors.neutral[0],
-            boxShadow: shadows.inner,
-            transition: 'all 250ms ease',
-            '& fieldset': {
-              borderColor: colors.neutral[200],
-              borderWidth: '2px',
-            },
-            '&:hover fieldset': {
-              borderColor: colors.pastel.blue,
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: colors.pastel.blue,
-              borderWidth: '2px',
-              boxShadow: `0 0 0 3px ${colors.pastel.blueLight}`,
-            },
-          },
-          '& .MuiInputLabel-root': {
-            fontWeight: typography.fontWeight.medium,
-            color: colors.neutral[600],
-          },
-        },
-      },
-    },
+
     MuiPaper: {
       styleOverrides: {
         root: {
@@ -200,17 +384,32 @@ export const lightTheme = createTheme({
         elevation2: {
           boxShadow: shadows.medium,
         },
+        elevation3: {
+          boxShadow: shadows.large,
+        },
       },
     },
+
+    // ========================================
+    // CHIP COMPONENTS (for tags)
+    // ========================================
     MuiChip: {
       styleOverrides: {
         root: {
           borderRadius: borderRadius.full,
           fontWeight: typography.fontWeight.medium,
-          boxShadow: shadows.soft,
+          backgroundColor: colors.pastel.blueLight,
+          color: colors.pastel.blue,
+        },
+        sizeSmall: {
+          fontSize: typography.fontSize.xs,
         },
       },
     },
+
+    // ========================================
+    // ALERT COMPONENTS
+    // ========================================
     MuiAlert: {
       styleOverrides: {
         root: {
@@ -240,11 +439,28 @@ export const lightTheme = createTheme({
         },
       },
     },
+
+    // ========================================
+    // INPUT LABEL
+    // ========================================
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontWeight: typography.fontWeight.medium,
+          color: colors.neutral[600],
+          '&.Mui-focused': {
+            color: colors.pastel.blue,
+          },
+        },
+      },
+    },
   },
 });
 
+// Export themed versions
+export const lightTheme = createBaseTheme('rtl'); // Hebrew-first, RTL by default
 export const darkTheme = createTheme({
-  ...lightTheme,
+  ...createBaseTheme('rtl'),
   palette: {
     mode: 'dark',
     primary: {
