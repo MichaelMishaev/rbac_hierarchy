@@ -37,12 +37,15 @@ model User {
   lastLoginAt DateTime? @map("last_login_at")
 
   // Relations
-  areaManager     AreaManager?         @relation("AreaManagerUser")
-  managerOf       CorporationManager[]
-  supervisorOf    Supervisor[] // v1.4: Renamed from SiteManager
-  supervisorSites SupervisorSite[]     @relation("SupervisorAssignments")
-  invitationsSent Invitation[]         @relation("InvitationCreator")
-  tokens          UserToken[]          @relation("UserTokens")
+  areaManager       AreaManager?         @relation("AreaManagerUser")
+  managerOf         CorporationManager[]
+  supervisorOf      Supervisor[] // v1.4: Renamed from SiteManager
+  supervisorSites   SupervisorSite[]     @relation("SupervisorAssignments")
+  invitationsSent   Invitation[]         @relation("InvitationCreator")
+  tokens            UserToken[]          @relation("UserTokens")
+  tasksSent         Task[]               @relation("TasksSent")
+  tasksReceived     TaskAssignment[]     @relation("TasksReceived")
+  pushSubscriptions PushSubscription[]   @relation("PushSubscriptions")
 
   @@index([email])
   @@index([isActive])
@@ -443,4 +446,95 @@ model AuditLog {
   @@index([corporationId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================
+// TASKS TABLE (v2.2: Task Broadcast System)
+// ============================================
+model Task {
+  id   BigInt @id @default(autoincrement())
+  type String @default("Task") // Hard-coded for v1.0, future: 'Announcement', 'Alert'
+  body String // Task description/details
+
+  // Sender relationship
+  senderUserId String @map("sender_user_id")
+  senderUser   User   @relation("TasksSent", fields: [senderUserId], references: [id], onDelete: Cascade)
+
+  // Task details
+  executionDate    DateTime @map("execution_date") @db.Date // When to execute (cannot be in past)
+  recipientsCount  Int      @map("recipients_count") // ⚠️ NO DEFAULT - must be set explicitly
+
+  // Soft delete
+  deletedBySenderAt DateTime? @map("deleted_by_sender_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  assignments TaskAssignment[]
+
+  @@index([senderUserId])
+  @@index([executionDate])
+  @@index([createdAt(sort: Desc)])
+  @@index([deletedBySenderAt])
+  @@map("tasks")
+}
+
+// ============================================
+// TASK ASSIGNMENTS TABLE (v2.2: Task Broadcast System)
+// ============================================
+model TaskAssignment {
+  id BigInt @id @default(autoincrement())
+
+  // Relationships
+  taskId       BigInt @map("task_id")
+  task         Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  targetUserId String @map("target_user_id")
+  targetUser   User   @relation("TasksReceived", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  // Assignment status
+  status         String    @default("unread") // unread/read/acknowledged/archived
+  readAt         DateTime? @map("read_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  archivedAt     DateTime? @map("archived_at")
+
+  // 🚨 CRITICAL: Sender deleted task (show greyed-out)
+  deletedForRecipientAt DateTime? @map("deleted_for_recipient_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([taskId, targetUserId])
+  @@index([targetUserId, status])
+  @@index([taskId])
+  @@index([targetUserId, archivedAt])
+  @@index([deletedForRecipientAt])
+  @@map("task_assignments")
+}
+
+// ============================================
+// PUSH SUBSCRIPTIONS TABLE (PWA Support)
+// ============================================
+model PushSubscription {
+  id       BigInt @id @default(autoincrement())
+
+  // Relationships
+  userId String @map("user_id")
+  user   User   @relation("PushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Push service details
+  endpoint  String // Push service endpoint URL
+  p256dh    String // Encryption key
+  auth      String // Auth secret
+  userAgent String? @map("user_agent") // Browser info
+
+  // Timestamps
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@index([lastUsedAt])
+  @@map("push_subscriptions")
 }

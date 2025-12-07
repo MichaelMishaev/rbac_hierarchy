@@ -5,6 +5,15 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Corporations MVP - Hierarchical Organization Management',
   description: 'Premium multi-tenant organizational management system',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Hierarchy Platform',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default async function RootLayout({
