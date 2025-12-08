@@ -29,7 +29,7 @@ export default async function CorporationsPage() {
   }
 
   // v1.4: Fetch corporations with areaManager relation
-  const corporations = await prisma.corporation.findMany({
+  const corporationsData = await prisma.corporation.findMany({
     include: {
       areaManager: {
         include: {
@@ -54,6 +54,12 @@ export default async function CorporationsPage() {
       { createdAt: 'desc' },
     ],
   });
+
+  // Transform null to undefined for optional relations (TypeScript compatibility)
+  const corporations = corporationsData.map(corp => ({
+    ...corp,
+    areaManager: corp.areaManager || undefined,
+  }));
 
   return (
     <Box
