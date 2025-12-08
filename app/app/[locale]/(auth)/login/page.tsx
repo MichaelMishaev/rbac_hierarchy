@@ -148,6 +148,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
+              autoComplete="email"
               placeholder="your.email@company.com"
               InputProps={{
                 startAdornment: (
@@ -179,6 +180,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               placeholder="הכנס סיסמה"
               InputProps={{
                 startAdornment: (

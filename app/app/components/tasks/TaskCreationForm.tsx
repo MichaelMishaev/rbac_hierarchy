@@ -22,10 +22,14 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { he } from 'date-fns/locale';
 import { useTranslations } from 'next-intl';
-import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
 import InfoIcon from '@mui/icons-material/Info';
 import SendIcon from '@mui/icons-material/Send';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import InboxIcon from '@mui/icons-material/Inbox';
+import AddIcon from '@mui/icons-material/Add';
 import SpamPreventionModal from './SpamPreventionModal';
 
 interface Recipient {
@@ -53,10 +57,16 @@ interface RecipientPreview {
   };
 }
 
-export default function TaskCreationForm() {
+interface TaskCreationFormProps {
+  senderId: string;
+  senderRole: string;
+  senderName?: string;
+}
+
+export default function TaskCreationForm({ senderId, senderRole, senderName }: TaskCreationFormProps) {
   const t = useTranslations('tasks');
   const tCommon = useTranslations('common');
-  const { data: session } = useSession();
+  const router = useRouter();
 
   // Form state
   const [taskBody, setTaskBody] = useState('');
@@ -78,7 +88,6 @@ export default function TaskCreationForm() {
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // Load available recipients (only if sendTo = 'selected')
   useEffect(() => {
@@ -122,7 +131,7 @@ export default function TaskCreationForm() {
       return t('taskBodyTooLong');
     }
     if (!executionDate) {
-      return t('selectAtLeastOneRecipient');
+      return t('executionDateRequired');
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -205,18 +214,129 @@ export default function TaskCreationForm() {
         return;
       }
 
-      // Success
-      setSuccess(true);
+      // Success - Show modern toast with next actions
+      const recipientCount = recipientPreview?.count || 0;
       setShowConfirmModal(false);
 
+      // Custom success toast with action buttons (2025 UX best practice)
+      toast.custom(
+        (toastInstance) => (
+          <Box
+            sx={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+              maxWidth: '480px',
+              direction: 'rtl',
+              border: '1px solid #E8F5E9',
+              animation: 'slideDown 0.3s ease-out',
+              '@keyframes slideDown': {
+                from: { opacity: 0, transform: 'translateY(-20px)' },
+                to: { opacity: 1, transform: 'translateY(0)' },
+              },
+            }}
+          >
+            {/* Success Header with Green Accent */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2.5 }}>
+              <Box
+                sx={{
+                  backgroundColor: '#E8F5E9',
+                  borderRadius: '12px',
+                  width: 48,
+                  height: 48,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircleIcon sx={{ fontSize: 28, color: '#2E7D32' }} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '18px', color: '#1B1B1B', mb: 0.5 }}>
+                  המשימה נשלחה בהצלחה
+                </Typography>
+                <Typography sx={{ fontSize: '14px', color: '#616161' }}>
+                  {t('taskSentToRecipients', { count: recipientCount })}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Divider */}
+            <Box sx={{ height: '1px', backgroundColor: '#F5F5F5', mb: 2.5 }} />
+
+            {/* Next Steps Info */}
+            <Typography sx={{ fontSize: '13px', color: '#757575', mb: 3 }}>
+              {t('recipientsWillReceive')}
+            </Typography>
+
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
+              <Button
+                size="medium"
+                onClick={() => {
+                  toast.dismiss(toastInstance.id);
+                  router.push('/he/tasks');
+                }}
+                startIcon={<InboxIcon />}
+                variant="outlined"
+                sx={{
+                  borderColor: '#E0E0E0',
+                  color: '#424242',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: '10px',
+                  '&:hover': {
+                    borderColor: '#BDBDBD',
+                    backgroundColor: '#FAFAFA',
+                  },
+                }}
+              >
+                {t('viewInbox')}
+              </Button>
+              <Button
+                size="medium"
+                onClick={() => {
+                  toast.dismiss(toastInstance.id);
+                }}
+                startIcon={<AddIcon />}
+                variant="contained"
+                sx={{
+                  backgroundColor: '#2E7D32',
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: '10px',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    backgroundColor: '#1B5E20',
+                    boxShadow: '0 2px 8px rgba(46, 125, 50, 0.24)',
+                  },
+                }}
+              >
+                {t('sendAnother')}
+              </Button>
+            </Box>
+          </Box>
+        ),
+        {
+          duration: 6000,
+          position: 'top-center',
+        }
+      );
+
       // Reset form
-      setTimeout(() => {
-        setTaskBody('');
-        setSelectedRecipients([]);
-        setExecutionDate(null);
-        setSendTo('all');
-        setSuccess(false);
-      }, 2000);
+      setTaskBody('');
+      setSelectedRecipients([]);
+      setExecutionDate(null);
+      setSendTo('all');
     } catch (err) {
       console.error('Error creating task:', err);
       setError(t('taskCreatedError'));
@@ -247,13 +367,6 @@ export default function TaskCreationForm() {
           >
             {t('newTask')}
           </Typography>
-
-          {/* Success Message */}
-          {success && (
-            <Alert severity="success" sx={{ mb: 3 }}>
-              {t('taskCreatedSuccess')}
-            </Alert>
-          )}
 
           {/* Error Message */}
           {error && (
@@ -293,7 +406,7 @@ export default function TaskCreationForm() {
                 maxLength: 2000,
                 dir: 'rtl',
               }}
-              helperText={`${taskBody.length} / 2000 ${tCommon('characters')}`}
+              helperText={`${taskBody.length} / 2000 תווים`}
               data-testid="task-body"
             />
           </Box>
@@ -400,7 +513,6 @@ export default function TaskCreationForm() {
                 textField: {
                   fullWidth: true,
                   inputProps: { dir: 'rtl' },
-                  'data-testid': 'execution-date',
                 },
               }}
             />
@@ -413,7 +525,7 @@ export default function TaskCreationForm() {
             </Typography>
             <TextField
               fullWidth
-              value={session?.user?.fullName || session?.user?.email || ''}
+              value={senderName || ''}
               disabled
               InputProps={{
                 sx: { backgroundColor: colors.neutral[50] },

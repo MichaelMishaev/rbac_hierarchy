@@ -10,24 +10,38 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { testUsers, getAuthenticatedContext } from '../fixtures/auth.fixture';
 import { prisma } from '@/lib/prisma';
 
+// FIX: Cleanup hook - delete test tasks after each test to prevent pollution
+test.afterEach(async () => {
+  // Delete all tasks created in tests
+  await prisma.taskAssignment.deleteMany({
+    where: {
+      task: {
+        body: {
+          contains: 'Task to',
+        },
+      },
+    },
+  });
+  await prisma.task.deleteMany({
+    where: {
+      body: {
+        contains: 'Task to',
+      },
+    },
+  });
+});
+
 test.describe('Deleted Tasks - Status Change Block', () => {
-  test('TC-TASK-002: should block status changes on deleted tasks', async ({ request }) => {
+  test('TC-TASK-002: should block status changes on deleted tasks', async ({ page, baseURL }) => {
     // This test verifies CRITICAL FIX #1: Status changes MUST be blocked on deleted tasks
 
     // 1. Login as Manager and create task
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    const { token: managerToken, userId: managerId } = await managerLogin.json();
-
-    const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${managerToken}` },
+    const createResponse = await managerRequest.post('/api/tasks', {
       data: {
         type: 'Task',
         body: 'Task to be deleted - status change block test',
@@ -39,25 +53,18 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     const { task_id } = await createResponse.json();
 
     // 2. Sender deletes task (within 1 hour)
-    const deleteResponse = await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${managerToken}` },
-    });
+    const deleteResponse = await managerRequest.delete(`/api/tasks/${task_id}`);
 
     expect(deleteResponse.status()).toBe(200);
 
-    // 3. Login as Supervisor (recipient)
-    const supervisorLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'supervisor@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    // FIX: Add wait for database to sync after delete
+    await page.waitForTimeout(500);
 
-    const { token: supervisorToken, userId: supervisorId } = await supervisorLogin.json();
+    // 3. Login as Supervisor (recipient)
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     // 4. Try to change status to 'read' - SHOULD FAIL
-    const updateResponse = await request.patch(`/api/tasks/${task_id}/status`, {
-      headers: { Authorization: `Bearer ${supervisorToken}` },
+    const updateResponse = await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'read' },
     });
 
@@ -66,11 +73,19 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     const error = await updateResponse.json();
     expect(error.error).toContain('לא ניתן לשנות סטטוס של משימה שנמחקה');
 
-    // 6. Verify status unchanged in database
+    // 6. Get supervisor user ID from database
+    const supervisorUser = await prisma.user.findUnique({
+      where: { email: testUsers.supervisor.email },
+    });
+
+    // FIX: Verify supervisor user exists (seed data check)
+    expect(supervisorUser).toBeDefined();
+
+    // Verify status unchanged in database
     const assignment = await prisma.taskAssignment.findFirst({
       where: {
         taskId: BigInt(task_id),
-        targetUserId: supervisorId,
+        targetUserId: supervisorUser!.id,
       },
     });
 
@@ -78,21 +93,16 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     expect(assignment!.status).toBe('unread'); // Still unread
     expect(assignment!.readAt).toBeNull();
     expect(assignment!.deletedForRecipientAt).not.toBeNull(); // Marked as deleted
+
+    await managerRequest.dispose();
+    await supervisorRequest.dispose();
   });
 
-  test('should also block acknowledge status on deleted tasks', async ({ request }) => {
+  test('should also block acknowledge status on deleted tasks', async ({ page, baseURL }) => {
     // Create and delete task
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    const { token: managerToken } = await managerLogin.json();
-
-    const task = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${managerToken}` },
+    const task = await managerRequest.post('/api/tasks', {
       data: {
         type: 'Task',
         body: 'Task to test acknowledge block on deletion',
@@ -103,41 +113,26 @@ test.describe('Deleted Tasks - Status Change Block', () => {
 
     const { task_id } = await task.json();
 
-    await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${managerToken}` },
-    });
+    await managerRequest.delete(`/api/tasks/${task_id}`);
 
     // Try to acknowledge
-    const supervisorLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'supervisor@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
-    const { token: supervisorToken } = await supervisorLogin.json();
-
-    const acknowledgeResponse = await request.patch(`/api/tasks/${task_id}/status`, {
-      headers: { Authorization: `Bearer ${supervisorToken}` },
+    const acknowledgeResponse = await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'acknowledged' },
     });
 
     expect(acknowledgeResponse.status()).toBe(400);
+
+    await managerRequest.dispose();
+    await supervisorRequest.dispose();
   });
 
-  test('should also block archive status on deleted tasks', async ({ request }) => {
+  test('should also block archive status on deleted tasks', async ({ page, baseURL }) => {
     // Create and delete task
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    const { token: managerToken } = await managerLogin.json();
-
-    const task = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${managerToken}` },
+    const task = await managerRequest.post('/api/tasks', {
       data: {
         type: 'Task',
         body: 'Task to test archive block on deletion',
@@ -148,42 +143,27 @@ test.describe('Deleted Tasks - Status Change Block', () => {
 
     const { task_id } = await task.json();
 
-    await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${managerToken}` },
-    });
+    await managerRequest.delete(`/api/tasks/${task_id}`);
 
     // Try to archive
-    const supervisorLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'supervisor@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
-    const { token: supervisorToken } = await supervisorLogin.json();
-
-    const archiveResponse = await request.patch(`/api/tasks/${task_id}/status`, {
-      headers: { Authorization: `Bearer ${supervisorToken}` },
+    const archiveResponse = await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'archived' },
     });
 
     expect(archiveResponse.status()).toBe(400);
+
+    await managerRequest.dispose();
+    await supervisorRequest.dispose();
   });
 });
 
 test.describe('Deleted Tasks - Sender Deletion', () => {
-  test('should allow sender to delete task within 1 hour', async ({ request }) => {
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
-
-    const { token } = await managerLogin.json();
+  test('should allow sender to delete task within 1 hour', async ({ page, baseURL }) => {
+    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${token}` },
       data: {
         type: 'Task',
         body: 'Task to be deleted within 1 hour',
@@ -195,9 +175,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
     const { task_id, recipients_count } = await createResponse.json();
 
     // Delete immediately (within 1 hour)
-    const deleteResponse = await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const deleteResponse = await request.delete(`/api/tasks/${task_id}`);
 
     expect(deleteResponse.status()).toBe(200);
     const deleteData = await deleteResponse.json();
@@ -205,6 +183,9 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
     expect(deleteData.deleted).toBe(true);
     expect(deleteData.task_id).toBe(task_id);
     expect(deleteData.recipients_affected).toBe(recipients_count);
+
+    // FIX: Add wait for database to sync after delete
+    await page.waitForTimeout(500);
 
     // Verify task marked as deleted in database
     const task = await prisma.task.findUnique({
@@ -219,23 +200,16 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
     });
 
     expect(assignments.every((a) => a.deletedForRecipientAt !== null)).toBe(true);
+
+    await request.dispose();
   });
 
-  test('should reject deletion after 1 hour', async ({ request }) => {
-    // Note: This test requires manipulating created_at, which may need a test helper
-
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
-
-    const { token, userId } = await managerLogin.json();
+  test('should reject deletion after 1 hour', async ({ page, baseURL }) => {
+    // Note: This test manipulates created_at timestamp
+    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
     // Create task
     const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${token}` },
       data: {
         type: 'Task',
         body: 'Task created over 1 hour ago',
@@ -254,27 +228,19 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
     });
 
     // Try to delete - should fail
-    const deleteResponse = await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const deleteResponse = await request.delete(`/api/tasks/${task_id}`);
 
     expect(deleteResponse.status()).toBe(400);
     const error = await deleteResponse.json();
     expect(error.error).toContain('תוך שעה');
+
+    await request.dispose();
   });
 
-  test('should reject deletion if any recipient has acknowledged', async ({ request }) => {
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+  test('should reject deletion if any recipient has acknowledged', async ({ page, baseURL }) => {
+    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    const { token: managerToken } = await managerLogin.json();
-
-    const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${managerToken}` },
+    const createResponse = await managerRequest.post('/api/tasks', {
       data: {
         type: 'Task',
         body: 'Task to be acknowledged then attempted deletion',
@@ -286,48 +252,32 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
     const { task_id } = await createResponse.json();
 
     // Supervisor acknowledges task
-    const supervisorLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'supervisor@corp1.test',
-        password: 'Test@1234',
-      },
-    });
-
-    const { token: supervisorToken, userId: supervisorId } = await supervisorLogin.json();
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     // First mark as read, then acknowledge (proper flow)
-    await request.patch(`/api/tasks/${task_id}/status`, {
-      headers: { Authorization: `Bearer ${supervisorToken}` },
+    await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'read' },
     });
 
-    await request.patch(`/api/tasks/${task_id}/status`, {
-      headers: { Authorization: `Bearer ${supervisorToken}` },
+    await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'acknowledged' },
     });
 
     // Manager tries to delete - should fail
-    const deleteResponse = await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${managerToken}` },
-    });
+    const deleteResponse = await managerRequest.delete(`/api/tasks/${task_id}`);
 
     expect(deleteResponse.status()).toBe(400);
     const error = await deleteResponse.json();
     expect(error.error).toContain('אושרה');
+
+    await managerRequest.dispose();
+    await supervisorRequest.dispose();
   });
 
-  test('should reject deletion by non-sender', async ({ request }) => {
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+  test('should reject deletion by non-sender', async ({ page, baseURL }) => {
+    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    const { token: managerToken } = await managerLogin.json();
-
-    const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${managerToken}` },
+    const createResponse = await managerRequest.post('/api/tasks', {
       data: {
         type: 'Task',
         body: 'Task created by manager@corp1',
@@ -338,40 +288,26 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
 
     const { task_id } = await createResponse.json();
 
-    // Different manager tries to delete
-    const otherManagerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp2.test',
-        password: 'Test@1234',
-      },
-    });
+    // Get a different manager (SuperAdmin in this case, who is not the sender)
+    const otherRequest = await getAuthenticatedContext(page, testUsers.superAdmin, baseURL || 'http://localhost:3000');
 
-    const { token: otherToken } = await otherManagerLogin.json();
-
-    const deleteResponse = await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${otherToken}` },
-    });
+    const deleteResponse = await otherRequest.delete(`/api/tasks/${task_id}`);
 
     expect(deleteResponse.status()).toBe(403);
     const error = await deleteResponse.json();
     expect(error.error).toContain('רק השולח');
+
+    await managerRequest.dispose();
+    await otherRequest.dispose();
   });
 });
 
 test.describe('Deleted Tasks - Inbox Display', () => {
-  test('TC-TASK-003: deleted tasks should appear in inbox with is_deleted = true', async ({ request }) => {
+  test('TC-TASK-003: deleted tasks should appear in inbox with is_deleted = true', async ({ page, baseURL }) => {
     // Create and delete task
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    const { token: managerToken } = await managerLogin.json();
-
-    const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${managerToken}` },
+    const createResponse = await managerRequest.post('/api/tasks', {
       data: {
         type: 'Task',
         body: 'Task to verify deleted display in inbox',
@@ -382,23 +318,15 @@ test.describe('Deleted Tasks - Inbox Display', () => {
 
     const { task_id } = await createResponse.json();
 
-    await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${managerToken}` },
-    });
+    await managerRequest.delete(`/api/tasks/${task_id}`);
+
+    // FIX: Add wait for database to sync after delete
+    await page.waitForTimeout(500);
 
     // Supervisor checks inbox
-    const supervisorLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'supervisor@corp1.test',
-        password: 'Test@1234',
-      },
-    });
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
-    const { token: supervisorToken } = await supervisorLogin.json();
-
-    const inboxResponse = await request.get('/api/tasks/inbox', {
-      headers: { Authorization: `Bearer ${supervisorToken}` },
-    });
+    const inboxResponse = await supervisorRequest.get('/api/tasks/inbox');
 
     const { tasks } = await inboxResponse.json();
 
@@ -408,42 +336,35 @@ test.describe('Deleted Tasks - Inbox Display', () => {
     expect(deletedTask.is_deleted).toBe(true);
     expect(deletedTask.deleted_for_recipient_at).not.toBeNull();
     expect(deletedTask.body).toBe('המשימה נמחקה על ידי השולח'); // Placeholder text
+
+    await managerRequest.dispose();
+    await supervisorRequest.dispose();
   });
 
-  test('deleted tasks should be filterable', async ({ request }) => {
-    const supervisorLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'supervisor@corp1.test',
-        password: 'Test@1234',
-      },
-    });
-
-    const { token } = await supervisorLogin.json();
+  test('deleted tasks should be filterable', async ({ page, baseURL }) => {
+    const request = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     // Get only deleted tasks
-    const deletedResponse = await request.get('/api/tasks/inbox?status=deleted', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const deletedResponse = await request.get('/api/tasks/inbox?status=deleted');
 
     const { tasks } = await deletedResponse.json();
 
     expect(tasks.every((t: any) => t.is_deleted === true)).toBe(true);
+
+    await request.dispose();
   });
 });
 
 test.describe('Deleted Tasks - Audit Trail', () => {
-  test('should create audit log when task is deleted', async ({ request }) => {
-    const managerLogin = await request.post('/api/auth/login', {
-      data: {
-        email: 'manager@corp1.test',
-        password: 'Test@1234',
-      },
+  test('should create audit log when task is deleted', async ({ page, baseURL }) => {
+    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+
+    // Get manager user ID
+    const managerUser = await prisma.user.findUnique({
+      where: { email: testUsers.manager.email },
     });
 
-    const { token, userId } = await managerLogin.json();
-
     const createResponse = await request.post('/api/tasks', {
-      headers: { Authorization: `Bearer ${token}` },
       data: {
         type: 'Task',
         body: 'Task for delete audit log test',
@@ -454,9 +375,7 @@ test.describe('Deleted Tasks - Audit Trail', () => {
 
     const { task_id } = await createResponse.json();
 
-    await request.delete(`/api/tasks/${task_id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await request.delete(`/api/tasks/${task_id}`);
 
     // Verify audit log
     const auditLog = await prisma.auditLog.findFirst({
@@ -464,7 +383,7 @@ test.describe('Deleted Tasks - Audit Trail', () => {
         entity: 'task',
         entityId: task_id,
         action: 'DELETE',
-        userId,
+        userId: managerUser!.id,
       },
     });
 
@@ -473,5 +392,7 @@ test.describe('Deleted Tasks - Audit Trail', () => {
     expect(after.task_id).toBe(task_id);
     expect(after.deleted_at).toBeDefined();
     expect(after.recipients_affected).toBeGreaterThan(0);
+
+    await request.dispose();
   });
 });

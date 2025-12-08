@@ -14,8 +14,14 @@ import MailIcon from '@mui/icons-material/Mail';
 import LogoutIcon from '@mui/icons-material/Logout';
 import RuleIcon from '@mui/icons-material/Rule';
 import MapIcon from '@mui/icons-material/Map';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import AddTaskIcon from '@mui/icons-material/AddTask';
 import LanguageSwitcher from './LanguageSwitcher';
 import { signOut } from 'next-auth/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useWorkerMutations } from '@/app/hooks/useWorkers';
+import { useSiteMutations } from '@/app/hooks/useSites';
+import { useDashboardMutations } from '@/app/hooks/useDashboardStats';
 
 export type NavigationClientProps = {
   role: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR';
@@ -28,12 +34,29 @@ export default function NavigationClient({ role }: NavigationClientProps) {
   const pathname = usePathname();
   const isRTL = locale === 'he';
 
+  // Prefetch hooks
+  const { prefetch: prefetchWorkers } = useWorkerMutations();
+  const { prefetch: prefetchSites } = useSiteMutations();
+  const { prefetch: prefetchDashboard } = useDashboardMutations();
+
   const handleLogout = () => {
     signOut({ callbackUrl: '/login' });
   };
 
+  const handlePrefetch = (path: string) => {
+    if (path.includes('/workers')) {
+      prefetchWorkers();
+    } else if (path.includes('/sites')) {
+      prefetchSites();
+    } else if (path.includes('/dashboard')) {
+      prefetchDashboard();
+    }
+  };
+
   const superAdminRoutes = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
+    { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
     { path: '/corporations', label: t('corporations'), icon: <BusinessIcon /> },
     { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     { path: '/sites', label: t('sites'), icon: <LocationOnIcon /> },
@@ -45,6 +68,8 @@ export default function NavigationClient({ role }: NavigationClientProps) {
 
   const managerRoutes = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
+    { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
     { path: '/sites', label: t('sites'), icon: <LocationOnIcon /> },
     { path: '/workers', label: t('workers'), icon: <GroupIcon /> },
     { path: '/users', label: t('users'), icon: <PeopleIcon /> },
@@ -52,6 +77,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
 
   const supervisorRoutes = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
     { path: '/workers', label: t('workers'), icon: <GroupIcon /> },
   ];
 
@@ -154,9 +180,10 @@ export default function NavigationClient({ role }: NavigationClientProps) {
           const isActive = currentPath === route.path;
           return (
             <ListItem key={route.path} disablePadding sx={{ mb: 1 }}>
-              <Link href={route.path} style={{ textDecoration: 'none', width: '100%' }}>
+              <Link href={route.path} prefetch={true} style={{ textDecoration: 'none', width: '100%' }}>
                 <ListItemButton
                   data-testid={`nav-link-${route.path.replace('/', '')}`}
+                  onMouseEnter={() => handlePrefetch(route.path)}
                   sx={{
                     borderRadius: borderRadius.lg,
                     backgroundColor: isActive ? colors.pastel.blueLight : 'transparent',

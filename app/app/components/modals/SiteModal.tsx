@@ -38,6 +38,7 @@ export type SiteFormData = {
   phone: string;
   email: string;
   corporationId: string;
+  supervisorId: string;
   isActive: boolean;
 };
 
@@ -47,6 +48,13 @@ type Corporation = {
   code: string;
 };
 
+type Supervisor = {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+};
+
 type SiteModalProps = {
   open: boolean;
   onClose: () => void;
@@ -54,6 +62,7 @@ type SiteModalProps = {
   initialData?: Partial<SiteFormData>;
   mode: 'create' | 'edit';
   corporations: Corporation[];
+  supervisors: Supervisor[];
 };
 
 export default function SiteModal({
@@ -63,6 +72,7 @@ export default function SiteModal({
   initialData,
   mode,
   corporations,
+  supervisors,
 }: SiteModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
@@ -77,6 +87,7 @@ export default function SiteModal({
     phone: initialData?.phone || '',
     email: initialData?.email || '',
     corporationId: initialData?.corporationId || '',
+    supervisorId: '',
     isActive: initialData?.isActive ?? true,
   });
 
@@ -94,6 +105,7 @@ export default function SiteModal({
         phone: initialData?.phone || '',
         email: initialData?.email || '',
         corporationId: initialData?.corporationId || corporations[0]?.id || '',
+        supervisorId: '',
         isActive: initialData?.isActive ?? true,
       });
       setErrors({});
@@ -374,6 +386,7 @@ export default function SiteModal({
     </Dialog>
   );
 }
+
 
 
 

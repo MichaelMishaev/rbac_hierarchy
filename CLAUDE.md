@@ -493,3 +493,4 @@ When starting development:
 - ❌ **NEVER** skip RBAC validation on any endpoint
 - ❌ **NEVER** allow cross-corporation data access
 - the project must be organised, do not put .md files in root, aggrigate them in olders in '/Users/michaelmishayev/Desktop/Projects/corporations/docs/mdFiles'
+- when automation fail, first check if its automation problem or code!

@@ -7,16 +7,20 @@ import { test, expect } from '@playwright/test';
 
 test.describe('RBAC - SuperAdmin Permissions', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
+    // FIX: Use locale-based routing
+    await page.goto('/he/login');
     await page.fill('input[name="email"]', 'admin@rbac.shop');
     await page.fill('input[name="password"]', 'admin123');
     await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard', { timeout: 10000 });
+    await page.waitForURL(/\/(he\/)?dashboard/, { timeout: 10000 });
   });
 
   test('SuperAdmin can view all corporations', async ({ page }) => {
     await page.click('text=תאגידים');
     await page.waitForURL(/.*\/corporations/);
+
+    // FIX: Wait for data to load
+    await page.waitForTimeout(1000);
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();

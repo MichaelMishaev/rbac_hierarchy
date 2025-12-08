@@ -13,7 +13,7 @@ import { logTaskAudit } from '@/lib/tasks';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
     // 1. Authenticate user
@@ -26,7 +26,8 @@ export async function PATCH(
     }
 
     const userId = session.user.id as string;
-    const taskId = BigInt(params.taskId);
+    const { taskId: taskIdStr } = await params;
+    const taskId = BigInt(taskIdStr);
 
     // 2. Parse request body
     const body = await request.json();

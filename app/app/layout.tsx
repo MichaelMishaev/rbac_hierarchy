@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   title: 'Corporations MVP - Hierarchical Organization Management',
   description: 'Premium multi-tenant organizational management system',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

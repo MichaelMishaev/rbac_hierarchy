@@ -1,6 +1,9 @@
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 
+// Re-export auth for convenience
+export { auth };
+
 export async function getCurrentUser() {
   const session = await auth();
 

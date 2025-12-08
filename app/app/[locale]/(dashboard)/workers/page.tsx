@@ -7,6 +7,10 @@ import { listWorkers } from '@/app/actions/workers';
 import { listSites } from '@/app/actions/sites';
 import { prisma } from '@/lib/prisma';
 import WorkersClient from '@/app/components/workers/WorkersClient';
+import { Suspense } from 'react';
+
+// Enable route caching - revalidate every 30 seconds
+export const revalidate = 30;
 
 export default async function WorkersPage() {
   const session = await auth();

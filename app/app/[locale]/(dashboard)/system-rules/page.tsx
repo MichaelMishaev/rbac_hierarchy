@@ -1,3 +1,4 @@
+import React from 'react';
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { Box, Typography, Card, CardContent, Chip } from '@mui/material';
@@ -191,10 +192,9 @@ export default async function SystemRulesPage() {
 
               {/* Data Rows */}
               {workerCreationRules.map((rule, index) => (
-                <>
+                <React.Fragment key={`rule-row-${index}`}>
                   {/* Badge */}
                   <Box
-                    key={`badge-${index}`}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
@@ -268,7 +268,7 @@ export default async function SystemRulesPage() {
                         icon={<CheckCircleIcon />}
                         label={t('workerCreation.canCreate')}
                         sx={{
-                          background: colors.status.greenLight,
+                          background: colors.pastel.greenLight,
                           color: colors.status.green,
                           fontWeight: 600,
                           fontSize: '13px',
@@ -282,7 +282,7 @@ export default async function SystemRulesPage() {
                         icon={<CancelIcon />}
                         label={t('workerCreation.cannotCreate')}
                         sx={{
-                          background: colors.status.redLight,
+                          background: colors.pastel.redLight,
                           color: colors.status.red,
                           fontWeight: 600,
                           fontSize: '13px',
@@ -318,7 +318,7 @@ export default async function SystemRulesPage() {
                       {rule.reason}
                     </Typography>
                   </Box>
-                </>
+                </React.Fragment>
               ))}
             </Box>
           </Box>
@@ -382,7 +382,7 @@ export default async function SystemRulesPage() {
                         icon={<CheckCircleIcon />}
                         label={t('workerCreation.canCreate')}
                         sx={{
-                          background: colors.status.greenLight,
+                          background: colors.pastel.greenLight,
                           color: colors.status.green,
                           fontWeight: 600,
                           fontSize: '13px',
@@ -396,7 +396,7 @@ export default async function SystemRulesPage() {
                         icon={<CancelIcon />}
                         label={t('workerCreation.cannotCreate')}
                         sx={{
-                          background: colors.status.redLight,
+                          background: colors.pastel.redLight,
                           color: colors.status.red,
                           fontWeight: 600,
                           fontSize: '13px',

@@ -202,15 +202,19 @@ test.describe('Cross-Corporation API Access Prevention', () => {
 
 test.describe('SuperAdmin Cross-Corporation Access', () => {
   test('SuperAdmin can see all corporations', async ({ page }) => {
-    await page.goto('/login');
+    // FIX: Use locale-based routing
+    await page.goto('/he/login');
     await page.fill('input[name="email"]', 'admin@rbac.shop');
     await page.fill('input[name="password"]', 'admin123');
     await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
+    await page.waitForURL(/\/(he\/)?dashboard/);
 
     // Navigate to corporations
     await page.click('text=תאגידים');
     await page.waitForURL(/.*\/corporations/);
+
+    // FIX: Wait for data to load (loading skeletons to disappear)
+    await page.waitForTimeout(1000);
 
     const corporationsContent = await page.textContent('body');
 
@@ -225,15 +229,19 @@ test.describe('SuperAdmin Cross-Corporation Access', () => {
   });
 
   test('SuperAdmin can see workers from all corporations', async ({ page }) => {
-    await page.goto('/login');
+    // FIX: Use locale-based routing
+    await page.goto('/he/login');
     await page.fill('input[name="email"]', 'admin@rbac.shop');
     await page.fill('input[name="password"]', 'admin123');
     await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
+    await page.waitForURL(/\/(he\/)?dashboard/);
 
     // Navigate to workers
     await page.click('text=עובדים');
     await page.waitForURL(/.*\/workers/);
+
+    // FIX: Wait for data to load
+    await page.waitForTimeout(1000);
 
     const workersContent = await page.textContent('body');
 

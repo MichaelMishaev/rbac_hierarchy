@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         pushCount = await sendTaskNotification(recipients, {
           taskId: task.id,
           body: taskBody,
-          senderName: session.user.fullName || session.user.email || 'שולח לא ידוע',
+          senderName: session.user.name || session.user.email || 'שולח לא ידוע',
           executionDate,
         });
         pushSent = pushCount > 0;

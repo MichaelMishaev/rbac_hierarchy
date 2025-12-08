@@ -26,6 +26,8 @@ import {
   FitScreen as FitScreenIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material';
 import dynamic from 'next/dynamic';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
@@ -64,7 +66,9 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [searchTerm, setSearchTerm] = useState('');
   const [matchedNodePaths, setMatchedNodePaths] = useState<string[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const treeRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
@@ -72,6 +76,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     zoomIn: 'הגדל',
     zoomOut: 'הקטן',
     fitToScreen: 'התאם למסך',
+    fullscreen: 'מסך מלא',
+    exitFullscreen: 'צא ממסך מלא',
     noData: 'אין נתוני ארגון זמינים',
     superadmin: 'מנהל על',
     corporation: 'תאגיד',
@@ -217,10 +223,25 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         // Get the container width (accounting for padding/margins)
         const containerWidth = Math.min(window.innerWidth - 100, 1400); // Max width with padding
         const containerHeight = 700;
-        setDimensions({ width: containerWidth, height: containerHeight });
 
-        if (!searchTerm) {
-          setTranslate({ x: containerWidth / 2, y: 80 });
+        setDimensions((prev) => {
+          // Only update if dimensions actually changed (prevent infinite loops)
+          if (prev.width !== containerWidth || prev.height !== containerHeight) {
+            return { width: containerWidth, height: containerHeight };
+          }
+          return prev;
+        });
+
+        // Only update translate on initial load or when exiting fullscreen
+        if (!searchTerm && !isFullscreen) {
+          setTranslate((prev) => {
+            const newTranslate = { x: containerWidth / 2, y: 80 };
+            // Prevent unnecessary updates
+            if (Math.abs(prev.x - newTranslate.x) > 10 || Math.abs(prev.y - newTranslate.y) > 10) {
+              return newTranslate;
+            }
+            return prev;
+          });
         }
       };
 
@@ -228,7 +249,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       window.addEventListener('resize', updateDimensions);
       return () => window.removeEventListener('resize', updateDimensions);
     }
-  }, [searchTerm]);
+  }, [searchTerm, isFullscreen]);
 
   // Zoom controls with smooth increments
   const handleZoomIn = useCallback(() => {
@@ -255,6 +276,40 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       y: 80
     });
   }, [dimensions]);
+
+  // Fullscreen handler
+  const handleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.error('Error toggling fullscreen:', err);
+    }
+  }, []);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isNowFullscreen = !!document.fullscreenElement;
+      setIsFullscreen((prev) => {
+        // Only update if state actually changed
+        if (prev !== isNowFullscreen) {
+          return isNowFullscreen;
+        }
+        return prev;
+      });
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Get node color based on type
   const getNodeColor = (type: string) => {
@@ -527,7 +582,17 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   }
 
   return (
-    <Box>
+    <Box
+      ref={containerRef}
+      sx={{
+        ...(isFullscreen && {
+          backgroundColor: colors.neutral[0],
+          padding: 4,
+          height: '100vh',
+          overflowY: 'auto',
+        }),
+      }}
+    >
       {/* Search Bar */}
       <Box sx={{ mb: 3, direction: 'rtl' }}>
         <TextField
@@ -607,13 +672,14 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       <Box display="flex" gap={2} mb={3} justifyContent="flex-start" alignItems="center" sx={{ direction: 'rtl' }}>
         <Button
           size="small"
-          startIcon={<ZoomInIcon />}
           onClick={handleZoomIn}
           variant="outlined"
           disabled={zoom >= 2}
           sx={{
             borderColor: colors.neutral[300],
             color: colors.neutral[700],
+            display: 'flex',
+            gap: 1,
             '&:hover': {
               borderColor: colors.primary,
               backgroundColor: colors.pastel.blue,
@@ -625,16 +691,18 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           }}
         >
           {labels.zoomIn}
+          <ZoomInIcon fontSize="small" />
         </Button>
         <Button
           size="small"
-          startIcon={<ZoomOutIcon />}
           onClick={handleZoomOut}
           variant="outlined"
           disabled={zoom <= 0.3}
           sx={{
             borderColor: colors.neutral[300],
             color: colors.neutral[700],
+            display: 'flex',
+            gap: 1,
             '&:hover': {
               borderColor: colors.primary,
               backgroundColor: colors.pastel.blue,
@@ -646,15 +714,17 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           }}
         >
           {labels.zoomOut}
+          <ZoomOutIcon fontSize="small" />
         </Button>
         <Button
           size="small"
-          startIcon={<FitScreenIcon />}
           onClick={handleFitToScreen}
           variant="outlined"
           sx={{
             borderColor: colors.neutral[300],
             color: colors.neutral[700],
+            display: 'flex',
+            gap: 1,
             '&:hover': {
               borderColor: colors.primary,
               backgroundColor: colors.pastel.blue,
@@ -662,31 +732,49 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           }}
         >
           {labels.fitToScreen}
+          <FitScreenIcon fontSize="small" />
         </Button>
 
-        {/* Zoom level indicator */}
-        <Chip
-          label={`${Math.round(zoom * 100)}%`}
+        {/* Fullscreen Button - 2025 UX Best Practice */}
+        <Button
           size="small"
+          onClick={handleFullscreen}
+          variant="contained"
           sx={{
-            marginInlineStart: 2,
+            backgroundColor: isFullscreen ? colors.error : colors.primary,
+            color: '#fff',
             fontWeight: 600,
-            backgroundColor: colors.pastel.blue,
-            color: colors.neutral[900],
+            boxShadow: shadows.medium,
+            display: 'flex',
+            gap: 1,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: isFullscreen ? colors.error : colors.primary,
+              filter: 'brightness(0.95)',
+              transform: 'translateY(-2px)',
+              boxShadow: shadows.large,
+            },
+            '&:active': {
+              transform: 'translateY(0)',
+            },
           }}
-        />
+        >
+          {isFullscreen ? labels.exitFullscreen : labels.fullscreen}
+          {isFullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
+        </Button>
       </Box>
 
       {/* React D3 Tree */}
       <Box
         sx={{
           width: '100%',
-          height: '700px',
+          height: isFullscreen ? 'calc(100vh - 220px)' : '700px',
           border: `2px solid ${colors.neutral[200]}`,
           borderRadius: borderRadius.xl,
           overflow: 'hidden',
           background: colors.neutral[50],
           position: 'relative',
+          transition: 'height 0.3s ease',
         }}
       >
         <Tree

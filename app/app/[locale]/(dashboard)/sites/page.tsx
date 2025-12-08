@@ -6,6 +6,10 @@ import { colors } from '@/lib/design-system';
 import { listSites } from '@/app/actions/sites';
 import { listCorporations } from '@/app/actions/corporations';
 import SitesClient from '@/app/components/sites/SitesClient';
+import { Suspense } from 'react';
+
+// Enable route caching - revalidate every 30 seconds
+export const revalidate = 30;
 
 export default async function SitesPage() {
   const session = await auth();

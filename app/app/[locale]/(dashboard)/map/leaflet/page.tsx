@@ -12,6 +12,9 @@ export default function LeafletPage() {
         background: colors.neutral[50],
         overflow: 'hidden',
         direction: 'rtl',
+        margin: 0,
+        padding: 0,
+        position: 'relative',
       }}
     >
       <Suspense

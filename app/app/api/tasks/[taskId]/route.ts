@@ -14,7 +14,7 @@ import { logTaskAudit } from '@/lib/tasks';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
     // 1. Authenticate user
@@ -27,7 +27,8 @@ export async function DELETE(
     }
 
     const userId = session.user.id as string;
-    const taskId = BigInt(params.taskId);
+    const { taskId: taskIdStr } = await params;
+    const taskId = BigInt(taskIdStr);
 
     // 2. Check if task exists and user is the sender
     const task = await prisma.task.findUnique({

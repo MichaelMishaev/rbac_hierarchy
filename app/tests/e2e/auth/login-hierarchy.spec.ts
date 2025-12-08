@@ -94,15 +94,19 @@ test.describe('Authentication & Hierarchy - v1.3', () => {
 test.describe('Role Hierarchy Enforcement', () => {
   test('SuperAdmin > Manager hierarchy', async ({ page }) => {
     // Login as SuperAdmin
-    await page.goto('/login');
+    // FIX: Use locale-based routing
+    await page.goto('/he/login');
     await page.fill('input[name="email"]', 'admin@rbac.shop');
     await page.fill('input[name="password"]', 'admin123');
     await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
+    await page.waitForURL(/\/(he\/)?dashboard/);
 
     // SuperAdmin should see ALL corporations
     await page.locator('nav').getByText('תאגידים').click();
     await page.waitForURL(/.*\/corporations/);
+
+    // FIX: Wait for data to load
+    await page.waitForTimeout(1000);
 
     const pageContent = await page.textContent('body');
     // Should see corporation names

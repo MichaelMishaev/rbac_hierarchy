@@ -1,0 +1,533 @@
+'use client';
+
+import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Drawer,
+  IconButton,
+  Collapse,
+  Badge,
+  Typography,
+  Divider,
+  useMediaQuery,
+  useTheme,
+  Fade,
+} from '@mui/material';
+import { colors, shadows, borderRadius } from '@/lib/design-system';
+
+// Icons
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import BusinessIcon from '@mui/icons-material/Business';
+import PeopleIcon from '@mui/icons-material/People';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import GroupIcon from '@mui/icons-material/Group';
+import MailIcon from '@mui/icons-material/Mail';
+import LogoutIcon from '@mui/icons-material/Logout';
+import RuleIcon from '@mui/icons-material/Rule';
+import MapIcon from '@mui/icons-material/Map';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import AddTaskIcon from '@mui/icons-material/AddTask';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+import LanguageSwitcher from './LanguageSwitcher';
+import { signOut } from 'next-auth/react';
+import { useWorkerMutations } from '@/app/hooks/useWorkers';
+import { useSiteMutations } from '@/app/hooks/useSites';
+import { useDashboardMutations } from '@/app/hooks/useDashboardStats';
+
+export type NavigationV3Props = {
+  role: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR';
+  stats?: {
+    pendingInvites?: number;
+    activeWorkers?: number;
+    activeSites?: number;
+  };
+};
+
+type NavGroup = {
+  id: string;
+  label: string;
+  items: NavItem[];
+};
+
+type NavItem = {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+  badge?: number;
+};
+
+export default function NavigationV3({ role, stats }: NavigationV3Props) {
+  const t = useTranslations('navigation');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const pathname = usePathname();
+  const isRTL = locale === 'he';
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Mobile drawer state
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    primary: true,
+    management: true,
+    system: true,
+  });
+
+  // Prefetch hooks
+  const { prefetch: prefetchWorkers } = useWorkerMutations();
+  const { prefetch: prefetchSites } = useSiteMutations();
+  const { prefetch: prefetchDashboard } = useDashboardMutations();
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const handleSectionToggle = (sectionId: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
+  };
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: '/login' });
+  };
+
+  const handlePrefetch = (path: string) => {
+    if (path.includes('/workers')) {
+      prefetchWorkers();
+    } else if (path.includes('/sites')) {
+      prefetchSites();
+    } else if (path.includes('/dashboard')) {
+      prefetchDashboard();
+    }
+  };
+
+  // Grouped navigation for SuperAdmin
+  const superAdminGroups: NavGroup[] = [
+    {
+      id: 'primary',
+      label: t('groupPrimary'),
+      items: [
+        { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+        { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
+        { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+        { path: '/map', label: t('map'), icon: <MapIcon /> },
+      ],
+    },
+    {
+      id: 'management',
+      label: t('groupManagement'),
+      items: [
+        { path: '/corporations', label: t('corporations'), icon: <BusinessIcon /> },
+        { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
+        { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+        { path: '/users', label: t('users'), icon: <PeopleIcon /> },
+      ],
+    },
+    {
+      id: 'system',
+      label: t('groupSystem'),
+      items: [
+        { path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> },
+      ],
+    },
+  ];
+
+  // Flat navigation for Manager (fewer items, no grouping needed)
+  const managerItems: NavItem[] = [
+    { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
+    { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+    { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
+    { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+    { path: '/users', label: t('users'), icon: <PeopleIcon /> },
+  ];
+
+  // Minimal navigation for Supervisor
+  const supervisorItems: NavItem[] = [
+    { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
+    { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+  ];
+
+  // Remove locale from pathname for comparison
+  const currentPath = pathname.replace(/^\/(he|en)/, '') || '/';
+
+  const renderNavItem = (item: NavItem, closeDrawerOnClick = false) => {
+    const isActive = currentPath === item.path;
+
+    return (
+      <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+        <Link
+          href={item.path}
+          prefetch={true}
+          style={{ textDecoration: 'none', width: '100%' }}
+          onClick={closeDrawerOnClick ? () => setMobileOpen(false) : undefined}
+        >
+          <ListItemButton
+            data-testid={`nav-link-${item.path.replace('/', '')}`}
+            onMouseEnter={() => handlePrefetch(item.path)}
+            sx={{
+              borderRadius: borderRadius.md,
+              backgroundColor: isActive ? `${colors.primary}10` : 'transparent',
+              border: isActive ? `2px solid ${colors.primary}` : '2px solid transparent',
+              direction: isRTL ? 'rtl' : 'ltr',
+              py: 1.2,
+              px: 2,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: isActive ? `${colors.primary}15` : colors.neutral[50],
+                transform: 'translateX(-2px)',
+                boxShadow: shadows.soft,
+              },
+              '&:active': {
+                transform: 'translateX(0)',
+              },
+            }}
+          >
+            <ListItemText
+              primary={item.label}
+              primaryTypographyProps={{
+                fontSize: '14px',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? colors.primary : colors.neutral[700],
+                textAlign: isRTL ? 'right' : 'left',
+              }}
+            />
+            <ListItemIcon
+              sx={{
+                minWidth: 'auto',
+                color: isActive ? colors.primary : colors.neutral[600],
+                marginLeft: isRTL ? 0 : 1.5,
+                marginRight: isRTL ? 1.5 : 0,
+              }}
+            >
+              {item.badge !== undefined && item.badge > 0 ? (
+                <Badge
+                  badgeContent={item.badge}
+                  color="error"
+                  max={99}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      minWidth: '18px',
+                      height: '18px',
+                    },
+                  }}
+                >
+                  {item.icon}
+                </Badge>
+              ) : (
+                item.icon
+              )}
+            </ListItemIcon>
+          </ListItemButton>
+        </Link>
+      </ListItem>
+    );
+  };
+
+  const renderGroupedNav = (groups: NavGroup[], closeDrawerOnClick = false) => (
+    <>
+      {groups.map((group, groupIndex) => (
+        <Box key={group.id} sx={{ mb: 2 }}>
+          {/* Section Header */}
+          <Box
+            onClick={() => handleSectionToggle(group.id)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1,
+              cursor: 'pointer',
+              borderRadius: borderRadius.md,
+              direction: isRTL ? 'rtl' : 'ltr',
+              transition: 'background-color 0.2s ease',
+              position: 'relative',
+              zIndex: 1,
+              pointerEvents: 'auto',
+              '&:hover': {
+                backgroundColor: colors.neutral[50],
+              },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                fontSize: '11px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                color: colors.neutral[500],
+                textAlign: isRTL ? 'right' : 'left',
+                pointerEvents: 'none',
+              }}
+            >
+              {group.label}
+            </Typography>
+            <IconButton size="small" sx={{ p: 0, pointerEvents: 'none' }}>
+              {expandedSections[group.id] ? (
+                <ExpandLessIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
+              ) : (
+                <ExpandMoreIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
+              )}
+            </IconButton>
+          </Box>
+
+          {/* Section Items */}
+          <Collapse in={expandedSections[group.id]} timeout="auto">
+            <List sx={{ pt: 1, position: 'relative', zIndex: 2 }}>
+              {group.items.map((item) => renderNavItem(item, closeDrawerOnClick))}
+            </List>
+          </Collapse>
+
+          {/* Divider between groups */}
+          {groupIndex < groups.length - 1 && (
+            <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
+          )}
+        </Box>
+      ))}
+    </>
+  );
+
+  const renderFlatNav = (items: NavItem[], closeDrawerOnClick = false) => (
+    <List sx={{ py: 1 }}>
+      {items.map((item) => renderNavItem(item, closeDrawerOnClick))}
+    </List>
+  );
+
+  const drawerContent = (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: colors.neutral[0],
+        direction: isRTL ? 'rtl' : 'ltr',
+      }}
+    >
+      {/* Logo/Brand */}
+      <Box
+        sx={{
+          p: 3,
+          borderBottom: `1px solid ${colors.neutral[200]}`,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            direction: isRTL ? 'rtl' : 'ltr',
+          }}
+        >
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: borderRadius.lg,
+              background: `linear-gradient(135deg, ${colors.primary} 0%, #1565c0 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '20px',
+              boxShadow: shadows.medium,
+            }}
+          >
+            ת
+          </Box>
+          <Box>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: '16px',
+                color: colors.neutral[900],
+                lineHeight: 1.2,
+              }}
+            >
+              מערכת ניהול
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '12px',
+                color: colors.neutral[500],
+                fontWeight: 500,
+              }}
+            >
+              {role === 'SUPERADMIN' ? 'מנהל על' :
+               role === 'MANAGER' ? 'מנהל' :
+               role === 'SUPERVISOR' ? 'מפקח' : role}
+            </Typography>
+          </Box>
+
+          {/* Close button for mobile */}
+          {isMobile && (
+            <IconButton
+              onClick={handleDrawerToggle}
+              sx={{
+                marginLeft: isRTL ? 0 : 'auto',
+                marginRight: isRTL ? 'auto' : 0,
+                color: colors.neutral[600],
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          )}
+        </Box>
+      </Box>
+
+      {/* Language Switcher */}
+      <Box sx={{ p: 2, borderBottom: `1px solid ${colors.neutral[100]}` }}>
+        <LanguageSwitcher />
+      </Box>
+
+      {/* Navigation Links */}
+      <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2 }}>
+        {role === 'SUPERADMIN' && renderGroupedNav(superAdminGroups, isMobile)}
+        {role === 'MANAGER' && renderFlatNav(managerItems, isMobile)}
+        {role === 'SUPERVISOR' && renderFlatNav(supervisorItems, isMobile)}
+      </Box>
+
+      {/* Logout Button */}
+      <Box sx={{ p: 2, borderTop: `1px solid ${colors.neutral[200]}` }}>
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            borderRadius: borderRadius.md,
+            backgroundColor: 'transparent',
+            border: `2px solid transparent`,
+            direction: isRTL ? 'rtl' : 'ltr',
+            py: 1.2,
+            px: 2,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: `${colors.error}10`,
+              borderColor: colors.error,
+              transform: 'translateX(-2px)',
+            },
+            '&:active': {
+              transform: 'translateX(0)',
+            },
+          }}
+        >
+          <ListItemText
+            primary={tCommon('signOut')}
+            primaryTypographyProps={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: colors.error,
+              textAlign: isRTL ? 'right' : 'left',
+            }}
+          />
+          <ListItemIcon
+            sx={{
+              minWidth: 'auto',
+              color: colors.error,
+              marginLeft: isRTL ? 0 : 1.5,
+              marginRight: isRTL ? 1.5 : 0,
+            }}
+          >
+            <LogoutIcon />
+          </ListItemIcon>
+        </ListItemButton>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <>
+      {/* Mobile Hamburger Button */}
+      {isMobile && (
+        <Fade in>
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 16,
+              [isRTL ? 'right' : 'left']: 16,
+              zIndex: 1300,
+            }}
+          >
+            <IconButton
+              onClick={handleDrawerToggle}
+              sx={{
+                backgroundColor: colors.primary,
+                color: '#fff',
+                boxShadow: shadows.large,
+                '&:hover': {
+                  backgroundColor: colors.primary,
+                  filter: 'brightness(0.95)',
+                  transform: 'scale(1.05)',
+                },
+                width: 48,
+                height: 48,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Box>
+        </Fade>
+      )}
+
+      {/* Mobile Drawer */}
+      {isMobile ? (
+        <Drawer
+          variant="temporary"
+          anchor={isRTL ? 'right' : 'left'}
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better mobile performance
+          }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: 280,
+              boxSizing: 'border-box',
+            },
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+      ) : (
+        // Desktop Sidebar
+        <Box
+          component="nav"
+          data-testid="navigation-sidebar"
+          sx={{
+            width: 280,
+            height: '100vh',
+            position: 'fixed',
+            top: 0,
+            [isRTL ? 'right' : 'left']: 0,
+            overflowY: 'auto',
+            boxShadow: shadows.soft,
+            zIndex: 1100,
+            borderRight: isRTL ? 'none' : `1px solid ${colors.neutral[200]}`,
+            borderLeft: isRTL ? `1px solid ${colors.neutral[200]}` : 'none',
+          }}
+        >
+          {drawerContent}
+        </Box>
+      )}
+    </>
+  );
+}

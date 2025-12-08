@@ -36,13 +36,16 @@ interface Site {
 
 interface LeafletMapProps {
   sites: Site[];
+  onSiteSelect?: (siteId: string | null) => void;
+  selectedSiteId?: string | null;
 }
 
-export default function LeafletMap({ sites }: LeafletMapProps) {
+export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: LeafletMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markersLayer = useRef<L.MarkerClusterGroup | null>(null);
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -67,22 +70,61 @@ export default function LeafletMap({ sites }: LeafletMapProps) {
 
     map.current.addLayer(markersLayer.current);
 
+    // Fix for map size - invalidate size after mount
+    setTimeout(() => {
+      map.current?.invalidateSize();
+    }, 100);
+
+    // Handle window resize and sidebar toggle
+    const handleResize = () => {
+      setTimeout(() => {
+        map.current?.invalidateSize();
+      }, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      window.removeEventListener('resize', handleResize);
       map.current?.remove();
       map.current = null;
     };
   }, []);
+
+  // Handle external site selection (from sidebar)
+  useEffect(() => {
+    if (!map.current || !selectedSiteId) return;
+
+    const site = sites.find((s) => s.id === selectedSiteId);
+    if (!site || !site.latitude || !site.longitude) return;
+
+    // Focus on the site
+    map.current.setView([site.latitude, site.longitude], 15, {
+      animate: true,
+      duration: 1.5,
+    });
+
+    // Update selected site for details panel
+    setSelectedSite(site);
+
+    // Open the marker popup if it exists
+    const marker = markersRef.current.get(site.id);
+    if (marker) {
+      marker.openPopup();
+    }
+  }, [selectedSiteId, sites]);
 
   useEffect(() => {
     if (!map.current || !markersLayer.current) return;
 
     // Clear existing markers
     markersLayer.current.clearLayers();
+    markersRef.current.clear();
 
     // Create color map for corporations
     const corpColors: Record<string, string> = {};
     const colorPalette = [
-      colors.primary,
+      colors.primary.main,
       colors.status.green,
       colors.pastel.purple,
       colors.pastel.orange,
@@ -170,9 +212,13 @@ export default function LeafletMap({ sites }: LeafletMapProps) {
 
       marker.bindPopup(popupContent);
 
+      // Store marker reference
+      markersRef.current.set(site.id, marker);
+
       // Add click handler to show details panel
       marker.on('click', () => {
         setSelectedSite(site);
+        onSiteSelect?.(site.id);
         map.current?.setView([site.latitude, site.longitude], 12, {
           animate: true,
           duration: 1.5,
@@ -193,8 +239,8 @@ export default function LeafletMap({ sites }: LeafletMapProps) {
   }, [sites]);
 
   return (
-    <Box sx={{ width: '100%', height: '100%', position: 'relative', paddingTop: { xs: '140px', sm: '120px', md: '100px' } }}>
-      <div ref={mapContainer} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0 }} />
+    <Box sx={{ width: '100%', height: '100%', position: 'relative', margin: 0, padding: 0 }}>
+      <div ref={mapContainer} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, margin: 0 }} />
 
       {/* Site Details Panel - Modern 2025 Design */}
       {selectedSite && (
@@ -266,7 +312,7 @@ export default function LeafletMap({ sites }: LeafletMapProps) {
               {selectedSite.workers.active}
             </Typography>
             <Typography variant="caption" color={colors.neutral[600]}>
-              {selectedSite.workers.total} סה"כ ({selectedSite.workers.inactive} לא פעילים)
+              {selectedSite.workers.total} סה&quot;כ ({selectedSite.workers.inactive} לא פעילים)
             </Typography>
           </Box>
 

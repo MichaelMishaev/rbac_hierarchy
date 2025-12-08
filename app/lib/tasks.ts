@@ -49,8 +49,9 @@ export async function getAllRecipientsUnderMe(
 
   if (userRole === 'SUPERADMIN') {
     // SuperAdmin: all non-SuperAdmins
+    // FIX: Use DISTINCT ON to avoid duplicate users (e.g., Area Manager managing multiple corps)
     const users = await prisma.$queryRaw<any[]>`
-      SELECT
+      SELECT DISTINCT ON (u.id)
         u.id as "userId",
         u.full_name as "fullName",
         u.email,
@@ -66,7 +67,7 @@ export async function getAllRecipientsUnderMe(
       WHERE u.is_super_admin = FALSE
         AND u.is_active = TRUE
         AND (am.user_id IS NOT NULL OR cm.user_id IS NOT NULL OR s.user_id IS NOT NULL)
-      ORDER BY u.full_name
+      ORDER BY u.id, u.full_name
     `;
 
     return users.map((u) => ({

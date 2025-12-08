@@ -14,6 +14,8 @@ import {
   Collapse,
   CircularProgress,
   Alert,
+  Tooltip,
+  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -22,10 +24,8 @@ import {
   LocationOn as LocationIcon,
   SupervisorAccount as ManagerIcon,
   SupervisorAccount,
-  Person as PersonIcon,
   ExpandLess,
   ExpandMore,
-  Map as MapIcon,
 } from '@mui/icons-material';
 import { colors } from '@/lib/design-system';
 import dynamic from 'next/dynamic';
@@ -55,8 +55,10 @@ export default function LeafletClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     corporations: true,
+    sites: false,
     managers: false,
     supervisors: false,
     areaManagers: false,
@@ -65,6 +67,28 @@ export default function LeafletClient() {
   useEffect(() => {
     fetchMapData();
   }, []);
+
+  // Trigger map resize when sidebar opens/closes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 350); // Wait for transition to complete
+    return () => clearTimeout(timer);
+  }, [sidebarOpen]);
+
+  // Keyboard shortcut support (M key or Escape to toggle menu)
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'm' || event.key === 'M') {
+        setSidebarOpen((prev) => !prev);
+      } else if (event.key === 'Escape' && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [sidebarOpen]);
 
   const fetchMapData = async () => {
     try {
@@ -91,6 +115,14 @@ export default function LeafletClient() {
     }));
   };
 
+  const handleSiteClick = (siteId: string) => {
+    setSelectedSiteId(siteId);
+    // Auto-close sidebar on mobile after selection
+    if (window.innerWidth < 600) {
+      setSidebarOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -114,273 +146,73 @@ export default function LeafletClient() {
   const sitesWithGPS = data.sites.filter((s) => s.latitude && s.longitude);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'row', height: '100vh', width: '100%', position: 'relative' }}>
-      {/* Top Stats Bar - Modern 2025 Card Design */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: sidebarOpen ? '400px' : '0',
-          right: 0,
-          zIndex: 1100,
-          background: 'rgba(255, 255, 255, 0.98)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${colors.neutral[200]}`,
-          px: { xs: 2, sm: 3, md: 4 },
-          py: 2.5,
-          transition: 'left 0.3s ease',
-          direction: 'rtl',
-        }}
-      >
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: 'repeat(2, 1fr)',
-              sm: 'repeat(3, 1fr)',
-              md: 'repeat(5, 1fr)',
-            },
-            gap: { xs: 1.5, sm: 2, md: 2.5 },
-            maxWidth: '100%',
-          }}
-        >
-          {/* Active Sites */}
-          <Box
-            sx={{
-              background: colors.neutral[50],
-              borderRadius: '12px',
-              p: { xs: 1.5, sm: 2 },
-              border: `1px solid ${colors.neutral[200]}`,
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: `0 4px 16px ${colors.neutral[300]}`,
-                borderColor: colors.primary,
-              },
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-              <MapIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: colors.primary, opacity: 0.7 }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: { xs: '11px', sm: '12px' },
-                  color: colors.neutral[600],
-                  fontWeight: 500,
-                }}
-              >
-                אתרים פעילים
-              </Typography>
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '24px', sm: '28px', md: '32px' },
-                fontWeight: 700,
-                color: colors.neutral[900],
-                lineHeight: 1,
-              }}
-            >
-              {data.stats.activeSites}
-            </Typography>
-          </Box>
-
-          {/* Active Workers */}
-          <Box
-            sx={{
-              background: colors.neutral[50],
-              borderRadius: '12px',
-              p: { xs: 1.5, sm: 2 },
-              border: `1px solid ${colors.neutral[200]}`,
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: `0 4px 16px ${colors.neutral[300]}`,
-                borderColor: colors.status.green,
-              },
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-              <PersonIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: colors.status.green, opacity: 0.7 }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: { xs: '11px', sm: '12px' },
-                  color: colors.neutral[600],
-                  fontWeight: 500,
-                }}
-              >
-                עובדים
-              </Typography>
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '24px', sm: '28px', md: '32px' },
-                fontWeight: 700,
-                color: colors.neutral[900],
-                lineHeight: 1,
-              }}
-            >
-              {data.stats.activeWorkers}
-            </Typography>
-          </Box>
-
-          {/* Managers */}
-          <Box
-            sx={{
-              background: colors.neutral[50],
-              borderRadius: '12px',
-              p: { xs: 1.5, sm: 2 },
-              border: `1px solid ${colors.neutral[200]}`,
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: `0 4px 16px ${colors.neutral[300]}`,
-                borderColor: '#9333EA',
-              },
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-              <ManagerIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: '#9333EA', opacity: 0.7 }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: { xs: '11px', sm: '12px' },
-                  color: colors.neutral[600],
-                  fontWeight: 500,
-                }}
-              >
-                מנהלים
-              </Typography>
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '24px', sm: '28px', md: '32px' },
-                fontWeight: 700,
-                color: colors.neutral[900],
-                lineHeight: 1,
-              }}
-            >
-              {data.stats.totalManagers}
-            </Typography>
-          </Box>
-
-          {/* Supervisors */}
-          <Box
-            sx={{
-              background: colors.neutral[50],
-              borderRadius: '12px',
-              p: { xs: 1.5, sm: 2 },
-              border: `1px solid ${colors.neutral[200]}`,
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: `0 4px 16px ${colors.neutral[300]}`,
-                borderColor: '#F59E0B',
-              },
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-              <ManagerIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: '#F59E0B', opacity: 0.7 }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: { xs: '11px', sm: '12px' },
-                  color: colors.neutral[600],
-                  fontWeight: 500,
-                }}
-              >
-                מפקחים
-              </Typography>
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '24px', sm: '28px', md: '32px' },
-                fontWeight: 700,
-                color: colors.neutral[900],
-                lineHeight: 1,
-              }}
-            >
-              {data.stats.totalSupervisors}
-            </Typography>
-          </Box>
-
-          {/* Corporations */}
-          <Box
-            sx={{
-              background: colors.neutral[50],
-              borderRadius: '12px',
-              p: { xs: 1.5, sm: 2 },
-              border: `1px solid ${colors.neutral[200]}`,
-              transition: 'all 0.2s ease',
-              cursor: 'default',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: `0 4px 16px ${colors.neutral[300]}`,
-                borderColor: '#10B981',
-              },
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-              <BusinessIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: '#10B981', opacity: 0.7 }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontSize: { xs: '11px', sm: '12px' },
-                  color: colors.neutral[600],
-                  fontWeight: 500,
-                }}
-              >
-                תאגידים
-              </Typography>
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '24px', sm: '28px', md: '32px' },
-                fontWeight: 700,
-                color: colors.neutral[900],
-                lineHeight: 1,
-              }}
-            >
-              {data.stats.activeCorporations}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
+    <Box sx={{ height: '100vh', width: '100%', position: 'relative', margin: 0, padding: 0, overflow: 'hidden' }}>
       {/* Sidebar */}
       <Drawer
         variant="persistent"
-        anchor="left"
+        anchor="right"
         open={sidebarOpen}
         sx={{
-          width: 400,
+          width: { xs: '100%', sm: 400 },
           flexShrink: 0,
-          zIndex: 1200,
+          zIndex: 1300,
+          margin: 0,
+          padding: 0,
           '& .MuiDrawer-paper': {
-            width: 400,
+            width: { xs: '100%', sm: 400 },
+            height: '100vh',
             boxSizing: 'border-box',
             background: colors.neutral[0],
-            borderRight: `1px solid ${colors.neutral[200]}`,
-            pt: 10,
-            zIndex: 1200,
+            borderLeft: { xs: 'none', sm: `1px solid ${colors.neutral[200]}` },
+            pt: 2,
+            px: 0,
+            pb: 0,
+            zIndex: 1300,
+            right: 0,
+            left: 'auto',
+            top: 0,
+            position: 'fixed',
+            margin: 0,
+            boxShadow: { xs: 'none', sm: '-4px 0 12px rgba(0,0,0,0.08)' },
           },
         }}
       >
-        <Box sx={{ p: 3, overflowY: 'auto', height: '100%', direction: 'rtl' }}>
+        <Box 
+          sx={{ 
+            p: 3, 
+            pb: 6,
+            overflowY: 'auto', 
+            height: '100%', 
+            direction: 'rtl',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: colors.neutral[100],
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: colors.neutral[300],
+              borderRadius: '4px',
+              '&:hover': {
+                background: colors.neutral[400],
+              },
+            },
+          }}
+        >
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h5" fontWeight={700}>
+            <Typography variant="h5" fontWeight={700} color={colors.neutral[900]}>
               פרטי מערכת
             </Typography>
-            <IconButton onClick={() => setSidebarOpen(false)}>
+            <IconButton 
+              onClick={() => setSidebarOpen(false)}
+              sx={{
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  background: colors.neutral[100],
+                  transform: 'rotate(90deg)',
+                },
+              }}
+            >
               <CloseIcon />
             </IconButton>
           </Box>
@@ -416,12 +248,19 @@ export default function LeafletClient() {
           <List>
             {/* Corporations */}
             <ListItem
-              button
+              component="div"
               onClick={() => toggleSection('corporations')}
               sx={{
                 background: colors.pastel.greenLight,
                 borderRadius: '8px',
                 mb: 1,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  background: colors.pastel.green,
+                  transform: 'translateX(-4px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                },
               }}
             >
               <BusinessIcon sx={{ mr: 2, color: colors.status.green }} />
@@ -432,9 +271,23 @@ export default function LeafletClient() {
               {expandedSections.corporations ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
             <Collapse in={expandedSections.corporations} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
+              <List component="div" disablePadding sx={{ mt: 1 }}>
                 {data.corporations.map((corp: any) => (
-                  <ListItem key={corp.id} sx={{ pl: 2, pr: 1 }}>
+                  <ListItem 
+                    key={corp.id} 
+                    sx={{ 
+                      pl: 2, 
+                      pr: 1,
+                      py: 1.5,
+                      transition: 'all 0.2s ease',
+                      borderRadius: '8px',
+                      mx: 1,
+                      '&:hover': {
+                        background: colors.neutral[50],
+                        transform: 'translateX(-2px)',
+                      },
+                    }}
+                  >
                     <Avatar
                       sx={{
                         width: 32,
@@ -442,6 +295,7 @@ export default function LeafletClient() {
                         mr: 1.5,
                         background: colors.pastel.blue,
                         fontSize: '12px',
+                        fontWeight: 600,
                       }}
                     >
                       {corp.name.charAt(0)}
@@ -449,7 +303,92 @@ export default function LeafletClient() {
                     <ListItemText
                       primary={corp.name}
                       secondary={`${corp._count.sites} אתרים, ${corp._count.managers} מנהלים`}
-                      secondaryTypographyProps={{ fontSize: '12px' }}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
+                      secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Collapse>
+
+            {/* Sites */}
+            <ListItem
+              component="div"
+              onClick={() => toggleSection('sites')}
+              sx={{
+                background: colors.pastel.blueLight,
+                borderRadius: '8px',
+                mb: 1,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  background: colors.pastel.blue,
+                  transform: 'translateX(-4px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                },
+              }}
+            >
+              <LocationIcon sx={{ mr: 2, color: colors.primary }} />
+              <ListItemText
+                primary={`אתרים (${data.sites.length})`}
+                primaryTypographyProps={{ fontWeight: 600 }}
+              />
+              {expandedSections.sites ? <ExpandLess /> : <ExpandMore />}
+            </ListItem>
+            <Collapse in={expandedSections.sites} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding sx={{ mt: 1 }}>
+                {data.sites.map((site: any) => (
+                  <ListItem
+                    key={site.id}
+                    component="button"
+                    onClick={() => handleSiteClick(site.id)}
+                    disabled={!site.latitude || !site.longitude}
+                    sx={{
+                      pl: 2,
+                      pr: 1,
+                      py: 1.5,
+                      transition: 'all 0.2s ease',
+                      borderRadius: '8px',
+                      mx: 1,
+                      cursor: site.latitude && site.longitude ? 'pointer' : 'not-allowed',
+                      opacity: site.latitude && site.longitude ? 1 : 0.5,
+                      background: selectedSiteId === site.id ? colors.pastel.blueLight : 'transparent',
+                      border: selectedSiteId === site.id ? `2px solid ${colors.primary}` : '2px solid transparent',
+                      '&:hover': {
+                        background: site.latitude && site.longitude
+                          ? selectedSiteId === site.id
+                            ? colors.pastel.blue
+                            : colors.neutral[50]
+                          : 'transparent',
+                        transform: site.latitude && site.longitude ? 'translateX(-2px)' : 'none',
+                      },
+                      '&:disabled': {
+                        cursor: 'not-allowed',
+                        opacity: 0.5,
+                      },
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        mr: 1.5,
+                        background: colors.primary,
+                        fontSize: '12px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {site.name.charAt(0)}
+                    </Avatar>
+                    <ListItemText
+                      primary={site.name}
+                      secondary={
+                        site.latitude && site.longitude
+                          ? `${site.corporation.name} • ${site.workers.active} עובדים פעילים`
+                          : `${site.corporation.name} • אין נתוני מיקום`
+                      }
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
+                      secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
                   </ListItem>
                 ))}
@@ -458,12 +397,19 @@ export default function LeafletClient() {
 
             {/* Managers */}
             <ListItem
-              button
+              component="div"
               onClick={() => toggleSection('managers')}
               sx={{
                 background: colors.pastel.purpleLight,
                 borderRadius: '8px',
                 mb: 1,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  background: colors.pastel.purple,
+                  transform: 'translateX(-4px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                },
               }}
             >
               <ManagerIcon sx={{ mr: 2, color: colors.pastel.purple }} />
@@ -474,16 +420,38 @@ export default function LeafletClient() {
               {expandedSections.managers ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
             <Collapse in={expandedSections.managers} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
+              <List component="div" disablePadding sx={{ mt: 1 }}>
                 {data.managers.map((manager: any) => (
-                  <ListItem key={manager.id} sx={{ pl: 2, pr: 1 }}>
-                    <Avatar sx={{ width: 32, height: 32, mr: 1.5, background: colors.pastel.purple }}>
+                  <ListItem 
+                    key={manager.id} 
+                    sx={{ 
+                      pl: 2, 
+                      pr: 1,
+                      py: 1.5,
+                      transition: 'all 0.2s ease',
+                      borderRadius: '8px',
+                      mx: 1,
+                      '&:hover': {
+                        background: colors.neutral[50],
+                        transform: 'translateX(-2px)',
+                      },
+                    }}
+                  >
+                    <Avatar sx={{ 
+                      width: 32, 
+                      height: 32, 
+                      mr: 1.5, 
+                      background: colors.pastel.purple,
+                      fontWeight: 600,
+                      fontSize: '12px',
+                    }}>
                       {manager.user.fullName.charAt(0)}
                     </Avatar>
                     <ListItemText
                       primary={manager.user.fullName}
                       secondary={manager.corporation.name}
-                      secondaryTypographyProps={{ fontSize: '12px' }}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
+                      secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
                   </ListItem>
                 ))}
@@ -492,12 +460,19 @@ export default function LeafletClient() {
 
             {/* Supervisors */}
             <ListItem
-              button
+              component="div"
               onClick={() => toggleSection('supervisors')}
               sx={{
                 background: colors.pastel.orangeLight,
                 borderRadius: '8px',
                 mb: 1,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  background: colors.pastel.orange,
+                  transform: 'translateX(-4px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                },
               }}
             >
               <ManagerIcon sx={{ mr: 2, color: colors.pastel.orange }} />
@@ -508,16 +483,38 @@ export default function LeafletClient() {
               {expandedSections.supervisors ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
             <Collapse in={expandedSections.supervisors} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding>
+              <List component="div" disablePadding sx={{ mt: 1 }}>
                 {data.supervisors.map((supervisor: any) => (
-                  <ListItem key={supervisor.id} sx={{ pl: 2, pr: 1 }}>
-                    <Avatar sx={{ width: 32, height: 32, mr: 1.5, background: colors.pastel.orange }}>
+                  <ListItem 
+                    key={supervisor.id} 
+                    sx={{ 
+                      pl: 2, 
+                      pr: 1,
+                      py: 1.5,
+                      transition: 'all 0.2s ease',
+                      borderRadius: '8px',
+                      mx: 1,
+                      '&:hover': {
+                        background: colors.neutral[50],
+                        transform: 'translateX(-2px)',
+                      },
+                    }}
+                  >
+                    <Avatar sx={{ 
+                      width: 32, 
+                      height: 32, 
+                      mr: 1.5, 
+                      background: colors.pastel.orange,
+                      fontWeight: 600,
+                      fontSize: '12px',
+                    }}>
                       {supervisor.user.fullName.charAt(0)}
                     </Avatar>
                     <ListItemText
                       primary={supervisor.user.fullName}
                       secondary={`${supervisor.siteAssignments.length} אתרים`}
-                      secondaryTypographyProps={{ fontSize: '12px' }}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
+                      secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
                   </ListItem>
                 ))}
@@ -528,12 +525,19 @@ export default function LeafletClient() {
             {data.user.isSuperAdmin && data.areaManagers.length > 0 && (
               <>
                 <ListItem
-                  button
+                  component="div"
                   onClick={() => toggleSection('areaManagers')}
                   sx={{
                     background: colors.pastel.blueLight,
                     borderRadius: '8px',
                     mb: 1,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      background: colors.pastel.blue,
+                      transform: 'translateX(-4px)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    },
                   }}
                 >
                   <SupervisorAccount sx={{ mr: 2, color: colors.primary }} />
@@ -544,16 +548,38 @@ export default function LeafletClient() {
                   {expandedSections.areaManagers ? <ExpandLess /> : <ExpandMore />}
                 </ListItem>
                 <Collapse in={expandedSections.areaManagers} timeout="auto" unmountOnExit>
-                  <List component="div" disablePadding>
+                  <List component="div" disablePadding sx={{ mt: 1 }}>
                     {data.areaManagers.map((am: any) => (
-                      <ListItem key={am.id} sx={{ pl: 2, pr: 1 }}>
-                        <Avatar sx={{ width: 32, height: 32, mr: 1.5, background: colors.primary }}>
+                      <ListItem 
+                        key={am.id} 
+                        sx={{ 
+                          pl: 2, 
+                          pr: 1,
+                          py: 1.5,
+                          transition: 'all 0.2s ease',
+                          borderRadius: '8px',
+                          mx: 1,
+                          '&:hover': {
+                            background: colors.neutral[50],
+                            transform: 'translateX(-2px)',
+                          },
+                        }}
+                      >
+                        <Avatar sx={{ 
+                          width: 32, 
+                          height: 32, 
+                          mr: 1.5, 
+                          background: colors.primary,
+                          fontWeight: 600,
+                          fontSize: '12px',
+                        }}>
                           {am.user.fullName.charAt(0)}
                         </Avatar>
                         <ListItemText
                           primary={am.user.fullName}
                           secondary={`${am.corporations.length} תאגידים`}
-                          secondaryTypographyProps={{ fontSize: '12px' }}
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
+                          secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                         />
                       </ListItem>
                     ))}
@@ -565,37 +591,81 @@ export default function LeafletClient() {
         </Box>
       </Drawer>
 
-      {/* Toggle Sidebar Button */}
+      {/* Toggle Sidebar Button - Clean & Minimal */}
       {!sidebarOpen && (
-        <IconButton
-          onClick={() => setSidebarOpen(true)}
+        <Tooltip
+          title="תפריט"
+          placement="left"
+          arrow
           sx={{
-            position: 'absolute',
-            top: 80,
-            left: 16,
-            zIndex: 1000,
-            background: colors.neutral[0],
-            boxShadow: `0 4px 12px ${colors.neutral[300]}`,
-            '&:hover': {
-              background: colors.neutral[100],
+            '& .MuiTooltip-tooltip': {
+              fontSize: '12px',
+              fontWeight: 500,
+              background: 'rgba(0,0,0,0.85)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: '6px',
+              padding: '6px 10px',
             },
           }}
         >
-          <MenuIcon />
-        </IconButton>
+          <IconButton
+            onClick={() => setSidebarOpen(true)}
+            aria-label="פתח תפריט"
+            sx={{
+              position: 'fixed',
+              top: { xs: 16, sm: 20 },
+              right: { xs: 16, sm: 20 },
+              zIndex: 9999,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(12px)',
+              width: { xs: 48, sm: 52 },
+              height: { xs: 48, sm: 52 },
+              boxShadow: '0 2px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)',
+              border: `1px solid ${colors.neutral[200]}`,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                background: colors.neutral[0],
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)',
+                borderColor: colors.neutral[300],
+              },
+              '&:active': {
+                transform: 'translateY(0px)',
+                boxShadow: '0 1px 8px rgba(0,0,0,0.08)',
+              },
+            }}
+          >
+            <MenuIcon
+              sx={{
+                fontSize: 24,
+                color: colors.neutral[700],
+              }}
+            />
+          </IconButton>
+        </Tooltip>
       )}
 
       {/* Map */}
       <Box
         sx={{
-          flexGrow: 1,
-          height: '100vh',
-          width: sidebarOpen ? 'calc(100% - 400px)' : '100%',
-          transition: 'width 0.3s ease',
-          position: 'relative',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: {
+            xs: sidebarOpen ? '100%' : 0,
+            sm: sidebarOpen ? '400px' : 0
+          },
+          bottom: 0,
+          transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          zIndex: 1,
+          pointerEvents: 'auto',
         }}
       >
-        <LeafletMap sites={sitesWithGPS} />
+        <LeafletMap
+          sites={sitesWithGPS}
+          selectedSiteId={selectedSiteId}
+          onSiteSelect={setSelectedSiteId}
+        />
       </Box>
     </Box>
   );
