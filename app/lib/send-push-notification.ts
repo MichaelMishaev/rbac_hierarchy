@@ -8,12 +8,26 @@
 import webpush from 'web-push';
 import { prisma } from './prisma';
 
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:admin@hierarchy-platform.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
+// Track if VAPID details have been configured
+let vapidConfigured = false;
+
+/**
+ * Configure VAPID details lazily (only when needed)
+ * This prevents build-time errors when env vars aren't available
+ */
+function ensureVapidConfigured() {
+  if (vapidConfigured) return;
+
+  const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:admin@hierarchy-platform.com';
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+  // Only configure if keys are available (skip during build time)
+  if (vapidPublicKey && vapidPrivateKey) {
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+    vapidConfigured = true;
+  }
+}
 
 interface PushNotificationPayload {
   title: string;
@@ -35,6 +49,9 @@ export async function sendPushNotificationToUser(
   userId: string,
   payload: PushNotificationPayload
 ): Promise<number> {
+  // Ensure VAPID is configured before sending
+  ensureVapidConfigured();
+
   try {
     // Get all active push subscriptions for this user
     const subscriptions = await prisma.pushSubscription.findMany({
