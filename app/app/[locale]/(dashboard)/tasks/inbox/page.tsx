@@ -59,7 +59,7 @@ export default async function TaskInboxPage() {
       </Box>
 
       {/* Task Inbox Component */}
-      <TaskInbox userId={session.user.id} />
+      <TaskInbox />
     </Box>
   );
 }

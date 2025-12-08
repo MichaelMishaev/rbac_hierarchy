@@ -137,7 +137,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription> 
   try {
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true, // Show notification to user (required by browsers)
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
     });
 
     console.log('[Push] Subscribed to push notifications:', subscription);

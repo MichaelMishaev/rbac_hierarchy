@@ -205,14 +205,14 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
               primaryTypographyProps={{
                 fontSize: '14px',
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? colors.primary : colors.neutral[700],
+                color: isActive ? colors.primary.main : colors.neutral[700],
                 textAlign: isRTL ? 'right' : 'left',
               }}
             />
             <ListItemIcon
               sx={{
                 minWidth: 'auto',
-                color: isActive ? colors.primary : colors.neutral[600],
+                color: isActive ? colors.primary.main : colors.neutral[600],
                 marginLeft: isRTL ? 0 : 1.5,
                 marginRight: isRTL ? 1.5 : 0,
               }}

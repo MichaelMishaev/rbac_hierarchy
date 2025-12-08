@@ -117,6 +117,15 @@ export default function WorkersClient({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Transform supervisors to match WorkerModal expected format
+  const transformedSupervisors = useMemo(() => {
+    return supervisors.map(supervisor => ({
+      id: supervisor.id,
+      name: supervisor.user.fullName,
+      email: supervisor.user.email,
+    }));
+  }, [supervisors]);
+
   // Filtered workers based on search and filters
   const filteredWorkers = useMemo(() => {
     let filtered = workers;
@@ -1001,7 +1010,7 @@ export default function WorkersClient({
         onSubmit={handleCreateWorker}
         mode="create"
         sites={sites}
-        supervisors={supervisors}
+        supervisors={transformedSupervisors}
         defaultSupervisorId={currentUserId}
       />
 
@@ -1030,7 +1039,7 @@ export default function WorkersClient({
           }}
           mode="edit"
           sites={sites}
-          supervisors={supervisors}
+          supervisors={transformedSupervisors}
         />
       )}
 

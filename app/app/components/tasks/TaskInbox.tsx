@@ -343,11 +343,11 @@ export default function TaskInbox() {
           mb: 1.5,
           borderRadius: borderRadius.md,
           border: `1px solid ${colors.neutral[200]}`,
-          backgroundColor: isSelected ? colors.primary + '08' : '#fff',
+          backgroundColor: isSelected ? colors.primary.main + '08' : '#fff',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            borderColor: colors.primary,
-            boxShadow: shadows.small,
+            borderColor: colors.primary.main,
+            boxShadow: shadows.soft,
             transform: 'translateY(-1px)',
           },
         }}
