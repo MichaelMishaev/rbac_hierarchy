@@ -136,9 +136,9 @@ model Corporation {
   // v1.4: Renamed logo → logoUrl, area_manager_id is NOT NULL
   logoUrl String? @map("logo_url")
 
-  // v1.4: Area Manager is REQUIRED (NOT NULL)
-  areaManagerId String      @map("area_manager_id")
-  areaManager   AreaManager @relation(fields: [areaManagerId], references: [id], onDelete: Restrict)
+  // v1.4: Area Manager (optional for backwards compatibility with production)
+  areaManagerId String?      @map("area_manager_id")
+  areaManager   AreaManager? @relation(fields: [areaManagerId], references: [id], onDelete: Restrict)
 
   // Contact info (v1.4 includes these fields)
   email   String?
