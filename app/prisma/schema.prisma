@@ -1,6 +1,6 @@
-// Prisma Schema for Corporations MVP v1.4
+// Prisma Schema for Election/Activism System v2.0
+// MIGRATED FROM: Corporate Hierarchy → Election/Activism Management
 // Premium UI Hierarchical Organization Management System
-// FULLY COMPLIANT with v1.4 Specification
 
 generator client {
   provider = "prisma-client-js"
@@ -25,7 +25,7 @@ model User {
   passwordHash String? @map("password_hash") // Nullable for external IdP support
 
   // Role (keep enum for convenience, v1.4 uses separate tables + is_super_admin flag)
-  role Role @default(SUPERVISOR)
+  role Role @default(ACTIVIST_COORDINATOR)
 
   // Status
   isActive     Boolean @default(true) @map("is_active")
@@ -37,17 +37,17 @@ model User {
   lastLoginAt DateTime? @map("last_login_at")
 
   // Relations
-  areaManager            AreaManager?         @relation("AreaManagerUser")
-  managerOf              CorporationManager[]
-  supervisorOf           Supervisor[] // v1.4: Renamed from SiteManager
-  supervisorSites        SupervisorSite[]     @relation("SupervisorAssignments")
-  invitationsSent        Invitation[]         @relation("InvitationCreator")
-  tokens                 UserToken[]          @relation("UserTokens")
-  tasksSent              Task[]               @relation("TasksSent")
-  tasksReceived          TaskAssignment[]     @relation("TasksReceived")
-  pushSubscriptions      PushSubscription[]   @relation("PushSubscriptions")
-  attendanceCheckedIn    AttendanceRecord[]   @relation("AttendanceCheckedInBy")
-  attendanceLastEdited   AttendanceRecord[]   @relation("AttendanceLastEditedBy")
+  areaManager                  AreaManager?                    @relation("AreaManagerUser")
+  coordinatorOf                CityCoordinator[]
+  activistCoordinatorOf        ActivistCoordinator[]
+  activistCoordinatorNeighborhoods ActivistCoordinatorNeighborhood[] @relation("ActivistCoordinatorAssignments")
+  invitationsSent              Invitation[]                    @relation("InvitationCreator")
+  tokens                       UserToken[]                     @relation("UserTokens")
+  tasksSent                    Task[]                          @relation("TasksSent")
+  tasksReceived                TaskAssignment[]                @relation("TasksReceived")
+  pushSubscriptions            PushSubscription[]              @relation("PushSubscriptions")
+  attendanceCheckedIn          AttendanceRecord[]              @relation("AttendanceCheckedInBy")
+  attendanceLastEdited         AttendanceRecord[]              @relation("AttendanceLastEditedBy")
 
   @@index([email])
   @@index([isActive])
@@ -58,8 +58,8 @@ model User {
 enum Role {
   SUPERADMIN
   AREA_MANAGER
-  MANAGER
-  SUPERVISOR
+  CITY_COORDINATOR
+  ACTIVIST_COORDINATOR
 }
 
 // ============================================
@@ -117,7 +117,7 @@ model AreaManager {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  corporations Corporation[]
+  cities City[]
 
   @@index([userId])
   @@index([isActive])
@@ -127,29 +127,29 @@ model AreaManager {
 }
 
 // ============================================
-// CORPORATIONS TABLE
+// CITIES TABLE (Previously: Corporations)
 // ============================================
-model Corporation {
+model City {
   id          String  @id @default(uuid())
   name        String
-  code        String  @unique // Short code (e.g., "ACME")
+  code        String  @unique // Short code (e.g., "TLV")
   description String?
 
-  // v1.4: Renamed logo → logoUrl, area_manager_id is NOT NULL
+  // v2.0: Renamed logo → logoUrl, area_manager_id is NOT NULL
   logoUrl String? @map("logo_url")
 
-  // v1.4: Area Manager (optional for backwards compatibility with production)
+  // v2.0: Area Manager (optional for backwards compatibility with production)
   areaManagerId String?      @map("area_manager_id")
   areaManager   AreaManager? @relation(fields: [areaManagerId], references: [id], onDelete: Restrict)
 
-  // Contact info (v1.4 includes these fields)
+  // Contact info (v2.0 includes these fields)
   email   String?
   phone   String?
   address String?
 
   // Settings
   isActive Boolean @default(true) @map("is_active")
-  settings Json    @default("{}") // Corporation-level configuration
+  settings Json    @default("{}") // City-level configuration
   metadata Json?                  // Flexible data storage
 
   // Timestamps
@@ -157,33 +157,33 @@ model Corporation {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  managers          CorporationManager[]
-  supervisors       Supervisor[] // v1.4: Renamed from SiteManager
-  sites             Site[]
-  invitations       Invitation[]
-  workers           Worker[]
-  attendanceRecords AttendanceRecord[]
+  coordinators        CityCoordinator[]
+  activistCoordinators ActivistCoordinator[]
+  neighborhoods        Neighborhood[]
+  invitations          Invitation[]
+  activists            Activist[]
+  attendanceRecords    AttendanceRecord[]
 
   @@index([code])
   @@index([isActive])
   @@index([areaManagerId])
-  @@map("corporations")
+  @@map("cities")
 }
 
 // ============================================
-// CORPORATION MANAGERS TABLE
+// CITY COORDINATORS TABLE (Previously: Corporation Managers)
 // ============================================
-model CorporationManager {
+model CityCoordinator {
   id String @id @default(uuid())
 
   // Relationships
-  corporationId String      @map("corporation_id")
-  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Manager details
+  // Coordinator details
   title String? // Job title
 
   // Status
@@ -196,27 +196,27 @@ model CorporationManager {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([corporationId, userId]) // User can be manager once per corporation
-  @@index([corporationId])
+  @@unique([cityId, userId]) // User can be coordinator once per city
+  @@index([cityId])
   @@index([userId])
   @@index([isActive])
-  @@map("corporation_managers")
+  @@map("city_coordinators")
 }
 
 // ============================================
-// SUPERVISORS TABLE (v1.4: Renamed from site_managers)
+// ACTIVIST COORDINATORS TABLE (Previously: Supervisors)
 // ============================================
-model Supervisor {
+model ActivistCoordinator {
   id String @id @default(uuid())
 
   // Relationships
-  corporationId String      @map("corporation_id")
-  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Supervisor details
+  // Activist Coordinator details
   title String? // Job title
 
   // Status
@@ -230,25 +230,25 @@ model Supervisor {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  siteAssignments SupervisorSite[]
-  workers         Worker[] // v1.4: Workers can reference supervisor
+  neighborhoodAssignments ActivistCoordinatorNeighborhood[]
+  activists               Activist[]
 
-  @@unique([corporationId, userId]) // User can be supervisor once per corporation
-  @@unique([id, corporationId])     // v1.4 compliance: composite FK support
-  @@index([corporationId])
+  @@unique([cityId, userId]) // User can be activist coordinator once per city
+  @@unique([id, cityId])     // v2.0 compliance: composite FK support
+  @@index([cityId])
   @@index([userId])
   @@index([isActive])
-  @@map("supervisors") // v1.4: Changed from site_managers
+  @@map("activist_coordinators")
 }
 
 // ============================================
-// SITES TABLE
+// NEIGHBORHOODS TABLE (Previously: Sites)
 // ============================================
-model Site {
+model Neighborhood {
   id   String  @id @default(uuid())
   name String
 
-  // v1.4: Includes all these fields
+  // v2.0: Includes all these fields
   address String?
   city    String?
   country String? @default("Israel")
@@ -266,94 +266,95 @@ model Site {
   metadata Json?                  // Flexible data storage
 
   // Relationships
-  corporationId String      @map("corporation_id")
-  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  cityId String @map("city_id")
+  cityRelation City @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  supervisorAssignments SupervisorSite[]
-  workers               Worker[]
-  attendanceRecords     AttendanceRecord[]
+  activistCoordinatorAssignments ActivistCoordinatorNeighborhood[]
+  activists                      Activist[]
+  attendanceRecords              AttendanceRecord[]
 
-  @@unique([id, corporationId]) // v1.4 compliance: composite FK support
-  @@index([corporationId])
+  @@unique([id, cityId]) // v2.0 compliance: composite FK support
+  @@index([cityId])
   @@index([isActive])
-  @@map("sites")
+  @@map("neighborhoods")
 }
 
 // ============================================
-// SUPERVISOR-SITE ASSIGNMENTS (M2M JOIN TABLE)
+// ACTIVIST COORDINATOR-NEIGHBORHOOD ASSIGNMENTS (M2M JOIN TABLE)
+// Previously: SupervisorSite
 // ============================================
-model SupervisorSite {
+model ActivistCoordinatorNeighborhood {
   id String @id @default(uuid())
 
-  // v1.4 Compliance: Corporation ID for composite FK
-  corporationId String @map("corporation_id")
+  // v2.0 Compliance: City ID for composite FK
+  cityId String @map("city_id")
 
-  // v1.4: Relationships with composite FKs (references Supervisor, not SiteManager)
-  supervisorId String     @map("supervisor_id")
-  supervisor   Supervisor @relation(fields: [supervisorId, corporationId], references: [id, corporationId], onDelete: Cascade)
+  // v2.0: Relationships with composite FKs
+  activistCoordinatorId String              @map("activist_coordinator_id")
+  activistCoordinator   ActivistCoordinator @relation(fields: [activistCoordinatorId, cityId], references: [id, cityId], onDelete: Cascade)
 
-  siteId String @map("site_id")
-  site   Site   @relation(fields: [siteId, corporationId], references: [id, corporationId], onDelete: Cascade)
+  neighborhoodId String       @map("neighborhood_id")
+  neighborhood   Neighborhood @relation(fields: [neighborhoodId, cityId], references: [id, cityId], onDelete: Cascade)
 
   // Legacy: Keep user link for backward compatibility with existing code
-  legacySupervisorUserId String @map("legacy_supervisor_user_id")
-  legacySupervisorUser   User   @relation("SupervisorAssignments", fields: [legacySupervisorUserId], references: [id], onDelete: Cascade)
+  legacyActivistCoordinatorUserId String @map("legacy_activist_coordinator_user_id")
+  legacyActivistCoordinatorUser   User   @relation("ActivistCoordinatorAssignments", fields: [legacyActivistCoordinatorUserId], references: [id], onDelete: Cascade)
 
   // Assignment metadata
   assignedAt DateTime @default(now()) @map("assigned_at")
   assignedBy String?  @map("assigned_by") // User ID who made the assignment
-  metadata   Json?    // v1.4 spec includes metadata
+  metadata   Json?    // v2.0 spec includes metadata
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([supervisorId, siteId]) // v1.4 composite PK (supervisor + site)
-  @@index([legacySupervisorUserId])
-  @@index([supervisorId])
-  @@index([siteId])
-  @@index([corporationId])
-  @@map("supervisor_sites")
+  @@unique([activistCoordinatorId, neighborhoodId]) // v2.0 composite PK
+  @@index([legacyActivistCoordinatorUserId])
+  @@index([activistCoordinatorId])
+  @@index([neighborhoodId])
+  @@index([cityId])
+  @@map("activist_coordinator_neighborhoods")
 }
 
 // ============================================
-// WORKERS TABLE
+// ACTIVISTS TABLE (Previously: Workers)
 // ============================================
-model Worker {
+model Activist {
   id String @id @default(uuid())
 
-  // v1.4: Renamed name → fullName, avatar → avatarUrl
+  // v2.0: Renamed name → fullName, avatar → avatarUrl
   fullName  String  @map("full_name")
   phone     String?
   email     String?
-  position  String? // Job title
+  position  String? // Role in activism
   avatarUrl String? @map("avatar_url")
 
-  // Employment details (v1.4 includes these fields)
+  // Activity details (v2.0 includes these fields)
   startDate DateTime? @map("start_date")
   endDate   DateTime? @map("end_date")
   isActive  Boolean   @default(true) @map("is_active")
 
-  // Additional info (v1.4 includes these fields)
-  notes    String?  // Supervisor notes
-  tags     String[] @default([]) // Skills, certifications, etc.
+  // Additional info (v2.0 includes these fields)
+  notes    String?  // Coordinator notes
+  tags     String[] @default([]) // Skills, interests, etc.
   metadata Json?    // Flexible data storage
 
-  // Relationships - CRITICAL: corporationId for data integrity
-  corporationId String      @map("corporation_id")
-  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  // Relationships - CRITICAL: cityId for data integrity
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
-  siteId String @map("site_id")
-  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  neighborhoodId String       @map("neighborhood_id")
+  neighborhood   Neighborhood @relation(fields: [neighborhoodId], references: [id], onDelete: Cascade)
 
-  // v1.4: supervisor_id is NULLABLE (worker can be temporarily unassigned)
-  supervisorId String?     @map("supervisor_id")
-  supervisor   Supervisor? @relation(fields: [supervisorId, corporationId], references: [id, corporationId], onDelete: SetNull)
+  // v2.0: activist_coordinator_id is NULLABLE (activist can be temporarily unassigned)
+  activistCoordinatorId String?              @map("activist_coordinator_id")
+  activistCoordinator   ActivistCoordinator? @relation(fields: [activistCoordinatorId, cityId], references: [id, cityId], onDelete: SetNull)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -362,14 +363,14 @@ model Worker {
   // Relations
   attendanceRecords AttendanceRecord[]
 
-  // v1.4: Unique constraint on (site_id, full_name, phone)
-  @@unique([siteId, fullName, phone])
-  @@index([corporationId])
-  @@index([siteId])
-  @@index([supervisorId])
+  // v2.0: Unique constraint on (neighborhood_id, full_name, phone)
+  @@unique([neighborhoodId, fullName, phone])
+  @@index([cityId])
+  @@index([neighborhoodId])
+  @@index([activistCoordinatorId])
   @@index([isActive])
   @@index([phone])
-  @@map("workers")
+  @@map("activists")
 }
 
 // ============================================
@@ -387,10 +388,10 @@ model Invitation {
   expiresAt DateTime @map("expires_at")
 
   // Relationships
-  corporationId String?      @map("corporation_id")
-  corporation   Corporation? @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  cityId String? @map("city_id")
+  city   City?   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
-  targetSiteId String? @map("target_site_id") // For site-specific supervisor invites
+  targetNeighborhoodId String? @map("target_neighborhood_id") // For neighborhood-specific activist coordinator invites
 
   createdById String @map("created_by_id")
   createdBy   User   @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
@@ -398,7 +399,7 @@ model Invitation {
   // Acceptance tracking
   acceptedAt DateTime? @map("accepted_at")
 
-  // Metadata (v1.4: can store region info for Area Manager)
+  // Metadata (v2.0: can store region info for Area Manager)
   metadata Json? @default("{}")
 
   // Timestamps
@@ -408,8 +409,8 @@ model Invitation {
   @@index([email])
   @@index([token])
   @@index([status])
-  @@index([corporationId])
-  @@index([targetSiteId])
+  @@index([cityId])
+  @@index([targetNeighborhoodId])
   @@map("invitations")
 }
 
@@ -426,10 +427,10 @@ enum InvitationStatus {
 model AuditLog {
   id       String @id @default(uuid())
   action   String // "CREATE", "UPDATE", "DELETE"
-  entity   String // "Corporation", "User", "Site", "Worker"
+  entity   String // "City", "User", "Neighborhood", "Activist"
   entityId String @map("entity_id")
 
-  // v1.4: Renamed oldValue → before, newValue → after
+  // v2.0: Renamed oldValue → before, newValue → after
   before Json? // JSON snapshot before change
   after  Json? // JSON snapshot after change
 
@@ -439,9 +440,9 @@ model AuditLog {
   userRole  String? @map("user_role")
 
   // Context
-  corporationId String? @map("corporation_id")
-  ipAddress     String? @map("ip_address")
-  userAgent     String? @map("user_agent")
+  cityId    String? @map("city_id")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
 
   // Timestamp
   createdAt DateTime @default(now()) @map("created_at")
@@ -450,7 +451,7 @@ model AuditLog {
   @@index([entity])
   @@index([entityId])
   @@index([userId])
-  @@index([corporationId])
+  @@index([cityId])
   @@index([createdAt])
   @@map("audit_logs")
 }
@@ -547,20 +548,20 @@ model PushSubscription {
 }
 
 // ============================================
-// ATTENDANCE RECORDS TABLE (Worker Check-in System)
+// ATTENDANCE RECORDS TABLE (Activist Check-in System)
 // ============================================
 model AttendanceRecord {
   id String @id @default(uuid())
 
   // Relations (with RLS enforcement)
-  workerId String @map("worker_id")
-  worker   Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  activistId String   @map("activist_id")
+  activist   Activist @relation(fields: [activistId], references: [id], onDelete: Cascade)
 
-  siteId String @map("site_id")
-  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  neighborhoodId String       @map("neighborhood_id")
+  neighborhood   Neighborhood @relation(fields: [neighborhoodId], references: [id], onDelete: Cascade)
 
-  corporationId String      @map("corporation_id")
-  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   // Attendance data
   date        DateTime          @db.Date // Which day (2025-12-09)
@@ -570,7 +571,7 @@ model AttendanceRecord {
   // Audit trail
   checkedInById String @map("checked_in_by_id")
   checkedInBy   User   @relation("AttendanceCheckedInBy", fields: [checkedInById], references: [id])
-  notes         String? @db.Text // Optional supervisor notes
+  notes         String? @db.Text // Optional coordinator notes
 
   // Edit tracking
   lastEditedById String?   @map("last_edited_by_id")
@@ -581,9 +582,9 @@ model AttendanceRecord {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  @@unique([workerId, date]) // One record per worker per day
-  @@index([siteId, date]) // Fast lookup: all workers at site on date
-  @@index([corporationId, date]) // Multi-tenant isolation
+  @@unique([activistId, date]) // One record per activist per day
+  @@index([neighborhoodId, date]) // Fast lookup: all activists at neighborhood on date
+  @@index([cityId, date]) // Multi-tenant isolation
   @@index([date]) // Fast lookup: all attendance on date
   @@index([lastEditedAt]) // For audit queries
   @@map("attendance_records")

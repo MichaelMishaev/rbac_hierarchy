@@ -64,7 +64,7 @@ async function main() {
   // ========================
 
   // Corporation 1: טכנולוגיות אלקטרה
-  const corp1 = await prisma.corporation.upsert({
+  const corp1 = await prisma.city.upsert({
     where: { code: 'ELECTRA' },
     update: {},
     create: {
@@ -87,22 +87,22 @@ async function main() {
       email: 'david.cohen@electra-tech.co.il',
       fullName: 'דוד כהן',
       passwordHash: await bcrypt.hash('manager123', 10),
-      role: 'MANAGER',
+      role: 'CITY_COORDINATOR',
       phone: '+972-50-111-0001',
       isActive: true,
     },
   });
 
-  await prisma.corporationManager.upsert({
+  await prisma.cityCoordinator.upsert({
     where: {
-      corporationId_userId: {
-        corporationId: corp1.id,
+      cityId_userId: {
+        cityId: corp1.id,
         userId: manager1User.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp1.id,
+      cityId: corp1.id,
       userId: manager1User.id,
       title: 'מנהל כללי',
       isActive: true,
@@ -110,7 +110,7 @@ async function main() {
   });
 
   // Corporation 1 - Sites and Supervisors
-  const site1 = await prisma.site.upsert({
+  const site1 = await prisma.neighborhood.upsert({
     where: { id: 'electra-tlv-hq' },
     update: {},
     create: {
@@ -121,12 +121,12 @@ async function main() {
       country: 'ישראל',
       phone: '+972-3-555-0101',
       email: 'tlv@electra-tech.co.il',
-      corporationId: corp1.id,
+      cityId: corp1.id,
       isActive: true,
     },
   });
 
-  const site2 = await prisma.site.upsert({
+  const site2 = await prisma.neighborhood.upsert({
     where: { id: 'electra-haifa' },
     update: {},
     create: {
@@ -137,7 +137,7 @@ async function main() {
       country: 'ישראל',
       phone: '+972-4-855-0201',
       email: 'haifa@electra-tech.co.il',
-      corporationId: corp1.id,
+      cityId: corp1.id,
       isActive: true,
     },
   });
@@ -150,22 +150,22 @@ async function main() {
       email: 'moshe.israeli@electra-tech.co.il',
       fullName: 'משה ישראלי',
       passwordHash: await bcrypt.hash('supervisor123', 10),
-      role: 'SUPERVISOR',
+      role: 'ACTIVIST_COORDINATOR',
       phone: '+972-50-222-0001',
       isActive: true,
     },
   });
 
-  const supervisor1 = await prisma.supervisor.upsert({
+  const supervisor1 = await prisma.activistCoordinator.upsert({
     where: {
-      corporationId_userId: {
-        corporationId: corp1.id,
+      cityId_userId: {
+        cityId: corp1.id,
         userId: supervisor1User.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp1.id,
+      cityId: corp1.id,
       userId: supervisor1User.id,
       title: 'מפקח ראשי',
       isActive: true,
@@ -173,48 +173,48 @@ async function main() {
   });
 
   // Assign supervisor to sites
-  await prisma.supervisorSite.upsert({
+  await prisma.activistCoordinatorNeighborhood.upsert({
     where: {
-      supervisorId_siteId: {
-        supervisorId: supervisor1.id,
-        siteId: site1.id,
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId: supervisor1.id,
+        neighborhoodId: site1.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp1.id,
-      supervisorId: supervisor1.id,
-      siteId: site1.id,
-      legacySupervisorUserId: supervisor1User.id,
+      cityId: corp1.id,
+      activistCoordinatorId: supervisor1.id,
+      neighborhoodId: site1.id,
+      legacyActivistCoordinatorUserId: supervisor1User.id,
       assignedBy: superAdmin.id,
     },
   });
 
   // Workers for Corp 1
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'רונית לוי',
       phone: '+972-50-333-0001',
       email: 'ronit.levi@example.com',
       position: 'מהנדסת תוכנה',
-      corporationId: corp1.id,
-      siteId: site1.id,
-      supervisorId: supervisor1.id,
+      cityId: corp1.id,
+      neighborhoodId: site1.id,
+      activistCoordinatorId: supervisor1.id,
       startDate: new Date('2024-01-15'),
       isActive: true,
       tags: ['Full Stack', 'React', 'Node.js'],
     },
   });
 
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'אבי כהן',
       phone: '+972-50-333-0002',
       email: 'avi.cohen@example.com',
       position: 'טכנאי אלקטרוניקה',
-      corporationId: corp1.id,
-      siteId: site1.id,
-      supervisorId: supervisor1.id,
+      cityId: corp1.id,
+      neighborhoodId: site1.id,
+      activistCoordinatorId: supervisor1.id,
       startDate: new Date('2024-02-01'),
       isActive: true,
       tags: ['Electronics', 'Certified'],
@@ -224,7 +224,7 @@ async function main() {
   console.log('✅ Corporation 1: טכנולוגיות אלקטרה - Complete hierarchy created');
 
   // Corporation 2: קבוצת בינוי
-  const corp2 = await prisma.corporation.upsert({
+  const corp2 = await prisma.city.upsert({
     where: { code: 'BINUY' },
     update: {},
     create: {
@@ -247,22 +247,22 @@ async function main() {
       email: 'sara.levi@binuy.co.il',
       fullName: 'שרה לוי',
       passwordHash: await bcrypt.hash('manager123', 10),
-      role: 'MANAGER',
+      role: 'CITY_COORDINATOR',
       phone: '+972-50-111-0002',
       isActive: true,
     },
   });
 
-  await prisma.corporationManager.upsert({
+  await prisma.cityCoordinator.upsert({
     where: {
-      corporationId_userId: {
-        corporationId: corp2.id,
+      cityId_userId: {
+        cityId: corp2.id,
         userId: manager2User.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp2.id,
+      cityId: corp2.id,
       userId: manager2User.id,
       title: 'מנהלת תפעול',
       isActive: true,
@@ -270,7 +270,7 @@ async function main() {
   });
 
   // Corporation 2 - Sites
-  const site3 = await prisma.site.upsert({
+  const site3 = await prisma.neighborhood.upsert({
     where: { id: 'binuy-project-a' },
     update: {},
     create: {
@@ -281,12 +281,12 @@ async function main() {
       country: 'ישראל',
       phone: '+972-3-666-0101',
       email: 'projecta@binuy.co.il',
-      corporationId: corp2.id,
+      cityId: corp2.id,
       isActive: true,
     },
   });
 
-  const site4 = await prisma.site.upsert({
+  const site4 = await prisma.neighborhood.upsert({
     where: { id: 'binuy-project-b' },
     update: {},
     create: {
@@ -297,7 +297,7 @@ async function main() {
       country: 'ישראל',
       phone: '+972-9-955-0201',
       email: 'projectb@binuy.co.il',
-      corporationId: corp2.id,
+      cityId: corp2.id,
       isActive: true,
     },
   });
@@ -310,85 +310,85 @@ async function main() {
       email: 'yossi.mizrahi@binuy.co.il',
       fullName: 'יוסי מזרחי',
       passwordHash: await bcrypt.hash('supervisor123', 10),
-      role: 'SUPERVISOR',
+      role: 'ACTIVIST_COORDINATOR',
       phone: '+972-50-222-0002',
       isActive: true,
     },
   });
 
-  const supervisor2 = await prisma.supervisor.upsert({
+  const supervisor2 = await prisma.activistCoordinator.upsert({
     where: {
-      corporationId_userId: {
-        corporationId: corp2.id,
+      cityId_userId: {
+        cityId: corp2.id,
         userId: supervisor2User.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp2.id,
+      cityId: corp2.id,
       userId: supervisor2User.id,
       title: 'מנהל אתר',
       isActive: true,
     },
   });
 
-  await prisma.supervisorSite.upsert({
+  await prisma.activistCoordinatorNeighborhood.upsert({
     where: {
-      supervisorId_siteId: {
-        supervisorId: supervisor2.id,
-        siteId: site3.id,
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId: supervisor2.id,
+        neighborhoodId: site3.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp2.id,
-      supervisorId: supervisor2.id,
-      siteId: site3.id,
-      legacySupervisorUserId: supervisor2User.id,
+      cityId: corp2.id,
+      activistCoordinatorId: supervisor2.id,
+      neighborhoodId: site3.id,
+      legacyActivistCoordinatorUserId: supervisor2User.id,
       assignedBy: superAdmin.id,
     },
   });
 
   // Workers for Corp 2
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'דני בן דוד',
       phone: '+972-50-444-0001',
       email: 'danny.bendavid@example.com',
       position: 'מנהל פרויקט',
-      corporationId: corp2.id,
-      siteId: site3.id,
-      supervisorId: supervisor2.id,
+      cityId: corp2.id,
+      neighborhoodId: site3.id,
+      activistCoordinatorId: supervisor2.id,
       startDate: new Date('2023-11-01'),
       isActive: true,
       tags: ['Project Management', 'Civil Engineer'],
     },
   });
 
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'מיכל אברהם',
       phone: '+972-50-444-0002',
       email: 'michal.abraham@example.com',
       position: 'מהנדסת בניין',
-      corporationId: corp2.id,
-      siteId: site3.id,
-      supervisorId: supervisor2.id,
+      cityId: corp2.id,
+      neighborhoodId: site3.id,
+      activistCoordinatorId: supervisor2.id,
       startDate: new Date('2024-01-10'),
       isActive: true,
       tags: ['Structural Engineering', 'Safety'],
     },
   });
 
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'אלי שמעון',
       phone: '+972-50-444-0003',
       email: 'eli.shimon@example.com',
       position: 'מנהל עבודות',
-      corporationId: corp2.id,
-      siteId: site4.id,
-      supervisorId: supervisor2.id,
+      cityId: corp2.id,
+      neighborhoodId: site4.id,
+      activistCoordinatorId: supervisor2.id,
       startDate: new Date('2023-10-15'),
       isActive: true,
       tags: ['Construction', 'Heavy Equipment'],
@@ -398,7 +398,7 @@ async function main() {
   console.log('✅ Corporation 2: קבוצת בינוי - Complete hierarchy created');
 
   // Corporation 3: רשת מזון טעים
-  const corp3 = await prisma.corporation.upsert({
+  const corp3 = await prisma.city.upsert({
     where: { code: 'TAIM' },
     update: {},
     create: {
@@ -421,22 +421,22 @@ async function main() {
       email: 'orna.hadad@taim-food.co.il',
       fullName: 'אורנה חדד',
       passwordHash: await bcrypt.hash('manager123', 10),
-      role: 'MANAGER',
+      role: 'CITY_COORDINATOR',
       phone: '+972-50-111-0003',
       isActive: true,
     },
   });
 
-  await prisma.corporationManager.upsert({
+  await prisma.cityCoordinator.upsert({
     where: {
-      corporationId_userId: {
-        corporationId: corp3.id,
+      cityId_userId: {
+        cityId: corp3.id,
         userId: manager3User.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp3.id,
+      cityId: corp3.id,
       userId: manager3User.id,
       title: 'מנהלת רשת',
       isActive: true,
@@ -444,7 +444,7 @@ async function main() {
   });
 
   // Corporation 3 - Sites
-  const site5 = await prisma.site.upsert({
+  const site5 = await prisma.neighborhood.upsert({
     where: { id: 'taim-tlv-center' },
     update: {},
     create: {
@@ -455,12 +455,12 @@ async function main() {
       country: 'ישראל',
       phone: '+972-3-777-0101',
       email: 'tlv@taim-food.co.il',
-      corporationId: corp3.id,
+      cityId: corp3.id,
       isActive: true,
     },
   });
 
-  const site6 = await prisma.site.upsert({
+  const site6 = await prisma.neighborhood.upsert({
     where: { id: 'taim-jerusalem' },
     update: {},
     create: {
@@ -471,7 +471,7 @@ async function main() {
       country: 'ישראל',
       phone: '+972-2-624-0101',
       email: 'jerusalem@taim-food.co.il',
-      corporationId: corp3.id,
+      cityId: corp3.id,
       isActive: true,
     },
   });
@@ -484,85 +484,85 @@ async function main() {
       email: 'tal.golan@taim-food.co.il',
       fullName: 'טל גולן',
       passwordHash: await bcrypt.hash('supervisor123', 10),
-      role: 'SUPERVISOR',
+      role: 'ACTIVIST_COORDINATOR',
       phone: '+972-50-222-0003',
       isActive: true,
     },
   });
 
-  const supervisor3 = await prisma.supervisor.upsert({
+  const supervisor3 = await prisma.activistCoordinator.upsert({
     where: {
-      corporationId_userId: {
-        corporationId: corp3.id,
+      cityId_userId: {
+        cityId: corp3.id,
         userId: supervisor3User.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp3.id,
+      cityId: corp3.id,
       userId: supervisor3User.id,
       title: 'מנהל סניף',
       isActive: true,
     },
   });
 
-  await prisma.supervisorSite.upsert({
+  await prisma.activistCoordinatorNeighborhood.upsert({
     where: {
-      supervisorId_siteId: {
-        supervisorId: supervisor3.id,
-        siteId: site5.id,
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId: supervisor3.id,
+        neighborhoodId: site5.id,
       },
     },
     update: {},
     create: {
-      corporationId: corp3.id,
-      supervisorId: supervisor3.id,
-      siteId: site5.id,
-      legacySupervisorUserId: supervisor3User.id,
+      cityId: corp3.id,
+      activistCoordinatorId: supervisor3.id,
+      neighborhoodId: site5.id,
+      legacyActivistCoordinatorUserId: supervisor3User.id,
       assignedBy: superAdmin.id,
     },
   });
 
   // Workers for Corp 3
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'נועה כהן',
       phone: '+972-50-555-0001',
       email: 'noa.cohen@example.com',
       position: 'מלצרית ראשית',
-      corporationId: corp3.id,
-      siteId: site5.id,
-      supervisorId: supervisor3.id,
+      cityId: corp3.id,
+      neighborhoodId: site5.id,
+      activistCoordinatorId: supervisor3.id,
       startDate: new Date('2023-08-01'),
       isActive: true,
       tags: ['Customer Service', 'Shift Manager'],
     },
   });
 
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'יניב שרון',
       phone: '+972-50-555-0002',
       email: 'yaniv.sharon@example.com',
       position: 'שף ראשי',
-      corporationId: corp3.id,
-      siteId: site5.id,
-      supervisorId: supervisor3.id,
+      cityId: corp3.id,
+      neighborhoodId: site5.id,
+      activistCoordinatorId: supervisor3.id,
       startDate: new Date('2023-06-15'),
       isActive: true,
       tags: ['Chef', 'Italian Cuisine', 'Kitchen Management'],
     },
   });
 
-  await prisma.worker.create({
+  await prisma.activist.create({
     data: {
       fullName: 'ליאור עמית',
       phone: '+972-50-555-0003',
       email: 'lior.amit@example.com',
       position: 'מלצר',
-      corporationId: corp3.id,
-      siteId: site6.id,
-      supervisorId: supervisor3.id,
+      cityId: corp3.id,
+      neighborhoodId: site6.id,
+      activistCoordinatorId: supervisor3.id,
       startDate: new Date('2024-03-01'),
       isActive: true,
       tags: ['Waiter', 'Customer Service'],
