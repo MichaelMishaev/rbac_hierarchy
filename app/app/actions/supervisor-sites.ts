@@ -127,7 +127,7 @@ export async function assignSupervisorToSite(supervisorId: string, siteId: strin
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: null,
+        before: undefined,
         after: {
           supervisorId,
           siteId,
