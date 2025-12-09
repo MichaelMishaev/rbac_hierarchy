@@ -13,6 +13,9 @@ export interface TestScenarioData {
   supervisor1: any;
   supervisor2: any;
   supervisor3: any;
+  supervisor1User: any;
+  supervisor2User: any;
+  supervisor3User: any;
   manager: any;
   managerUser: any;
 }
