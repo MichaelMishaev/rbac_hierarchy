@@ -23,7 +23,7 @@ export default async function DashboardLayout({
       <Box sx={{ display: 'flex', minHeight: '100vh', direction: isRTL ? 'rtl' : 'ltr' }}>
         {/* Navigation V3 - 2025 UX Best Practices with Mobile Drawer */}
         <NavigationV3
-          role={session.user.role as 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR'}
+          role={session.user.role as 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR'}
           stats={{
             pendingInvites: 0,  // TODO: Fetch from API
             activeWorkers: 0,   // TODO: Fetch from API

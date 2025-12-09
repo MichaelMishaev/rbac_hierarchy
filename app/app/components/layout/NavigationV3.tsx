@@ -49,7 +49,7 @@ import { useDashboardMutations } from '@/app/hooks/useDashboardStats';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 
 export type NavigationV3Props = {
-  role: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR';
+  role: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
   stats?: {
     pendingInvites?: number;
     activeWorkers?: number;
@@ -126,6 +126,36 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
 
   // Grouped navigation for SuperAdmin
   const superAdminGroups: NavGroup[] = [
+    {
+      id: 'primary',
+      label: t('groupPrimary'),
+      items: [
+        { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
+        { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
+        { path: '/map', label: t('map'), icon: <MapIcon /> },
+      ],
+    },
+    {
+      id: 'management',
+      label: t('groupManagement'),
+      items: [
+        { path: '/corporations', label: t('corporations'), icon: <BusinessIcon /> },
+        { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
+        { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+        { path: '/users', label: t('users'), icon: <PeopleIcon /> },
+      ],
+    },
+    {
+      id: 'system',
+      label: t('groupSystem'),
+      items: [
+        { path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> },
+      ],
+    },
+  ];
+
+  // Grouped navigation for Area Manager (similar to SuperAdmin but scoped to their corporations)
+  const areaManagerGroups: NavGroup[] = [
     {
       id: 'primary',
       label: t('groupPrimary'),
@@ -493,6 +523,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
               }}
             >
               {role === 'SUPERADMIN' ? 'מנהל על' :
+               role === 'AREA_MANAGER' ? 'מנהל אזור' :
                role === 'MANAGER' ? 'מנהל' :
                role === 'SUPERVISOR' ? 'מפקח' : role}
             </Typography>
@@ -522,6 +553,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
       {/* Navigation Links */}
       <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2 }}>
         {role === 'SUPERADMIN' && renderGroupedNav(superAdminGroups, isMobile)}
+        {role === 'AREA_MANAGER' && renderGroupedNav(areaManagerGroups, isMobile)}
         {role === 'MANAGER' && renderFlatNav(managerItems, isMobile)}
         {role === 'SUPERVISOR' && renderFlatNav(supervisorItems, isMobile)}
       </Box>

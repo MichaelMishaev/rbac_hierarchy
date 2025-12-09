@@ -70,9 +70,10 @@ type AreaManager = {
 
 type CorporationsClientProps = {
   corporations: Corporation[];
+  userRole: string;
 };
 
-export default function CorporationsClient({ corporations: initialCorporations }: CorporationsClientProps) {
+export default function CorporationsClient({ corporations: initialCorporations, userRole }: CorporationsClientProps) {
   const t = useTranslations('corporations');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -287,29 +288,32 @@ export default function CorporationsClient({ corporations: initialCorporations }
             ),
           }}
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateModalOpen(true)}
-          sx={{
-            background: colors.gradients.primary,
-            color: colors.neutral[0],
-            px: 3,
-            py: 1.25,
-            borderRadius: borderRadius.lg,
-            fontWeight: 600,
-            textTransform: 'none',
-            boxShadow: shadows.medium,
-            '&:hover': {
-              background: colors.primary.dark,
-              boxShadow: shadows.glowBlue,
-              transform: 'translateY(-2px)',
-            },
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
-          {t('newCorporation')}
-        </Button>
+        {/* Only SUPERADMIN can create new corporations */}
+        {userRole === 'SUPERADMIN' && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateModalOpen(true)}
+            sx={{
+              background: colors.gradients.primary,
+              color: colors.neutral[0],
+              px: 3,
+              py: 1.25,
+              borderRadius: borderRadius.lg,
+              fontWeight: 600,
+              textTransform: 'none',
+              boxShadow: shadows.medium,
+              '&:hover': {
+                background: colors.primary.dark,
+                boxShadow: shadows.glowBlue,
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
+          >
+            {t('newCorporation')}
+          </Button>
+        )}
       </Box>
 
       {/* Corporations Grid */}
@@ -362,9 +366,11 @@ export default function CorporationsClient({ corporations: initialCorporations }
               ? isRTL
                 ? 'נסה לחפש עם מילות מפתח אחרות'
                 : 'Try searching with different keywords'
-              : t('createFirst')}
+              : userRole === 'SUPERADMIN'
+                ? t('createFirst')
+                : 'לא הוקצו לך תאגידים עדיין'}
           </Typography>
-          {!searchQuery && (
+          {!searchQuery && userRole === 'SUPERADMIN' && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}

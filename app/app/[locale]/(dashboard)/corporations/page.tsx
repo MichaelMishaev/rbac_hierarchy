@@ -17,8 +17,8 @@ export default async function CorporationsPage() {
     redirect('/login');
   }
 
-  // Only SuperAdmin can access this page
-  if (session.user.role !== 'SUPERADMIN') {
+  // SuperAdmin and AreaManager can access this page
+  if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'AREA_MANAGER') {
     return (
       <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
         <Typography variant="h5" color="error">
@@ -28,8 +28,28 @@ export default async function CorporationsPage() {
     );
   }
 
+  // Build query filter based on role
+  const whereClause: any = {};
+
+  // AREA_MANAGER: Only see corporations assigned to them
+  if (session.user.role === 'AREA_MANAGER') {
+    const areaManagerRecord = await prisma.areaManager.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+
+    if (areaManagerRecord) {
+      whereClause.areaManagerId = areaManagerRecord.id;
+    } else {
+      // Area Manager record not found - show empty list
+      whereClause.id = 'non-existent';
+    }
+  }
+  // SUPERADMIN: See all corporations (no filter needed)
+
   // v1.4: Fetch corporations with areaManager relation
   const corporationsData = await prisma.corporation.findMany({
+    where: whereClause,
     include: {
       areaManager: {
         include: {
@@ -98,7 +118,10 @@ export default async function CorporationsPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      <CorporationsClient corporations={corporations} />
+      <CorporationsClient
+        corporations={corporations}
+        userRole={session.user.role}
+      />
     </Box>
   );
 }
