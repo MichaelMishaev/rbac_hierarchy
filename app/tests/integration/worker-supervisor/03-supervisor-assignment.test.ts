@@ -3,7 +3,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { getSiteSupervisorCount, autoAssignWorkersToFirstSupervisor, findLeastLoadedSupervisor } from '@/lib/supervisor-worker-assignment';
+import { getSiteSupervisorCount, autoAssignWorkersToFirstSupervisor, findLeastLoadedSupervisor } from '@/lib/activist-coordinator-assignment';
 import type { TestData } from './test-setup';
 import { assert } from './test-setup';
 

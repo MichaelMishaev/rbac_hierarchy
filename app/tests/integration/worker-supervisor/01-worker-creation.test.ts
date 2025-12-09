@@ -3,7 +3,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { validateWorkerSupervisorAssignment } from '@/lib/supervisor-worker-assignment';
+import { validateWorkerSupervisorAssignment } from '@/lib/activist-coordinator-assignment';
 import type { TestData } from './test-setup';
 import { assert } from './test-setup';
 

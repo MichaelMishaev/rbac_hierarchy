@@ -66,7 +66,7 @@ export async function GET(request: Request) {
             select: {
               neighborhoods: true,
               coordinators: true,
-              activistCoordinators: true,
+              activistCoordinatorAssignments: true,
             },
           },
         },
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
               phone: true,
             },
           },
-          city: {
+          cityRelation: {
             select: {
               id: true,
               name: true,
@@ -127,7 +127,7 @@ export async function GET(request: Request) {
               phone: true,
             },
           },
-          city: {
+          cityRelation: {
             select: {
               id: true,
               name: true,
@@ -176,7 +176,7 @@ export async function GET(request: Request) {
       id: site.id,
       name: site.name,
       address: site.address,
-      city: site.city,
+      cityRelation: site.city,
       country: site.country,
       latitude: site.latitude,
       longitude: site.longitude,
@@ -191,7 +191,7 @@ export async function GET(request: Request) {
           (workerCountsBySite[site.id]?.active || 0) +
           (workerCountsBySite[site.id]?.inactive || 0),
       },
-      activistCoordinators: site.activistCoordinatorAssignments.map((sa: any) => ({
+      activistCoordinatorAssignments: site.activistCoordinatorAssignments.map((sa: any) => ({
         id: sa.activistCoordinator.id,
         name: sa.activistCoordinator.user.fullName,
         email: sa.activistCoordinator.user.email,

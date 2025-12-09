@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 // TYPE DEFINITIONS
 // ============================================
 
-export type CreateCorporationInput = {
+export type CreateCityInput = {
   name: string;
   code: string;
   description?: string;
@@ -20,7 +20,7 @@ export type CreateCorporationInput = {
   areaManagerId: string; // v1.4: Required - Area Manager assignment
 };
 
-export type UpdateCorporationInput = {
+export type UpdateCityInput = {
   name?: string;
   code?: string;
   description?: string;
@@ -32,7 +32,7 @@ export type UpdateCorporationInput = {
   areaManagerId?: string; // v1.4: Allow changing Area Manager assignment
 };
 
-export type ListCorporationsFilters = {
+export type ListCitiesFilters = {
   search?: string;
   isActive?: boolean;
 };
@@ -49,7 +49,7 @@ export type ListCorporationsFilters = {
  * - MANAGER: Cannot create corporations
  * - SUPERVISOR: Cannot create corporations
  */
-export async function createCorporation(data: CreateCorporationInput) {
+export async function createCity(data: CreateCityInput) {
   try {
     // Only SUPERADMIN can create corporations
     const currentUser = await requireSuperAdmin();
@@ -157,7 +157,7 @@ export async function createCorporation(data: CreateCorporationInput) {
  * - MANAGER: Can see only their corporation
  * - SUPERVISOR: Can see only their corporation
  */
-export async function listCorporations(filters: ListCorporationsFilters = {}) {
+export async function listCities(filters: ListCitiesFilters = {}) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -231,7 +231,7 @@ export async function listCorporations(filters: ListCorporationsFilters = {}) {
  * - MANAGER: Can view only their corporation
  * - SUPERVISOR: Can view only their corporation
  */
-export async function getCorporationById(cityId: string) {
+export async function getCityById(cityId: string) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -319,7 +319,7 @@ export async function getCorporationById(cityId: string) {
  * - MANAGER: Can update only their corporation (limited fields)
  * - SUPERVISOR: Cannot update corporations
  */
-export async function updateCorporation(cityId: string, data: UpdateCorporationInput) {
+export async function updateCity(cityId: string, data: UpdateCityInput) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -480,7 +480,7 @@ export async function updateCorporation(cityId: string, data: UpdateCorporationI
  *
  * WARNING: This will cascade delete all related data!
  */
-export async function deleteCorporation(cityId: string) {
+export async function deleteCity(cityId: string) {
   try {
     // Only SUPERADMIN can delete corporations
     const currentUser = await requireSuperAdmin();
@@ -565,7 +565,7 @@ export async function deleteCorporation(cityId: string) {
  * - MANAGER: Can get stats for their corporation only
  * - SUPERVISOR: Can get stats for their corporation only
  */
-export async function getCorporationStats(cityId: string) {
+export async function getCityStats(cityId: string) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -701,7 +701,7 @@ export async function getCorporationStats(cityId: string) {
  * - MANAGER: Cannot toggle corporation status
  * - SUPERVISOR: Cannot toggle corporation status
  */
-export async function toggleCorporationStatus(cityId: string) {
+export async function toggleCityStatus(cityId: string) {
   try {
     // Only SUPERADMIN can toggle status
     const currentUser = await requireSuperAdmin();

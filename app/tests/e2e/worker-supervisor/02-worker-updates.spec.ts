@@ -10,7 +10,7 @@
 
 import { test, expect } from '@playwright/test';
 import { setupWorkerSupervisorTestData, cleanupWorkerSupervisorTestData, type TestScenarioData } from './fixtures/test-data';
-import { createWorker, updateWorker } from '@/app/actions/workers';
+import { createWorker, updateWorker } from '@/app/actions/activists';
 import { prisma } from '@/lib/prisma';
 
 test.describe('Worker Updates - Site Change & Supervisor Validation', () => {

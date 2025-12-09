@@ -31,7 +31,7 @@ export async function GET() {
             isActive: true,
           },
           include: {
-            managers: {
+            coordinators: {
               where: {
                 isActive: true,
               },
@@ -125,7 +125,7 @@ export async function GET() {
           name: corp.name,
           type: 'city' as const,
           count: {
-            managers: corp.managers.length,
+            coordinators: corp.managers.length,
             supervisors: corp.supervisors.length,
             sites: corp.sites.length,
           },

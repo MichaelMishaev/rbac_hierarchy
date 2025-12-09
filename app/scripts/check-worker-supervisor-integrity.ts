@@ -15,7 +15,7 @@
  */
 
 import { prisma } from '../lib/prisma';
-import { findOrphanWorkers } from '../lib/supervisor-worker-assignment';
+import { findOrphanWorkers } from '../lib/activist-coordinator-assignment';
 
 interface IntegrityIssue {
   type: 'ORPHAN_WORKER' | 'DANGLING_REFERENCE' | 'INACTIVE_SUPERVISOR';

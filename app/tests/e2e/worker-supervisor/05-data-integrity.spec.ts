@@ -10,9 +10,9 @@
 
 import { test, expect } from '@playwright/test';
 import { setupWorkerSupervisorTestData, cleanupWorkerSupervisorTestData, type TestScenarioData } from './fixtures/test-data';
-import { findOrphanWorkers } from '@/lib/supervisor-worker-assignment';
+import { findOrphanWorkers } from '@/lib/activist-coordinator-assignment';
 import { prisma } from '@/lib/prisma';
-import { createWorker } from '@/app/actions/workers';
+import { createWorker } from '@/app/actions/activists';
 
 test.describe('Data Integrity - Orphan Detection & Validation', () => {
   let testData: TestScenarioData;

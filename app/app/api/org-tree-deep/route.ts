@@ -27,7 +27,7 @@ export async function GET() {
         name: 'Acme Corporation',
         type: 'corporation',
         count: {
-          managers: 3,
+          coordinators: 3,
           sites: 1,
           departments: 3,
           teams: 8,

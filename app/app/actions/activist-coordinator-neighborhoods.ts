@@ -15,7 +15,7 @@ import {
 // TYPE DEFINITIONS
 // ============================================
 
-export type CreateSupervisorQuickInput = {
+export type CreateActivistCoordinatorQuickInput = {
   fullName: string;
   email: string;
   phone?: string;
@@ -38,7 +38,7 @@ export type CreateSupervisorQuickInput = {
  * - SUPERADMIN: Can create supervisors in any corporation
  * - MANAGER: Can create supervisors within their corporation only
  */
-export async function createSupervisorQuick(data: CreateSupervisorQuickInput) {
+export async function createActivistCoordinatorQuick(data: CreateActivistCoordinatorQuickInput) {
   try {
     const currentUser = await getCurrentUser();
 

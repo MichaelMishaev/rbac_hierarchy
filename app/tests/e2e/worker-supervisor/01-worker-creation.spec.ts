@@ -10,7 +10,7 @@
 
 import { test, expect } from '@playwright/test';
 import { setupWorkerSupervisorTestData, cleanupWorkerSupervisorTestData, type TestScenarioData } from './fixtures/test-data';
-import { createWorker } from '@/app/actions/workers';
+import { createWorker } from '@/app/actions/activists';
 import { prisma } from '@/lib/prisma';
 
 test.describe('Worker Creation - Supervisor Assignment Rules', () => {

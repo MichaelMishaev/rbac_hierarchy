@@ -10,8 +10,8 @@
 
 import { test, expect } from '@playwright/test';
 import { setupWorkerSupervisorTestData, cleanupWorkerSupervisorTestData, type TestScenarioData } from './fixtures/test-data';
-import { createWorker } from '@/app/actions/workers';
-import { removeSupervisorFromSite, deleteSupervisor, assignSupervisorToSite } from '@/app/actions/supervisor-sites';
+import { createWorker } from '@/app/actions/activists';
+import { removeSupervisorFromSite, deleteSupervisor, assignSupervisorToSite } from '@/app/actions/activist-coordinator-neighborhoods';
 import { prisma } from '@/lib/prisma';
 
 test.describe('Supervisor Removal - Worker Reassignment Logic', () => {

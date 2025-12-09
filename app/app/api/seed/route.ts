@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     // Create CorporationManager record for manager1
     await prisma.cityCoordinator.upsert({
       where: {
-        corporationId_userId: {
+        cityId_userId: {
           cityId: corp1.id,
           userId: manager1.id,
         },
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     // Create CorporationManager record for manager2
     await prisma.cityCoordinator.upsert({
       where: {
-        corporationId_userId: {
+        cityId_userId: {
           cityId: corp2.id,
           userId: manager2.id,
         },
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
     // Create CorporationManager record for manager3
     await prisma.cityCoordinator.upsert({
       where: {
-        corporationId_userId: {
+        cityId_userId: {
           cityId: corp3.id,
           userId: manager3.id,
         },
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
       data: {
         name: 'מפעל תל אביב',
         address: 'רחוב הברזל 1',
-        city: 'תל אביב',
+        cityRelation: 'תל אביב',
         country: 'ישראל',
         phone: '+972-3-500-1001',
         email: 'tlv@electra-tech.co.il',
@@ -224,7 +224,7 @@ export async function POST(request: Request) {
       data: {
         name: 'אתר בנייה - פרויקט הרצליה',
         address: 'רחוב ויצמן 10',
-        city: 'הרצליה',
+        cityRelation: 'הרצליה',
         country: 'ישראל',
         phone: '+972-9-900-3001',
         email: 'herzliya@binui.co.il',
@@ -237,7 +237,7 @@ export async function POST(request: Request) {
       data: {
         name: 'סניף דיזנגוף',
         address: 'רחוב דיזנגוף 100',
-        city: 'תל אביב',
+        cityRelation: 'תל אביב',
         country: 'ישראל',
         phone: '+972-3-700-5001',
         email: 'dizengoff@taim-food.co.il',
@@ -267,7 +267,7 @@ export async function POST(request: Request) {
     // Create Supervisor record for supervisor1_1
     const supervisorRecord1_1 = await prisma.activistCoordinator.upsert({
       where: {
-        corporationId_userId: {
+        cityId_userId: {
           cityId: corp1.id,
           userId: supervisor1_1.id,
         },
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
     // Create Supervisor record for supervisor2_1
     const supervisorRecord2_1 = await prisma.activistCoordinator.upsert({
       where: {
-        corporationId_userId: {
+        cityId_userId: {
           cityId: corp2.id,
           userId: supervisor2_1.id,
         },
@@ -337,7 +337,7 @@ export async function POST(request: Request) {
     // Create Supervisor record for supervisor3_1
     const supervisorRecord3_1 = await prisma.activistCoordinator.upsert({
       where: {
-        corporationId_userId: {
+        cityId_userId: {
           cityId: corp3.id,
           userId: supervisor3_1.id,
         },
@@ -442,14 +442,14 @@ export async function POST(request: Request) {
       message: '🎉 Production seed completed successfully!',
       data: {
         corporations: 3,
-        managers: 3,
+        coordinators: 3,
         supervisors: 3,
         sites: 3,
         workers: 3,
       },
       credentials: {
         superAdmin: 'admin@rbac.shop / admin123',
-        managers: 'manager123',
+        coordinators: 'manager123',
         supervisors: 'supervisor123',
       },
     });
