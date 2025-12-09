@@ -264,7 +264,7 @@ export async function removeSupervisorFromSite(supervisorId: string, siteId: str
           siteName: site.name,
           supervisorName: assignment.supervisor.user.fullName,
         },
-        after: null,
+        after: undefined,
       },
     });
 
