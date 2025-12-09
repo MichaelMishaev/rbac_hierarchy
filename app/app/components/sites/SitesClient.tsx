@@ -808,6 +808,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
         mode="create"
         corporations={corporations}
         supervisors={supervisors}
+        onCorporationChange={fetchSupervisors}
       />
 
       {/* Edit Modal */}
@@ -833,6 +834,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
           mode="edit"
           corporations={corporations}
           supervisors={supervisors}
+          onCorporationChange={fetchSupervisors}
         />
       )}
 

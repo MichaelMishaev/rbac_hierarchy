@@ -64,6 +64,7 @@ type SiteModalProps = {
   mode: 'create' | 'edit';
   corporations: Corporation[];
   supervisors: Supervisor[];
+  onCorporationChange?: (corporationId: string) => Promise<void>;
 };
 
 export default function SiteModal({
@@ -74,6 +75,7 @@ export default function SiteModal({
   mode,
   corporations,
   supervisors,
+  onCorporationChange,
 }: SiteModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
@@ -158,13 +160,22 @@ export default function SiteModal({
     }
   };
 
-  const handleChange = (field: keyof SiteFormData) => (
+  const handleChange = (field: keyof SiteFormData) => async (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown } }
   ) => {
     const value = field === 'isActive'
       ? (event.target as HTMLInputElement).checked
       : event.target.value as string;
+
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // When corporation changes, fetch supervisors for that corporation
+    if (field === 'corporationId' && onCorporationChange) {
+      await onCorporationChange(value as string);
+      // Reset supervisor selection when corporation changes
+      setFormData((prev) => ({ ...prev, supervisorId: '' }));
+    }
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
