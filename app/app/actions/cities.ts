@@ -55,7 +55,7 @@ export async function createCorporation(data: CreateCorporationInput) {
     const currentUser = await requireSuperAdmin();
 
     // Validate code uniqueness
-    const existingCorp = await prisma.corporation.findUnique({
+    const existingCorp = await prisma.city.findUnique({
       where: { code: data.code },
     });
 
@@ -86,7 +86,7 @@ export async function createCorporation(data: CreateCorporationInput) {
     }
 
     // Create corporation
-    const newCorporation = await prisma.corporation.create({
+    const newCorporation = await prisma.city.create({
       data: {
         name: data.name,
         code: data.code,
@@ -101,9 +101,9 @@ export async function createCorporation(data: CreateCorporationInput) {
       include: {
         _count: {
           select: {
-            managers: true,     // Counts CorporationManager records
-            supervisors: true,  // Counts SiteManager records
-            sites: true,
+            coordinators: true,     // Counts CityCoordinator records
+            activistCoordinators: true,  // Counts ActivistCoordinator records
+            neighborhoods: true,
             invitations: true,
           },
         },
@@ -185,14 +185,14 @@ export async function listCorporations(filters: ListCorporationsFilters = {}) {
     }
 
     // Query corporations
-    const corporations = await prisma.corporation.findMany({
+    const corporations = await prisma.city.findMany({
       where,
       include: {
         _count: {
           select: {
-            managers: true,     // Counts CorporationManager records
-            supervisors: true,  // Counts SiteManager records
-            sites: true,
+            coordinators: true,     // Counts CityCoordinator records
+            activistCoordinators: true,  // Counts ActivistCoordinator records
+            neighborhoods: true,
             invitations: true,
           },
         },
@@ -231,22 +231,22 @@ export async function listCorporations(filters: ListCorporationsFilters = {}) {
  * - MANAGER: Can view only their corporation
  * - SUPERVISOR: Can view only their corporation
  */
-export async function getCorporationById(corporationId: string) {
+export async function getCorporationById(cityId: string) {
   try {
     const currentUser = await getCurrentUser();
 
     // Non-superadmins can only view their corporations
-    if (!hasAccessToCorporation(currentUser, corporationId)) {
+    if (!hasAccessToCorporation(currentUser, cityId)) {
       return {
         success: false,
         error: 'Access denied',
       };
     }
 
-    const corporation = await prisma.corporation.findUnique({
-      where: { id: corporationId },
+    const corporation = await prisma.city.findUnique({
+      where: { id: cityId },
       include: {
-        managers: {
+        coordinators: {
           select: {
             id: true,
             createdAt: true,
@@ -261,7 +261,7 @@ export async function getCorporationById(corporationId: string) {
           },
           orderBy: { createdAt: 'desc' },
         },
-        sites: {
+        neighborhoods: {
           select: {
             id: true,
             name: true,
@@ -269,8 +269,8 @@ export async function getCorporationById(corporationId: string) {
             isActive: true,
             _count: {
               select: {
-                workers: true,
-                supervisorAssignments: true,
+                activists: true,
+                activistCoordinatorAssignments: true,
               },
             },
           },
@@ -278,9 +278,9 @@ export async function getCorporationById(corporationId: string) {
         },
         _count: {
           select: {
-            managers: true,     // Counts CorporationManager records
-            supervisors: true,  // Counts SiteManager records
-            sites: true,
+            coordinators: true,     // Counts CityCoordinator records
+            activistCoordinators: true,  // Counts ActivistCoordinator records
+            neighborhoods: true,
             invitations: true,
           },
         },
@@ -319,12 +319,12 @@ export async function getCorporationById(corporationId: string) {
  * - MANAGER: Can update only their corporation (limited fields)
  * - SUPERVISOR: Cannot update corporations
  */
-export async function updateCorporation(corporationId: string, data: UpdateCorporationInput) {
+export async function updateCorporation(cityId: string, data: UpdateCorporationInput) {
   try {
     const currentUser = await getCurrentUser();
 
     // SUPERVISOR cannot update corporations
-    if (currentUser.role === 'SUPERVISOR') {
+    if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       return {
         success: false,
         error: 'Supervisors cannot update corporations',
@@ -332,8 +332,8 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
     }
 
     // Get existing corporation
-    const existingCorp = await prisma.corporation.findUnique({
-      where: { id: corporationId },
+    const existingCorp = await prisma.city.findUnique({
+      where: { id: cityId },
     });
 
     if (!existingCorp) {
@@ -344,9 +344,9 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Can only update corporations they have access to
-      if (!hasAccessToCorporation(currentUser, corporationId)) {
+      if (!hasAccessToCorporation(currentUser, cityId)) {
         return {
           success: false,
           error: 'Cannot update other corporations',
@@ -354,7 +354,7 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
       }
 
       // Managers cannot change isActive status or code (but Area Managers can)
-      if (currentUser.role === 'MANAGER' && (data.isActive !== undefined || data.code !== undefined)) {
+      if (currentUser.role === 'CITY_COORDINATOR' && (data.isActive !== undefined || data.code !== undefined)) {
         return {
           success: false,
           error: 'Managers cannot change corporation status or code',
@@ -364,7 +364,7 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
 
     // Check code uniqueness if code is being updated
     if (data.code && data.code !== existingCorp.code) {
-      const codeExists = await prisma.corporation.findUnique({
+      const codeExists = await prisma.city.findUnique({
         where: { code: data.code },
       });
 
@@ -398,8 +398,8 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
     }
 
     // Update corporation
-    const updatedCorporation = await prisma.corporation.update({
-      where: { id: corporationId },
+    const updatedCorporation = await prisma.city.update({
+      where: { id: cityId },
       data: {
         name: data.name,
         code: data.code,
@@ -414,9 +414,9 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
       include: {
         _count: {
           select: {
-            managers: true,     // Counts CorporationManager records
-            supervisors: true,  // Counts SiteManager records
-            sites: true,
+            coordinators: true,     // Counts CityCoordinator records
+            activistCoordinators: true,  // Counts ActivistCoordinator records
+            neighborhoods: true,
             invitations: true,
           },
         },
@@ -450,7 +450,7 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
     });
 
     revalidatePath('/corporations');
-    revalidatePath(`/corporations/${corporationId}`);
+    revalidatePath(`/corporations/${cityId}`);
     revalidatePath('/dashboard');
 
     return {
@@ -480,19 +480,19 @@ export async function updateCorporation(corporationId: string, data: UpdateCorpo
  *
  * WARNING: This will cascade delete all related data!
  */
-export async function deleteCorporation(corporationId: string) {
+export async function deleteCorporation(cityId: string) {
   try {
     // Only SUPERADMIN can delete corporations
     const currentUser = await requireSuperAdmin();
 
     // Get corporation to delete
-    const corpToDelete = await prisma.corporation.findUnique({
-      where: { id: corporationId },
+    const corpToDelete = await prisma.city.findUnique({
+      where: { id: cityId },
       include: {
         _count: {
           select: {
-            managers: true,
-            sites: true,
+            coordinators: true,
+            neighborhoods: true,
           },
         },
       },
@@ -506,15 +506,15 @@ export async function deleteCorporation(corporationId: string) {
     }
 
     // Warning if corporation has data
-    if (corpToDelete._count.managers > 0 || corpToDelete._count.sites > 0) {
+    if (corpToDelete._count.coordinators > 0 || corpToDelete._count.neighborhoods > 0) {
       console.warn(
-        `Deleting corporation ${corpToDelete.name} with ${corpToDelete._count.managers} managers and ${corpToDelete._count.sites} sites`
+        `Deleting corporation ${corpToDelete.name} with ${corpToDelete._count.coordinators} managers and ${corpToDelete._count.neighborhoods} sites`
       );
     }
 
     // Delete corporation (cascades to sites, managers, etc.)
-    await prisma.corporation.delete({
-      where: { id: corporationId },
+    await prisma.city.delete({
+      where: { id: cityId },
     });
 
     // Create audit log
@@ -522,7 +522,7 @@ export async function deleteCorporation(corporationId: string) {
       data: {
         action: 'DELETE_CORPORATION',
         entity: 'Corporation',
-        entityId: corporationId,
+        entityId: cityId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
@@ -530,8 +530,8 @@ export async function deleteCorporation(corporationId: string) {
           id: corpToDelete.id,
           name: corpToDelete.name,
           code: corpToDelete.code,
-          managerCount: corpToDelete._count.managers,
-          siteCount: corpToDelete._count.sites,
+          coordinatorCount: corpToDelete._count.coordinators,
+          neighborhoodCount: corpToDelete._count.neighborhoods,
         },
         after: undefined,
       },
@@ -565,12 +565,12 @@ export async function deleteCorporation(corporationId: string) {
  * - MANAGER: Can get stats for their corporation only
  * - SUPERVISOR: Can get stats for their corporation only
  */
-export async function getCorporationStats(corporationId: string) {
+export async function getCorporationStats(cityId: string) {
   try {
     const currentUser = await getCurrentUser();
 
     // Validate access
-    if (!hasAccessToCorporation(currentUser, corporationId)) {
+    if (!hasAccessToCorporation(currentUser, cityId)) {
       return {
         success: false,
         error: 'Access denied',
@@ -588,44 +588,44 @@ export async function getCorporationStats(corporationId: string) {
       recentManagers,
       recentSites,
     ] = await Promise.all([
-      prisma.corporation.findUnique({
-        where: { id: corporationId },
+      prisma.city.findUnique({
+        where: { id: cityId },
       }),
-      prisma.corporationManager.count({
+      prisma.cityCoordinator.count({
         where: {
-          corporationId,
+          cityId,
         },
       }),
-      prisma.supervisor.count({
+      prisma.activistCoordinator.count({
         where: {
-          corporationId,
+          cityId,
         },
       }),
-      prisma.site.count({
-        where: { corporationId },
+      prisma.neighborhood.count({
+        where: { cityId },
       }),
-      prisma.site.count({
+      prisma.neighborhood.count({
         where: {
-          corporationId,
+          cityId,
           isActive: true,
         },
       }),
-      prisma.worker.count({
+      prisma.activist.count({
         where: {
-          site: {
-            corporationId,
+          neighborhood: {
+            cityId,
           },
         },
       }),
       prisma.invitation.count({
         where: {
-          corporationId,
+          cityId,
           status: 'PENDING',
         },
       }),
-      prisma.corporationManager.findMany({
+      prisma.cityCoordinator.findMany({
         where: {
-          corporationId,
+          cityId,
         },
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -640,8 +640,8 @@ export async function getCorporationStats(corporationId: string) {
           createdAt: true,
         },
       }),
-      prisma.site.findMany({
-        where: { corporationId },
+      prisma.neighborhood.findMany({
+        where: { cityId },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {
@@ -651,8 +651,8 @@ export async function getCorporationStats(corporationId: string) {
           isActive: true,
           _count: {
             select: {
-              workers: true,
-              supervisorAssignments: true,
+              activists: true,
+              activistCoordinatorAssignments: true,
             },
           },
         },
@@ -701,13 +701,13 @@ export async function getCorporationStats(corporationId: string) {
  * - MANAGER: Cannot toggle corporation status
  * - SUPERVISOR: Cannot toggle corporation status
  */
-export async function toggleCorporationStatus(corporationId: string) {
+export async function toggleCorporationStatus(cityId: string) {
   try {
     // Only SUPERADMIN can toggle status
     const currentUser = await requireSuperAdmin();
 
-    const corporation = await prisma.corporation.findUnique({
-      where: { id: corporationId },
+    const corporation = await prisma.city.findUnique({
+      where: { id: cityId },
     });
 
     if (!corporation) {
@@ -717,8 +717,8 @@ export async function toggleCorporationStatus(corporationId: string) {
       };
     }
 
-    const updatedCorporation = await prisma.corporation.update({
-      where: { id: corporationId },
+    const updatedCorporation = await prisma.city.update({
+      where: { id: cityId },
       data: {
         isActive: !corporation.isActive,
       },
@@ -729,7 +729,7 @@ export async function toggleCorporationStatus(corporationId: string) {
       data: {
         action: corporation.isActive ? 'DEACTIVATE_CORPORATION' : 'ACTIVATE_CORPORATION',
         entity: 'Corporation',
-        entityId: corporationId,
+        entityId: cityId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
@@ -739,7 +739,7 @@ export async function toggleCorporationStatus(corporationId: string) {
     });
 
     revalidatePath('/corporations');
-    revalidatePath(`/corporations/${corporationId}`);
+    revalidatePath(`/corporations/${cityId}`);
     revalidatePath('/dashboard');
 
     return {
@@ -783,7 +783,7 @@ export async function getAreaManagers() {
         },
         _count: {
           select: {
-            corporations: true,
+            cities: true,
           },
         },
       },
@@ -800,7 +800,7 @@ export async function getAreaManagers() {
         regionCode: am.regionCode,
         fullName: am.user.fullName,
         email: am.user.email,
-        corporationCount: am._count.corporations,
+        corporationCount: am._count.cities,
       })),
     };
   } catch (error) {

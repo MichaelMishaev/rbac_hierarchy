@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
-import { listWorkers } from '@/app/actions/workers';
-import { listSites } from '@/app/actions/sites';
+import { listWorkers } from '@/app/actions/activists';
+import { listSites } from '@/app/actions/neighborhoods';
 import { prisma } from '@/lib/prisma';
 import WorkersClient from '@/app/components/workers/WorkersClient';
 import { Suspense } from 'react';
@@ -29,14 +29,14 @@ export default async function WorkersPage() {
     listSites({}),
   ]);
 
-  // Fetch supervisors (Supervisor records, not User records!)
-  const supervisors = await prisma.supervisor.findMany({
+  // Fetch activist coordinators (ActivistCoordinator records, not User records!)
+  const supervisors = await prisma.activistCoordinator.findMany({
     where: {
       isActive: true,
     },
     select: {
-      id: true,  // Supervisor record ID
-      userId: true,  // Include userId to find current user's supervisor record
+      id: true,  // ActivistCoordinator record ID
+      userId: true,  // Include userId to find current user's coordinator record
       user: {
         select: {
           fullName: true,
@@ -51,8 +51,8 @@ export default async function WorkersPage() {
     },
   });
 
-  // Find current user's supervisor record (if they are a supervisor)
-  const currentUserSupervisor = supervisors.find(s => s.userId === session.user.id);
+  // Find current user's coordinator record (if they are a coordinator)
+  const currentUserSupervisor = supervisors.find((s: any) => s.userId === session.user.id);
   const defaultSupervisorId = currentUserSupervisor?.id || undefined;
 
   if (!workersResult.success) {

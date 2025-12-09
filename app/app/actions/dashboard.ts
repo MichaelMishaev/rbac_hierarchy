@@ -90,19 +90,19 @@ export async function getDashboardStats(): Promise<{
     // Get role-specific stats
     if (currentUser.role === 'SUPERADMIN') {
       stats.superadmin = await getSuperAdminStats();
-    } else if (currentUser.role === 'MANAGER') {
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
       // Get first corporation ID for manager
-      const managerCorpId = currentUser.managerOf[0]?.corporationId;
+      const managerCorpId = currentUser.coordinatorOf[0]?.cityId;
       if (managerCorpId) {
         stats.manager = await getManagerStats(managerCorpId);
       }
     } else if (currentUser.role === 'AREA_MANAGER') {
       // Get first corporation ID for area manager
-      const areaManagerCorpId = currentUser.areaManager?.corporations[0]?.id;
+      const areaManagerCorpId = currentUser.areaManager?.cities[0]?.id;
       if (areaManagerCorpId) {
         stats.manager = await getManagerStats(areaManagerCorpId);
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       stats.supervisor = await getSupervisorStats(currentUser.id);
     }
 
@@ -140,17 +140,17 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
     pendingInvitations,
     recentCorporations,
   ] = await Promise.all([
-    prisma.corporation.count(),
-    prisma.corporation.count({ where: { isActive: true } }),
-    prisma.corporationManager.count(),
-    prisma.supervisor.count(),
+    prisma.city.count(),
+    prisma.city.count({ where: { isActive: true } }),
+    prisma.cityCoordinator.count(),
+    prisma.activistCoordinator.count(),
     prisma.areaManager.count(),
-    prisma.site.count(),
-    prisma.site.count({ where: { isActive: true } }),
-    prisma.worker.count(),
-    prisma.worker.count({ where: { isActive: true } }),
+    prisma.neighborhood.count(),
+    prisma.neighborhood.count({ where: { isActive: true } }),
+    prisma.activist.count(),
+    prisma.activist.count({ where: { isActive: true } }),
     prisma.invitation.count({ where: { status: 'PENDING' } }),
-    prisma.corporation.findMany({
+    prisma.city.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: {
@@ -183,7 +183,7 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
 // MANAGER STATS
 // ============================================
 
-async function getManagerStats(corporationId: string): Promise<ManagerStats> {
+async function getManagerStats(cityId: string): Promise<ManagerStats> {
   const [
     corporation,
     totalManagers,
@@ -196,75 +196,75 @@ async function getManagerStats(corporationId: string): Promise<ManagerStats> {
     recentSites,
     topSitesByWorkers,
   ] = await Promise.all([
-    prisma.corporation.findUnique({
-      where: { id: corporationId },
+    prisma.city.findUnique({
+      where: { id: cityId },
       include: {
         _count: {
           select: {
-            managers: true,
-            sites: true,
+            coordinators: true,
+            neighborhoods: true,
             invitations: true,
           },
         },
       },
     }),
-    prisma.corporationManager.count({
+    prisma.cityCoordinator.count({
       where: {
-        corporationId,
+        cityId,
       },
     }),
-    prisma.supervisor.count({
+    prisma.activistCoordinator.count({
       where: {
-        corporationId,
+        cityId,
       },
     }),
-    prisma.site.count({
-      where: { corporationId },
+    prisma.neighborhood.count({
+      where: { cityId },
     }),
-    prisma.site.count({
+    prisma.neighborhood.count({
       where: {
-        corporationId,
+        cityId,
         isActive: true,
       },
     }),
-    prisma.worker.count({
+    prisma.activist.count({
       where: {
-        site: {
-          corporationId,
+        neighborhood: {
+          cityId,
         },
       },
     }),
-    prisma.worker.count({
+    prisma.activist.count({
       where: {
         isActive: true,
-        site: {
-          corporationId,
+        neighborhood: {
+          cityId,
         },
       },
     }),
     prisma.invitation.count({
       where: {
-        corporationId,
+        cityId,
         status: 'PENDING',
       },
     }),
-    prisma.site.findMany({
-      where: { corporationId },
+    prisma.neighborhood.findMany({
+      where: { cityId },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: {
         _count: {
           select: {
-            supervisorAssignments: true,
-            workers: true,
+            activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
     }),
-    prisma.site.findMany({
-      where: { corporationId },
+    prisma.neighborhood.findMany({
+      where: { cityId },
       orderBy: {
-        workers: {
+        activists: {
           _count: 'desc',
         },
       },
@@ -304,12 +304,12 @@ async function getManagerStats(corporationId: string): Promise<ManagerStats> {
 
 async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
   // Get supervisor's assigned sites (using legacySupervisorUserId for User.id)
-  const supervisorSites = await prisma.supervisorSite.findMany({
+  const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
     where: { legacySupervisorUserId: userId },
-    select: { siteId: true },
+    select: { neighborhoodId: true },
   });
 
-  const siteIds = supervisorSites.map((ss) => ss.siteId);
+  const siteIds = activistCoordinatorNeighborhoods.map((ss) => ss.siteId);
 
   // If no sites assigned, return empty stats
   if (siteIds.length === 0) {
@@ -333,7 +333,7 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
     recentWorkers,
     workersByPosition,
   ] = await Promise.all([
-    prisma.site.findMany({
+    prisma.neighborhood.findMany({
       where: { id: { in: siteIds } },
       include: {
         corporation: {
@@ -345,29 +345,29 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
         },
         _count: {
           select: {
-            supervisorAssignments: true,
-            workers: true,
+            activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
     }),
-    prisma.worker.count({
-      where: { siteId: { in: siteIds } },
+    prisma.activist.count({
+      where: { neighborhoodId: { in: siteIds } },
     }),
-    prisma.worker.count({
+    prisma.activist.count({
       where: {
-        siteId: { in: siteIds },
+        neighborhoodId: { in: siteIds },
         isActive: true,
       },
     }),
-    prisma.worker.count({
+    prisma.activist.count({
       where: {
-        siteId: { in: siteIds },
+        neighborhoodId: { in: siteIds },
         isActive: false,
       },
     }),
-    prisma.worker.findMany({
-      where: { siteId: { in: siteIds } },
+    prisma.activist.findMany({
+      where: { neighborhoodId: { in: siteIds } },
       orderBy: { createdAt: 'desc' },
       take: 10,
       select: {
@@ -380,10 +380,10 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
         createdAt: true,
       },
     }),
-    prisma.worker.groupBy({
+    prisma.activist.groupBy({
       by: ['position'],
       where: {
-        siteId: { in: siteIds },
+        neighborhoodId: { in: siteIds },
         isActive: true,
       },
       _count: {
@@ -424,12 +424,12 @@ async function getRecentActivity(currentUser: any): Promise<RecentActivity[]> {
   if (userCorps !== 'all') {
     // Get all user IDs in these corporations
     const [managers, supervisors] = await Promise.all([
-      prisma.corporationManager.findMany({
-        where: { corporationId: { in: userCorps } },
+      prisma.cityCoordinator.findMany({
+        where: { cityId: { in: userCorps } },
         select: { userId: true },
       }),
-      prisma.supervisor.findMany({
-        where: { corporationId: { in: userCorps } },
+      prisma.activistCoordinator.findMany({
+        where: { cityId: { in: userCorps } },
         select: { userId: true },
       }),
     ]);
@@ -442,7 +442,7 @@ async function getRecentActivity(currentUser: any): Promise<RecentActivity[]> {
     where.userId = { in: userIds };
   }
 
-  if (currentUser.role === 'SUPERVISOR') {
+  if (currentUser.role === 'ACTIVIST_COORDINATOR') {
     // Supervisors see only their own activity
     where.userId = currentUser.id;
   }
@@ -496,10 +496,10 @@ export async function getSystemOverview() {
       recentActivity,
       corporationGrowth,
     ] = await Promise.all([
-      prisma.corporation.count(),
+      prisma.city.count(),
       prisma.user.count(),
-      prisma.site.count(),
-      prisma.worker.count(),
+      prisma.neighborhood.count(),
+      prisma.activist.count(),
       prisma.invitation.count({ where: { status: 'PENDING' } }),
       prisma.auditLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -513,7 +513,7 @@ export async function getSystemOverview() {
         },
       }),
       // Corporation growth over last 6 months
-      prisma.corporation.groupBy({
+      prisma.city.groupBy({
         by: ['createdAt'],
         _count: {
           id: true,
@@ -588,12 +588,12 @@ export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'm
     if (userCorps !== 'all') {
       // Filter by corporation
       const [managers, supervisors] = await Promise.all([
-        prisma.corporationManager.findMany({
-          where: { corporationId: { in: userCorps } },
+        prisma.cityCoordinator.findMany({
+          where: { cityId: { in: userCorps } },
           select: { userId: true },
         }),
-        prisma.supervisor.findMany({
-          where: { corporationId: { in: userCorps } },
+        prisma.activistCoordinator.findMany({
+          where: { cityId: { in: userCorps } },
           select: { userId: true },
         }),
       ]);
@@ -606,7 +606,7 @@ export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'm
       where.userId = { in: userIds };
     }
 
-    if (currentUser.role === 'SUPERVISOR') {
+    if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Only supervisor's own actions
       where.userId = currentUser.id;
     }
@@ -697,14 +697,14 @@ export async function getQuickStats() {
 
     if (currentUser.role === 'SUPERADMIN') {
       const [corporations, users, sites, workers] = await Promise.all([
-        prisma.corporation.count({ where: { isActive: true } }),
+        prisma.city.count({ where: { isActive: true } }),
         prisma.user.count(),
-        prisma.site.count({ where: { isActive: true } }),
-        prisma.worker.count({ where: { isActive: true } }),
+        prisma.neighborhood.count({ where: { isActive: true } }),
+        prisma.activist.count({ where: { isActive: true } }),
       ]);
 
       stats = { corporations, users, sites, workers };
-    } else if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    } else if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       const userCorps = getUserCorporations(currentUser);
 
       if (!Array.isArray(userCorps) || userCorps.length === 0) {
@@ -715,32 +715,32 @@ export async function getQuickStats() {
       }
 
       const [managers, supervisors, sites, workers] = await Promise.all([
-        prisma.corporationManager.count({
-          where: { corporationId: { in: userCorps } },
+        prisma.cityCoordinator.count({
+          where: { cityId: { in: userCorps } },
         }),
-        prisma.supervisor.count({
-          where: { corporationId: { in: userCorps } },
+        prisma.activistCoordinator.count({
+          where: { cityId: { in: userCorps } },
         }),
-        prisma.site.count({
-          where: { corporationId: { in: userCorps }, isActive: true },
+        prisma.neighborhood.count({
+          where: { cityId: { in: userCorps }, isActive: true },
         }),
-        prisma.worker.count({
+        prisma.activist.count({
           where: {
             isActive: true,
-            site: { corporationId: { in: userCorps } },
+            site: { cityId: { in: userCorps } },
           },
         }),
       ]);
 
       stats = { managers, supervisors, sites, workers };
-    } else if (currentUser.role === 'SUPERVISOR') {
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Get supervisor's assigned sites (using legacySupervisorUserId for User.id)
-      const supervisorSites = await prisma.supervisorSite.findMany({
+      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
         where: { legacySupervisorUserId: currentUser.id },
-        select: { siteId: true },
+        select: { neighborhoodId: true },
       });
 
-      const siteIds = supervisorSites.map((ss) => ss.siteId);
+      const siteIds = activistCoordinatorNeighborhoods.map((ss) => ss.siteId);
 
       if (siteIds.length === 0) {
         return {
@@ -750,13 +750,13 @@ export async function getQuickStats() {
       }
 
       const [totalWorkers, activeWorkers, todayWorkers] = await Promise.all([
-        prisma.worker.count({ where: { siteId: { in: siteIds } } }),
-        prisma.worker.count({
-          where: { siteId: { in: siteIds }, isActive: true },
+        prisma.activist.count({ where: { neighborhoodId: { in: siteIds } } }),
+        prisma.activist.count({
+          where: { neighborhoodId: { in: siteIds }, isActive: true },
         }),
-        prisma.worker.count({
+        prisma.activist.count({
           where: {
-            siteId: { in: siteIds },
+            neighborhoodId: { in: siteIds },
             createdAt: {
               gte: new Date(new Date().setHours(0, 0, 0, 0)),
             },

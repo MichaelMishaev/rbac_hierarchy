@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { listSites } from '@/app/actions/sites';
+import { listSites } from '@/app/actions/neighborhoods';
 
 export function useSites() {
   return useQuery({

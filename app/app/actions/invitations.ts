@@ -15,14 +15,14 @@ export type CreateInvitationInput = {
   email: string;
   role: Role;
   message?: string;
-  corporationId?: string;
+  cityId?: string;
   expiresInDays?: number; // Default: 7 days
 };
 
 export type ListInvitationsFilters = {
   status?: InvitationStatus;
   role?: Role;
-  corporationId?: string;
+  cityId?: string;
   search?: string;
 };
 
@@ -88,7 +88,7 @@ export async function createInvitation(data: CreateInvitationInput) {
     const currentUser = await requireManager();
 
     // Validate role-based constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Managers can only invite within their corporations
       if (!data.corporationId || !hasAccessToCorporation(currentUser, data.corporationId)) {
         return {
@@ -164,7 +164,7 @@ export async function createInvitation(data: CreateInvitationInput) {
         token,
         message: data.message,
         expiresAt,
-        corporationId: data.corporationId,
+        cityId: data.cityId,
         createdById: currentUser.id,
         status: 'PENDING',
       },
@@ -207,7 +207,7 @@ export async function createInvitation(data: CreateInvitationInput) {
           id: newInvitation.id,
           email: newInvitation.email,
           role: newInvitation.role,
-          corporationId: newInvitation.corporationId,
+          cityId: newInvitation.cityId,
         },
       },
     });
@@ -448,19 +448,19 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
 
       // Create role-specific record if corporation is provided
       if (invitation.corporationId) {
-        if (invitation.role === 'MANAGER') {
-          await tx.corporationManager.create({
+        if (invitation.role === 'CITY_COORDINATOR') {
+          await tx.cityCoordinator.create({
             data: {
               userId: newUser.id,
-              corporationId: invitation.corporationId,
+              cityId: invitation.cityId,
               title: 'Manager',
             },
           });
-        } else if (invitation.role === 'SUPERVISOR') {
+        } else if (invitation.role === 'ACTIVIST_COORDINATOR') {
           await tx.supervisor.create({
             data: {
               userId: newUser.id,
-              corporationId: invitation.corporationId,
+              cityId: invitation.cityId,
               title: 'Supervisor',
             },
           });
@@ -561,7 +561,7 @@ export async function revokeInvitation(invitationId: string) {
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (invitation.corporationId && !hasAccessToCorporation(currentUser, invitation.corporationId)) {
         return {
           success: false,
@@ -659,7 +659,7 @@ export async function resendInvitation(invitationId: string) {
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (invitation.corporationId && !hasAccessToCorporation(currentUser, invitation.corporationId)) {
         return {
           success: false,

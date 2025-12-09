@@ -15,8 +15,8 @@ export type CreateSiteInput = {
   country?: string;
   phone?: string;
   email?: string;
-  corporationId: string;
-  supervisorId: string; // REQUIRED: Supervisor must be assigned at creation
+  cityId: string;
+  activistCoordinatorId: string; // REQUIRED: Supervisor must be assigned at creation
   isActive?: boolean;
 };
 
@@ -31,7 +31,7 @@ export type UpdateSiteInput = {
 };
 
 export type ListSitesFilters = {
-  corporationId?: string;
+  cityId?: string;
   search?: string;
   city?: string;
   isActive?: boolean;
@@ -55,7 +55,7 @@ export async function createSite(data: CreateSiteInput) {
     const currentUser = await requireManager();
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Can only create sites in corporations they have access to
       if (!hasAccessToCorporation(currentUser, data.corporationId)) {
         return {
@@ -88,8 +88,8 @@ export async function createSite(data: CreateSiteInput) {
     // Verify supervisor exists and belongs to the same corporation
     const supervisor = await prisma.supervisor.findFirst({
       where: {
-        id: data.supervisorId,
-        corporationId: data.corporationId,
+        id: data.activistCoordinatorId,
+        cityId: data.cityId,
         isActive: true,
       },
       include: {
@@ -120,7 +120,7 @@ export async function createSite(data: CreateSiteInput) {
           country: data.country ?? 'Israel',
           phone: data.phone,
           email: data.email,
-          corporationId: data.corporationId,
+          cityId: data.cityId,
           isActive: data.isActive ?? true,
         },
         include: {
@@ -141,11 +141,11 @@ export async function createSite(data: CreateSiteInput) {
       });
 
       // 2. Create supervisor assignment
-      await tx.supervisorSite.create({
+      await tx.activistCoordinatorNeighborhood.create({
         data: {
-          siteId: newSite.id,
-          supervisorId: data.supervisorId,
-          corporationId: data.corporationId,
+          neighborhoodId: newSite.id,
+          activistCoordinatorId: data.activistCoordinatorId,
+          cityId: data.cityId,
           legacySupervisorUserId: supervisor.userId,
           assignedBy: currentUser.id,
         },
@@ -170,9 +170,9 @@ export async function createSite(data: CreateSiteInput) {
           id: newSite.id,
           name: newSite.name,
           city: newSite.city,
-          corporationId: newSite.corporationId,
+          cityId: newSite.cityId,
           isActive: newSite.isActive,
-          supervisorId: data.supervisorId,
+          activistCoordinatorId: data.activistCoordinatorId,
           supervisorName: supervisor.user.fullName,
         },
       },
@@ -214,20 +214,20 @@ export async function listSites(filters: ListSitesFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Get user's corporation IDs
       const userCorps = currentUser.role === 'AREA_MANAGER' && currentUser.areaManager
         ? currentUser.areaManager.corporations.map(c => c.id)
         : currentUser.managerOf.map(m => m.corporationId);
 
       where.corporationId = { in: userCorps };
-    } else if (currentUser.role === 'SUPERVISOR') {
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Supervisors can only see sites they are assigned to (using legacySupervisorUserId for User.id)
-      const supervisorSites = await prisma.supervisorSite.findMany({
+      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
         where: { legacySupervisorUserId: currentUser.id },
-        select: { siteId: true },
+        select: { neighborhoodId: true },
       });
-      const siteIds = supervisorSites.map(ss => ss.siteId);
+      const siteIds = activistCoordinatorNeighborhoods.map(ss => ss.siteId);
       where.id = { in: siteIds };
     }
 
@@ -304,7 +304,7 @@ export async function listSites(filters: ListSitesFilters = {}) {
  * - MANAGER: Can view sites in their corporation
  * - SUPERVISOR: Can view sites they are assigned to
  */
-export async function getSiteById(siteId: string) {
+export async function getSiteById(neighborhoodId: string) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -365,23 +365,23 @@ export async function getSiteById(siteId: string) {
     }
 
     // Validate access permissions
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
           error: 'Access denied',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Check if supervisor has access to this site (v1.3: use findFirst since unique constraint changed)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          supervisorId: currentUser.id,
-          siteId: site.id,
+          activistCoordinatorId: currentUser.id,
+          neighborhoodId: site.id,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Access denied',
@@ -414,7 +414,7 @@ export async function getSiteById(siteId: string) {
  * - MANAGER: Can update sites in their corporation
  * - SUPERVISOR: Cannot update sites
  */
-export async function updateSite(siteId: string, data: UpdateSiteInput) {
+export async function updateSite(neighborhoodId: string, data: UpdateSiteInput) {
   try {
     // Only SUPERADMIN and MANAGER can update sites
     const currentUser = await requireManager();
@@ -432,7 +432,7 @@ export async function updateSite(siteId: string, data: UpdateSiteInput) {
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Can only update sites in corporations they have access to
       if (!hasAccessToCorporation(currentUser, existingSite.corporationId)) {
         return {
@@ -496,7 +496,7 @@ export async function updateSite(siteId: string, data: UpdateSiteInput) {
     });
 
     revalidatePath('/sites');
-    revalidatePath(`/sites/${siteId}`);
+    revalidatePath(`/sites/${neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
@@ -526,7 +526,7 @@ export async function updateSite(siteId: string, data: UpdateSiteInput) {
  *
  * WARNING: This will cascade delete all related workers!
  */
-export async function deleteSite(siteId: string) {
+export async function deleteSite(neighborhoodId: string) {
   try {
     // Only SUPERADMIN and MANAGER can delete sites
     const currentUser = await requireManager();
@@ -552,7 +552,7 @@ export async function deleteSite(siteId: string) {
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (!hasAccessToCorporation(currentUser, siteToDelete.corporationId)) {
         return {
           success: false,
@@ -578,7 +578,7 @@ export async function deleteSite(siteId: string) {
       data: {
         action: 'DELETE_SITE',
         entity: 'Site',
-        entityId: siteId,
+        entityId: neighborhoodId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
@@ -621,7 +621,7 @@ export async function deleteSite(siteId: string) {
  * - MANAGER: Can get stats for sites in their corporation
  * - SUPERVISOR: Can get stats for their site only
  */
-export async function getSiteStats(siteId: string) {
+export async function getSiteStats(neighborhoodId: string) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -641,23 +641,23 @@ export async function getSiteStats(siteId: string) {
     }
 
     // Validate access
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
           error: 'Access denied',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Check if supervisor has access to this site (v1.3: use findFirst since unique constraint changed)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          supervisorId: currentUser.id,
-          siteId: site.id,
+          activistCoordinatorId: currentUser.id,
+          neighborhoodId: site.id,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Access denied',
@@ -671,9 +671,9 @@ export async function getSiteStats(siteId: string) {
       activeWorkerCount,
       recentWorkers,
     ] = await Promise.all([
-      prisma.supervisorSite.count({
+      prisma.activistCoordinatorNeighborhood.count({
         where: {
-          siteId,
+          neighborhoodId,
         },
       }),
       prisma.worker.count({
@@ -681,7 +681,7 @@ export async function getSiteStats(siteId: string) {
       }),
       prisma.worker.count({
         where: {
-          siteId,
+          neighborhoodId,
           isActive: true,
         },
       }),
@@ -740,7 +740,7 @@ export async function getSiteStats(siteId: string) {
  * - MANAGER: Can toggle sites in their corporation
  * - SUPERVISOR: Cannot toggle site status
  */
-export async function toggleSiteStatus(siteId: string) {
+export async function toggleSiteStatus(neighborhoodId: string) {
   try {
     // Only SUPERADMIN and MANAGER can toggle status
     const currentUser = await requireManager();
@@ -757,7 +757,7 @@ export async function toggleSiteStatus(siteId: string) {
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (!hasAccessToCorporation(currentUser, site.corporationId)) {
         return {
           success: false,
@@ -787,7 +787,7 @@ export async function toggleSiteStatus(siteId: string) {
       data: {
         action: site.isActive ? 'DEACTIVATE_SITE' : 'ACTIVATE_SITE',
         entity: 'Site',
-        entityId: siteId,
+        entityId: neighborhoodId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
@@ -797,7 +797,7 @@ export async function toggleSiteStatus(siteId: string) {
     });
 
     revalidatePath('/sites');
-    revalidatePath(`/sites/${siteId}`);
+    revalidatePath(`/sites/${neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
@@ -826,12 +826,12 @@ export async function toggleSiteStatus(siteId: string) {
  * - MANAGER: Can list supervisors from their corporation only
  * - SUPERVISOR: Can list supervisors from their corporation only
  */
-export async function listSupervisorsByCorporation(corporationId: string) {
+export async function listSupervisorsByCorporation(cityId: string) {
   try {
     const currentUser = await getCurrentUser();
 
     // Validate access to corporation
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       if (!hasAccessToCorporation(currentUser, corporationId)) {
         return {
           success: false,
@@ -839,12 +839,12 @@ export async function listSupervisorsByCorporation(corporationId: string) {
           supervisors: [],
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Supervisors can only see other supervisors in their corporation
       const supervisorRecord = await prisma.supervisor.findFirst({
         where: {
           userId: currentUser.id,
-          corporationId,
+          cityId,
         },
       });
 
@@ -860,7 +860,7 @@ export async function listSupervisorsByCorporation(corporationId: string) {
     // Fetch supervisors
     const supervisors = await prisma.supervisor.findMany({
       where: {
-        corporationId,
+        cityId,
         isActive: true,
       },
       include: {

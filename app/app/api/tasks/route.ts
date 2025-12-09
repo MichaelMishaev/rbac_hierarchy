@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const userRole = session.user.role as Role;
 
     // 2. Validate that user can send tasks
-    if (userRole === 'SUPERVISOR') {
+    if (userRole === 'ACTIVIST_COORDINATOR') {
       return NextResponse.json(
         { error: 'מפקחים לא יכולים לשלוח משימות' },
         { status: 403 }

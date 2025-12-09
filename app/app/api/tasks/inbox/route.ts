@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
         where: { userId: { in: uniqueSenderIds } },
         select: { userId: true },
       }),
-      prisma.corporationManager.findMany({
+      prisma.cityCoordinator.findMany({
         where: { userId: { in: uniqueSenderIds } },
         select: { userId: true },
       }),

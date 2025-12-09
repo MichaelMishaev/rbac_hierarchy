@@ -79,7 +79,7 @@ export async function GET() {
                     id: true,
                     fullName: true,
                     position: true,
-                    supervisorId: true, // CRITICAL: Include supervisorId for hierarchy
+                    activistCoordinatorId: true, // CRITICAL: Include supervisorId for hierarchy
                   },
                 },
                 supervisorAssignments: {
@@ -182,7 +182,7 @@ export async function GET() {
                 );
 
                 return {
-                  id: `supervisor-${supervisorId}-site-${site.id}`,
+                  id: `supervisor-${activistCoordinatorId}-site-${site.id}`,
                   name: `${assignment.supervisor.user.fullName} - ${assignment.supervisor.title}`,
                   type: 'supervisor' as const,
                   count: {

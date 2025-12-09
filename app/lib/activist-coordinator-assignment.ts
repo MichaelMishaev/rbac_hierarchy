@@ -15,10 +15,10 @@ import { Prisma } from '@prisma/client';
 /**
  * Get supervisor count for a site
  */
-export async function getSiteSupervisorCount(siteId: string): Promise<number> {
-  const count = await prisma.supervisorSite.count({
+export async function getSiteSupervisorCount(neighborhoodId: string): Promise<number> {
+  const count = await prisma.activistCoordinatorNeighborhood.count({
     where: {
-      siteId,
+      neighborhoodId,
       supervisor: {
         isActive: true,
       },
@@ -30,10 +30,10 @@ export async function getSiteSupervisorCount(siteId: string): Promise<number> {
 /**
  * Get active supervisors for a site (with worker counts)
  */
-export async function getSiteSupervisorsWithWorkerCount(siteId: string) {
-  const supervisors = await prisma.supervisorSite.findMany({
+export async function getSiteSupervisorsWithWorkerCount(neighborhoodId: string) {
+  const supervisors = await prisma.activistCoordinatorNeighborhood.findMany({
     where: {
-      siteId,
+      neighborhoodId,
       supervisor: {
         isActive: true,
       },
@@ -51,7 +51,7 @@ export async function getSiteSupervisorsWithWorkerCount(siteId: string) {
             select: {
               workers: {
                 where: {
-                  siteId, // Only count workers in THIS site
+                  neighborhoodId, // Only count workers in THIS site
                   isActive: true,
                 },
               },
@@ -63,7 +63,7 @@ export async function getSiteSupervisorsWithWorkerCount(siteId: string) {
   });
 
   return supervisors.map(ss => ({
-    supervisorId: ss.supervisor.id,
+    activistCoordinatorId: ss.supervisor.id,
     user: ss.supervisor.user,
     workerCount: ss.supervisor._count.workers,
   }));
@@ -72,7 +72,7 @@ export async function getSiteSupervisorsWithWorkerCount(siteId: string) {
 /**
  * Find supervisor with fewest workers (load balancing)
  */
-export async function findLeastLoadedSupervisor(siteId: string): Promise<string | null> {
+export async function findLeastLoadedSupervisor(neighborhoodId: string): Promise<string | null> {
   const supervisors = await getSiteSupervisorsWithWorkerCount(siteId);
 
   if (supervisors.length === 0) return null;
@@ -87,14 +87,14 @@ export async function findLeastLoadedSupervisor(siteId: string): Promise<string 
  * Check if supervisor is assigned to site
  */
 export async function isSupervisorAssignedToSite(
-  supervisorId: string,
-  siteId: string
+  activistCoordinatorId: string,
+  neighborhoodId: string
 ): Promise<boolean> {
-  const assignment = await prisma.supervisorSite.findUnique({
+  const assignment = await prisma.activistCoordinatorNeighborhood.findUnique({
     where: {
-      supervisorId_siteId: {
-        supervisorId,
-        siteId,
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId,
+        neighborhoodId,
       },
     },
   });
@@ -109,8 +109,8 @@ export async function isSupervisorAssignedToSite(
  * - If site has ≥1 supervisors → supervisorId REQUIRED and must be assigned to site
  */
 export async function validateWorkerSupervisorAssignment(
-  siteId: string,
-  supervisorId: string | null | undefined
+  neighborhoodId: string,
+  activistCoordinatorId: string | null | undefined
 ): Promise<{ valid: boolean; error?: string }> {
   const supervisorCount = await getSiteSupervisorCount(siteId);
 
@@ -134,7 +134,7 @@ export async function validateWorkerSupervisorAssignment(
   }
 
   // Rule 3: Supervisor must be assigned to this site
-  const isAssigned = await isSupervisorAssignedToSite(supervisorId, siteId);
+  const isAssigned = await isSupervisorAssignedToSite(activistCoordinatorId, siteId);
   if (!isAssigned) {
     return {
       valid: false,
@@ -151,8 +151,8 @@ export async function validateWorkerSupervisorAssignment(
  * Called when: First supervisor is assigned to a site
  */
 export async function autoAssignWorkersToFirstSupervisor(
-  siteId: string,
-  supervisorId: string,
+  neighborhoodId: string,
+  activistCoordinatorId: string,
   userId: string,
   userEmail: string,
   userRole: string
@@ -161,8 +161,8 @@ export async function autoAssignWorkersToFirstSupervisor(
     // Get all orphan workers in this site
     const orphanWorkers = await prisma.worker.findMany({
       where: {
-        siteId,
-        supervisorId: null,
+        neighborhoodId,
+        activistCoordinatorId: null,
         isActive: true,
       },
       select: { id: true, fullName: true },
@@ -177,12 +177,12 @@ export async function autoAssignWorkersToFirstSupervisor(
       // Bulk update workers
       await tx.worker.updateMany({
         where: {
-          siteId,
-          supervisorId: null,
+          neighborhoodId,
+          activistCoordinatorId: null,
           isActive: true,
         },
         data: {
-          supervisorId,
+          activistCoordinatorId,
         },
       });
 
@@ -191,17 +191,17 @@ export async function autoAssignWorkersToFirstSupervisor(
         data: {
           action: 'AUTO_ASSIGN_WORKERS',
           entity: 'Worker',
-          entityId: siteId,
+          entityId: neighborhoodId,
           userId,
           userEmail,
           userRole,
           before: {
             workerIds: orphanWorkers.map(w => w.id),
-            supervisorId: null,
+            activistCoordinatorId: null,
           },
           after: {
             workerIds: orphanWorkers.map(w => w.id),
-            supervisorId,
+            activistCoordinatorId,
             reason: 'First supervisor added to site',
           },
         },
@@ -229,7 +229,7 @@ export async function autoAssignWorkersToFirstSupervisor(
  * Strategy: Load balancing - assign to supervisor with fewest workers
  */
 export async function reassignWorkersFromRemovedSupervisor(
-  siteId: string,
+  neighborhoodId: string,
   removedSupervisorId: string,
   userId: string,
   userEmail: string,
@@ -245,8 +245,8 @@ export async function reassignWorkersFromRemovedSupervisor(
     // Get workers of removed supervisor
     const affectedWorkers = await prisma.worker.findMany({
       where: {
-        siteId,
-        supervisorId: removedSupervisorId,
+        neighborhoodId,
+        activistCoordinatorId: removedSupervisorId,
         isActive: true,
       },
       select: { id: true, fullName: true },
@@ -261,12 +261,12 @@ export async function reassignWorkersFromRemovedSupervisor(
         // Last supervisor removed - workers back to site
         await tx.worker.updateMany({
           where: {
-            siteId,
-            supervisorId: removedSupervisorId,
+            neighborhoodId,
+            activistCoordinatorId: removedSupervisorId,
             isActive: true,
           },
           data: {
-            supervisorId: null,
+            activistCoordinatorId: null,
           },
         });
 
@@ -274,17 +274,17 @@ export async function reassignWorkersFromRemovedSupervisor(
           data: {
             action: 'AUTO_UNASSIGN_WORKERS',
             entity: 'Worker',
-            entityId: siteId,
+            entityId: neighborhoodId,
             userId,
             userEmail,
             userRole,
             before: {
               workerIds: affectedWorkers.map(w => w.id),
-              supervisorId: removedSupervisorId,
+              activistCoordinatorId: removedSupervisorId,
             },
             after: {
               workerIds: affectedWorkers.map(w => w.id),
-              supervisorId: null,
+              activistCoordinatorId: null,
               reason: 'Last supervisor removed from site',
             },
           },
@@ -299,12 +299,12 @@ export async function reassignWorkersFromRemovedSupervisor(
 
         await tx.worker.updateMany({
           where: {
-            siteId,
-            supervisorId: removedSupervisorId,
+            neighborhoodId,
+            activistCoordinatorId: removedSupervisorId,
             isActive: true,
           },
           data: {
-            supervisorId: targetSupervisorId,
+            activistCoordinatorId: targetSupervisorId,
           },
         });
 
@@ -312,17 +312,17 @@ export async function reassignWorkersFromRemovedSupervisor(
           data: {
             action: 'AUTO_REASSIGN_WORKERS',
             entity: 'Worker',
-            entityId: siteId,
+            entityId: neighborhoodId,
             userId,
             userEmail,
             userRole,
             before: {
               workerIds: affectedWorkers.map(w => w.id),
-              supervisorId: removedSupervisorId,
+              activistCoordinatorId: removedSupervisorId,
             },
             after: {
               workerIds: affectedWorkers.map(w => w.id),
-              supervisorId: targetSupervisorId,
+              activistCoordinatorId: targetSupervisorId,
               reason: 'Supervisor removed, reassigned to least loaded supervisor',
             },
           },
@@ -350,13 +350,13 @@ export async function reassignWorkersFromRemovedSupervisor(
  * Validation: Block removal if supervisor has active workers in that site
  */
 export async function canRemoveSupervisorFromSite(
-  supervisorId: string,
-  siteId: string
+  activistCoordinatorId: string,
+  neighborhoodId: string
 ): Promise<{ canRemove: boolean; error?: string; workerCount?: number }> {
   const workerCount = await prisma.worker.count({
     where: {
-      siteId,
-      supervisorId,
+      neighborhoodId,
+      activistCoordinatorId,
       isActive: true,
     },
   });
@@ -376,9 +376,9 @@ export async function canRemoveSupervisorFromSite(
  * Find orphan workers (site has supervisors, but worker has no supervisor)
  * Used for data integrity checks and tree visualization
  */
-export async function findOrphanWorkers(siteId?: string) {
+export async function findOrphanWorkers(neighborhoodId?: string) {
   const where: Prisma.WorkerWhereInput = {
-    supervisorId: null,
+    activistCoordinatorId: null,
     isActive: true,
     site: {
       supervisorAssignments: {

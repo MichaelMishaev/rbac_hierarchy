@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listWorkers } from '@/app/actions/workers';
+import { listWorkers } from '@/app/actions/activists';
 
 export function useWorkers() {
   return useQuery({

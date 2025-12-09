@@ -29,7 +29,7 @@ export async function getCurrentUser() {
           corporation: true,
         },
       },
-      supervisorSites: {
+      activistCoordinatorNeighborhoods: {
         include: {
           site: {
             include: {
@@ -71,11 +71,11 @@ export async function requireAreaManager() {
 }
 
 export async function requireManager() {
-  return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'MANAGER']);
+  return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'CITY_COORDINATOR']);
 }
 
 export async function requireSupervisor() {
-  return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'MANAGER', 'SUPERVISOR']);
+  return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'CITY_COORDINATOR', 'ACTIVIST_COORDINATOR']);
 }
 
 /**
@@ -91,14 +91,14 @@ export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUs
     return user.areaManager.corporations.map(c => c.id);
   }
 
-  if (user.role === 'MANAGER') {
+  if (user.role === 'CITY_COORDINATOR') {
     return user.managerOf.map(m => m.corporationId);
   }
 
-  if (user.role === 'SUPERVISOR') {
-    // Get unique corporation IDs from supervisorOf and supervisorSites
+  if (user.role === 'ACTIVIST_COORDINATOR') {
+    // Get unique corporation IDs from supervisorOf and activistCoordinatorNeighborhoods
     const corpsFromRole = user.supervisorOf.map(s => s.corporationId);
-    const corpsFromSites = user.supervisorSites.map(ss => ss.site.corporation.id);
+    const corpsFromSites = user.activistCoordinatorNeighborhoods.map(ss => ss.site.corporation.id);
     return [...new Set([...corpsFromRole, ...corpsFromSites])];
   }
 
@@ -108,7 +108,7 @@ export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUs
 /**
  * Check if user has access to a specific corporation
  */
-export function hasAccessToCorporation(user: Awaited<ReturnType<typeof getCurrentUser>>, corporationId: string): boolean {
+export function hasAccessToCorporation(user: Awaited<ReturnType<typeof getCurrentUser>>, cityId: string): boolean {
   const userCorps = getUserCorporations(user);
   return userCorps === 'all' || userCorps.includes(corporationId);
 }

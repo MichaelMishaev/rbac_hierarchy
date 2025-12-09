@@ -1,8 +1,8 @@
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { listUsers } from '@/app/actions/users';
-import { listCorporations } from '@/app/actions/corporations';
-import { listSites } from '@/app/actions/sites';
+import { listCorporations } from '@/app/actions/cities';
+import { listSites } from '@/app/actions/neighborhoods';
 import UsersClient from '@/app/components/users/UsersClient';
 
 export default async function UsersPage() {

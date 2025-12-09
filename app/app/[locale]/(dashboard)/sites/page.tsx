@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
-import { listSites } from '@/app/actions/sites';
-import { listCorporations } from '@/app/actions/corporations';
+import { listSites } from '@/app/actions/neighborhoods';
+import { listCorporations } from '@/app/actions/cities';
 import SitesClient from '@/app/components/sites/SitesClient';
 import { Suspense } from 'react';
 

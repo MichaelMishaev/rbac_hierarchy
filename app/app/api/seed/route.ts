@@ -124,22 +124,22 @@ export async function POST(request: Request) {
         email: 'david.cohen@electra-tech.co.il',
         fullName: 'דוד כהן',
         passwordHash: await bcrypt.hash('manager123', 10),
-        role: 'MANAGER',
+        role: 'CITY_COORDINATOR',
         phone: '+972-50-100-0001',
       },
     });
 
     // Create CorporationManager record for manager1
-    await prisma.corporationManager.upsert({
+    await prisma.cityCoordinator.upsert({
       where: {
         corporationId_userId: {
-          corporationId: corp1.id,
+          cityId: corp1.id,
           userId: manager1.id,
         },
       },
       update: {},
       create: {
-        corporationId: corp1.id,
+        cityId: corp1.id,
         userId: manager1.id,
         title: 'מנהל כללי',
         isActive: true,
@@ -153,22 +153,22 @@ export async function POST(request: Request) {
         email: 'sarah.levi@binui.co.il',
         fullName: 'שרה לוי',
         passwordHash: await bcrypt.hash('manager123', 10),
-        role: 'MANAGER',
+        role: 'CITY_COORDINATOR',
         phone: '+972-50-200-0002',
       },
     });
 
     // Create CorporationManager record for manager2
-    await prisma.corporationManager.upsert({
+    await prisma.cityCoordinator.upsert({
       where: {
         corporationId_userId: {
-          corporationId: corp2.id,
+          cityId: corp2.id,
           userId: manager2.id,
         },
       },
       update: {},
       create: {
-        corporationId: corp2.id,
+        cityId: corp2.id,
         userId: manager2.id,
         title: 'מנהלת כללית',
         isActive: true,
@@ -182,22 +182,22 @@ export async function POST(request: Request) {
         email: 'yossi.mizrahi@taim-food.co.il',
         fullName: 'יוסי מזרחי',
         passwordHash: await bcrypt.hash('manager123', 10),
-        role: 'MANAGER',
+        role: 'CITY_COORDINATOR',
         phone: '+972-50-300-0003',
       },
     });
 
     // Create CorporationManager record for manager3
-    await prisma.corporationManager.upsert({
+    await prisma.cityCoordinator.upsert({
       where: {
         corporationId_userId: {
-          corporationId: corp3.id,
+          cityId: corp3.id,
           userId: manager3.id,
         },
       },
       update: {},
       create: {
-        corporationId: corp3.id,
+        cityId: corp3.id,
         userId: manager3.id,
         title: 'מנהל כללי',
         isActive: true,
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
         country: 'ישראל',
         phone: '+972-3-500-1001',
         email: 'tlv@electra-tech.co.il',
-        corporationId: corp1.id,
+        cityId: corp1.id,
         isActive: true,
       },
     });
@@ -228,7 +228,7 @@ export async function POST(request: Request) {
         country: 'ישראל',
         phone: '+972-9-900-3001',
         email: 'herzliya@binui.co.il',
-        corporationId: corp2.id,
+        cityId: corp2.id,
         isActive: true,
       },
     });
@@ -241,7 +241,7 @@ export async function POST(request: Request) {
         country: 'ישראל',
         phone: '+972-3-700-5001',
         email: 'dizengoff@taim-food.co.il',
-        corporationId: corp3.id,
+        cityId: corp3.id,
         isActive: true,
       },
     });
@@ -259,7 +259,7 @@ export async function POST(request: Request) {
         email: 'moshe.israeli@electra-tech.co.il',
         fullName: 'משה ישראלי',
         passwordHash: await bcrypt.hash('supervisor123', 10),
-        role: 'SUPERVISOR',
+        role: 'ACTIVIST_COORDINATOR',
         phone: '+972-50-400-1001',
       },
     });
@@ -268,7 +268,7 @@ export async function POST(request: Request) {
     const supervisorRecord1_1 = await prisma.supervisor.upsert({
       where: {
         corporationId_userId: {
-          corporationId: corp1.id,
+          cityId: corp1.id,
           userId: supervisor1_1.id,
         },
       },
@@ -277,7 +277,7 @@ export async function POST(request: Request) {
         isActive: true,
       },
       create: {
-        corporationId: corp1.id,
+        cityId: corp1.id,
         userId: supervisor1_1.id,
         title: 'מפקח אתר',
         isActive: true,
@@ -294,7 +294,7 @@ export async function POST(request: Request) {
         email: 'avi.shapira@binui.co.il',
         fullName: 'אבי שפירא',
         passwordHash: await bcrypt.hash('supervisor123', 10),
-        role: 'SUPERVISOR',
+        role: 'ACTIVIST_COORDINATOR',
         phone: '+972-50-500-2001',
       },
     });
@@ -303,7 +303,7 @@ export async function POST(request: Request) {
     const supervisorRecord2_1 = await prisma.supervisor.upsert({
       where: {
         corporationId_userId: {
-          corporationId: corp2.id,
+          cityId: corp2.id,
           userId: supervisor2_1.id,
         },
       },
@@ -312,7 +312,7 @@ export async function POST(request: Request) {
         isActive: true,
       },
       create: {
-        corporationId: corp2.id,
+        cityId: corp2.id,
         userId: supervisor2_1.id,
         title: 'מפקח אתר',
         isActive: true,
@@ -329,7 +329,7 @@ export async function POST(request: Request) {
         email: 'chen.amar@taim-food.co.il',
         fullName: 'חן עמר',
         passwordHash: await bcrypt.hash('supervisor123', 10),
-        role: 'SUPERVISOR',
+        role: 'ACTIVIST_COORDINATOR',
         phone: '+972-50-600-3001',
       },
     });
@@ -338,7 +338,7 @@ export async function POST(request: Request) {
     const supervisorRecord3_1 = await prisma.supervisor.upsert({
       where: {
         corporationId_userId: {
-          corporationId: corp3.id,
+          cityId: corp3.id,
           userId: supervisor3_1.id,
         },
       },
@@ -347,7 +347,7 @@ export async function POST(request: Request) {
         isActive: true,
       },
       create: {
-        corporationId: corp3.id,
+        cityId: corp3.id,
         userId: supervisor3_1.id,
         title: 'מפקחת אתר',
         isActive: true,
@@ -357,32 +357,32 @@ export async function POST(request: Request) {
     console.log('✅ Supervisors created');
 
     // Assign supervisors to sites (v1.4 compliant with composite FKs)
-    await prisma.supervisorSite.create({
+    await prisma.activistCoordinatorNeighborhood.create({
       data: {
-        corporationId: corp1.id,
-        supervisorId: supervisorRecord1_1.id,
+        cityId: corp1.id,
+        activistCoordinatorId: supervisorRecord1_1.id,
         legacySupervisorUserId: supervisor1_1.id,
-        siteId: site1_1.id,
+        neighborhoodId: site1_1.id,
         assignedBy: manager1.id,
       },
     });
 
-    await prisma.supervisorSite.create({
+    await prisma.activistCoordinatorNeighborhood.create({
       data: {
-        corporationId: corp2.id,
-        supervisorId: supervisorRecord2_1.id,
+        cityId: corp2.id,
+        activistCoordinatorId: supervisorRecord2_1.id,
         legacySupervisorUserId: supervisor2_1.id,
-        siteId: site2_1.id,
+        neighborhoodId: site2_1.id,
         assignedBy: manager2.id,
       },
     });
 
-    await prisma.supervisorSite.create({
+    await prisma.activistCoordinatorNeighborhood.create({
       data: {
-        corporationId: corp3.id,
-        supervisorId: supervisorRecord3_1.id,
+        cityId: corp3.id,
+        activistCoordinatorId: supervisorRecord3_1.id,
         legacySupervisorUserId: supervisor3_1.id,
-        siteId: site3_1.id,
+        neighborhoodId: site3_1.id,
         assignedBy: manager3.id,
       },
     });
@@ -396,9 +396,9 @@ export async function POST(request: Request) {
         phone: '+972-50-700-0001',
         email: 'yossi.a@example.com',
         position: 'טכנאי אלקטרוניקה',
-        corporationId: corp1.id,
-        siteId: site1_1.id,
-        supervisorId: supervisorRecord1_1.id,
+        cityId: corp1.id,
+        neighborhoodId: site1_1.id,
+        activistCoordinatorId: supervisorRecord1_1.id,
         startDate: new Date('2024-01-15'),
         isActive: true,
         tags: ['אלקטרוניקה', 'תעודת בטיחות'],
@@ -411,9 +411,9 @@ export async function POST(request: Request) {
         phone: '+972-50-800-0001',
         email: 'danny.a@example.com',
         position: 'מנהל פרויקט',
-        corporationId: corp2.id,
-        siteId: site2_1.id,
-        supervisorId: supervisorRecord2_1.id,
+        cityId: corp2.id,
+        neighborhoodId: site2_1.id,
+        activistCoordinatorId: supervisorRecord2_1.id,
         startDate: new Date('2023-12-01'),
         isActive: true,
         tags: ['ניהול פרויקטים', 'בנייה'],
@@ -426,9 +426,9 @@ export async function POST(request: Request) {
         phone: '+972-50-900-0001',
         email: 'yair.c@example.com',
         position: 'שף ראשי',
-        corporationId: corp3.id,
-        siteId: site3_1.id,
-        supervisorId: supervisorRecord3_1.id,
+        cityId: corp3.id,
+        neighborhoodId: site3_1.id,
+        activistCoordinatorId: supervisorRecord3_1.id,
         startDate: new Date('2023-09-01'),
         isActive: true,
         tags: ['בישול', 'ניהול מטבח'],

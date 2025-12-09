@@ -18,8 +18,8 @@ export type CreateWorkerInput = {
   endDate?: Date;
   notes?: string;
   tags?: string[];
-  siteId: string;
-  supervisorId?: string; // Optional, defaults to current user if supervisor
+  neighborhoodId: string;
+  activistCoordinatorId?: string; // Optional, defaults to current user if supervisor
   isActive?: boolean;
 };
 
@@ -33,14 +33,14 @@ export type UpdateWorkerInput = {
   endDate?: Date;
   notes?: string;
   tags?: string[];
-  siteId?: string;
-  supervisorId?: string;
+  neighborhoodId?: string;
+  activistCoordinatorId?: string;
   isActive?: boolean;
 };
 
 export type ListWorkersFilters = {
-  siteId?: string;
-  supervisorId?: string;
+  neighborhoodId?: string;
+  activistCoordinatorId?: string;
   search?: string;
   position?: string;
   isActive?: boolean;
@@ -64,40 +64,40 @@ export async function createWorker(data: CreateWorkerInput) {
     // All roles can create workers (with restrictions)
     const currentUser = await requireSupervisor();
 
-    // Get site to validate access and get corporationId
-    const site = await prisma.site.findUnique({
-      where: { id: data.siteId },
+    // Get neighborhood to validate access and get cityId
+    const neighborhood = await prisma.neighborhood.findUnique({
+      where: { id: data.neighborhoodId },
       include: {
-        corporation: true,
+        cityRelation: true,
       },
     });
 
-    if (!site) {
+    if (!neighborhood) {
       return {
         success: false,
-        error: 'Site not found',
+        error: 'Neighborhood not found',
       };
     }
 
     // Validate access based on role
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      // Managers can only create workers in their corporation's sites
-      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
+      // City coordinators can only create activists in their city's neighborhoods
+      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
         return {
           success: false,
-          error: 'Cannot create worker for site in different corporation',
+          error: 'Cannot create activist for neighborhood in different city',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can only create workers in their assigned sites (using legacySupervisorUserId for User.id)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Coordinators can only create activists in their assigned neighborhoods (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacySupervisorUserId: currentUser.id,
-          siteId: data.siteId,
+          legacyActivistCoordinatorUserId: currentUser.id,
+          neighborhoodId: data.neighborhoodId,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Cannot create worker for site you are not assigned to',
@@ -105,9 +105,9 @@ export async function createWorker(data: CreateWorkerInput) {
       }
     }
 
-    // Validate worker-supervisor assignment based on site's supervisor count
-    const { validateWorkerSupervisorAssignment } = await import('@/lib/supervisor-worker-assignment');
-    const validation = await validateWorkerSupervisorAssignment(data.siteId, data.supervisorId);
+    // Validate activist-coordinator assignment based on neighborhood's coordinator count
+    const { validateWorkerSupervisorAssignment } = await import('@/lib/activist-coordinator-assignment');
+    const validation = await validateWorkerSupervisorAssignment(data.neighborhoodId, data.activistCoordinatorId);
 
     if (!validation.valid) {
       return {
@@ -116,36 +116,36 @@ export async function createWorker(data: CreateWorkerInput) {
       };
     }
 
-    // If supervisorId provided, validate it exists and is accessible
-    if (data.supervisorId) {
-      const supervisor = await prisma.supervisor.findUnique({
-        where: { id: data.supervisorId },
+    // If activistCoordinatorId provided, validate it exists and is accessible
+    if (data.activistCoordinatorId) {
+      const activistCoordinator = await prisma.activistCoordinator.findUnique({
+        where: { id: data.activistCoordinatorId },
         include: {
           user: true,
         },
       });
 
-      if (!supervisor || !supervisor.isActive) {
+      if (!activistCoordinator || !activistCoordinator.isActive) {
         return {
           success: false,
-          error: 'Invalid or inactive supervisor',
+          error: 'Invalid or inactive activist coordinator',
         };
       }
 
-      // Verify supervisor is assigned to this site
-      const { isSupervisorAssignedToSite } = await import('@/lib/supervisor-worker-assignment');
-      const isAssigned = await isSupervisorAssignedToSite(data.supervisorId, data.siteId);
+      // Verify coordinator is assigned to this neighborhood
+      const { isSupervisorAssignedToSite } = await import('@/lib/activist-coordinator-assignment');
+      const isAssigned = await isSupervisorAssignedToSite(data.activistCoordinatorId, data.neighborhoodId);
 
       if (!isAssigned) {
         return {
           success: false,
-          error: 'Supervisor is not assigned to this site',
+          error: 'Activist coordinator is not assigned to this neighborhood',
         };
       }
     }
 
-    // Create worker
-    const newWorker = await prisma.worker.create({
+    // Create activist
+    const newActivist = await prisma.activist.create({
       data: {
         fullName: data.fullName,
         phone: data.phone,
@@ -156,26 +156,18 @@ export async function createWorker(data: CreateWorkerInput) {
         endDate: data.endDate,
         notes: data.notes,
         tags: data.tags ?? [],
-        corporationId: site.corporationId,
-        siteId: data.siteId,
-        supervisorId: data.supervisorId || null, // Null if site has no supervisors
+        cityId: neighborhood.cityId,
+        neighborhoodId: data.neighborhoodId,
+        activistCoordinatorId: data.activistCoordinatorId || null, // Null if neighborhood has no coordinators
         isActive: data.isActive ?? true,
       },
       include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            corporation: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+        neighborhood: {
+          include: {
+            cityRelation: true,
           },
         },
-        supervisor: {
+        activistCoordinator: {
           select: {
             id: true,
             user: {
@@ -194,29 +186,29 @@ export async function createWorker(data: CreateWorkerInput) {
       data: {
         action: 'CREATE_WORKER',
         entity: 'Worker',
-        entityId: newWorker.id,
+        entityId: newActivist.id,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
         before: undefined,
         after: {
-          id: newWorker.id,
-          fullName: newWorker.fullName,
-          position: newWorker.position,
-          siteId: newWorker.siteId,
-          supervisorId: newWorker.supervisorId,
-          isActive: newWorker.isActive,
+          id: newActivist.id,
+          fullName: newActivist.fullName,
+          position: newActivist.position,
+          neighborhoodId: newActivist.neighborhoodId,
+          activistCoordinatorId: newActivist.activistCoordinatorId,
+          isActive: newActivist.isActive,
         },
       },
     });
 
     revalidatePath('/workers');
-    revalidatePath(`/sites/${data.siteId}`);
+    revalidatePath(`/sites/${data.neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      worker: newWorker,
+      worker: newActivist,
     };
   } catch (error) {
     console.error('Error creating worker:', error);
@@ -247,32 +239,32 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'SUPERVISOR') {
-      // SUPERVISOR: Filter by specific assigned sites (using legacySupervisorUserId for User.id)
-      const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { legacySupervisorUserId: currentUser.id },
-        select: { siteId: true },
+    if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // SUPERVISOR: Filter by specific assigned sites (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
+        where: { legacyActivistCoordinatorUserId: currentUser.id },
+        select: { neighborhoodId: true },
       });
-      const siteIds = supervisorSites.map(ss => ss.siteId);
-      where.siteId = { in: siteIds };
+      const neighborhoodIds = activistCoordinatorNeighborhoods.map(ss => ss.neighborhoodId);
+      where.neighborhoodId = { in: neighborhoodIds };
     } else {
       // MANAGER/AREA_MANAGER: Filter by corporation
       const userCorps = getUserCorporations(currentUser);
       if (userCorps !== 'all') {
         // Non-superadmins can only see workers in their corporations
-        where.site = {
-          corporationId: { in: userCorps },
+        where.neighborhood = {
+          cityId: { in: userCorps },
         };
       }
     }
 
     // Apply additional filters
-    if (filters.siteId) {
-      where.siteId = filters.siteId;
+    if (filters.neighborhoodId) {
+      where.neighborhoodId = filters.neighborhoodId;
     }
 
-    if (filters.supervisorId) {
-      where.supervisorId = filters.supervisorId;
+    if (filters.activistCoordinatorId) {
+      where.activistCoordinatorId = filters.activistCoordinatorId;
     }
 
     if (filters.search) {
@@ -299,23 +291,15 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
     }
 
     // Query workers
-    const workers = await prisma.worker.findMany({
+    const activists = await prisma.activist.findMany({
       where,
       include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            corporation: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+        neighborhood: {
+          include: {
+            cityRelation: true,
           },
         },
-        supervisor: {
+        activistCoordinator: {
           select: {
             id: true,
             user: {
@@ -335,8 +319,8 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
 
     return {
       success: true,
-      workers,
-      count: workers.length,
+      activists,
+      count: activists.length,
     };
   } catch (error) {
     console.error('Error listing workers:', error);
@@ -361,19 +345,19 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
  * - MANAGER: Can view workers in their corporation
  * - SUPERVISOR: Can view workers in their site
  */
-export async function getWorkerById(workerId: string) {
+export async function getWorkerById(activistId: string) {
   try {
     const currentUser = await getCurrentUser();
 
-    const worker = await prisma.worker.findUnique({
-      where: { id: workerId },
+    const activist = await prisma.activist.findUnique({
+      where: { id: activistId },
       include: {
-        site: {
+        neighborhood: {
           include: {
-            corporation: true,
+            cityRelation: true,
           },
         },
-        supervisor: {
+        activistCoordinator: {
           select: {
             id: true,
             user: {
@@ -388,7 +372,7 @@ export async function getWorkerById(workerId: string) {
       },
     });
 
-    if (!worker) {
+    if (!activist) {
       return {
         success: false,
         error: 'Worker not found',
@@ -396,23 +380,23 @@ export async function getWorkerById(workerId: string) {
     }
 
     // Validate access permissions
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      if (!worker.site || !hasAccessToCorporation(currentUser, worker.site.corporationId)) {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, activist.neighborhood.cityId)) {
         return {
           success: false,
           error: 'Access denied',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacySupervisorUserId: currentUser.id,
-          siteId: worker.siteId,
+          legacyActivistCoordinatorUserId: currentUser.id,
+          neighborhoodId: activist.neighborhoodId,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Access denied',
@@ -422,7 +406,7 @@ export async function getWorkerById(workerId: string) {
 
     return {
       success: true,
-      worker,
+      activist,
     };
   } catch (error) {
     console.error('Error getting worker:', error);
@@ -445,19 +429,19 @@ export async function getWorkerById(workerId: string) {
  * - MANAGER: Can update workers in their corporation
  * - SUPERVISOR: Can update workers in their site (limited fields)
  */
-export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
+export async function updateWorker(activistId: string, data: UpdateWorkerInput) {
   try {
     const currentUser = await requireSupervisor();
 
     // Get existing worker
-    const existingWorker = await prisma.worker.findUnique({
-      where: { id: workerId },
+    const existingActivist = await prisma.activist.findUnique({
+      where: { id: activistId },
       include: {
-        site: true,
+        neighborhood: true,
       },
     });
 
-    if (!existingWorker) {
+    if (!existingActivist) {
       return {
         success: false,
         error: 'Worker not found',
@@ -465,23 +449,23 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
     }
 
     // Validate access based on role
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, existingWorker.site.corporationId)) {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, existingActivist.neighborhood.cityId)) {
         return {
           success: false,
           error: 'Cannot update worker from different corporation',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacySupervisorUserId: currentUser.id,
-          siteId: existingWorker.siteId,
+          legacyActivistCoordinatorUserId: currentUser.id,
+          neighborhoodId: existingActivist.neighborhoodId,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Cannot update worker from site you are not assigned to',
@@ -489,7 +473,7 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       }
 
       // Supervisors cannot change site or supervisor
-      if (data.siteId || data.supervisorId) {
+      if (data.neighborhoodId || data.activistCoordinatorId) {
         return {
           success: false,
           error: 'Supervisors cannot change worker site or supervisor',
@@ -498,16 +482,16 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
     }
 
     // Handle site change - clear supervisorId and require reselection
-    let finalSiteId = data.siteId || existingWorker.siteId;
-    let finalSupervisorId = data.supervisorId !== undefined ? data.supervisorId : existingWorker.supervisorId;
+    let finalNeighborhoodId = data.neighborhoodId || existingActivist.neighborhoodId;
+    let finalActivistCoordinatorId = data.activistCoordinatorId !== undefined ? data.activistCoordinatorId : existingActivist.activistCoordinatorId;
 
     // Validate new site if being changed
-    if (data.siteId && data.siteId !== existingWorker.siteId) {
-      const newSite = await prisma.site.findUnique({
-        where: { id: data.siteId },
+    if (data.neighborhoodId && data.neighborhoodId !== existingActivist.neighborhoodId) {
+      const newNeighborhood = await prisma.neighborhood.findUnique({
+        where: { id: data.neighborhoodId },
       });
 
-      if (!newSite) {
+      if (!newNeighborhood) {
         return {
           success: false,
           error: 'New site not found',
@@ -515,8 +499,8 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       }
 
       // Managers can only move workers within their corporations
-      if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-        if (!hasAccessToCorporation(currentUser, newSite.corporationId)) {
+      if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
+        if (!hasAccessToCorporation(currentUser, newNeighborhood.cityId)) {
           return {
             success: false,
             error: 'Cannot move worker to site in different corporation',
@@ -525,14 +509,14 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       }
 
       // CRITICAL: When moving to different site, clear supervisorId (require manual reselection)
-      if (data.supervisorId === undefined) {
-        finalSupervisorId = null;
+      if (data.activistCoordinatorId === undefined) {
+        finalActivistCoordinatorId = null;
       }
     }
 
     // Validate supervisor assignment for the final site
-    const { validateWorkerSupervisorAssignment } = await import('@/lib/supervisor-worker-assignment');
-    const validation = await validateWorkerSupervisorAssignment(finalSiteId, finalSupervisorId);
+    const { validateWorkerSupervisorAssignment } = await import('@/lib/activist-coordinator-assignment');
+    const validation = await validateWorkerSupervisorAssignment(finalNeighborhoodId, finalActivistCoordinatorId);
 
     if (!validation.valid) {
       return {
@@ -542,15 +526,15 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
     }
 
     // If changing supervisor, validate new supervisor
-    if (finalSupervisorId && finalSupervisorId !== existingWorker.supervisorId) {
-      const supervisor = await prisma.supervisor.findUnique({
-        where: { id: finalSupervisorId },
+    if (finalActivistCoordinatorId && finalActivistCoordinatorId !== existingActivist.activistCoordinatorId) {
+      const activistCoordinator = await prisma.activistCoordinator.findUnique({
+        where: { id: finalActivistCoordinatorId },
         include: {
           user: true,
         },
       });
 
-      if (!supervisor || !supervisor.isActive) {
+      if (!activistCoordinator || !activistCoordinator.isActive) {
         return {
           success: false,
           error: 'Invalid or inactive supervisor',
@@ -558,8 +542,8 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       }
 
       // Verify supervisor is assigned to the site
-      const { isSupervisorAssignedToSite } = await import('@/lib/supervisor-worker-assignment');
-      const isAssigned = await isSupervisorAssignedToSite(finalSupervisorId, finalSiteId);
+      const { isSupervisorAssignedToSite } = await import('@/lib/activist-coordinator-assignment');
+      const isAssigned = await isSupervisorAssignedToSite(finalActivistCoordinatorId, finalNeighborhoodId);
 
       if (!isAssigned) {
         return {
@@ -570,8 +554,8 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
     }
 
     // Update worker
-    const updatedWorker = await prisma.worker.update({
-      where: { id: workerId },
+    const updatedActivist = await prisma.activist.update({
+      where: { id: activistId },
       data: {
         fullName: data.fullName,
         phone: data.phone,
@@ -582,25 +566,17 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
         endDate: data.endDate,
         notes: data.notes,
         tags: data.tags,
-        siteId: finalSiteId !== existingWorker.siteId ? finalSiteId : undefined,
-        supervisorId: finalSupervisorId !== existingWorker.supervisorId ? finalSupervisorId : undefined,
+        neighborhoodId: finalNeighborhoodId !== existingActivist.neighborhoodId ? finalNeighborhoodId : undefined,
+        activistCoordinatorId: finalActivistCoordinatorId !== existingActivist.activistCoordinatorId ? finalActivistCoordinatorId : undefined,
         isActive: data.isActive,
       },
       include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            corporation: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+        neighborhood: {
+          include: {
+            cityRelation: true,
           },
         },
-        supervisor: {
+        activistCoordinator: {
           select: {
             id: true,
             user: {
@@ -619,35 +595,35 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       data: {
         action: 'UPDATE_WORKER',
         entity: 'Worker',
-        entityId: updatedWorker.id,
+        entityId: updatedActivist.id,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
         before: {
-          fullName: existingWorker.fullName,
-          position: existingWorker.position,
-          siteId: existingWorker.siteId,
-          isActive: existingWorker.isActive,
+          fullName: existingActivist.fullName,
+          position: existingActivist.position,
+          neighborhoodId: existingActivist.neighborhoodId,
+          isActive: existingActivist.isActive,
         },
         after: {
-          fullName: updatedWorker.fullName,
-          position: updatedWorker.position,
-          siteId: updatedWorker.siteId,
-          isActive: updatedWorker.isActive,
+          fullName: updatedActivist.fullName,
+          position: updatedActivist.position,
+          neighborhoodId: updatedActivist.neighborhoodId,
+          isActive: updatedActivist.isActive,
         },
       },
     });
 
     revalidatePath('/workers');
-    revalidatePath(`/workers/${workerId}`);
-    revalidatePath(`/sites/${existingWorker.siteId}`);
-    if (data.siteId && data.siteId !== existingWorker.siteId) {
-      revalidatePath(`/sites/${data.siteId}`);
+    revalidatePath(`/workers/${activistId}`);
+    revalidatePath(`/sites/${existingActivist.neighborhoodId}`);
+    if (data.neighborhoodId && data.neighborhoodId !== existingActivist.neighborhoodId) {
+      revalidatePath(`/sites/${data.neighborhoodId}`);
     }
 
     return {
       success: true,
-      worker: updatedWorker,
+      worker: updatedActivist,
     };
   } catch (error) {
     console.error('Error updating worker:', error);
@@ -670,19 +646,19 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
  * - MANAGER: Can delete workers in their corporation
  * - SUPERVISOR: Can delete workers in their site
  */
-export async function deleteWorker(workerId: string) {
+export async function deleteWorker(activistId: string) {
   try {
     const currentUser = await requireSupervisor();
 
     // Get worker to delete
-    const workerToDelete = await prisma.worker.findUnique({
-      where: { id: workerId },
+    const activistToDelete = await prisma.activist.findUnique({
+      where: { id: activistId },
       include: {
-        site: true,
+        neighborhood: true,
       },
     });
 
-    if (!workerToDelete) {
+    if (!activistToDelete) {
       return {
         success: false,
         error: 'Worker not found',
@@ -690,23 +666,23 @@ export async function deleteWorker(workerId: string) {
     }
 
     // Validate access based on role
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, workerToDelete.site.corporationId)) {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, activistToDelete.neighborhood.cityId)) {
         return {
           success: false,
           error: 'Cannot delete worker from different corporation',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacySupervisorUserId: currentUser.id,
-          siteId: workerToDelete.siteId,
+          legacyActivistCoordinatorUserId: currentUser.id,
+          neighborhoodId: activistToDelete.neighborhoodId,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Cannot delete worker from site you are not assigned to',
@@ -715,8 +691,8 @@ export async function deleteWorker(workerId: string) {
     }
 
     // Soft delete (set isActive = false)
-    const deletedWorker = await prisma.worker.update({
-      where: { id: workerId },
+    const deletedActivist = await prisma.activist.update({
+      where: { id: activistId },
       data: {
         isActive: false,
         endDate: new Date(), // Set end date to now
@@ -728,32 +704,32 @@ export async function deleteWorker(workerId: string) {
       data: {
         action: 'DELETE_WORKER',
         entity: 'Worker',
-        entityId: workerId,
+        entityId: activistId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
         before: {
-          id: workerToDelete.id,
-          fullName: workerToDelete.fullName,
-          position: workerToDelete.position,
-          siteId: workerToDelete.siteId,
-          isActive: workerToDelete.isActive,
+          id: activistToDelete.id,
+          fullName: activistToDelete.fullName,
+          position: activistToDelete.position,
+          neighborhoodId: activistToDelete.neighborhoodId,
+          isActive: activistToDelete.isActive,
         },
         after: {
           isActive: false,
-          endDate: deletedWorker.endDate,
+          endDate: deletedActivist.endDate,
         },
       },
     });
 
     revalidatePath('/workers');
-    revalidatePath(`/sites/${workerToDelete.siteId}`);
+    revalidatePath(`/sites/${activistToDelete.neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
       message: 'Worker deactivated successfully',
-      worker: deletedWorker,
+      worker: deletedActivist,
     };
   } catch (error) {
     console.error('Error deleting worker:', error);
@@ -776,18 +752,18 @@ export async function deleteWorker(workerId: string) {
  * - MANAGER: Can toggle workers in their corporation
  * - SUPERVISOR: Can toggle workers in their site
  */
-export async function toggleWorkerStatus(workerId: string) {
+export async function toggleWorkerStatus(activistId: string) {
   try {
     const currentUser = await requireSupervisor();
 
-    const worker = await prisma.worker.findUnique({
-      where: { id: workerId },
+    const activist = await prisma.activist.findUnique({
+      where: { id: activistId },
       include: {
-        site: true,
+        neighborhood: true,
       },
     });
 
-    if (!worker) {
+    if (!activist) {
       return {
         success: false,
         error: 'Worker not found',
@@ -795,23 +771,23 @@ export async function toggleWorkerStatus(workerId: string) {
     }
 
     // Validate access
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, worker.site.corporationId)) {
+    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
+      if (!hasAccessToCorporation(currentUser, activist.neighborhood.cityId)) {
         return {
           success: false,
           error: 'Cannot toggle worker from different corporation',
         };
       }
-    } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
-      const supervisorSite = await prisma.supervisorSite.findFirst({
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacySupervisorUserId: currentUser.id,
-          siteId: worker.siteId,
+          legacyActivistCoordinatorUserId: currentUser.id,
+          neighborhoodId: activist.neighborhoodId,
         },
       });
 
-      if (!supervisorSite) {
+      if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
           error: 'Cannot toggle worker from site you are not assigned to',
@@ -819,20 +795,20 @@ export async function toggleWorkerStatus(workerId: string) {
       }
     }
 
-    const updatedWorker = await prisma.worker.update({
-      where: { id: workerId },
+    const updatedActivist = await prisma.activist.update({
+      where: { id: activistId },
       data: {
-        isActive: !worker.isActive,
-        endDate: !worker.isActive ? null : new Date(), // Clear end date when reactivating
+        isActive: !activist.isActive,
+        endDate: !activist.isActive ? null : new Date(), // Clear end date when reactivating
       },
       include: {
-        site: {
+        neighborhood: {
           select: {
             id: true,
             name: true,
           },
         },
-        supervisor: {
+        activistCoordinator: {
           select: {
             id: true,
             user: {
@@ -848,24 +824,24 @@ export async function toggleWorkerStatus(workerId: string) {
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: worker.isActive ? 'DEACTIVATE_WORKER' : 'ACTIVATE_WORKER',
+        action: activist.isActive ? 'DEACTIVATE_WORKER' : 'ACTIVATE_WORKER',
         entity: 'Worker',
-        entityId: workerId,
+        entityId: activistId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: { isActive: worker.isActive },
-        after: { isActive: updatedWorker.isActive },
+        before: { isActive: activist.isActive },
+        after: { isActive: updatedActivist.isActive },
       },
     });
 
     revalidatePath('/workers');
-    revalidatePath(`/workers/${workerId}`);
-    revalidatePath(`/sites/${worker.siteId}`);
+    revalidatePath(`/workers/${activistId}`);
+    revalidatePath(`/sites/${activist.neighborhoodId}`);
 
     return {
       success: true,
-      worker: updatedWorker,
+      worker: updatedActivist,
     };
   } catch (error) {
     console.error('Error toggling worker status:', error);
@@ -943,22 +919,22 @@ export async function getWorkerStats() {
     const where: any = {};
 
     // Get user corporations (for later use in site filtering)
-    const userCorps = currentUser.role === 'SUPERVISOR' ? null : getUserCorporations(currentUser);
+    const userCorps = currentUser.role === 'ACTIVIST_COORDINATOR' ? null : getUserCorporations(currentUser);
 
     // Apply role-based filtering
-    if (currentUser.role === 'SUPERVISOR') {
-      // SUPERVISOR: Filter by specific assigned sites (using legacySupervisorUserId for User.id)
-      const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { legacySupervisorUserId: currentUser.id },
-        select: { siteId: true },
+    if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // SUPERVISOR: Filter by specific assigned sites (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
+        where: { legacyActivistCoordinatorUserId: currentUser.id },
+        select: { neighborhoodId: true },
       });
-      const siteIds = supervisorSites.map(ss => ss.siteId);
-      where.siteId = { in: siteIds };
+      const neighborhoodIds = activistCoordinatorNeighborhoods.map(ss => ss.neighborhoodId);
+      where.neighborhoodId = { in: neighborhoodIds };
     } else {
       // MANAGER/AREA_MANAGER: Filter by corporation
       if (userCorps !== 'all') {
-        where.site = {
-          corporationId: { in: userCorps },
+        where.neighborhood = {
+          cityId: { in: userCorps },
         };
       }
     }
@@ -970,10 +946,10 @@ export async function getWorkerStats() {
       recentWorkers,
       workersBySite,
     ] = await Promise.all([
-      prisma.worker.count({ where }),
-      prisma.worker.count({ where: { ...where, isActive: true } }),
-      prisma.worker.count({ where: { ...where, isActive: false } }),
-      prisma.worker.findMany({
+      prisma.activist.count({ where }),
+      prisma.activist.count({ where: { ...where, isActive: true } }),
+      prisma.activist.count({ where: { ...where, isActive: false } }),
+      prisma.activist.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         take: 10,
@@ -983,13 +959,13 @@ export async function getWorkerStats() {
           position: true,
           isActive: true,
           createdAt: true,
-          site: {
+          neighborhood: {
             select: {
               id: true,
               name: true,
             },
           },
-          supervisor: {
+          activistCoordinator: {
             select: {
               id: true,
               user: {
@@ -1001,16 +977,16 @@ export async function getWorkerStats() {
           },
         },
       }),
-      prisma.site.findMany({
+      prisma.neighborhood.findMany({
         where: userCorps && userCorps !== 'all'
-          ? { corporationId: { in: userCorps } }
+          ? { cityId: { in: userCorps } }
           : {},
         select: {
           id: true,
           name: true,
           _count: {
             select: {
-              workers: true,
+              activists: true,
             },
           },
         },

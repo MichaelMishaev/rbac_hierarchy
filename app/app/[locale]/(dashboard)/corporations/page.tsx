@@ -47,8 +47,8 @@ export default async function CorporationsPage() {
   }
   // SUPERADMIN: See all corporations (no filter needed)
 
-  // v1.4: Fetch corporations with areaManager relation
-  const corporationsData = await prisma.corporation.findMany({
+  // v1.4: Fetch cities with areaManager relation
+  const corporationsData = await prisma.city.findMany({
     where: whereClause,
     include: {
       areaManager: {

@@ -43,7 +43,7 @@ export async function getAllRecipientsUnderMe(
   userId: string,
   userRole: Role
 ): Promise<Recipient[]> {
-  if (userRole === 'SUPERVISOR') {
+  if (userRole === 'ACTIVIST_COORDINATOR') {
     throw new Error('Supervisors cannot send tasks');
   }
 
@@ -95,7 +95,7 @@ export async function getAllRecipientsUnderMe(
         u.id as "userId",
         u.full_name as "fullName",
         u.email,
-        'MANAGER' as role,
+        'CITY_COORDINATOR' as role,
         c.name as "corporationName"
       FROM corporation_managers cm
       JOIN users u ON u.id = cm.user_id
@@ -111,7 +111,7 @@ export async function getAllRecipientsUnderMe(
         u.id as "userId",
         u.full_name as "fullName",
         u.email,
-        'SUPERVISOR' as role,
+        'ACTIVIST_COORDINATOR' as role,
         c.name as "corporationName"
       FROM supervisors s
       JOIN users u ON u.id = s.user_id
@@ -132,9 +132,9 @@ export async function getAllRecipientsUnderMe(
     }));
   }
 
-  if (userRole === 'MANAGER') {
+  if (userRole === 'CITY_COORDINATOR') {
     // Corporation Manager: Supervisors in their corporation
-    const manager = await prisma.corporationManager.findFirst({
+    const manager = await prisma.cityCoordinator.findFirst({
       where: { userId },
       include: { corporation: true },
     });
@@ -145,7 +145,7 @@ export async function getAllRecipientsUnderMe(
 
     const supervisors = await prisma.supervisor.findMany({
       where: {
-        corporationId: manager.corporationId,
+        cityId: manager.cityId,
         isActive: true,
         user: { isActive: true },
       },
@@ -211,13 +211,13 @@ export async function getAvailableRecipients(
   userRole: Role,
   options: {
     search?: string;
-    corporationId?: string;
+    cityId?: string;
     role?: 'area_manager' | 'corporation_manager' | 'supervisor';
     page?: number;
     limit?: number;
   } = {}
 ): Promise<{ recipients: Recipient[]; total: number }> {
-  const { search, corporationId, role, page = 1, limit = 20 } = options;
+  const { search, cityId, role, page = 1, limit = 20 } = options;
   const offset = (page - 1) * limit;
 
   // Get all recipients this user can send to
@@ -324,7 +324,7 @@ export async function logTaskAudit(params: {
   userId: string;
   before?: any;
   after?: any;
-  corporationId?: string;
+  cityId?: string;
   ipAddress?: string;
   userAgent?: string;
 }) {
@@ -338,7 +338,7 @@ export async function logTaskAudit(params: {
       userId: params.userId,
       userEmail: null, // Will be filled by middleware if needed
       userRole: null, // Will be filled by middleware if needed
-      corporationId: params.corporationId || null,
+      cityId: params.corporationId || null,
       ipAddress: params.ipAddress || null,
       userAgent: params.userAgent || null,
     },

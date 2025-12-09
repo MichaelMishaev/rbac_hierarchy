@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const [sites, corporations, areaManagers, managers, supervisors, workers] = await Promise.all([
       // Sites with GPS coordinates
       prisma.site.findMany({
-        where: userCorps === 'all' ? {} : { corporationId: { in: userCorps } },
+        where: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         include: {
           corporation: {
             select: {
@@ -95,8 +95,8 @@ export async function GET(request: Request) {
         : [],
 
       // Managers
-      prisma.corporationManager.findMany({
-        where: userCorps === 'all' ? {} : { corporationId: { in: userCorps } },
+      prisma.cityCoordinator.findMany({
+        where: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         include: {
           user: {
             select: {
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
 
       // Supervisors
       prisma.supervisor.findMany({
-        where: userCorps === 'all' ? {} : { corporationId: { in: userCorps } },
+        where: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         include: {
           user: {
             select: {
@@ -152,7 +152,7 @@ export async function GET(request: Request) {
       prisma.worker.groupBy({
         by: ['siteId', 'isActive'],
         where: {
-          site: userCorps === 'all' ? {} : { corporationId: { in: userCorps } },
+          site: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         },
         _count: true,
       }),
