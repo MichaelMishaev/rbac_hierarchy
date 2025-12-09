@@ -27,6 +27,7 @@ import {
   LocationOn as LocationIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
+  SupervisorAccount as SupervisorIcon,
 } from '@mui/icons-material';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -105,12 +106,12 @@ export default function SiteModal({
         phone: initialData?.phone || '',
         email: initialData?.email || '',
         corporationId: initialData?.corporationId || corporations[0]?.id || '',
-        supervisorId: '',
+        supervisorId: initialData?.supervisorId || supervisors[0]?.id || '',
         isActive: initialData?.isActive ?? true,
       });
       setErrors({});
     }
-  }, [open, initialData, corporations]);
+  }, [open, initialData, corporations, supervisors]);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof SiteFormData, string>> = {};
@@ -121,6 +122,10 @@ export default function SiteModal({
 
     if (!formData.corporationId) {
       newErrors.corporationId = isRTL ? 'יש לבחור תאגיד' : 'Corporation is required';
+    }
+
+    if (!formData.supervisorId) {
+      newErrors.supervisorId = isRTL ? 'יש לבחור מפקח' : 'Supervisor is required';
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -230,6 +235,31 @@ export default function SiteModal({
                     </MenuItem>
                   ))}
                 </Select>
+              </FormControl>
+
+              <FormControl fullWidth required error={!!errors.supervisorId}>
+                <InputLabel>{isRTL ? 'מפקח' : 'Supervisor'}</InputLabel>
+                <Select
+                  value={formData.supervisorId}
+                  onChange={(e) => handleChange('supervisorId')(e as any)}
+                  label={isRTL ? 'מפקח' : 'Supervisor'}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <SupervisorIcon fontSize="small" />
+                    </InputAdornment>
+                  }
+                >
+                  {supervisors.map((supervisor) => (
+                    <MenuItem key={supervisor.id} value={supervisor.id}>
+                      {supervisor.fullName}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.supervisorId && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                    {errors.supervisorId}
+                  </Typography>
+                )}
               </FormControl>
             </Box>
           </Box>
