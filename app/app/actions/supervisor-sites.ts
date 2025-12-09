@@ -98,6 +98,7 @@ export async function assignSupervisorToSite(supervisorId: string, siteId: strin
         supervisorId,
         siteId,
         corporationId: site.corporationId,
+        legacySupervisorUserId: supervisor.userId,
       },
     });
 
