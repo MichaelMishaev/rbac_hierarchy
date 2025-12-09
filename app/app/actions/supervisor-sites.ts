@@ -3,12 +3,144 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, hasAccessToCorporation } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { hash } from 'bcryptjs';
 import {
   getSiteSupervisorCount,
   autoAssignWorkersToFirstSupervisor,
   reassignWorkersFromRemovedSupervisor,
   canRemoveSupervisorFromSite,
 } from '@/lib/supervisor-worker-assignment';
+
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
+
+export type CreateSupervisorQuickInput = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  corporationId: string;
+  title?: string;
+};
+
+// ============================================
+// CREATE SUPERVISOR (QUICK)
+// ============================================
+
+/**
+ * Quick supervisor creation for inline use cases (e.g., creating from site modal)
+ *
+ * - Creates User + Supervisor records in a transaction
+ * - Generates a temporary password (should be changed on first login)
+ * - Returns the temporary password to show to the user
+ *
+ * Permissions:
+ * - SUPERADMIN: Can create supervisors in any corporation
+ * - MANAGER: Can create supervisors within their corporation only
+ */
+export async function createSupervisorQuick(data: CreateSupervisorQuickInput) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Only SUPERADMIN and MANAGER can create supervisors
+    if (currentUser.role === 'SUPERVISOR') {
+      return {
+        success: false,
+        error: 'Supervisors cannot create other supervisors',
+      };
+    }
+
+    // Validate corporation access
+    if (currentUser.role !== 'SUPERADMIN') {
+      if (!hasAccessToCorporation(currentUser, data.corporationId)) {
+        return {
+          success: false,
+          error: 'Cannot create supervisor for different corporation',
+        };
+      }
+    }
+
+    // Validate email uniqueness
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (existingUser) {
+      return {
+        success: false,
+        error: 'Email already exists',
+      };
+    }
+
+    // Generate temporary password
+    const tempPassword = `Temp${Math.random().toString(36).slice(2, 10)}!`;
+    const hashedPassword = await hash(tempPassword, 12);
+
+    // Create User + Supervisor in transaction
+    const newUser = await prisma.user.create({
+      data: {
+        email: data.email,
+        fullName: data.fullName,
+        phone: data.phone,
+        passwordHash: hashedPassword,
+        role: 'SUPERVISOR',
+      },
+    });
+
+    const newSupervisor = await prisma.supervisor.create({
+      data: {
+        userId: newUser.id,
+        corporationId: data.corporationId,
+        title: data.title || 'Supervisor',
+        isActive: true,
+      },
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'CREATE_SUPERVISOR_QUICK',
+        entity: 'Supervisor',
+        entityId: newSupervisor.id,
+        userId: currentUser.id,
+        userEmail: currentUser.email,
+        userRole: currentUser.role,
+        before: undefined,
+        after: {
+          supervisorId: newSupervisor.id,
+          userId: newUser.id,
+          email: newUser.email,
+          fullName: newUser.fullName,
+          corporationId: data.corporationId,
+          title: newSupervisor.title,
+        },
+      },
+    });
+
+    revalidatePath('/supervisors');
+    revalidatePath('/sites');
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      supervisor: {
+        id: newSupervisor.id,
+        userId: newUser.id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        phone: newUser.phone,
+        title: newSupervisor.title,
+      },
+      tempPassword, // Return temp password to show to user
+    };
+  } catch (error) {
+    console.error('Error creating supervisor:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create supervisor',
+    };
+  }
+}
 
 /**
  * Assign supervisor to a site
