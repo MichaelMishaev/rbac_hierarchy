@@ -121,7 +121,7 @@ test.describe('Supervisor Site Assignment - Auto-Assignment Triggers', () => {
   test('Scenario 4: Assign supervisor from different corporation - REJECT', async () => {
     // Create another corporation with supervisor
     const otherCorp = await prisma.corporation.create({
-      data: { name: 'Other Corp', isActive: true },
+      data: { name: 'Other Corp', code: 'OTHER', isActive: true },
     });
 
     const otherUser = await prisma.user.create({

@@ -38,6 +38,7 @@ export async function setupWorkerSupervisorTestData(): Promise<TestScenarioData>
   const corporation = await prisma.corporation.create({
     data: {
       name: 'Test Corp - Worker Supervisor Scenarios',
+      code: 'TEST-WS',
       isActive: true,
     },
   });
@@ -138,6 +139,7 @@ export async function setupWorkerSupervisorTestData(): Promise<TestScenarioData>
       supervisorId: supervisor1.id,
       siteId: siteWithOneSupervisor.id,
       corporationId: corporation.id,
+      legacySupervisorUserId: supervisor1User.id,
     },
   });
 
@@ -158,11 +160,13 @@ export async function setupWorkerSupervisorTestData(): Promise<TestScenarioData>
         supervisorId: supervisor2.id,
         siteId: siteWithMultipleSupervisors.id,
         corporationId: corporation.id,
+        legacySupervisorUserId: supervisor2User.id,
       },
       {
         supervisorId: supervisor3.id,
         siteId: siteWithMultipleSupervisors.id,
         corporationId: corporation.id,
+        legacySupervisorUserId: supervisor3User.id,
       },
     ],
   });
@@ -175,6 +179,9 @@ export async function setupWorkerSupervisorTestData(): Promise<TestScenarioData>
     supervisor1,
     supervisor2,
     supervisor3,
+    supervisor1User,
+    supervisor2User,
+    supervisor3User,
     manager,
     managerUser,
   };

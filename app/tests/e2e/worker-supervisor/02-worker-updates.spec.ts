@@ -114,6 +114,7 @@ test.describe('Worker Updates - Site Change & Supervisor Validation', () => {
         supervisorId: testData.supervisor1.id,
         siteId: testData.siteWithMultipleSupervisors.id,
         corporationId: testData.corporation.id,
+        legacySupervisorUserId: testData.supervisor1User.id,
       },
     });
 

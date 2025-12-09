@@ -92,6 +92,7 @@ test.describe('Supervisor Removal - Worker Reassignment Logic', () => {
         supervisorId: testData.supervisor1.id,
         siteId: testSite.id,
         corporationId: testData.corporation.id,
+        legacySupervisorUserId: testData.supervisor1User.id,
       },
     });
 
@@ -129,6 +130,7 @@ test.describe('Supervisor Removal - Worker Reassignment Logic', () => {
         supervisorId: testData.supervisor1.id,
         siteId: testData.siteWithOneSupervisor.id,
         corporationId: testData.corporation.id,
+        legacySupervisorUserId: testData.supervisor1User.id,
       },
     });
 
@@ -152,8 +154,8 @@ test.describe('Supervisor Removal - Worker Reassignment Logic', () => {
 
     await prisma.supervisorSite.createMany({
       data: [
-        { supervisorId: testData.supervisor1.id, siteId: testSite.id, corporationId: testData.corporation.id },
-        { supervisorId: testData.supervisor2.id, siteId: testSite.id, corporationId: testData.corporation.id },
+        { supervisorId: testData.supervisor1.id, siteId: testSite.id, corporationId: testData.corporation.id, legacySupervisorUserId: testData.supervisor1User.id },
+        { supervisorId: testData.supervisor2.id, siteId: testSite.id, corporationId: testData.corporation.id, legacySupervisorUserId: testData.supervisor2User.id },
       ],
     });
 
@@ -220,6 +222,7 @@ test.describe('Supervisor Removal - Worker Reassignment Logic', () => {
         supervisorId: testData.supervisor1.id,
         siteId: testData.siteWithOneSupervisor.id,
         corporationId: testData.corporation.id,
+        legacySupervisorUserId: testData.supervisor1User.id,
       },
     });
 
@@ -242,8 +245,8 @@ test.describe('Supervisor Removal - Worker Reassignment Logic', () => {
     // Assign supervisor1 to both sites
     await prisma.supervisorSite.createMany({
       data: [
-        { supervisorId: testData.supervisor1.id, siteId: site1.id, corporationId: testData.corporation.id },
-        { supervisorId: testData.supervisor1.id, siteId: site2.id, corporationId: testData.corporation.id },
+        { supervisorId: testData.supervisor1.id, siteId: site1.id, corporationId: testData.corporation.id, legacySupervisorUserId: testData.supervisor1User.id },
+        { supervisorId: testData.supervisor1.id, siteId: site2.id, corporationId: testData.corporation.id, legacySupervisorUserId: testData.supervisor1User.id },
       ],
     });
 
@@ -291,6 +294,7 @@ test.describe('Supervisor Removal - Worker Reassignment Logic', () => {
         supervisorId: testData.supervisor1.id,
         siteId: testData.siteWithOneSupervisor.id,
         corporationId: testData.corporation.id,
+        legacySupervisorUserId: testData.supervisor1User.id,
       },
     });
 
