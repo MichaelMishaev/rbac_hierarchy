@@ -90,13 +90,15 @@ type WorkersClientProps = {
   sites: Site[];
   supervisors: Supervisor[];
   currentUserId: string;
+  defaultSupervisorId?: string;
 };
 
-export default function WorkersClient({ 
-  workers: initialWorkers, 
-  sites, 
+export default function WorkersClient({
+  workers: initialWorkers,
+  sites,
   supervisors,
   currentUserId,
+  defaultSupervisorId,
 }: WorkersClientProps) {
   const t = useTranslations('workers');
   const tCommon = useTranslations('common');
@@ -173,7 +175,7 @@ export default function WorkersClient({
     setAnchorEl(null);
   };
 
-  const handleCreateWorker = async (data: WorkerFormData) => {
+  const handleCreateWorker = async (data: WorkerFormData): Promise<{ success: boolean; error?: string }> => {
     const result = await createWorker({
       fullName: data.name,
       phone: data.phone || undefined,
@@ -197,6 +199,9 @@ export default function WorkersClient({
       setWorkers((prev) => [worker, ...prev]);
       setCreateModalOpen(false);
       router.refresh();
+      return { success: true };
+    } else {
+      return { success: false, error: result.error || 'Failed to create worker' };
     }
   };
 
@@ -205,8 +210,8 @@ export default function WorkersClient({
     handleMenuClose();
   };
 
-  const handleEditWorker = async (data: WorkerFormData) => {
-    if (!selectedWorker) return;
+  const handleEditWorker = async (data: WorkerFormData): Promise<{ success: boolean; error?: string }> => {
+    if (!selectedWorker) return { success: false, error: 'No worker selected' };
 
     const result = await updateWorker(selectedWorker.id, {
       fullName: data.name,
@@ -233,6 +238,9 @@ export default function WorkersClient({
       setEditModalOpen(false);
       setSelectedWorker(null);
       router.refresh();
+      return { success: true };
+    } else {
+      return { success: false, error: result.error || 'Failed to update worker' };
     }
   };
 
@@ -1011,7 +1019,7 @@ export default function WorkersClient({
         mode="create"
         sites={sites}
         supervisors={transformedSupervisors}
-        defaultSupervisorId={currentUserId}
+        defaultSupervisorId={defaultSupervisorId}
       />
 
       {/* Edit Modal */}

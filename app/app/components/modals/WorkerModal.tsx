@@ -67,7 +67,7 @@ type Supervisor = {
 type WorkerModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: WorkerFormData) => Promise<void>;
+  onSubmit: (data: WorkerFormData) => Promise<{ success: boolean; error?: string }>;
   initialData?: Partial<WorkerFormData>;
   mode: 'create' | 'edit';
   sites: Site[];
@@ -168,10 +168,18 @@ export default function WorkerModal({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
-      onClose();
+      const result = await onSubmit(formData);
+      if (result.success) {
+        onClose();
+      } else {
+        // Show error message
+        const errorField: keyof WorkerFormData = 'name'; // Show error on name field
+        setErrors((prev) => ({ ...prev, [errorField]: result.error || 'Failed to save worker' }));
+      }
     } catch (error) {
       console.error('Error submitting worker:', error);
+      const errorField: keyof WorkerFormData = 'name';
+      setErrors((prev) => ({ ...prev, [errorField]: 'An unexpected error occurred' }));
     } finally {
       setLoading(false);
     }

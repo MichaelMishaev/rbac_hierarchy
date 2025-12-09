@@ -651,19 +651,24 @@ export default function TaskInbox() {
 
               {/* Action Buttons (only for received tasks) */}
               {!isSentView && !isDeleted && (
-                <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                <Stack direction="row" spacing={1} sx={{ mt: 2, direction: 'rtl' }}>
                   {task.status === 'unread' && (
                     <Button
                       variant="outlined"
                       size="small"
                       onClick={() => handleStatusChange(task.task_id, 'read')}
-                      startIcon={<CheckCircleOutlineIcon />}
+                      endIcon={<CheckCircleOutlineIcon />}
                       sx={{
                         borderColor: colors.primary,
                         color: colors.primary,
+                        direction: 'rtl',
                         '&:hover': {
                           borderColor: colors.primary,
                           backgroundColor: colors.primary + '10',
+                        },
+                        '& .MuiButton-endIcon': {
+                          marginLeft: 0,
+                          marginRight: '8px',
                         },
                       }}
                     >
@@ -675,10 +680,15 @@ export default function TaskInbox() {
                       variant="contained"
                       size="small"
                       onClick={() => handleStatusChange(task.task_id, 'acknowledged')}
-                      startIcon={<CheckCircleIcon />}
+                      endIcon={<CheckCircleIcon />}
                       sx={{
                         backgroundColor: colors.success,
+                        direction: 'rtl',
                         '&:hover': { backgroundColor: colors.success, filter: 'brightness(0.9)' },
+                        '& .MuiButton-endIcon': {
+                          marginLeft: 0,
+                          marginRight: '8px',
+                        },
                       }}
                     >
                       {t('acknowledge')}
@@ -1020,6 +1030,11 @@ export default function TaskInbox() {
           setAnchorEl(null);
           setCurrentTaskMenu(null);
         }}
+        sx={{
+          '& .MuiPaper-root': {
+            direction: 'rtl',
+          },
+        }}
       >
         {currentTaskMenu &&
           tasks.find((t) => t.task_id === currentTaskMenu) &&
@@ -1030,33 +1045,36 @@ export default function TaskInbox() {
                   handleStatusChange(currentTaskMenu, 'read');
                   setAnchorEl(null);
                 }}
+                sx={{ direction: 'rtl' }}
               >
-                <ListItemIcon>
+                <ListItemText sx={{ textAlign: 'right' }}>{t('markAsRead')}</ListItemText>
+                <ListItemIcon sx={{ minWidth: 36, justifyContent: 'flex-end' }}>
                   <CheckCircleOutlineIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>{t('markAsRead')}</ListItemText>
               </MenuItem>
               <MenuItem
                 onClick={() => {
                   handleStatusChange(currentTaskMenu, 'acknowledged');
                   setAnchorEl(null);
                 }}
+                sx={{ direction: 'rtl' }}
               >
-                <ListItemIcon>
+                <ListItemText sx={{ textAlign: 'right' }}>{t('acknowledge')}</ListItemText>
+                <ListItemIcon sx={{ minWidth: 36, justifyContent: 'flex-end' }}>
                   <CheckCircleIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>{t('acknowledge')}</ListItemText>
               </MenuItem>
               <MenuItem
                 onClick={() => {
                   handleStatusChange(currentTaskMenu, 'archived');
                   setAnchorEl(null);
                 }}
+                sx={{ direction: 'rtl' }}
               >
-                <ListItemIcon>
+                <ListItemText sx={{ textAlign: 'right' }}>{t('archive')}</ListItemText>
+                <ListItemIcon sx={{ minWidth: 36, justifyContent: 'flex-end' }}>
                   <ArchiveOutlinedIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>{t('archive')}</ListItemText>
               </MenuItem>
             </>
           )}
@@ -1067,24 +1085,29 @@ export default function TaskInbox() {
         anchorEl={bulkMenuAnchor}
         open={Boolean(bulkMenuAnchor)}
         onClose={() => setBulkMenuAnchor(null)}
+        sx={{
+          '& .MuiPaper-root': {
+            direction: 'rtl',
+          },
+        }}
       >
-        <MenuItem onClick={() => handleBulkAction('read')}>
-          <ListItemIcon>
+        <MenuItem onClick={() => handleBulkAction('read')} sx={{ direction: 'rtl' }}>
+          <ListItemText sx={{ textAlign: 'right' }}>סמן הכל כנקרא</ListItemText>
+          <ListItemIcon sx={{ minWidth: 36, justifyContent: 'flex-end' }}>
             <CheckCircleOutlineIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>סמן הכל כנקרא</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => handleBulkAction('acknowledged')}>
-          <ListItemIcon>
+        <MenuItem onClick={() => handleBulkAction('acknowledged')} sx={{ direction: 'rtl' }}>
+          <ListItemText sx={{ textAlign: 'right' }}>אשר הכל</ListItemText>
+          <ListItemIcon sx={{ minWidth: 36, justifyContent: 'flex-end' }}>
             <CheckCircleIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>אשר הכל</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => handleBulkAction('archived')}>
-          <ListItemIcon>
+        <MenuItem onClick={() => handleBulkAction('archived')} sx={{ direction: 'rtl' }}>
+          <ListItemText sx={{ textAlign: 'right' }}>העבר לארכיון</ListItemText>
+          <ListItemIcon sx={{ minWidth: 36, justifyContent: 'flex-end' }}>
             <ArchiveOutlinedIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>העבר לארכיון</ListItemText>
         </MenuItem>
       </Menu>
     </Box>

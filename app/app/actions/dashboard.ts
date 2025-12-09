@@ -302,10 +302,10 @@ async function getManagerStats(corporationId: string): Promise<ManagerStats> {
 // SUPERVISOR STATS
 // ============================================
 
-async function getSupervisorStats(supervisorId: string): Promise<SupervisorStats> {
-  // Get supervisor's assigned sites
+async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
+  // Get supervisor's assigned sites (using legacySupervisorUserId for User.id)
   const supervisorSites = await prisma.supervisorSite.findMany({
-    where: { supervisorId },
+    where: { legacySupervisorUserId: userId },
     select: { siteId: true },
   });
 
@@ -734,9 +734,9 @@ export async function getQuickStats() {
 
       stats = { managers, supervisors, sites, workers };
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Get supervisor's assigned sites
+      // Get supervisor's assigned sites (using legacySupervisorUserId for User.id)
       const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
+        where: { legacySupervisorUserId: currentUser.id },
         select: { siteId: true },
       });
 

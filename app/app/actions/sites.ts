@@ -222,9 +222,9 @@ export async function listSites(filters: ListSitesFilters = {}) {
 
       where.corporationId = { in: userCorps };
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can only see sites they are assigned to
+      // Supervisors can only see sites they are assigned to (using legacySupervisorUserId for User.id)
       const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
+        where: { legacySupervisorUserId: currentUser.id },
         select: { siteId: true },
       });
       const siteIds = supervisorSites.map(ss => ss.siteId);

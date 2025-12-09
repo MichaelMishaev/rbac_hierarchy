@@ -29,22 +29,31 @@ export default async function WorkersPage() {
     listSites({}),
   ]);
 
-  // Fetch supervisors (users who can be assigned as supervisors)
-  const supervisors = await prisma.user.findMany({
+  // Fetch supervisors (Supervisor records, not User records!)
+  const supervisors = await prisma.supervisor.findMany({
     where: {
-      role: {
-        in: ['SUPERVISOR', 'MANAGER', 'SUPERADMIN'],
-      },
+      isActive: true,
     },
     select: {
-      id: true,
-      fullName: true,
-      email: true,
+      id: true,  // Supervisor record ID
+      userId: true,  // Include userId to find current user's supervisor record
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+        },
+      },
     },
     orderBy: {
-      fullName: 'asc',
+      user: {
+        fullName: 'asc',
+      },
     },
   });
+
+  // Find current user's supervisor record (if they are a supervisor)
+  const currentUserSupervisor = supervisors.find(s => s.userId === session.user.id);
+  const defaultSupervisorId = currentUserSupervisor?.id || undefined;
 
   if (!workersResult.success) {
     return (
@@ -119,14 +128,9 @@ export default async function WorkersPage() {
           corporationId: s.corporationId,
           corporation: s.corporation,
         }))}
-        supervisors={supervisors.map(s => ({
-          id: s.id,
-          user: {
-            fullName: s.fullName,
-            email: s.email,
-          },
-        }))}
+        supervisors={supervisors}
         currentUserId={session.user.id}
+        defaultSupervisorId={defaultSupervisorId}
       />
     </Box>
   );

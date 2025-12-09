@@ -89,10 +89,10 @@ export async function createWorker(data: CreateWorkerInput) {
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can only create workers in their assigned sites
+      // Supervisors can only create workers in their assigned sites (using legacySupervisorUserId for User.id)
       const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId: currentUser.id,
+          legacySupervisorUserId: currentUser.id,
           siteId: data.siteId,
         },
       });
@@ -247,23 +247,23 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    const userCorps = getUserCorporations(currentUser);
-    if (userCorps !== 'all') {
-      // Non-superadmins can only see workers in their corporations
-      where.site = {
-        corporationId: { in: userCorps },
-      };
-    }
-
-    // Additional SUPERVISOR filtering
     if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can only see workers in their assigned sites
+      // SUPERVISOR: Filter by specific assigned sites (using legacySupervisorUserId for User.id)
       const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
+        where: { legacySupervisorUserId: currentUser.id },
         select: { siteId: true },
       });
       const siteIds = supervisorSites.map(ss => ss.siteId);
       where.siteId = { in: siteIds };
+    } else {
+      // MANAGER/AREA_MANAGER: Filter by corporation
+      const userCorps = getUserCorporations(currentUser);
+      if (userCorps !== 'all') {
+        // Non-superadmins can only see workers in their corporations
+        where.site = {
+          corporationId: { in: userCorps },
+        };
+      }
     }
 
     // Apply additional filters
@@ -404,10 +404,10 @@ export async function getWorkerById(workerId: string) {
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site
+      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
       const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId: currentUser.id,
+          legacySupervisorUserId: currentUser.id,
           siteId: worker.siteId,
         },
       });
@@ -473,10 +473,10 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site
+      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
       const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId: currentUser.id,
+          legacySupervisorUserId: currentUser.id,
           siteId: existingWorker.siteId,
         },
       });
@@ -698,10 +698,10 @@ export async function deleteWorker(workerId: string) {
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site
+      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
       const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId: currentUser.id,
+          legacySupervisorUserId: currentUser.id,
           siteId: workerToDelete.siteId,
         },
       });
@@ -803,10 +803,10 @@ export async function toggleWorkerStatus(workerId: string) {
         };
       }
     } else if (currentUser.role === 'SUPERVISOR') {
-      // Check if supervisor has access to this worker's site
+      // Check if supervisor has access to this worker's site (using legacySupervisorUserId for User.id)
       const supervisorSite = await prisma.supervisorSite.findFirst({
         where: {
-          supervisorId: currentUser.id,
+          legacySupervisorUserId: currentUser.id,
           siteId: worker.siteId,
         },
       });
@@ -942,23 +942,25 @@ export async function getWorkerStats() {
 
     const where: any = {};
 
-    // Apply role-based filtering
-    const userCorps = getUserCorporations(currentUser);
-    if (userCorps !== 'all') {
-      where.site = {
-        corporationId: { in: userCorps },
-      };
-    }
+    // Get user corporations (for later use in site filtering)
+    const userCorps = currentUser.role === 'SUPERVISOR' ? null : getUserCorporations(currentUser);
 
-    // Additional SUPERVISOR filtering
+    // Apply role-based filtering
     if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can only see stats for their assigned sites
+      // SUPERVISOR: Filter by specific assigned sites (using legacySupervisorUserId for User.id)
       const supervisorSites = await prisma.supervisorSite.findMany({
-        where: { supervisorId: currentUser.id },
+        where: { legacySupervisorUserId: currentUser.id },
         select: { siteId: true },
       });
       const siteIds = supervisorSites.map(ss => ss.siteId);
       where.siteId = { in: siteIds };
+    } else {
+      // MANAGER/AREA_MANAGER: Filter by corporation
+      if (userCorps !== 'all') {
+        where.site = {
+          corporationId: { in: userCorps },
+        };
+      }
     }
 
     const [
@@ -1000,7 +1002,7 @@ export async function getWorkerStats() {
         },
       }),
       prisma.site.findMany({
-        where: userCorps !== 'all'
+        where: userCorps && userCorps !== 'all'
           ? { corporationId: { in: userCorps } }
           : {},
         select: {
