@@ -14,6 +14,8 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Autocomplete,
+  Chip,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -37,12 +39,19 @@ type Corporation = {
   code: string;
 };
 
+type Site = {
+  id: string;
+  name: string;
+  corporationId: string;
+};
+
 type UserModalProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   user?: User | null;
   corporations: Corporation[];
+  sites?: Site[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
   currentUserCorporationId?: string | null;
 };
@@ -55,6 +64,7 @@ type FormData = {
   role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
   corporationId: string;
   regionName: string; // For Area Manager
+  siteIds: string[]; // For Supervisor - multiple sites
 };
 
 export default function UserModal({
@@ -63,6 +73,7 @@ export default function UserModal({
   onSuccess,
   user,
   corporations,
+  sites = [],
   currentUserRole,
   currentUserCorporationId,
 }: UserModalProps) {
@@ -79,6 +90,7 @@ export default function UserModal({
     role: user?.role || 'SUPERVISOR',
     corporationId: user?.corporationId || currentUserCorporationId || '',
     regionName: user?.regionName || '',
+    siteIds: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -95,6 +107,7 @@ export default function UserModal({
         role: user.role,
         corporationId: user.corporationId || currentUserCorporationId || '',
         regionName: user.regionName || '',
+        siteIds: [],
       });
     } else {
       setFormData({
@@ -105,6 +118,7 @@ export default function UserModal({
         role: 'SUPERVISOR',
         corporationId: currentUserCorporationId || '',
         regionName: '',
+        siteIds: [],
       });
     }
     setError(null);
@@ -164,6 +178,12 @@ export default function UserModal({
       !formData.corporationId
     ) {
       setError('יש לבחור תאגיד עבור מנהל או מפקח');
+      return false;
+    }
+
+    // Sites required for SUPERVISOR
+    if (formData.role === 'SUPERVISOR' && formData.siteIds.length === 0) {
+      setError('יש לבחור לפחות אתר אחד עבור מפקח');
       return false;
     }
 
@@ -261,11 +281,11 @@ export default function UserModal({
           alignItems: 'center',
           borderBottom: `1px solid ${colors.neutral[200]}`,
           pb: 2,
+          fontWeight: 600,
+          color: colors.neutral[800],
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-          {isEdit ? t('editUser') : t('createUser')}
-        </Typography>
+        {isEdit ? t('editUser') : t('createUser')}
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -409,6 +429,126 @@ export default function UserModal({
                 ))
               )}
             </TextField>
+          )}
+
+          {/* Sites (for SUPERVISOR only) */}
+          {formData.role === 'SUPERVISOR' && formData.corporationId && (
+            <Box sx={{ direction: 'rtl' }}>
+              <Autocomplete
+                multiple
+                options={sites.filter((site) => site.corporationId === formData.corporationId)}
+                getOptionLabel={(option) => option.name}
+                value={sites.filter((site) => formData.siteIds.includes(site.id))}
+                onChange={(_, newValue) => {
+                  console.log('Autocomplete onChange called. New value:', newValue);
+                  console.log('Site IDs:', newValue.map((site) => site.id));
+                  setFormData((prev) => ({
+                    ...prev,
+                    siteIds: newValue.map((site) => site.id),
+                  }));
+                  setError(null);
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={loading}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="אתרים"
+                    required
+                    helperText="בחר את האתרים שהמפקח יהיה אחראי עליהם"
+                    inputProps={{
+                      ...params.inputProps,
+                      dir: 'rtl',
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: borderRadius.md,
+                        flexDirection: 'row-reverse',
+                        paddingRight: '14px',
+                      },
+                      '& .MuiInputLabel-root': {
+                        right: 0,
+                        left: 'auto',
+                        transformOrigin: 'top right',
+                        '&.MuiInputLabel-shrink': {
+                          right: 0,
+                          left: 'auto',
+                        },
+                      },
+                      '& .MuiAutocomplete-endAdornment': {
+                        right: 'auto',
+                        left: '9px',
+                      },
+                    }}
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const handleDelete = (event: any) => {
+                      console.log('🔴 CHIP ONDELETE FIRED!', option.name);
+                      event.stopPropagation();
+                      event.preventDefault();
+                      const newSiteIds = formData.siteIds.filter(id => id !== option.id);
+                      console.log('Removing ID:', option.id);
+                      console.log('New site IDs:', newSiteIds);
+                      setFormData((prev) => ({
+                        ...prev,
+                        siteIds: newSiteIds,
+                      }));
+                    };
+
+                    return (
+                      <Chip
+                        key={option.id}
+                        label={option.name}
+                        onDelete={handleDelete}
+                        deleteIcon={
+                          <CloseIcon
+                            onClick={(e) => {
+                              console.log('🟢 DELETE ICON CLICKED!');
+                              handleDelete(e);
+                            }}
+                            sx={{
+                              fontSize: 18,
+                              cursor: 'pointer !important',
+                              pointerEvents: 'all !important',
+                            }}
+                          />
+                        }
+                        sx={{
+                          backgroundColor: colors.neutral[100],
+                          color: colors.neutral[900],
+                          fontWeight: 600,
+                          margin: '2px',
+                          border: `1px solid ${colors.neutral[300]}`,
+                          '& .MuiChip-deleteIcon': {
+                            color: colors.neutral[600],
+                            marginRight: '5px',
+                            marginLeft: '-6px',
+                            pointerEvents: 'all !important',
+                            '&:hover': {
+                              color: colors.neutral[900],
+                              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                            },
+                          },
+                        }}
+                        data-testid={`site-chip-${option.id}`}
+                      />
+                    );
+                  })
+                }
+                sx={{
+                  '& .MuiAutocomplete-inputRoot': {
+                    flexDirection: 'row-reverse',
+                    gap: '4px',
+                  },
+                  '& .MuiAutocomplete-tag': {
+                    margin: '2px',
+                  },
+                }}
+                data-testid="sites-autocomplete"
+              />
+            </Box>
           )}
         </Box>
       </DialogContent>

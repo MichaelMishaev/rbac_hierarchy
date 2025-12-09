@@ -131,12 +131,12 @@ export default function CorporationModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <BusinessIcon sx={{ fontSize: 28, color: 'primary.main' }} />
-          <Typography variant="h5" component="span" sx={{ fontWeight: 700 }}>
+          <Box component="span">
             {mode === 'create' ? t('createTitle') : t('editTitle')}
-          </Typography>
+          </Box>
         </Box>
       </DialogTitle>
 

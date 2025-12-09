@@ -66,13 +66,20 @@ type Corporation = {
   code: string;
 };
 
+type Site = {
+  id: string;
+  name: string;
+  corporationId: string;
+};
+
 type UsersClientProps = {
   users: User[];
   corporations: Corporation[];
+  sites: Site[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
 };
 
-export default function UsersClient({ users, corporations, currentUserRole }: UsersClientProps) {
+export default function UsersClient({ users, corporations, sites, currentUserRole }: UsersClientProps) {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -147,6 +154,27 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
 
   const getRoleLabel = (role: string) => {
     return t(role.toLowerCase() as any);
+  };
+
+  // Get corporation display for user
+  const getCorporationDisplay = (user: User) => {
+    if (user.role === 'SUPERADMIN') {
+      return 'כל התאגידים';
+    }
+
+    if (user.role === 'AREA_MANAGER' && user.areaManager) {
+      return user.areaManager.regionName || 'כל התאגידים';
+    }
+
+    if (user.role === 'MANAGER' && user.managerOf && user.managerOf.length > 0) {
+      return user.managerOf.map(m => m.corporation.name).join(', ');
+    }
+
+    if (user.role === 'SUPERVISOR' && user.supervisorOf && user.supervisorOf.length > 0) {
+      return user.supervisorOf.map(s => s.corporation.name).join(', ');
+    }
+
+    return '-';
   };
 
   return (
@@ -312,8 +340,7 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
                   {/* Corporation */}
                   <TableCell>
                     <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                      {/* TODO: Display from managerOf/supervisorOf/areaManager */}
-                      {'-'}
+                      {getCorporationDisplay(user)}
                     </Typography>
                   </TableCell>
 
@@ -372,6 +399,7 @@ export default function UsersClient({ users, corporations, currentUserRole }: Us
         onSuccess={handleUserModalSuccess}
         user={editingUser}
         corporations={corporations}
+        sites={sites}
         currentUserRole={currentUserRole}
         currentUserCorporationId={currentUserCorporationId}
       />

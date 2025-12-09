@@ -12,7 +12,14 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:seed:prod": "tsx prisma/seed-production.ts"
+    "db:seed:prod": "tsx prisma/seed-production.ts",
+    "db:check-integrity": "tsx scripts/check-worker-supervisor-integrity.ts",
+    "db:fix-integrity": "tsx scripts/check-worker-supervisor-integrity.ts --fix",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:worker-supervisor": "tsx tests/integration/worker-supervisor/run-all-tests.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -28,6 +35,7 @@
     "@types/leaflet.markercluster": "^1.5.6",
     "bcryptjs": "^2.4.3",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "framer-motion": "^11.18.2",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
@@ -47,6 +55,7 @@
     "recharts": "^3.5.1",
     "stylis-plugin-rtl": "^2.1.1",
     "web-push": "^3.6.7",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { listUsers } from '@/app/actions/users';
 import { listCorporations } from '@/app/actions/corporations';
+import { listSites } from '@/app/actions/sites';
 import UsersClient from '@/app/components/users/UsersClient';
 
 export default async function UsersPage() {
@@ -11,10 +12,11 @@ export default async function UsersPage() {
     redirect('/login');
   }
 
-  // Fetch users and corporations
-  const [usersResult, corporationsResult] = await Promise.all([
+  // Fetch users, corporations, and sites
+  const [usersResult, corporationsResult, sitesResult] = await Promise.all([
     listUsers(),
     listCorporations(),
+    listSites(),
   ]);
 
   if (!usersResult.success) {
@@ -29,6 +31,7 @@ export default async function UsersPage() {
     <UsersClient
       users={usersResult.users}
       corporations={corporationsResult.success ? corporationsResult.corporations : []}
+      sites={sitesResult.success ? sitesResult.sites : []}
       currentUserRole={session.user.role as 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR'}
     />
   );

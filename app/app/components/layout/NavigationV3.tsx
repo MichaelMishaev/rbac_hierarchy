@@ -39,12 +39,14 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 import LanguageSwitcher from './LanguageSwitcher';
 import { signOut } from 'next-auth/react';
 import { useWorkerMutations } from '@/app/hooks/useWorkers';
 import { useSiteMutations } from '@/app/hooks/useSites';
 import { useDashboardMutations } from '@/app/hooks/useDashboardStats';
+import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 
 export type NavigationV3Props = {
   role: 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR';
@@ -85,12 +87,17 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
     primary: true,
     management: true,
     system: true,
+    tasks: true, // Tasks submenu for all roles
   });
 
   // Prefetch hooks
   const { prefetch: prefetchWorkers } = useWorkerMutations();
   const { prefetch: prefetchSites } = useSiteMutations();
   const { prefetch: prefetchDashboard } = useDashboardMutations();
+
+  // Fetch unread task count for badge
+  const { data: unreadData } = useUnreadTaskCount();
+  const unreadCount = unreadData?.unread_count || 0;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -124,8 +131,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
       label: t('groupPrimary'),
       items: [
         { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
-        { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
-        { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+        { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
         { path: '/map', label: t('map'), icon: <MapIcon /> },
       ],
     },
@@ -148,11 +154,16 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
     },
   ];
 
+  // Tasks submenu (shared across all roles)
+  const tasksSubmenu: NavItem[] = [
+    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon />, badge: unreadCount },
+    { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+  ];
+
   // Flat navigation for Manager (fewer items, no grouping needed)
   const managerItems: NavItem[] = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
-    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
-    { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+    { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
     { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
     { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
     { path: '/users', label: t('users'), icon: <PeopleIcon /> },
@@ -161,15 +172,17 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
   // Minimal navigation for Supervisor
   const supervisorItems: NavItem[] = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
-    { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
+    { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
     { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
   ];
 
   // Remove locale from pathname for comparison
   const currentPath = pathname.replace(/^\/(he|en)/, '') || '/';
 
-  const renderNavItem = (item: NavItem, closeDrawerOnClick = false) => {
+  const renderNavItem = (item: NavItem, closeDrawerOnClick = false, isSubItem = false) => {
     const isActive = currentPath === item.path;
+    const isTaskInbox = item.path === '/tasks/inbox';
+    const hasUnreadTasks = isTaskInbox && item.badge && item.badge > 0;
 
     return (
       <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
@@ -189,6 +202,10 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
               direction: isRTL ? 'rtl' : 'ltr',
               py: 1.2,
               px: 2,
+              ...(isSubItem && {
+                px: 3,
+                py: 1,
+              }),
               transition: 'all 0.2s ease',
               '&:hover': {
                 backgroundColor: isActive ? `${colors.primary}15` : colors.neutral[50],
@@ -203,7 +220,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
             <ListItemText
               primary={item.label}
               primaryTypographyProps={{
-                fontSize: '14px',
+                fontSize: isSubItem ? '13px' : '14px',
                 fontWeight: isActive ? 700 : 500,
                 color: isActive ? colors.primary.main : colors.neutral[700],
                 textAlign: isRTL ? 'right' : 'left',
@@ -228,6 +245,10 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
                       fontWeight: 700,
                       minWidth: '18px',
                       height: '18px',
+                      ...(hasUnreadTasks && {
+                        animation: 'badge-pulse 2s ease-in-out infinite',
+                        boxShadow: `0 0 0 0 ${colors.error}`,
+                      }),
                     },
                   }}
                 >
@@ -243,8 +264,102 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
     );
   };
 
+  // Render tasks submenu with collapsible parent
+  const renderTasksSubmenu = (closeDrawerOnClick = false) => {
+    const hasTasksActive = currentPath.startsWith('/tasks');
+    const totalTaskBadges = unreadCount;
+
+    return (
+      <Box sx={{ mb: 1 }}>
+        {/* Parent Tasks Button */}
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => handleSectionToggle('tasks')}
+            sx={{
+              borderRadius: borderRadius.md,
+              backgroundColor: hasTasksActive ? `${colors.primary}05` : 'transparent',
+              border: hasTasksActive ? `1px solid ${colors.primary}30` : '1px solid transparent',
+              direction: isRTL ? 'rtl' : 'ltr',
+              py: 1.2,
+              px: 2,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: hasTasksActive ? `${colors.primary}10` : colors.neutral[50],
+              },
+            }}
+          >
+            <ListItemText
+              primary="משימות"
+              primaryTypographyProps={{
+                fontSize: '14px',
+                fontWeight: hasTasksActive ? 700 : 600,
+                color: hasTasksActive ? colors.primary.main : colors.neutral[700],
+                textAlign: isRTL ? 'right' : 'left',
+              }}
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {totalTaskBadges > 0 && (
+                <Badge
+                  badgeContent={totalTaskBadges}
+                  color="error"
+                  max={99}
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      position: 'static',
+                      transform: 'none',
+                    },
+                  }}
+                />
+              )}
+              <ListItemIcon
+                sx={{
+                  minWidth: 'auto',
+                  color: hasTasksActive ? colors.primary.main : colors.neutral[600],
+                  marginLeft: isRTL ? 0 : 0,
+                  marginRight: isRTL ? 0 : 0,
+                }}
+              >
+                <AssignmentIcon />
+              </ListItemIcon>
+              <IconButton
+                size="small"
+                sx={{
+                  p: 0,
+                  marginLeft: isRTL ? 'auto' : 0,
+                  marginRight: isRTL ? 0 : 'auto',
+                }}
+              >
+                {expandedSections['tasks'] ? (
+                  <ExpandLessIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
+                ) : (
+                  <ExpandMoreIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
+                )}
+              </IconButton>
+            </Box>
+          </ListItemButton>
+        </ListItem>
+
+        {/* Submenu Items */}
+        <Collapse in={expandedSections['tasks']} timeout="auto">
+          <List sx={{ pt: 0.5, pb: 0 }}>
+            {tasksSubmenu.map((item) => renderNavItem(item, closeDrawerOnClick, true))}
+          </List>
+        </Collapse>
+      </Box>
+    );
+  };
+
   const renderGroupedNav = (groups: NavGroup[], closeDrawerOnClick = false) => (
     <>
+      {/* Tasks submenu at the very top */}
+      <Box sx={{ mb: 2, px: 0 }}>
+        {renderTasksSubmenu(closeDrawerOnClick)}
+      </Box>
+
+      <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
+
       {groups.map((group, groupIndex) => (
         <Box key={group.id} sx={{ mb: 2 }}>
           {/* Section Header */}
@@ -309,6 +424,10 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
 
   const renderFlatNav = (items: NavItem[], closeDrawerOnClick = false) => (
     <List sx={{ py: 1 }}>
+      {/* Tasks submenu at the top */}
+      {renderTasksSubmenu(closeDrawerOnClick)}
+
+      {/* Other navigation items */}
       {items.map((item) => renderNavItem(item, closeDrawerOnClick))}
     </List>
   );
@@ -455,6 +574,21 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
 
   return (
     <>
+      {/* Global CSS for badge pulse animation */}
+      <style jsx global>{`
+        @keyframes badge-pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+          }
+          70% {
+            box-shadow: 0 0 0 6px rgba(244, 67, 54, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+          }
+        }
+      `}</style>
+
       {/* Mobile Hamburger Button */}
       {isMobile && (
         <Fade in>

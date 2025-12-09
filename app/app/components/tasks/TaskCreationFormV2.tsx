@@ -299,7 +299,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                 size="medium"
                 onClick={() => {
                   toast.dismiss(toastInstance.id);
-                  router.push('/he/tasks');
+                  router.push('/he/tasks/inbox');
                 }}
                 sx={{
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',

@@ -79,6 +79,7 @@ export async function GET() {
                     id: true,
                     fullName: true,
                     position: true,
+                    supervisorId: true, // CRITICAL: Include supervisorId for hierarchy
                   },
                 },
                 supervisorAssignments: {
@@ -166,21 +167,69 @@ export async function GET() {
                 ]
               : []),
             // Sites branch
-            ...corp.sites.map((site: any) => ({
-              id: site.id,
-              name: site.name,
-              type: 'site' as const,
-              count: {
-                workers: site.workers?.length || 0,
-                supervisors: site.supervisorAssignments?.length || 0,
-              },
-              children: (site.workers || []).map((worker: any) => ({
-                id: worker.id,
-                name: `${worker.fullName} - ${worker.position}`,
-                type: 'worker' as const,
-                count: {},
-              })),
-            })),
+            ...corp.sites.map((site: any) => {
+              const workers = site.workers || [];
+              const supervisorAssignments = site.supervisorAssignments || [];
+              const hasSupervisors = supervisorAssignments.length > 0;
+
+              // Build supervisor nodes with their assigned workers as children
+              const supervisorNodes = supervisorAssignments.map((assignment: any) => {
+                const supervisorId = assignment.supervisor.id;
+
+                // Find all workers assigned to this supervisor
+                const assignedWorkers = workers.filter(
+                  (w: any) => w.supervisorId === supervisorId
+                );
+
+                return {
+                  id: `supervisor-${supervisorId}-site-${site.id}`,
+                  name: `${assignment.supervisor.user.fullName} - ${assignment.supervisor.title}`,
+                  type: 'supervisor' as const,
+                  count: {
+                    workers: assignedWorkers.length,
+                  },
+                  children: assignedWorkers.map((worker: any) => ({
+                    id: worker.id,
+                    name: `${worker.fullName} - ${worker.position}`,
+                    type: 'worker' as const,
+                    count: {},
+                  })),
+                };
+              });
+
+              // Find orphan workers (not assigned to any supervisor)
+              const orphanWorkers = workers
+                .filter((w: any) => !w.supervisorId)
+                .map((worker: any) => ({
+                  id: worker.id,
+                  name: `${worker.fullName} - ${worker.position}`,
+                  type: 'worker' as const,
+                  count: {},
+                  // CRITICAL: Flag as error if site has supervisors but worker has none
+                  hasError: hasSupervisors,
+                  errorMessage: hasSupervisors ? 'Worker not assigned to supervisor (site has supervisors)' : undefined,
+                }));
+
+              return {
+                id: site.id,
+                name: site.name,
+                type: 'site' as const,
+                count: {
+                  workers: workers.length,
+                  supervisors: supervisorAssignments.length,
+                  orphanWorkers: orphanWorkers.length,
+                },
+                // CRITICAL: Flag site as having data integrity issue if orphan workers exist with supervisors
+                hasError: hasSupervisors && orphanWorkers.length > 0,
+                errorMessage: hasSupervisors && orphanWorkers.length > 0
+                  ? `${orphanWorkers.length} worker(s) not assigned to supervisor`
+                  : undefined,
+                children: [
+                  ...supervisorNodes,  // Supervisors with their workers as children
+                  ...orphanWorkers,    // Unassigned workers appear at site level
+                ],
+              };
+            }),
           ],
         })),
       })),

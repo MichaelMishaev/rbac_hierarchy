@@ -512,7 +512,14 @@ export default function TaskInbox() {
               )}
 
               {/* Expand Icon */}
-              <IconButton size="small" sx={{ color: colors.neutral[600] }}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedTask(isExpanded ? null : task.task_id);
+                }}
+                sx={{ color: colors.neutral[600] }}
+              >
                 {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
               </IconButton>
             </Stack>
@@ -568,33 +575,43 @@ export default function TaskInbox() {
                       נמענים ({task.recipients.length}):
                     </Typography>
                     <Stack spacing={0.5}>
-                      {task.recipients.slice(0, isExpanded ? undefined : 3).map((recipient) => (
-                        <Box key={recipient.user_id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip
-                            label={recipient.user_name}
-                            size="small"
-                            sx={{
-                              fontSize: '0.7rem',
-                              height: 20,
-                            }}
-                          />
-                          <Chip
-                            label={recipient.status === 'acknowledged' ? 'אושר' : recipient.status === 'read' ? 'נקרא' : 'לא נקרא'}
-                            size="small"
-                            color={
-                              recipient.status === 'acknowledged'
-                                ? 'success'
-                                : recipient.status === 'read'
-                                ? 'warning'
-                                : 'default'
-                            }
-                            sx={{
-                              fontSize: '0.65rem',
-                              height: 18,
-                            }}
-                          />
-                        </Box>
-                      ))}
+                      {task.recipients.slice(0, isExpanded ? undefined : 3).map((recipient) => {
+                        const isAcknowledged = recipient.status === 'acknowledged';
+                        const isRead = recipient.status === 'read';
+                        const isUnread = recipient.status === 'unread';
+
+                        return (
+                          <Box key={recipient.user_id} sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                            <Chip
+                              label={isAcknowledged ? 'אושר' : isRead ? 'נקרא' : 'לא נקרא'}
+                              size="small"
+                              sx={{
+                                fontSize: '0.65rem',
+                                height: 20,
+                                fontWeight: 600,
+                                backgroundColor: isAcknowledged
+                                  ? colors.success
+                                  : isRead
+                                  ? colors.warning
+                                  : colors.error,
+                                color: '#fff',
+                                border: 'none',
+                              }}
+                            />
+                            <Chip
+                              label={recipient.user_name}
+                              size="small"
+                              sx={{
+                                fontSize: '0.7rem',
+                                height: 20,
+                                backgroundColor: colors.neutral[100],
+                                color: colors.neutral[800],
+                                fontWeight: 500,
+                              }}
+                            />
+                          </Box>
+                        );
+                      })}
                       {!isExpanded && task.recipients.length > 3 && (
                         <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
                           ועוד {task.recipients.length - 3}...

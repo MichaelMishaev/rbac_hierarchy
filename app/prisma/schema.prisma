@@ -37,15 +37,17 @@ model User {
   lastLoginAt DateTime? @map("last_login_at")
 
   // Relations
-  areaManager       AreaManager?         @relation("AreaManagerUser")
-  managerOf         CorporationManager[]
-  supervisorOf      Supervisor[] // v1.4: Renamed from SiteManager
-  supervisorSites   SupervisorSite[]     @relation("SupervisorAssignments")
-  invitationsSent   Invitation[]         @relation("InvitationCreator")
-  tokens            UserToken[]          @relation("UserTokens")
-  tasksSent         Task[]               @relation("TasksSent")
-  tasksReceived     TaskAssignment[]     @relation("TasksReceived")
-  pushSubscriptions PushSubscription[]   @relation("PushSubscriptions")
+  areaManager            AreaManager?         @relation("AreaManagerUser")
+  managerOf              CorporationManager[]
+  supervisorOf           Supervisor[] // v1.4: Renamed from SiteManager
+  supervisorSites        SupervisorSite[]     @relation("SupervisorAssignments")
+  invitationsSent        Invitation[]         @relation("InvitationCreator")
+  tokens                 UserToken[]          @relation("UserTokens")
+  tasksSent              Task[]               @relation("TasksSent")
+  tasksReceived          TaskAssignment[]     @relation("TasksReceived")
+  pushSubscriptions      PushSubscription[]   @relation("PushSubscriptions")
+  attendanceCheckedIn    AttendanceRecord[]   @relation("AttendanceCheckedInBy")
+  attendanceLastEdited   AttendanceRecord[]   @relation("AttendanceLastEditedBy")
 
   @@index([email])
   @@index([isActive])
@@ -155,11 +157,12 @@ model Corporation {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  managers    CorporationManager[]
-  supervisors Supervisor[] // v1.4: Renamed from SiteManager
-  sites       Site[]
-  invitations Invitation[]
-  workers     Worker[]
+  managers          CorporationManager[]
+  supervisors       Supervisor[] // v1.4: Renamed from SiteManager
+  sites             Site[]
+  invitations       Invitation[]
+  workers           Worker[]
+  attendanceRecords AttendanceRecord[]
 
   @@index([code])
   @@index([isActive])
@@ -273,6 +276,7 @@ model Site {
   // Relations
   supervisorAssignments SupervisorSite[]
   workers               Worker[]
+  attendanceRecords     AttendanceRecord[]
 
   @@unique([id, corporationId]) // v1.4 compliance: composite FK support
   @@index([corporationId])
@@ -354,6 +358,9 @@ model Worker {
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  attendanceRecords AttendanceRecord[]
 
   // v1.4: Unique constraint on (site_id, full_name, phone)
   @@unique([siteId, fullName, phone])
@@ -537,4 +544,54 @@ model PushSubscription {
   @@index([userId])
   @@index([lastUsedAt])
   @@map("push_subscriptions")
+}
+
+// ============================================
+// ATTENDANCE RECORDS TABLE (Worker Check-in System)
+// ============================================
+model AttendanceRecord {
+  id String @id @default(uuid())
+
+  // Relations (with RLS enforcement)
+  workerId String @map("worker_id")
+  worker   Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  corporationId String      @map("corporation_id")
+  corporation   Corporation @relation(fields: [corporationId], references: [id], onDelete: Cascade)
+
+  // Attendance data
+  date        DateTime          @db.Date // Which day (2025-12-09)
+  checkedInAt DateTime?         @map("checked_in_at") @db.Timestamptz // Exact timestamp (2025-12-09T07:15:00+02:00)
+  status      AttendanceStatus  @default(PRESENT)
+
+  // Audit trail
+  checkedInById String @map("checked_in_by_id")
+  checkedInBy   User   @relation("AttendanceCheckedInBy", fields: [checkedInById], references: [id])
+  notes         String? @db.Text // Optional supervisor notes
+
+  // Edit tracking
+  lastEditedById String?   @map("last_edited_by_id")
+  lastEditedBy   User?     @relation("AttendanceLastEditedBy", fields: [lastEditedById], references: [id])
+  lastEditedAt   DateTime? @map("last_edited_at") @db.Timestamptz
+  editReason     String?   @map("edit_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([workerId, date]) // One record per worker per day
+  @@index([siteId, date]) // Fast lookup: all workers at site on date
+  @@index([corporationId, date]) // Multi-tenant isolation
+  @@index([date]) // Fast lookup: all attendance on date
+  @@index([lastEditedAt]) // For audit queries
+  @@map("attendance_records")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  NOT_PRESENT
+
+  @@map("attendance_status")
 }

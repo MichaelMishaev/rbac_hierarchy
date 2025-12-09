@@ -294,6 +294,45 @@ export default function LoginPage() {
             </Stack>
           </Box>
 
+          {/* Area Manager */}
+          <Box
+            onClick={() => quickLogin('regional@rbac.shop', 'area123', 'מנהל אזורי')}
+            sx={{
+              p: 2,
+              borderRadius: borderRadius.lg,
+              background: colors.pastel.orangeLight,
+              border: `2px solid ${colors.pastel.orange}40`,
+              cursor: 'pointer',
+              transition: 'all 250ms ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: shadows.glowOrange,
+                borderColor: colors.pastel.orange,
+              },
+            }}
+          >
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: colors.pastel.orange,
+                  fontWeight: 700,
+                }}
+              >
+                AM
+              </Avatar>
+              <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
+                <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
+                  מנהל אזורי - יוסי כהן
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
+                  regional@rbac.shop
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
           {/* Manager - Electra Tech */}
           <Box
             onClick={() => quickLogin('david.cohen@electra-tech.co.il', 'manager123', 'מנהל')}

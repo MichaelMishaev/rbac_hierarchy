@@ -168,12 +168,12 @@ export default function SpamPreventionModalV2({
               border: '1px solid rgba(255,255,255,0.3)',
             }}
           >
-            <PeopleIcon sx={{ fontSize: 28 }} />
+            <PeopleIcon sx={{ fontSize: 28, color: '#fff' }} />
             <Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1, color: '#fff' }}>
                 {totalRecipients}
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+              <Typography variant="caption" sx={{ opacity: 0.9, color: '#fff' }}>
                 נמענים
               </Typography>
             </Box>

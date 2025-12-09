@@ -70,6 +70,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const treeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const isUpdatingRef = useRef(false); // Prevent infinite loops
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
   const labels = useMemo(() => ({
@@ -218,7 +219,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
   // Initialize center translation and measure dimensions
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !isUpdatingRef.current) {
       const updateDimensions = () => {
         // Get the container width (accounting for padding/margins)
         const containerWidth = Math.min(window.innerWidth - 100, 1400); // Max width with padding
@@ -226,7 +227,9 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
         setDimensions((prev) => {
           // Only update if dimensions actually changed (prevent infinite loops)
-          if (prev.width !== containerWidth || prev.height !== containerHeight) {
+          const widthChanged = Math.abs(prev.width - containerWidth) > 5;
+          const heightChanged = Math.abs(prev.height - containerHeight) > 5;
+          if (widthChanged || heightChanged) {
             return { width: containerWidth, height: containerHeight };
           }
           return prev;
@@ -236,8 +239,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         if (!searchTerm && !isFullscreen) {
           setTranslate((prev) => {
             const newTranslate = { x: containerWidth / 2, y: 80 };
-            // Prevent unnecessary updates
-            if (Math.abs(prev.x - newTranslate.x) > 10 || Math.abs(prev.y - newTranslate.y) > 10) {
+            // Prevent unnecessary updates with larger threshold
+            if (Math.abs(prev.x - newTranslate.x) > 50 || Math.abs(prev.y - newTranslate.y) > 50) {
               return newTranslate;
             }
             return prev;
@@ -253,28 +256,49 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
   // Zoom controls with smooth increments
   const handleZoomIn = useCallback(() => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+
     setZoom((prev) => {
       const newZoom = Math.min(prev + 0.15, 2);
       console.log('Zooming in:', prev, '→', newZoom);
       return newZoom;
     });
+
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
   }, []);
 
   const handleZoomOut = useCallback(() => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+
     setZoom((prev) => {
       const newZoom = Math.max(prev - 0.15, 0.3);
       console.log('Zooming out:', prev, '→', newZoom);
       return newZoom;
     });
+
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
   }, []);
 
   const handleFitToScreen = useCallback(() => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+
     console.log('Resetting to default view');
     setZoom(0.9);
     setTranslate({
       x: dimensions.width > 0 ? dimensions.width / 2 : window.innerWidth / 2,
       y: 80
     });
+
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
   }, [dimensions]);
 
   // Fullscreen handler
@@ -409,6 +433,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       const nodeType = nodeDatum.attributes?.type || 'unknown';
       const nodeColor = getNodeColor(nodeType);
       const count = nodeDatum.attributes?.count || {};
+      const hasError = nodeDatum.attributes?.hasError || false;
+      const errorMessage = nodeDatum.attributes?.errorMessage;
 
       // Check if this node matches the search term by checking its name
       const isMatched = searchTerm.trim() &&
@@ -423,12 +449,16 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                 minHeight: '180px',
                 padding: '12px',
                 borderRadius: '12px',
-                background: nodeColor,
+                background: hasError ? colors.pastel.redLight : nodeColor,
                 boxShadow: isMatched
                   ? '0 0 20px 4px rgba(255, 215, 0, 0.8), 0 4px 12px rgba(0,0,0,0.15)'
+                  : hasError
+                  ? '0 0 15px 3px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(0,0,0,0.15)'
                   : '0 4px 12px rgba(0,0,0,0.15)',
                 border: isMatched
                   ? '3px solid #FFD700'
+                  : hasError
+                  ? `3px solid ${colors.error}`
                   : `2px solid ${nodeColor}`,
                 display: 'flex',
                 flexDirection: 'column',
@@ -441,15 +471,20 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
               onMouseEnter={(e) => {
                 if (!isMatched) {
                   e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
+                  e.currentTarget.style.boxShadow = hasError
+                    ? '0 0 20px 5px rgba(239, 68, 68, 0.7), 0 6px 16px rgba(0,0,0,0.2)'
+                    : '0 6px 16px rgba(0,0,0,0.2)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isMatched) {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.boxShadow = hasError
+                    ? '0 0 15px 3px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(0,0,0,0.15)'
+                    : '0 4px 12px rgba(0,0,0,0.15)';
                 }
               }}
+              title={hasError ? errorMessage : undefined}
             >
               {/* Header with icon */}
               <div
@@ -465,21 +500,22 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                     width: '32px',
                     height: '32px',
                     borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.9)',
+                    background: hasError ? colors.error : 'rgba(255,255,255,0.9)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: nodeColor,
+                    color: hasError ? '#fff' : nodeColor,
                   }}
                 >
-                  {getNodeIcon(nodeType)}
+                  {hasError ? '⚠️' : getNodeIcon(nodeType)}
                 </div>
                 {nodeDatum.children && nodeDatum.children.length > 0 && (
                   <div
                     style={{
                       marginInlineStart: 'auto',
                       fontSize: '12px',
-                      background: 'rgba(255,255,255,0.7)',
+                      background: hasError ? colors.error : 'rgba(255,255,255,0.7)',
+                      color: hasError ? '#fff' : 'inherit',
                       padding: '2px 8px',
                       borderRadius: '12px',
                       fontWeight: 600,
@@ -784,16 +820,31 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           pathFunc="step"
           zoom={zoom}
           onUpdate={(state: any) => {
-            // Sync internal zoom state with our controlled state
-            if (state?.zoom && Math.abs(state.zoom - zoom) > 0.01) {
-              setZoom(state.zoom);
-            }
-            if (state?.translate && (
-              Math.abs(state.translate.x - translate.x) > 1 ||
-              Math.abs(state.translate.y - translate.y) > 1
-            )) {
-              setTranslate(state.translate);
-            }
+            // Prevent infinite loops - only update if not already updating
+            if (isUpdatingRef.current) return;
+
+            isUpdatingRef.current = true;
+
+            // Use requestAnimationFrame to batch updates and prevent loops
+            requestAnimationFrame(() => {
+              // Sync internal zoom state with our controlled state (larger threshold)
+              if (state?.zoom && Math.abs(state.zoom - zoom) > 0.05) {
+                setZoom(state.zoom);
+              }
+
+              // Only update translate if significant change (larger threshold to prevent jitter)
+              if (state?.translate && (
+                Math.abs(state.translate.x - translate.x) > 5 ||
+                Math.abs(state.translate.y - translate.y) > 5
+              )) {
+                setTranslate(state.translate);
+              }
+
+              // Reset the updating flag after a short delay
+              setTimeout(() => {
+                isUpdatingRef.current = false;
+              }, 100);
+            });
           }}
           separation={{ siblings: 1.5, nonSiblings: 2 }}
           nodeSize={{ x: 280, y: 240 }}

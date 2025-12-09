@@ -105,26 +105,43 @@ export async function createWorker(data: CreateWorkerInput) {
       }
     }
 
-    // Determine supervisor ID
-    let supervisorId = data.supervisorId;
-    if (currentUser.role === 'SUPERVISOR') {
-      // Supervisors can only assign themselves
-      supervisorId = currentUser.id;
-    } else if (!supervisorId) {
-      // If not provided, default to current user
-      supervisorId = currentUser.id;
-    }
+    // Validate worker-supervisor assignment based on site's supervisor count
+    const { validateWorkerSupervisorAssignment } = await import('@/lib/supervisor-worker-assignment');
+    const validation = await validateWorkerSupervisorAssignment(data.siteId, data.supervisorId);
 
-    // Validate supervisor exists and has access to the site
-    const supervisor = await prisma.user.findUnique({
-      where: { id: supervisorId },
-    });
-
-    if (!supervisor || supervisor.role !== 'SUPERVISOR') {
+    if (!validation.valid) {
       return {
         success: false,
-        error: 'Invalid supervisor',
+        error: validation.error,
       };
+    }
+
+    // If supervisorId provided, validate it exists and is accessible
+    if (data.supervisorId) {
+      const supervisor = await prisma.supervisor.findUnique({
+        where: { id: data.supervisorId },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!supervisor || !supervisor.isActive) {
+        return {
+          success: false,
+          error: 'Invalid or inactive supervisor',
+        };
+      }
+
+      // Verify supervisor is assigned to this site
+      const { isSupervisorAssignedToSite } = await import('@/lib/supervisor-worker-assignment');
+      const isAssigned = await isSupervisorAssignedToSite(data.supervisorId, data.siteId);
+
+      if (!isAssigned) {
+        return {
+          success: false,
+          error: 'Supervisor is not assigned to this site',
+        };
+      }
     }
 
     // Create worker
@@ -141,7 +158,7 @@ export async function createWorker(data: CreateWorkerInput) {
         tags: data.tags ?? [],
         corporationId: site.corporationId,
         siteId: data.siteId,
-        supervisorId,
+        supervisorId: data.supervisorId || null, // Null if site has no supervisors
         isActive: data.isActive ?? true,
       },
       include: {
@@ -480,6 +497,10 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
       }
     }
 
+    // Handle site change - clear supervisorId and require reselection
+    let finalSiteId = data.siteId || existingWorker.siteId;
+    let finalSupervisorId = data.supervisorId !== undefined ? data.supervisorId : existingWorker.supervisorId;
+
     // Validate new site if being changed
     if (data.siteId && data.siteId !== existingWorker.siteId) {
       const newSite = await prisma.site.findUnique({
@@ -502,6 +523,50 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
           };
         }
       }
+
+      // CRITICAL: When moving to different site, clear supervisorId (require manual reselection)
+      if (data.supervisorId === undefined) {
+        finalSupervisorId = null;
+      }
+    }
+
+    // Validate supervisor assignment for the final site
+    const { validateWorkerSupervisorAssignment } = await import('@/lib/supervisor-worker-assignment');
+    const validation = await validateWorkerSupervisorAssignment(finalSiteId, finalSupervisorId);
+
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error,
+      };
+    }
+
+    // If changing supervisor, validate new supervisor
+    if (finalSupervisorId && finalSupervisorId !== existingWorker.supervisorId) {
+      const supervisor = await prisma.supervisor.findUnique({
+        where: { id: finalSupervisorId },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!supervisor || !supervisor.isActive) {
+        return {
+          success: false,
+          error: 'Invalid or inactive supervisor',
+        };
+      }
+
+      // Verify supervisor is assigned to the site
+      const { isSupervisorAssignedToSite } = await import('@/lib/supervisor-worker-assignment');
+      const isAssigned = await isSupervisorAssignedToSite(finalSupervisorId, finalSiteId);
+
+      if (!isAssigned) {
+        return {
+          success: false,
+          error: 'Supervisor is not assigned to this site',
+        };
+      }
     }
 
     // Update worker
@@ -517,8 +582,8 @@ export async function updateWorker(workerId: string, data: UpdateWorkerInput) {
         endDate: data.endDate,
         notes: data.notes,
         tags: data.tags,
-        siteId: data.siteId,
-        supervisorId: data.supervisorId,
+        siteId: finalSiteId !== existingWorker.siteId ? finalSiteId : undefined,
+        supervisorId: finalSupervisorId !== existingWorker.supervisorId ? finalSupervisorId : undefined,
         isActive: data.isActive,
       },
       include: {

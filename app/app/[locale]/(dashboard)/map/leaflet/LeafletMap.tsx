@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { Box, Paper, Typography, Chip, IconButton } from '@mui/material';
+import { Box, Paper, Typography, Chip, IconButton, Tooltip, Fade } from '@mui/material';
 import { Close as CloseIcon, LocationOn, Person, SupervisorAccount } from '@mui/icons-material';
 import { colors } from '@/lib/design-system';
 
@@ -113,6 +113,10 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
       marker.openPopup();
     }
   }, [selectedSiteId, sites]);
+
+  // State to track hover tooltip
+  const [hoveredSite, setHoveredSite] = useState<Site | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!map.current || !markersLayer.current) return;
@@ -225,9 +229,30 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
         });
       });
 
+      // Add hover handlers for tooltip
+      marker.on('mouseover', (e: any) => {
+        setHoveredSite(site);
+        const markerElement = e.target.getElement();
+        if (markerElement) {
+          const rect = markerElement.getBoundingClientRect();
+          setHoverPosition({
+            x: rect.left + rect.width / 2,
+            y: rect.top,
+          });
+        }
+      });
+
+      marker.on('mouseout', () => {
+        setHoveredSite(null);
+        setHoverPosition(null);
+      });
+
       // Add to cluster layer
       markersLayer.current?.addLayer(marker);
     });
+
+    // Store corporation colors for legend
+    (window as any).__corpColors = corpColors;
 
     // Fit bounds to show all markers
     if (sites.length > 0 && markersLayer.current.getBounds().isValid()) {
@@ -236,6 +261,32 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
         maxZoom: 12,
       });
     }
+  }, [sites]);
+
+  // Get unique corporations with their colors for legend
+  const corporationsWithColors = React.useMemo(() => {
+    const corpMap = new Map<string, { id: string; name: string; color: string }>();
+    const colorPalette = [
+      colors.primary.main,
+      colors.status.green,
+      colors.pastel.purple,
+      colors.pastel.orange,
+      colors.pastel.pink,
+      colors.pastel.blue,
+    ];
+
+    sites.forEach((site) => {
+      if (!corpMap.has(site.corporation.id)) {
+        const colorIndex = corpMap.size % colorPalette.length;
+        corpMap.set(site.corporation.id, {
+          id: site.corporation.id,
+          name: site.corporation.name,
+          color: colorPalette[colorIndex],
+        });
+      }
+    });
+
+    return Array.from(corpMap.values());
   }, [sites]);
 
   return (
@@ -348,7 +399,77 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
         </Paper>
       )}
 
-      {/* Legend - Modern 2025 Design */}
+      {/* Hover Tooltip */}
+      {hoveredSite && hoverPosition && (
+        <Paper
+          sx={{
+            position: 'fixed',
+            left: hoverPosition.x,
+            top: hoverPosition.y - 10,
+            transform: 'translate(-50%, -100%)',
+            p: 2,
+            zIndex: 10000,
+            background: 'rgba(0, 0, 0, 0.92)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            direction: 'rtl',
+            minWidth: '220px',
+            maxWidth: '320px',
+            pointerEvents: 'none',
+            border: `2px solid ${colors.neutral[0]}`,
+            animation: 'fadeIn 0.2s ease',
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            fontWeight={700}
+            sx={{ color: colors.neutral[0], mb: 0.5 }}
+          >
+            {hoveredSite.name}
+          </Typography>
+          <Chip
+            label={hoveredSite.corporation.name}
+            size="small"
+            sx={{
+              background: colors.pastel.blue,
+              color: colors.neutral[0],
+              fontWeight: 600,
+              fontSize: '11px',
+              height: '20px',
+              mb: 1,
+            }}
+          />
+          <Box display="flex" flexDirection="column" gap={0.5}>
+            <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
+              📍 {hoveredSite.address || 'אין כתובת'}
+              {hoveredSite.city && `, ${hoveredSite.city}`}
+            </Typography>
+            <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
+              👥 {hoveredSite.workers.active} עובדים פעילים
+            </Typography>
+            {hoveredSite.supervisors.length > 0 && (
+              <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
+                👨‍💼 {hoveredSite.supervisors.length} מפקחים
+              </Typography>
+            )}
+          </Box>
+          <Typography
+            variant="caption"
+            sx={{
+              color: colors.neutral[400],
+              fontSize: '10px',
+              mt: 1,
+              display: 'block',
+              fontStyle: 'italic',
+            }}
+          >
+            לחץ לפרטים מלאים
+          </Typography>
+        </Paper>
+      )}
+
+      {/* Legend - Enhanced with Corporation Colors */}
       <Paper
         sx={{
           position: 'absolute',
@@ -361,70 +482,178 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
           borderRadius: '16px',
           boxShadow: `0 8px 24px ${colors.neutral[300]}`,
           direction: 'rtl',
-          minWidth: { xs: '180px', sm: '240px' },
-          maxWidth: { xs: '200px', sm: '260px' },
+          minWidth: { xs: '200px', sm: '260px' },
+          maxWidth: { xs: '280px', sm: '320px' },
+          maxHeight: { xs: '60vh', sm: '70vh' },
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: colors.neutral[100],
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: colors.neutral[300],
+            borderRadius: '3px',
+            '&:hover': {
+              background: colors.neutral[400],
+            },
+          },
         }}
       >
         <Typography
           variant="subtitle2"
           fontWeight={700}
-          mb={1.5}
+          mb={2}
           sx={{
-            fontSize: { xs: '13px', sm: '14px' },
+            fontSize: { xs: '14px', sm: '15px' },
             color: colors.neutral[900],
+            borderBottom: `2px solid ${colors.neutral[200]}`,
+            pb: 1,
           }}
         >
-          מקרא
+          מקרא צבעים
         </Typography>
-        <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-          <Box
-            sx={{
-              width: { xs: 14, sm: 16 },
-              height: { xs: 14, sm: 16 },
-              borderRadius: '50%',
-              background: colors.primary,
-              flexShrink: 0,
-            }}
-          />
+
+        {/* Corporation Colors */}
+        <Box mb={2}>
           <Typography
             variant="caption"
+            fontWeight={600}
             sx={{
-              fontSize: { xs: '12px', sm: '13px' },
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              fontSize: { xs: '11px', sm: '12px' },
+              color: colors.neutral[700],
+              display: 'block',
+              mb: 1,
             }}
           >
-            אתרים פעילים
+            תאגידים ({corporationsWithColors.length})
+          </Typography>
+          {corporationsWithColors.map((corp) => (
+            <Tooltip
+              key={corp.id}
+              title={`${sites.filter((s) => s.corporation.id === corp.id).length} אתרים`}
+              placement="left"
+              arrow
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={1.5}
+                mb={1}
+                sx={{
+                  p: 1,
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    background: colors.neutral[50],
+                    transform: 'translateX(-2px)',
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: { xs: 16, sm: 18 },
+                    height: { xs: 16, sm: 18 },
+                    borderRadius: '50%',
+                    background: corp.color,
+                    flexShrink: 0,
+                    boxShadow: `0 2px 6px ${corp.color}40`,
+                    border: `2px solid ${colors.neutral[0]}`,
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: { xs: '12px', sm: '13px' },
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontWeight: 500,
+                    color: colors.neutral[800],
+                  }}
+                >
+                  {corp.name}
+                </Typography>
+              </Box>
+            </Tooltip>
+          ))}
+        </Box>
+
+        {/* Instructions */}
+        <Box
+          sx={{
+            p: 1.5,
+            background: colors.pastel.blueLight,
+            borderRadius: '8px',
+            mt: 2,
+          }}
+        >
+          <Typography
+            variant="caption"
+            color={colors.neutral[700]}
+            sx={{
+              fontSize: { xs: '11px', sm: '12px' },
+              display: 'block',
+              lineHeight: 1.5,
+              mb: 0.5,
+            }}
+          >
+            💡 <strong>הוראות שימוש:</strong>
+          </Typography>
+          <Typography
+            variant="caption"
+            color={colors.neutral[600]}
+            sx={{
+              fontSize: { xs: '10px', sm: '11px' },
+              display: 'block',
+              lineHeight: 1.4,
+              mb: 0.3,
+            }}
+          >
+            • הרחף מעל סמן לתצוגה מהירה
+          </Typography>
+          <Typography
+            variant="caption"
+            color={colors.neutral[600]}
+            sx={{
+              fontSize: { xs: '10px', sm: '11px' },
+              display: 'block',
+              lineHeight: 1.4,
+              mb: 0.3,
+            }}
+          >
+            • לחץ על סמן לפרטים מלאים
+          </Typography>
+          <Typography
+            variant="caption"
+            color={colors.neutral[600]}
+            sx={{
+              fontSize: { xs: '10px', sm: '11px' },
+              display: 'block',
+              lineHeight: 1.4,
+            }}
+          >
+            • ⚡ צבירה אוטומטית בזום-אאוט
           </Typography>
         </Box>
-        <Typography
-          variant="caption"
-          color={colors.neutral[600]}
-          sx={{
-            fontSize: { xs: '11px', sm: '12px' },
-            display: 'block',
-            lineHeight: 1.4,
-          }}
-        >
-          לחץ על סמן לפרטים נוספים
-        </Typography>
-        <Typography
-          variant="caption"
-          display="block"
-          mt={1}
-          color={colors.neutral[600]}
-          sx={{
-            fontSize: { xs: '11px', sm: '12px' },
-            lineHeight: 1.4,
-          }}
-        >
-          ⚡ צבירת סמנים אוטומטית בזום-אאוט
-        </Typography>
       </Paper>
 
       {/* Global styles for Leaflet markers */}
       <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -100%) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, -100%) scale(1);
+          }
+        }
+
         .custom-leaflet-marker {
           background: transparent !important;
           border: none !important;
