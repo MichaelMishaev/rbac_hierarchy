@@ -100,7 +100,7 @@ test.describe('Worker Updates - Site Change & Supervisor Validation', () => {
 
   test('Scenario 5: Try to clear supervisorId in site WITH supervisors - REJECT', async () => {
     const result = await updateWorker(workerInSiteB.id, {
-      supervisorId: null,
+      supervisorId: undefined,
     });
 
     expect(result.success).toBe(false);

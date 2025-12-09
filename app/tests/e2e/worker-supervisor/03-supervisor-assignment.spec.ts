@@ -60,7 +60,7 @@ test.describe('Supervisor Site Assignment - Auto-Assignment Triggers', () => {
         action: 'AUTO_ASSIGN_WORKERS',
         entityId: testData.siteWithNoSupervisors.id,
       },
-      orderBy: { timestamp: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     expect(auditLog).toBeDefined();
