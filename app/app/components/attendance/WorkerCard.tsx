@@ -57,7 +57,7 @@ export default function WorkerCard({
   const workerPhone = workerData.phone;
   const workerPosition = workerData.position;
   const workerAvatar = workerData.avatarUrl;
-  const siteId = isCheckedIn ? record.siteId : (worker?.siteId || worker?.site?.id);
+  const siteId = isCheckedIn ? record.neighborhoodId : (worker?.neighborhoodId || worker?.site?.id);
   const siteName = isCheckedIn ? record.site?.name : worker?.site?.name;
 
   // Check-in data
@@ -87,8 +87,8 @@ export default function WorkerCard({
     try {
       setLoading(true);
       const result = await checkInWorker({
-        workerId,
-        siteId,
+        neighborhoodId: siteId,
+        activistId: workerId,
         notes: notes || undefined,
       });
 
@@ -117,7 +117,7 @@ export default function WorkerCard({
       setLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
       const result = await undoCheckIn({
-        workerId,
+        activistId: workerId,
         date: today,
         reason: undoReason,
       });

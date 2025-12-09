@@ -230,8 +230,8 @@ export default async function DashboardContent() {
         },
         {
           title: t('totalSites'),
-          value: stats.supervisor?.site?.name ?? 'N/A',
-          subtitle: stats.supervisor?.site?.isActive ? tCommon('active') : tCommon('inactive'),
+          value: stats.supervisor?.neighborhood?.name ?? 'N/A',
+          subtitle: stats.supervisor?.neighborhood?.isActive ? tCommon('active') : tCommon('inactive'),
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/sites`,

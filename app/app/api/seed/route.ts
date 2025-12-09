@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     console.log('✅ Area Manager created');
 
     // Create 3 corporations
-    const corp1 = await prisma.corporation.upsert({
+    const corp1 = await prisma.city.upsert({
       where: { code: 'TECH' },
       update: {},
       create: {
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const corp2 = await prisma.corporation.upsert({
+    const corp2 = await prisma.city.upsert({
       where: { code: 'BUILD' },
       update: {},
       create: {
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const corp3 = await prisma.corporation.upsert({
+    const corp3 = await prisma.city.upsert({
       where: { code: 'FOOD' },
       update: {},
       create: {
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
     console.log('✅ Managers created');
 
     // Create sites
-    const site1_1 = await prisma.site.create({
+    const site1_1 = await prisma.neighborhood.create({
       data: {
         name: 'מפעל תל אביב',
         address: 'רחוב הברזל 1',
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const site2_1 = await prisma.site.create({
+    const site2_1 = await prisma.neighborhood.create({
       data: {
         name: 'אתר בנייה - פרויקט הרצליה',
         address: 'רחוב ויצמן 10',
@@ -233,7 +233,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const site3_1 = await prisma.site.create({
+    const site3_1 = await prisma.neighborhood.create({
       data: {
         name: 'סניף דיזנגוף',
         address: 'רחוב דיזנגוף 100',
@@ -265,7 +265,7 @@ export async function POST(request: Request) {
     });
 
     // Create Supervisor record for supervisor1_1
-    const supervisorRecord1_1 = await prisma.supervisor.upsert({
+    const supervisorRecord1_1 = await prisma.activistCoordinator.upsert({
       where: {
         corporationId_userId: {
           cityId: corp1.id,
@@ -300,7 +300,7 @@ export async function POST(request: Request) {
     });
 
     // Create Supervisor record for supervisor2_1
-    const supervisorRecord2_1 = await prisma.supervisor.upsert({
+    const supervisorRecord2_1 = await prisma.activistCoordinator.upsert({
       where: {
         corporationId_userId: {
           cityId: corp2.id,
@@ -335,7 +335,7 @@ export async function POST(request: Request) {
     });
 
     // Create Supervisor record for supervisor3_1
-    const supervisorRecord3_1 = await prisma.supervisor.upsert({
+    const supervisorRecord3_1 = await prisma.activistCoordinator.upsert({
       where: {
         corporationId_userId: {
           cityId: corp3.id,
@@ -361,7 +361,7 @@ export async function POST(request: Request) {
       data: {
         cityId: corp1.id,
         activistCoordinatorId: supervisorRecord1_1.id,
-        legacySupervisorUserId: supervisor1_1.id,
+        legacyActivistCoordinatorUserId: supervisor1_1.id,
         neighborhoodId: site1_1.id,
         assignedBy: manager1.id,
       },
@@ -371,7 +371,7 @@ export async function POST(request: Request) {
       data: {
         cityId: corp2.id,
         activistCoordinatorId: supervisorRecord2_1.id,
-        legacySupervisorUserId: supervisor2_1.id,
+        legacyActivistCoordinatorUserId: supervisor2_1.id,
         neighborhoodId: site2_1.id,
         assignedBy: manager2.id,
       },
@@ -381,7 +381,7 @@ export async function POST(request: Request) {
       data: {
         cityId: corp3.id,
         activistCoordinatorId: supervisorRecord3_1.id,
-        legacySupervisorUserId: supervisor3_1.id,
+        legacyActivistCoordinatorUserId: supervisor3_1.id,
         neighborhoodId: site3_1.id,
         assignedBy: manager3.id,
       },
@@ -390,7 +390,7 @@ export async function POST(request: Request) {
     console.log('✅ Supervisors assigned to sites');
 
     // Create workers
-    await prisma.worker.create({
+    await prisma.activist.create({
       data: {
         fullName: 'יוסי אבוחצירא',
         phone: '+972-50-700-0001',
@@ -405,7 +405,7 @@ export async function POST(request: Request) {
       },
     });
 
-    await prisma.worker.create({
+    await prisma.activist.create({
       data: {
         fullName: 'דני אברהם',
         phone: '+972-50-800-0001',
@@ -420,7 +420,7 @@ export async function POST(request: Request) {
       },
     });
 
-    await prisma.worker.create({
+    await prisma.activist.create({
       data: {
         fullName: 'יאיר כהן',
         phone: '+972-50-900-0001',

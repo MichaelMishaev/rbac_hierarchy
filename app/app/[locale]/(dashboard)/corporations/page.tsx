@@ -62,9 +62,9 @@ export default async function CorporationsPage() {
       },
       _count: {
         select: {
-          managers: true,
-          supervisors: true,
-          sites: true,
+          coordinators: true,
+          activistCoordinators: true,
+          neighborhoods: true,
           invitations: true,
         },
       },

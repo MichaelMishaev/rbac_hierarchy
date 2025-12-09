@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 // TYPE DEFINITIONS
 // ============================================
 
-export type CreateSiteInput = {
+export type CreateNeighborhoodInput = {
   name: string;
   address?: string;
   city?: string;
@@ -16,11 +16,11 @@ export type CreateSiteInput = {
   phone?: string;
   email?: string;
   cityId: string;
-  activistCoordinatorId: string; // REQUIRED: Supervisor must be assigned at creation
+  activistCoordinatorId: string; // REQUIRED: ActivistCoordinator must be assigned at creation
   isActive?: boolean;
 };
 
-export type UpdateSiteInput = {
+export type UpdateNeighborhoodInput = {
   name?: string;
   address?: string;
   city?: string;
@@ -30,7 +30,7 @@ export type UpdateSiteInput = {
   isActive?: boolean;
 };
 
-export type ListSitesFilters = {
+export type ListNeighborhoodsFilters = {
   cityId?: string;
   search?: string;
   city?: string;
@@ -42,14 +42,15 @@ export type ListSitesFilters = {
 // ============================================
 
 /**
- * Create a new site
+ * Create a new neighborhood
  *
  * Permissions:
- * - SUPERADMIN: Can create sites in any corporation
- * - MANAGER: Can create sites in their corporation only
- * - SUPERVISOR: Cannot create sites
+ * - SUPERADMIN: Can create neighborhoods in any city
+ * - AREA_MANAGER: Can create neighborhoods in their cities only
+ * - CITY_COORDINATOR: Can create neighborhoods in their city only
+ * - ACTIVIST_COORDINATOR: Cannot create neighborhoods
  */
-export async function createSite(data: CreateSiteInput) {
+export async function createNeighborhood(data: CreateNeighborhoodInput) {
   try {
     // Only SUPERADMIN and MANAGER can create sites
     const currentUser = await requireManager();
@@ -57,36 +58,36 @@ export async function createSite(data: CreateSiteInput) {
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Can only create sites in corporations they have access to
-      if (!hasAccessToCorporation(currentUser, data.corporationId)) {
+      if (!hasAccessToCorporation(currentUser, data.cityId)) {
         return {
           success: false,
-          error: 'Cannot create site for different corporation',
+          error: 'Cannot create neighborhood for different corporation',
         };
       }
     }
 
     // Verify corporation exists
-    const corporation = await prisma.corporation.findUnique({
-      where: { id: data.corporationId },
+    const corporation = await prisma.city.findUnique({
+      where: { id: data.cityId },
     });
 
     if (!corporation) {
       return {
         success: false,
-        error: 'Corporation not found',
+        error: 'City not found',
       };
     }
 
     // Validate supervisor is provided
-    if (!data.supervisorId) {
+    if (!data.activistCoordinatorId) {
       return {
         success: false,
-        error: 'Supervisor is required when creating a site',
+        error: 'ActivistCoordinator is required when creating a site',
       };
     }
 
     // Verify supervisor exists and belongs to the same corporation
-    const supervisor = await prisma.supervisor.findFirst({
+    const supervisor = await prisma.activistCoordinator.findFirst({
       where: {
         id: data.activistCoordinatorId,
         cityId: data.cityId,
@@ -105,14 +106,14 @@ export async function createSite(data: CreateSiteInput) {
     if (!supervisor) {
       return {
         success: false,
-        error: 'Supervisor not found or belongs to different corporation',
+        error: 'ActivistCoordinator not found or belongs to different corporation',
       };
     }
 
     // Create site + supervisor assignment in transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create site
-      const newSite = await tx.site.create({
+      const newNeighborhood = await tx.neighborhood.create({
         data: {
           name: data.name,
           address: data.address,
@@ -123,8 +124,7 @@ export async function createSite(data: CreateSiteInput) {
           cityId: data.cityId,
           isActive: data.isActive ?? true,
         },
-        include: {
-          corporation: {
+        include: { cityRelation: {
             select: {
               id: true,
               name: true,
@@ -133,8 +133,8 @@ export async function createSite(data: CreateSiteInput) {
           },
           _count: {
             select: {
-              supervisorAssignments: true,
-              workers: true,
+              activistCoordinatorAssignments: true,
+              activists: true,
             },
           },
         },
@@ -143,50 +143,50 @@ export async function createSite(data: CreateSiteInput) {
       // 2. Create supervisor assignment
       await tx.activistCoordinatorNeighborhood.create({
         data: {
-          neighborhoodId: newSite.id,
+          neighborhoodId: newNeighborhood.id,
           activistCoordinatorId: data.activistCoordinatorId,
           cityId: data.cityId,
-          legacySupervisorUserId: supervisor.userId,
+          legacyActivistCoordinatorUserId: supervisor.userId,
           assignedBy: currentUser.id,
         },
       });
 
-      return newSite;
+      return newNeighborhood;
     });
 
-    const newSite = result;
+    const newNeighborhood = result;
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'CREATE_SITE',
+        action: 'CREATE_NEIGHBORHOOD',
         entity: 'Site',
-        entityId: newSite.id,
+        entityId: newNeighborhood.id,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
         before: undefined,
         after: {
-          id: newSite.id,
-          name: newSite.name,
-          city: newSite.city,
-          cityId: newSite.cityId,
-          isActive: newSite.isActive,
+          id: newNeighborhood.id,
+          name: newNeighborhood.name,
+          city: newNeighborhood.city,
+          cityId: newNeighborhood.cityId,
+          isActive: newNeighborhood.isActive,
           activistCoordinatorId: data.activistCoordinatorId,
           supervisorName: supervisor.user.fullName,
         },
       },
     });
 
-    revalidatePath('/sites');
+    revalidatePath('/neighborhoods');
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      site: newSite,
+      neighborhood: newNeighborhood,
     };
   } catch (error) {
-    console.error('Error creating site:', error);
+    console.error('Error creating neighborhood:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create site',
@@ -206,7 +206,7 @@ export async function createSite(data: CreateSiteInput) {
  * - MANAGER: Can see sites in their corporation only
  * - SUPERVISOR: Can see sites they are assigned to only
  */
-export async function listSites(filters: ListSitesFilters = {}) {
+export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -214,26 +214,37 @@ export async function listSites(filters: ListSitesFilters = {}) {
     const where: any = {};
 
     // Role-based filtering
-    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      // Get user's corporation IDs
-      const userCorps = currentUser.role === 'AREA_MANAGER' && currentUser.areaManager
-        ? currentUser.areaManager.corporations.map(c => c.id)
-        : currentUser.managerOf.map(m => m.corporationId);
-
-      where.corporationId = { in: userCorps };
+    if (currentUser.role === 'CITY_COORDINATOR') {
+      // City coordinators can only see neighborhoods in their city
+      const coordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        select: { cityId: true },
+      });
+      if (coordinator) {
+        where.cityId = coordinator.cityId;
+      }
+    } else if (currentUser.role === 'AREA_MANAGER') {
+      // Area managers can see neighborhoods in their cities
+      const areaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+        include: { cities: { select: { id: true } } },
+      });
+      if (areaManager) {
+        where.cityId = { in: areaManager.cities.map(c => c.id) };
+      }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Supervisors can only see sites they are assigned to (using legacySupervisorUserId for User.id)
-      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacySupervisorUserId: currentUser.id },
+      // Supervisors can only see sites they are assigned to (using legacyActivistCoordinatorUserId for User.id)
+      const activistCoordinatorAssignments = await prisma.activistCoordinatorNeighborhood.findMany({
+        where: { legacyActivistCoordinatorUserId: currentUser.id },
         select: { neighborhoodId: true },
       });
-      const siteIds = activistCoordinatorNeighborhoods.map(ss => ss.siteId);
+      const siteIds = activistCoordinatorAssignments.map(ss => ss.neighborhoodId);
       where.id = { in: siteIds };
     }
 
     // Apply additional filters
-    if (filters.corporationId && currentUser.role === 'SUPERADMIN') {
-      where.corporationId = filters.corporationId;
+    if (filters.cityId && currentUser.role === 'SUPERADMIN') {
+      where.cityId = filters.cityId;
     }
 
     if (filters.search) {
@@ -253,20 +264,17 @@ export async function listSites(filters: ListSitesFilters = {}) {
     }
 
     // Query sites
-    const sites = await prisma.site.findMany({
+    const sites = await prisma.neighborhood.findMany({
       where,
-      include: {
-        corporation: {
+      include: { cityRelation: {
           select: {
             id: true,
             name: true,
             code: true,
           },
         },
-        _count: {
-          select: {
-            supervisorAssignments: true,
-            workers: true,
+        _count: { select: { activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
@@ -304,23 +312,22 @@ export async function listSites(filters: ListSitesFilters = {}) {
  * - MANAGER: Can view sites in their corporation
  * - SUPERVISOR: Can view sites they are assigned to
  */
-export async function getSiteById(neighborhoodId: string) {
+export async function getNeighborhoodById(neighborhoodId: string) {
   try {
     const currentUser = await getCurrentUser();
 
-    const site = await prisma.site.findUnique({
-      where: { id: siteId },
-      include: {
-        corporation: {
+    const neighborhood = await prisma.neighborhood.findUnique({
+      where: { id: neighborhoodId },
+      include: { cityRelation: {
           select: {
             id: true,
             name: true,
             code: true,
           },
         },
-        supervisorAssignments: {
+        activistCoordinatorAssignments: {
           include: {
-            supervisor: {
+            activistCoordinator: {
               select: {
                 id: true,
                 user: {
@@ -336,7 +343,7 @@ export async function getSiteById(neighborhoodId: string) {
           },
           orderBy: { assignedAt: 'desc' },
         },
-        workers: {
+        activists: {
           where: { isActive: true },
           select: {
             id: true,
@@ -348,25 +355,23 @@ export async function getSiteById(neighborhoodId: string) {
           orderBy: { createdAt: 'desc' },
           take: 10,
         },
-        _count: {
-          select: {
-            supervisorAssignments: true,
-            workers: true,
+        _count: { select: { activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
     });
 
-    if (!site) {
+    if (!neighborhood) {
       return {
         success: false,
-        error: 'Site not found',
+        error: 'Neighborhood not found',
       };
     }
 
     // Validate access permissions
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
+      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
         return {
           success: false,
           error: 'Access denied',
@@ -377,7 +382,7 @@ export async function getSiteById(neighborhoodId: string) {
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
           activistCoordinatorId: currentUser.id,
-          neighborhoodId: site.id,
+          neighborhoodId: neighborhood.id,
         },
       });
 
@@ -391,10 +396,10 @@ export async function getSiteById(neighborhoodId: string) {
 
     return {
       success: true,
-      site,
+      neighborhood,
     };
   } catch (error) {
-    console.error('Error getting site:', error);
+    console.error('Error getting neighborhood:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get site',
@@ -414,37 +419,37 @@ export async function getSiteById(neighborhoodId: string) {
  * - MANAGER: Can update sites in their corporation
  * - SUPERVISOR: Cannot update sites
  */
-export async function updateSite(neighborhoodId: string, data: UpdateSiteInput) {
+export async function updateNeighborhood(neighborhoodId: string, data: UpdateNeighborhoodInput) {
   try {
     // Only SUPERADMIN and MANAGER can update sites
     const currentUser = await requireManager();
 
     // Get existing site
-    const existingSite = await prisma.site.findUnique({
-      where: { id: siteId },
+    const existingNeighborhood = await prisma.neighborhood.findUnique({
+      where: { id: neighborhoodId },
     });
 
-    if (!existingSite) {
+    if (!existingNeighborhood) {
       return {
         success: false,
-        error: 'Site not found',
+        error: 'Neighborhood not found',
       };
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Can only update sites in corporations they have access to
-      if (!hasAccessToCorporation(currentUser, existingSite.corporationId)) {
+      if (!hasAccessToCorporation(currentUser, existingNeighborhood.cityId)) {
         return {
           success: false,
-          error: 'Cannot update site from different corporation',
+          error: 'Cannot update neighborhood from different corporation',
         };
       }
     }
 
     // Update site
-    const updatedSite = await prisma.site.update({
-      where: { id: siteId },
+    const updatedNeighborhood = await prisma.neighborhood.update({
+      where: { id: neighborhoodId },
       data: {
         name: data.name,
         address: data.address,
@@ -454,18 +459,15 @@ export async function updateSite(neighborhoodId: string, data: UpdateSiteInput) 
         email: data.email,
         isActive: data.isActive,
       },
-      include: {
-        corporation: {
+      include: { cityRelation: {
           select: {
             id: true,
             name: true,
             code: true,
           },
         },
-        _count: {
-          select: {
-            supervisorAssignments: true,
-            workers: true,
+        _count: { select: { activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
@@ -474,37 +476,37 @@ export async function updateSite(neighborhoodId: string, data: UpdateSiteInput) 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'UPDATE_SITE',
+        action: 'UPDATE_NEIGHBORHOOD',
         entity: 'Site',
-        entityId: updatedSite.id,
+        entityId: updatedNeighborhood.id,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
         before: {
-          name: existingSite.name,
-          address: existingSite.address,
-          city: existingSite.city,
-          isActive: existingSite.isActive,
+          name: existingNeighborhood.name,
+          address: existingNeighborhood.address,
+          city: existingNeighborhood.city,
+          isActive: existingNeighborhood.isActive,
         },
         after: {
-          name: updatedSite.name,
-          address: updatedSite.address,
-          city: updatedSite.city,
-          isActive: updatedSite.isActive,
+          name: updatedNeighborhood.name,
+          address: updatedNeighborhood.address,
+          city: updatedNeighborhood.city,
+          isActive: updatedNeighborhood.isActive,
         },
       },
     });
 
-    revalidatePath('/sites');
-    revalidatePath(`/sites/${neighborhoodId}`);
+    revalidatePath('/neighborhoods');
+    revalidatePath(`/neighborhoods/${neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      site: updatedSite,
+      neighborhood: updatedNeighborhood,
     };
   } catch (error) {
-    console.error('Error updating site:', error);
+    console.error('Error updating neighborhood:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update site',
@@ -524,76 +526,74 @@ export async function updateSite(neighborhoodId: string, data: UpdateSiteInput) 
  * - MANAGER: Can delete sites in their corporation
  * - SUPERVISOR: Cannot delete sites
  *
- * WARNING: This will cascade delete all related workers!
+ * WARNING: This will cascade delete all related activists!
  */
-export async function deleteSite(neighborhoodId: string) {
+export async function deleteNeighborhood(neighborhoodId: string) {
   try {
     // Only SUPERADMIN and MANAGER can delete sites
     const currentUser = await requireManager();
 
     // Get site to delete
-    const siteToDelete = await prisma.site.findUnique({
-      where: { id: siteId },
+    const neighborhoodToDelete = await prisma.neighborhood.findUnique({
+      where: { id: neighborhoodId },
       include: {
-        _count: {
-          select: {
-            supervisorAssignments: true,
-            workers: true,
+        _count: { select: { activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
     });
 
-    if (!siteToDelete) {
+    if (!neighborhoodToDelete) {
       return {
         success: false,
-        error: 'Site not found',
+        error: 'Neighborhood not found',
       };
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, siteToDelete.corporationId)) {
+      if (!hasAccessToCorporation(currentUser, neighborhoodToDelete.cityId)) {
         return {
           success: false,
-          error: 'Cannot delete site from different corporation',
+          error: 'Cannot delete neighborhood from different corporation',
         };
       }
     }
 
     // Warning if site has data
-    if (siteToDelete._count.supervisorAssignments > 0 || siteToDelete._count.workers > 0) {
+    if (neighborhoodToDelete._count.activistCoordinatorAssignments > 0 || neighborhoodToDelete._count.activists > 0) {
       console.warn(
-        `Deleting site ${siteToDelete.name} with ${siteToDelete._count.supervisorAssignments} supervisors and ${siteToDelete._count.workers} workers`
+        `Deleting site ${neighborhoodToDelete.name} with ${neighborhoodToDelete._count.activistCoordinatorAssignments} supervisors and ${neighborhoodToDelete._count.activists} activists`
       );
     }
 
-    // Delete site (cascades to workers)
-    await prisma.site.delete({
-      where: { id: siteId },
+    // Delete site (cascades to activists)
+    await prisma.neighborhood.delete({
+      where: { id: neighborhoodId },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_SITE',
+        action: 'DELETE_NEIGHBORHOOD',
         entity: 'Site',
         entityId: neighborhoodId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
         before: {
-          id: siteToDelete.id,
-          name: siteToDelete.name,
-          city: siteToDelete.city,
-          supervisorCount: siteToDelete._count.supervisorAssignments,
-          workerCount: siteToDelete._count.workers,
+          id: neighborhoodToDelete.id,
+          name: neighborhoodToDelete.name,
+          city: neighborhoodToDelete.city,
+          supervisorCount: neighborhoodToDelete._count.activistCoordinatorAssignments,
+          workerCount: neighborhoodToDelete._count.activists,
         },
         after: undefined,
       },
     });
 
-    revalidatePath('/sites');
+    revalidatePath('/neighborhoods');
     revalidatePath('/dashboard');
 
     return {
@@ -601,7 +601,7 @@ export async function deleteSite(neighborhoodId: string) {
       message: 'Site deleted successfully',
     };
   } catch (error) {
-    console.error('Error deleting site:', error);
+    console.error('Error deleting neighborhood:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete site',
@@ -621,28 +621,27 @@ export async function deleteSite(neighborhoodId: string) {
  * - MANAGER: Can get stats for sites in their corporation
  * - SUPERVISOR: Can get stats for their site only
  */
-export async function getSiteStats(neighborhoodId: string) {
+export async function getNeighborhoodStats(neighborhoodId: string) {
   try {
     const currentUser = await getCurrentUser();
 
     // Get site first to validate access
-    const site = await prisma.site.findUnique({
-      where: { id: siteId },
-      include: {
-        corporation: true,
+    const neighborhood = await prisma.neighborhood.findUnique({
+      where: { id: neighborhoodId },
+      include: { cityRelation: true,
       },
     });
 
-    if (!site) {
+    if (!neighborhood) {
       return {
         success: false,
-        error: 'Site not found',
+        error: 'Neighborhood not found',
       };
     }
 
     // Validate access
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
+      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
         return {
           success: false,
           error: 'Access denied',
@@ -653,7 +652,7 @@ export async function getSiteStats(neighborhoodId: string) {
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
           activistCoordinatorId: currentUser.id,
-          neighborhoodId: site.id,
+          neighborhoodId: neighborhood.id,
         },
       });
 
@@ -676,17 +675,17 @@ export async function getSiteStats(neighborhoodId: string) {
           neighborhoodId,
         },
       }),
-      prisma.worker.count({
-        where: { siteId },
+      prisma.activist.count({
+        where: { neighborhoodId },
       }),
-      prisma.worker.count({
+      prisma.activist.count({
         where: {
           neighborhoodId,
           isActive: true,
         },
       }),
-      prisma.worker.findMany({
-        where: { siteId },
+      prisma.activist.findMany({
+        where: { neighborhoodId },
         orderBy: { createdAt: 'desc' },
         take: 10,
         select: {
@@ -696,7 +695,7 @@ export async function getSiteStats(neighborhoodId: string) {
           phone: true,
           isActive: true,
           createdAt: true,
-          supervisor: {
+          activistCoordinator: {
             select: {
               user: {
                 select: {
@@ -712,11 +711,11 @@ export async function getSiteStats(neighborhoodId: string) {
     return {
       success: true,
       stats: {
-        site,
+        neighborhood,
         supervisorCount,
-        workerCount,
-        activeWorkerCount,
-        recentWorkers,
+        activistCount: workerCount,
+        activeActivistCount: activeWorkerCount,
+        recentActivists: recentWorkers,
       },
     };
   } catch (error) {
@@ -740,43 +739,40 @@ export async function getSiteStats(neighborhoodId: string) {
  * - MANAGER: Can toggle sites in their corporation
  * - SUPERVISOR: Cannot toggle site status
  */
-export async function toggleSiteStatus(neighborhoodId: string) {
+export async function toggleNeighborhoodStatus(neighborhoodId: string) {
   try {
     // Only SUPERADMIN and MANAGER can toggle status
     const currentUser = await requireManager();
 
-    const site = await prisma.site.findUnique({
-      where: { id: siteId },
+    const neighborhood = await prisma.neighborhood.findUnique({
+      where: { id: neighborhoodId },
     });
 
-    if (!site) {
+    if (!neighborhood) {
       return {
         success: false,
-        error: 'Site not found',
+        error: 'Neighborhood not found',
       };
     }
 
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, site.corporationId)) {
+      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
         return {
           success: false,
-          error: 'Cannot toggle site from different corporation',
+          error: 'Cannot toggle neighborhood from different corporation',
         };
       }
     }
 
-    const updatedSite = await prisma.site.update({
-      where: { id: siteId },
+    const updatedNeighborhood = await prisma.neighborhood.update({
+      where: { id: neighborhoodId },
       data: {
-        isActive: !site.isActive,
+        isActive: !neighborhood.isActive,
       },
-      include: {
-        corporation: true,
-        _count: {
-          select: {
-            supervisorAssignments: true,
-            workers: true,
+      include: { cityRelation: true,
+        _count: { select: { activistCoordinatorAssignments: true,
+            activists: true,
           },
         },
       },
@@ -785,24 +781,24 @@ export async function toggleSiteStatus(neighborhoodId: string) {
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: site.isActive ? 'DEACTIVATE_SITE' : 'ACTIVATE_SITE',
+        action: neighborhood.isActive ? 'DEACTIVATE_NEIGHBORHOOD' : 'ACTIVATE_NEIGHBORHOOD',
         entity: 'Site',
         entityId: neighborhoodId,
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: { isActive: site.isActive },
-        after: { isActive: updatedSite.isActive },
+        before: { isActive: neighborhood.isActive },
+        after: { isActive: updatedNeighborhood.isActive },
       },
     });
 
-    revalidatePath('/sites');
-    revalidatePath(`/sites/${neighborhoodId}`);
+    revalidatePath('/neighborhoods');
+    revalidatePath(`/neighborhoods/${neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      site: updatedSite,
+      neighborhood: updatedNeighborhood,
     };
   } catch (error) {
     console.error('Error toggling site status:', error);
@@ -826,13 +822,13 @@ export async function toggleSiteStatus(neighborhoodId: string) {
  * - MANAGER: Can list supervisors from their corporation only
  * - SUPERVISOR: Can list supervisors from their corporation only
  */
-export async function listSupervisorsByCorporation(cityId: string) {
+export async function listActivistCoordinatorsByCity(cityId: string) {
   try {
     const currentUser = await getCurrentUser();
 
     // Validate access to corporation
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, corporationId)) {
+      if (!hasAccessToCorporation(currentUser, cityId)) {
         return {
           success: false,
           error: 'Cannot list supervisors from different corporation',
@@ -841,7 +837,7 @@ export async function listSupervisorsByCorporation(cityId: string) {
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // Supervisors can only see other supervisors in their corporation
-      const supervisorRecord = await prisma.supervisor.findFirst({
+      const supervisorRecord = await prisma.activistCoordinator.findFirst({
         where: {
           userId: currentUser.id,
           cityId,
@@ -858,7 +854,7 @@ export async function listSupervisorsByCorporation(cityId: string) {
     }
 
     // Fetch supervisors
-    const supervisors = await prisma.supervisor.findMany({
+    const supervisors = await prisma.activistCoordinator.findMany({
       where: {
         cityId,
         isActive: true,
@@ -875,8 +871,8 @@ export async function listSupervisorsByCorporation(cityId: string) {
         },
         _count: {
           select: {
-            siteAssignments: true,
-            workers: true,
+            neighborhoodAssignments: true,
+            activists: true,
           },
         },
       },
@@ -895,8 +891,8 @@ export async function listSupervisorsByCorporation(cityId: string) {
         phone: s.user.phone,
         avatarUrl: s.user.avatarUrl,
         title: s.title,
-        siteCount: s._count.siteAssignments,
-        workerCount: s._count.workers,
+        siteCount: s._count.neighborhoodAssignments,
+        workerCount: s._count.activists,
       })),
     };
   } catch (error) {

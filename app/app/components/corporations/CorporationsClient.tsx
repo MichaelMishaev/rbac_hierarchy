@@ -33,11 +33,11 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import CorporationModal, { CorporationFormData } from '@/app/components/modals/CorporationModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
-  createCorporation,
-  updateCorporation,
-  deleteCorporation,
+  createCity,
+  updateCity,
+  deleteCity,
   getAreaManagers,
-} from '@/app/actions/corporations';
+} from '@/app/actions/cities';
 
 type Corporation = {
   id: string;
@@ -133,9 +133,9 @@ export default function CorporationsClient({ corporations: initialCorporations, 
   };
 
   const handleCreateCorporation = async (data: CorporationFormData) => {
-    const result = await createCorporation(data);
-    if (result.success && result.corporation) {
-      setCorporations((prev) => [result.corporation!, ...prev]);
+    const result = await createCity(data);
+    if (result.success && result.city) {
+      setCorporations((prev) => [result.city!, ...prev]);
       setCreateModalOpen(false);
       router.refresh();
     }
@@ -149,10 +149,10 @@ export default function CorporationsClient({ corporations: initialCorporations, 
   const handleEditCorporation = async (data: CorporationFormData) => {
     if (!selectedCorp) return;
 
-    const result = await updateCorporation(selectedCorp.id, data);
-    if (result.success && result.corporation) {
+    const result = await updateCity(selectedCorp.id, data);
+    if (result.success && result.city) {
       setCorporations((prev) =>
-        prev.map((corp) => (corp.id === selectedCorp.id ? result.corporation! : corp))
+        prev.map((corp) => (corp.id === selectedCorp.id ? result.city! : corp))
       );
       setEditModalOpen(false);
       setSelectedCorp(null);
@@ -168,7 +168,7 @@ export default function CorporationsClient({ corporations: initialCorporations, 
   const handleDeleteCorporation = async () => {
     if (!selectedCorp) return;
 
-    const result = await deleteCorporation(selectedCorp.id);
+    const result = await deleteCity(selectedCorp.id);
     if (result.success) {
       setCorporations((prev) => prev.filter((corp) => corp.id !== selectedCorp.id));
       setDeleteModalOpen(false);

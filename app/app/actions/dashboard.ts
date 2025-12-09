@@ -29,7 +29,7 @@ export type SuperAdminStats = {
 };
 
 export type ManagerStats = {
-  corporation: any;
+  cityRelation: any;
   totalManagers: number;
   totalSupervisors: number;
   totalSites: number;
@@ -42,7 +42,7 @@ export type ManagerStats = {
 };
 
 export type SupervisorStats = {
-  site: any;
+  neighborhood: any;
   sites: any[]; // All sites assigned to supervisor
   totalWorkers: number;
   activeWorkers: number;
@@ -91,16 +91,22 @@ export async function getDashboardStats(): Promise<{
     if (currentUser.role === 'SUPERADMIN') {
       stats.superadmin = await getSuperAdminStats();
     } else if (currentUser.role === 'CITY_COORDINATOR') {
-      // Get first corporation ID for manager
-      const managerCorpId = currentUser.coordinatorOf[0]?.cityId;
-      if (managerCorpId) {
-        stats.manager = await getManagerStats(managerCorpId);
+      // Get first city ID for coordinator
+      const coordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        select: { cityId: true },
+      });
+      if (coordinator) {
+        stats.manager = await getManagerStats(coordinator.cityId);
       }
     } else if (currentUser.role === 'AREA_MANAGER') {
-      // Get first corporation ID for area manager
-      const areaManagerCorpId = currentUser.areaManager?.cities[0]?.id;
-      if (areaManagerCorpId) {
-        stats.manager = await getManagerStats(areaManagerCorpId);
+      // Get first city ID for area manager
+      const areaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+        include: { cities: { select: { id: true }, take: 1 } },
+      });
+      if (areaManager && areaManager.cities[0]) {
+        stats.manager = await getManagerStats(areaManager.cities[0].id);
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       stats.supervisor = await getSupervisorStats(currentUser.id);
@@ -156,8 +162,8 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
       include: {
         _count: {
           select: {
-            managers: true,
-            sites: true,
+            coordinators: true,
+            neighborhoods: true,
           },
         },
       },
@@ -276,8 +282,8 @@ async function getManagerStats(cityId: string): Promise<ManagerStats> {
         isActive: true,
         _count: {
           select: {
-            workers: true,
-            supervisorAssignments: true,
+            activists: true,
+            activistCoordinatorAssignments: true,
           },
         },
       },
@@ -285,7 +291,7 @@ async function getManagerStats(cityId: string): Promise<ManagerStats> {
   ]);
 
   return {
-    corporation,
+    cityRelation: corporation,
     totalManagers,
     totalSupervisors,
     totalSites,
@@ -303,18 +309,18 @@ async function getManagerStats(cityId: string): Promise<ManagerStats> {
 // ============================================
 
 async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
-  // Get supervisor's assigned sites (using legacySupervisorUserId for User.id)
+  // Get supervisor's assigned sites (using legacyActivistCoordinatorUserId for User.id)
   const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-    where: { legacySupervisorUserId: userId },
+    where: { legacyActivistCoordinatorUserId: userId },
     select: { neighborhoodId: true },
   });
 
-  const siteIds = activistCoordinatorNeighborhoods.map((ss) => ss.siteId);
+  const siteIds = activistCoordinatorNeighborhoods.map((ss) => ss.neighborhoodId);
 
   // If no sites assigned, return empty stats
   if (siteIds.length === 0) {
     return {
-      site: null,
+      neighborhood: null,
       sites: [],
       totalWorkers: 0,
       activeWorkers: 0,
@@ -336,7 +342,7 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
     prisma.neighborhood.findMany({
       where: { id: { in: siteIds } },
       include: {
-        corporation: {
+        cityRelation: {
           select: {
             id: true,
             name: true,
@@ -399,7 +405,7 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
   ]);
 
   return {
-    site: sites.length > 0 ? sites[0] : null, // Return first site for backwards compatibility
+    neighborhood: sites.length > 0 ? sites[0] : null, // Return first site for backwards compatibility
     sites, // Also include all sites
     totalWorkers,
     activeWorkers,
@@ -727,20 +733,20 @@ export async function getQuickStats() {
         prisma.activist.count({
           where: {
             isActive: true,
-            site: { cityId: { in: userCorps } },
+            neighborhood: { cityId: { in: userCorps } },
           },
         }),
       ]);
 
       stats = { managers, supervisors, sites, workers };
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Get supervisor's assigned sites (using legacySupervisorUserId for User.id)
+      // Get supervisor's assigned sites (using legacyActivistCoordinatorUserId for User.id)
       const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacySupervisorUserId: currentUser.id },
+        where: { legacyActivistCoordinatorUserId: currentUser.id },
         select: { neighborhoodId: true },
       });
 
-      const siteIds = activistCoordinatorNeighborhoods.map((ss) => ss.siteId);
+      const siteIds = activistCoordinatorNeighborhoods.map((ss) => ss.neighborhoodId);
 
       if (siteIds.length === 0) {
         return {

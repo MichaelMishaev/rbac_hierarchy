@@ -36,7 +36,7 @@ type User = {
   email: string;
   phone: string | null;
   avatarUrl: string | null;
-  role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
   lastLoginAt: Date | null;
   createdAt: Date;
   isActive: boolean;
@@ -45,14 +45,14 @@ type User = {
     regionName: string;
     regionCode: string | null;
   } | null;
-  managerOf?: {
-    corporation: { id: string; name: string; code: string };
+  cityCoordinatorOf?: {
+    city: { id: string; name: string; code: string };
   }[];
-  supervisorOf?: {
-    corporation: { id: string; name: string; code: string };
+  activistCoordinatorOf?: {
+    city: { id: string; name: string; code: string };
   }[];
-  supervisorSites?: {
-    site: {
+  activistCoordinatorNeighborhoods?: {
+    neighborhood: {
       id: string;
       name: string;
       city: string | null;
@@ -69,7 +69,7 @@ type Corporation = {
 type Site = {
   id: string;
   name: string;
-  corporationId: string;
+  cityId: string;
 };
 
 type UsersClientProps = {

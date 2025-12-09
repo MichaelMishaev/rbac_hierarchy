@@ -86,8 +86,8 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
       const result = await getAttendanceHistory({
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
-        siteId: selectedSite === 'all' ? undefined : selectedSite,
-        workerId: selectedWorker === 'all' ? undefined : selectedWorker,
+        neighborhoodId: selectedSite === 'all' ? undefined : selectedSite,
+        activistId: selectedWorker === 'all' ? undefined : selectedWorker,
         page: 0, // Always fetch from page 0, we'll handle pagination client-side
         limit: 1000, // Fetch large batch for client-side pagination
       });

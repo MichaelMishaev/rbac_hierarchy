@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
-import { listSites } from '@/app/actions/neighborhoods';
+import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { listCorporations } from '@/app/actions/cities';
 import SitesClient from '@/app/components/sites/SitesClient';
 import { Suspense } from 'react';
@@ -35,7 +35,7 @@ export default async function SitesPage() {
 
   // Fetch sites and corporations
   const [sitesResult, corporationsResult] = await Promise.all([
-    listSites({}),
+    listNeighborhoods({}),
     listCorporations({}),
   ]);
 

@@ -82,7 +82,7 @@ export async function createUser(data: CreateUserInput) {
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Must provide corporation ID for MANAGER/SUPERVISOR roles
-      if ((data.role === 'CITY_COORDINATOR' || data.role === 'ACTIVIST_COORDINATOR') && !data.corporationId) {
+      if ((data.role === 'CITY_COORDINATOR' || data.role === 'ACTIVIST_COORDINATOR') && !data.cityId) {
         return {
           success: false,
           error: 'Corporation ID is required',
@@ -90,7 +90,7 @@ export async function createUser(data: CreateUserInput) {
       }
 
       // Can only create users in corporations they have access to
-      if (data.corporationId && !hasAccessToCorporation(currentUser, data.corporationId)) {
+      if (data.cityId && !hasAccessToCorporation(currentUser, data.cityId)) {
         return {
           success: false,
           error: 'Cannot create user for different corporation',
@@ -145,7 +145,7 @@ export async function createUser(data: CreateUserInput) {
           regionCode, // v1.4: Required field
         },
       });
-    } else if (data.corporationId) {
+    } else if (data.cityId) {
       if (data.role === 'CITY_COORDINATOR') {
         await prisma.cityCoordinator.create({
           data: {
@@ -155,7 +155,7 @@ export async function createUser(data: CreateUserInput) {
           },
         });
       } else if (data.role === 'ACTIVIST_COORDINATOR') {
-        await prisma.supervisor.create({
+        await prisma.activistCoordinator.create({
           data: {
             userId: newUser.id,
             cityId: data.cityId,
@@ -225,9 +225,9 @@ export async function listUsers(filters: ListUsersFilters = {}) {
     if (userCorps !== 'all') {
       // Non-superadmins can only see users in their corporations
       where.OR = [
-        { managerOf: { some: { cityId: { in: userCorps } } } },
-        { supervisorOf: { some: { cityId: { in: userCorps } } } },
-        { areaManager: { corporations: { some: { id: { in: userCorps } } } } },
+        { coordinatorOf: { some: { cityId: { in: userCorps } } } },
+        { activistCoordinatorOf: { some: { cityId: { in: userCorps } } } },
+        { areaManager: { cities: { some: { id: { in: userCorps } } } } },
       ];
     }
 
@@ -236,15 +236,15 @@ export async function listUsers(filters: ListUsersFilters = {}) {
       where.role = filters.role;
     }
 
-    if (filters.corporationId && currentUser.role === 'SUPERADMIN') {
+    if (filters.cityId && currentUser.role === 'SUPERADMIN') {
       where.OR = [
-        { managerOf: { some: { cityId: filters.corporationId } } },
-        { supervisorOf: { some: { cityId: filters.corporationId } } },
-        { areaManager: { corporations: { some: { id: filters.corporationId } } } },
+        { coordinatorOf: { some: { cityId: filters.cityId } } },
+        { activistCoordinatorOf: { some: { cityId: filters.cityId } } },
+        { areaManager: { cities: { some: { id: filters.cityId } } } },
       ];
     }
 
-    if (filters.siteId) {
+    if (filters.neighborhoodId) {
       // Filter users assigned to a specific site
       where.activistCoordinatorNeighborhoods = {
         some: {
@@ -267,22 +267,22 @@ export async function listUsers(filters: ListUsersFilters = {}) {
       include: {
         areaManager: {
           include: {
-            corporations: true,
+            cities: true,
           },
         },
-        managerOf: {
+        coordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        supervisorOf: {
+        activistCoordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
         activistCoordinatorNeighborhoods: {
           include: {
-            site: {
+            neighborhood: {
               select: {
                 id: true,
                 name: true,
@@ -346,22 +346,22 @@ export async function getUserById(userId: string) {
       include: {
         areaManager: {
           include: {
-            corporations: true,
+            cities: true,
           },
         },
-        managerOf: {
+        coordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        supervisorOf: {
+        activistCoordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
         activistCoordinatorNeighborhoods: {
           include: {
-            site: {
+            neighborhood: {
               select: {
                 id: true,
                 name: true,
@@ -459,22 +459,20 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
     const existingUserCorps = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        managerOf: {
+        coordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        supervisorOf: {
+        activistCoordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        areaManager: { include: { corporations: true } },
+        areaManager: { include: { cities: true } },
         activistCoordinatorNeighborhoods: {
           include: {
-            site: {
-              include: {
-                corporation: true,
+            neighborhood: { include: { cityRelation: true,
               },
             },
           },
@@ -548,22 +546,22 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
       include: {
         areaManager: {
           include: {
-            corporations: true,
+            cities: true,
           },
         },
-        managerOf: {
+        coordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        supervisorOf: {
+        activistCoordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
         activistCoordinatorNeighborhoods: {
           include: {
-            site: true,
+            neighborhood: true,
           },
         },
         _count: {
@@ -575,14 +573,14 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
     });
 
     // Update corporation assignment if provided and role changed
-    if (data.corporationId && data.role) {
+    if (data.cityId && data.role) {
       // Remove old role assignments
       if (existingUser.role === 'CITY_COORDINATOR') {
         await prisma.cityCoordinator.deleteMany({
           where: { userId },
         });
       } else if (existingUser.role === 'ACTIVIST_COORDINATOR') {
-        await prisma.supervisor.deleteMany({
+        await prisma.activistCoordinator.deleteMany({
           where: { userId },
         });
       }
@@ -597,7 +595,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
           },
         });
       } else if (data.role === 'ACTIVIST_COORDINATOR') {
-        await prisma.supervisor.create({
+        await prisma.activistCoordinator.create({
           data: {
             userId,
             cityId: data.cityId,
@@ -686,22 +684,20 @@ export async function deleteUser(userId: string) {
     const userToDelete = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        managerOf: {
+        coordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        supervisorOf: {
+        activistCoordinatorOf: {
           include: {
-            corporation: true,
+            city: true,
           },
         },
-        areaManager: { include: { corporations: true } },
+        areaManager: { include: { cities: true } },
         activistCoordinatorNeighborhoods: {
           include: {
-            site: {
-              include: {
-                corporation: true,
+            neighborhood: { include: { cityRelation: true,
               },
             },
           },
@@ -802,9 +798,9 @@ export async function getUserStats() {
     const userCorps = getUserCorporations(currentUser);
     if (userCorps !== 'all') {
       where.OR = [
-        { managerOf: { some: { cityId: { in: userCorps } } } },
-        { supervisorOf: { some: { cityId: { in: userCorps } } } },
-        { areaManager: { corporations: { some: { id: { in: userCorps } } } } },
+        { coordinatorOf: { some: { cityId: { in: userCorps } } } },
+        { activistCoordinatorOf: { some: { cityId: { in: userCorps } } } },
+        { areaManager: { cities: { some: { id: { in: userCorps } } } } },
       ];
     }
 
@@ -827,18 +823,18 @@ export async function getUserStats() {
           email: true,
           role: true,
           createdAt: true,
-          managerOf: {
+          coordinatorOf: {
             include: {
-              corporation: {
+              city: {
                 select: {
                   name: true,
                 },
               },
             },
           },
-          supervisorOf: {
+          activistCoordinatorOf: {
             include: {
-              corporation: {
+              city: {
                 select: {
                   name: true,
                 },
@@ -847,7 +843,7 @@ export async function getUserStats() {
           },
           areaManager: {
             include: {
-              corporations: {
+              cities: {
                 select: {
                   name: true,
                 },

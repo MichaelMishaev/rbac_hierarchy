@@ -35,11 +35,11 @@ import PlaceIcon from '@mui/icons-material/Place';
 import SiteModal, { SiteFormData } from '@/app/components/modals/SiteModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
-  createSite,
-  updateSite,
-  deleteSite,
-  listSupervisorsByCorporation,
-} from '@/app/actions/sites';
+  createNeighborhood,
+  updateNeighborhood,
+  deleteNeighborhood,
+  listActivistCoordinatorsByCity,
+} from '@/app/actions/neighborhoods';
 
 type Corporation = {
   id: string;
@@ -67,7 +67,7 @@ type Site = {
   phone: string | null;
   email: string | null;
   isActive: boolean;
-  corporationId: string;
+  cityId: string;
   corporation?: Corporation;
   _count?: {
     supervisorAssignments: number;
@@ -103,7 +103,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
     let filtered = sites;
     
     if (filterCorporation !== 'all') {
-      filtered = filtered.filter((site) => site.corporationId === filterCorporation);
+      filtered = filtered.filter((site) => site.cityId === filterCorporation);
     }
     
     if (searchQuery.trim()) {
@@ -140,12 +140,12 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
   };
 
   // Fetch supervisors for a specific corporation
-  const fetchSupervisors = async (corporationId: string) => {
+  const fetchSupervisors = async (cityId: string) => {
     setLoadingSupervisors(true);
     try {
-      const result = await listSupervisorsByCorporation(corporationId);
+      const result = await listActivistCoordinatorsByCity(cityId);
       if (result.success) {
-        setSupervisors(result.supervisors);
+        setSupervisors(result.activistCoordinators);
       } else {
         console.error('Failed to fetch supervisors:', result.error);
         setSupervisors([]);
@@ -168,20 +168,20 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
   };
 
   const handleCreateSite = async (data: SiteFormData): Promise<{ success: boolean; error?: string }> => {
-    const result = await createSite(data);
-    if (result.success && result.site) {
-      setSites((prev) => [result.site!, ...prev]);
+    const result = await createNeighborhood(data);
+    if (result.success && result.neighborhood) {
+      setSites((prev) => [result.neighborhood!, ...prev]);
       setCreateModalOpen(false);
       router.refresh();
       return { success: true };
     } else {
-      return { success: false, error: result.error || 'Failed to create site' };
+      return { success: false, error: result.error || 'Failed to create neighborhood' };
     }
   };
 
   const handleEditClick = async () => {
     if (selectedSite) {
-      await fetchSupervisors(selectedSite.corporationId);
+      await fetchSupervisors(selectedSite.cityId);
     }
     setEditModalOpen(true);
     handleMenuClose();
@@ -190,17 +190,17 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
   const handleEditSite = async (data: SiteFormData): Promise<{ success: boolean; error?: string }> => {
     if (!selectedSite) return { success: false, error: 'No site selected' };
 
-    const result = await updateSite(selectedSite.id, data);
-    if (result.success && result.site) {
+    const result = await updateNeighborhood(selectedSite.id, data);
+    if (result.success && result.neighborhood) {
       setSites((prev) =>
-        prev.map((site) => (site.id === selectedSite.id ? result.site! : site))
+        prev.map((site) => (site.id === selectedSite.id ? result.neighborhood! : site))
       );
       setEditModalOpen(false);
       setSelectedSite(null);
       router.refresh();
       return { success: true };
     } else {
-      return { success: false, error: result.error || 'Failed to update site' };
+      return { success: false, error: result.error || 'Failed to update neighborhood' };
     }
   };
 
@@ -212,7 +212,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
   const handleDeleteSite = async () => {
     if (!selectedSite) return;
 
-    const result = await deleteSite(selectedSite.id);
+    const result = await deleteNeighborhood(selectedSite.id);
     if (result.success) {
       setSites((prev) => prev.filter((site) => site.id !== selectedSite.id));
       setDeleteModalOpen(false);
@@ -827,8 +827,8 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
             country: selectedSite.country || 'ישראל',
             phone: selectedSite.phone || '',
             email: selectedSite.email || '',
-            corporationId: selectedSite.corporationId,
-            supervisorId: '', // TODO: Fetch current supervisor assignment
+            cityId: selectedSite.cityId,
+            activistCoordinatorId: '', // TODO: Fetch current supervisor assignment
             isActive: selectedSite.isActive,
           }}
           mode="edit"

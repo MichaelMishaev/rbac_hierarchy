@@ -36,7 +36,7 @@ import {
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
 import { useTranslations, useLocale } from 'next-intl';
-import { createSupervisorQuick } from '@/app/actions/supervisor-sites';
+import { createActivistCoordinatorQuick } from '@/app/actions/activist-coordinator-neighborhoods';
 
 export type SiteFormData = {
   name: string;
@@ -45,8 +45,8 @@ export type SiteFormData = {
   country: string;
   phone: string;
   email: string;
-  corporationId: string;
-  supervisorId: string;
+  cityId: string;
+  activistCoordinatorId: string;
   isActive: boolean;
 };
 
@@ -71,7 +71,7 @@ type SiteModalProps = {
   mode: 'create' | 'edit';
   corporations: Corporation[];
   supervisors: Supervisor[];
-  onCorporationChange?: (corporationId: string) => Promise<void>;
+  onCorporationChange?: (cityId: string) => Promise<void>;
 };
 
 export default function SiteModal({
@@ -96,8 +96,8 @@ export default function SiteModal({
     country: initialData?.country || 'ישראל',
     phone: initialData?.phone || '',
     email: initialData?.email || '',
-    corporationId: initialData?.corporationId || '',
-    supervisorId: '',
+    cityId: initialData?.cityId || '',
+    activistCoordinatorId: '',
     isActive: initialData?.isActive ?? true,
   });
 
@@ -126,8 +126,8 @@ export default function SiteModal({
         country: initialData?.country || 'ישראל',
         phone: initialData?.phone || '',
         email: initialData?.email || '',
-        corporationId: initialData?.corporationId || corporations[0]?.id || '',
-        supervisorId: initialData?.supervisorId || supervisors[0]?.id || '',
+        cityId: initialData?.cityId || corporations[0]?.id || '',
+        activistCoordinatorId: initialData?.activistCoordinatorId || supervisors[0]?.id || '',
         isActive: initialData?.isActive ?? true,
       });
       setErrors({});
@@ -145,12 +145,12 @@ export default function SiteModal({
       newErrors.name = isRTL ? 'שם האתר נדרש' : 'Site name is required';
     }
 
-    if (!formData.corporationId) {
-      newErrors.corporationId = isRTL ? 'יש לבחור תאגיד' : 'Corporation is required';
+    if (!formData.cityId) {
+      newErrors.cityId = isRTL ? 'יש לבחור תאגיד' : 'Corporation is required';
     }
 
-    if (!formData.supervisorId) {
-      newErrors.supervisorId = isRTL ? 'יש לבחור מפקח' : 'Supervisor is required';
+    if (!formData.activistCoordinatorId) {
+      newErrors.activistCoordinatorId = isRTL ? 'יש לבחור מפקח' : 'Supervisor is required';
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -192,11 +192,11 @@ export default function SiteModal({
 
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // When corporation changes, fetch supervisors for that corporation
-    if (field === 'corporationId' && onCorporationChange) {
+    // When city changes, fetch activist coordinators for that city
+    if (field === 'cityId' && onCorporationChange) {
       await onCorporationChange(value as string);
-      // Reset supervisor selection when corporation changes
-      setFormData((prev) => ({ ...prev, supervisorId: '' }));
+      // Reset activist coordinator selection when city changes
+      setFormData((prev) => ({ ...prev, activistCoordinatorId: '' }));
     }
 
     if (errors[field]) {
@@ -223,25 +223,25 @@ export default function SiteModal({
 
     setCreatingSupervisor(true);
     try {
-      const result = await createSupervisorQuick({
+      const result = await createActivistCoordinatorQuick({
         fullName: supervisorFormData.fullName,
         email: supervisorFormData.email,
         phone: supervisorFormData.phone,
-        corporationId: formData.corporationId,
-        title: supervisorFormData.title || 'Supervisor',
+        cityId: formData.cityId,
+        title: supervisorFormData.title || 'Activist Coordinator',
       });
 
-      if (result.success && result.supervisor && result.tempPassword) {
+      if (result.success && result.activistCoordinator && result.tempPassword) {
         // Show temporary password
         setTempPassword(result.tempPassword);
 
-        // Refresh supervisors list
+        // Refresh activist coordinators list
         if (onCorporationChange) {
-          await onCorporationChange(formData.corporationId);
+          await onCorporationChange(formData.cityId);
         }
 
-        // Auto-select the new supervisor
-        setFormData((prev) => ({ ...prev, supervisorId: result.supervisor.id }));
+        // Auto-select the new activist coordinator
+        setFormData((prev) => ({ ...prev, activistCoordinatorId: result.activistCoordinator.id }));
 
         // Reset supervisor form
         setSupervisorFormData({ fullName: '', email: '', phone: '', title: '' });
@@ -311,11 +311,11 @@ export default function SiteModal({
                 }}
               />
 
-              <FormControl fullWidth required error={!!errors.corporationId}>
+              <FormControl fullWidth required error={!!errors.cityId}>
                 <InputLabel>{t('corporation')}</InputLabel>
                 <Select
-                  value={formData.corporationId}
-                  onChange={(e) => handleChange('corporationId')(e as any)}
+                  value={formData.cityId}
+                  onChange={(e) => handleChange('cityId')(e as any)}
                   label={t('corporation')}
                   startAdornment={
                     <InputAdornment position="start">
@@ -331,11 +331,11 @@ export default function SiteModal({
                 </Select>
               </FormControl>
 
-              <FormControl fullWidth required error={!!errors.supervisorId}>
+              <FormControl fullWidth required error={!!errors.activistCoordinatorId}>
                 <InputLabel>{isRTL ? 'מפקח' : 'Supervisor'}</InputLabel>
                 <Select
-                  value={formData.supervisorId}
-                  onChange={(e) => handleChange('supervisorId')(e as any)}
+                  value={formData.activistCoordinatorId}
+                  onChange={(e) => handleChange('activistCoordinatorId')(e as any)}
                   label={isRTL ? 'מפקח' : 'Supervisor'}
                   disabled={supervisors.length === 0}
                   startAdornment={
@@ -356,15 +356,15 @@ export default function SiteModal({
                     ))
                   )}
                 </Select>
-                {errors.supervisorId && (
+                {errors.activistCoordinatorId && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
-                    {errors.supervisorId}
+                    {errors.activistCoordinatorId}
                   </Typography>
                 )}
               </FormControl>
 
               {/* Quick supervisor creation when none exist */}
-              {supervisors.length === 0 && formData.corporationId && (
+              {supervisors.length === 0 && formData.cityId && (
                 <Box sx={{ mt: 2 }}>
                   <Alert
                     severity="info"

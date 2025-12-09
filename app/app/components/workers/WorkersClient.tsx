@@ -45,16 +45,16 @@ import TableRowsIcon from '@mui/icons-material/TableRows';
 import WorkerModal, { WorkerFormData } from '@/app/components/modals/WorkerModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
-  createWorker,
-  updateWorker,
-  deleteWorker,
-} from '@/app/actions/workers';
+  createActivist,
+  updateActivist,
+  deleteActivist,
+} from '@/app/actions/activists';
 
 type Site = {
   id: string;
   name: string;
-  corporationId: string;
-  corporation?: {
+  cityId: string;
+  cityRelation?: {
     id: string;
     name: string;
   };
@@ -79,8 +79,8 @@ type Worker = {
   tags: string[];
   isActive: boolean;
   startDate: Date | null;
-  siteId: string;
-  supervisorId: string | null;
+  neighborhoodId: string;
+  activistCoordinatorId: string | null;
   site?: Site;
   supervisor?: Supervisor | null;
 };
@@ -133,7 +133,7 @@ export default function WorkersClient({
     let filtered = workers;
     
     if (filterSite !== 'all') {
-      filtered = filtered.filter((worker) => worker.siteId === filterSite);
+      filtered = filtered.filter((worker) => worker.neighborhoodId === filterSite);
     }
 
     if (filterStatus !== 'all') {
@@ -162,7 +162,7 @@ export default function WorkersClient({
     total: workers.length,
     active: workers.filter((w) => w.isActive).length,
     inactive: workers.filter((w) => !w.isActive).length,
-    sitesCount: new Set(workers.map(w => w.siteId)).size,
+    sitesCount: new Set(workers.map(w => w.neighborhoodId)).size,
   }), [workers]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, worker: Worker) => {
@@ -176,24 +176,24 @@ export default function WorkersClient({
   };
 
   const handleCreateWorker = async (data: WorkerFormData): Promise<{ success: boolean; error?: string }> => {
-    const result = await createWorker({
+    const result = await createActivist({
       fullName: data.name,
       phone: data.phone || undefined,
       email: data.email || undefined,
       position: data.position || undefined,
       notes: data.notes || undefined,
       tags: data.tags,
-      siteId: data.siteId,
-      supervisorId: data.supervisorId,
+      neighborhoodId: data.neighborhoodId,
+      activistCoordinatorId: data.activistCoordinatorId,
       isActive: data.isActive,
       startDate: data.startDate ? new Date(data.startDate) : undefined,
     });
-    if (result.success && result.worker) {
+    if (result.success && result.activist) {
       const worker = {
-        ...result.worker,
-        site: result.worker.site ? {
-          ...result.worker.site,
-          corporationId: result.worker.site.corporation?.id || '',
+        ...result.activist,
+        neighborhood: result.activist.neighborhood ? {
+          ...result.activist.neighborhood,
+          cityId: result.activist.neighborhood.cityRelation?.id || '',
         } : undefined,
       };
       setWorkers((prev) => [worker, ...prev]);
@@ -201,7 +201,7 @@ export default function WorkersClient({
       router.refresh();
       return { success: true };
     } else {
-      return { success: false, error: result.error || 'Failed to create worker' };
+      return { success: false, error: result.error || 'Failed to create activist' };
     }
   };
 
@@ -213,23 +213,23 @@ export default function WorkersClient({
   const handleEditWorker = async (data: WorkerFormData): Promise<{ success: boolean; error?: string }> => {
     if (!selectedWorker) return { success: false, error: 'No worker selected' };
 
-    const result = await updateWorker(selectedWorker.id, {
+    const result = await updateActivist(selectedWorker.id, {
       fullName: data.name,
       phone: data.phone || undefined,
       email: data.email || undefined,
       position: data.position || undefined,
       notes: data.notes || undefined,
       tags: data.tags,
-      siteId: data.siteId,
-      supervisorId: data.supervisorId,
+      neighborhoodId: data.neighborhoodId,
+      activistCoordinatorId: data.activistCoordinatorId,
       isActive: data.isActive,
     });
-    if (result.success && result.worker) {
+    if (result.success && result.activist) {
       const updatedWorker = {
-        ...result.worker,
-        site: result.worker.site ? {
-          ...result.worker.site,
-          corporationId: result.worker.site.corporation?.id || '',
+        ...result.activist,
+        neighborhood: result.activist.neighborhood ? {
+          ...result.activist.neighborhood,
+          cityId: result.activist.neighborhood.cityRelation?.id || '',
         } : undefined,
       };
       setWorkers((prev) =>
@@ -240,7 +240,7 @@ export default function WorkersClient({
       router.refresh();
       return { success: true };
     } else {
-      return { success: false, error: result.error || 'Failed to update worker' };
+      return { success: false, error: result.error || 'Failed to update activist' };
     }
   };
 
@@ -252,7 +252,7 @@ export default function WorkersClient({
   const handleDeleteWorker = async () => {
     if (!selectedWorker) return;
 
-    const result = await deleteWorker(selectedWorker.id);
+    const result = await deleteActivist(selectedWorker.id);
     if (result.success) {
       setWorkers((prev) => prev.filter((worker) => worker.id !== selectedWorker.id));
       setDeleteModalOpen(false);
@@ -1038,8 +1038,8 @@ export default function WorkersClient({
             position: selectedWorker.position || '',
             notes: selectedWorker.notes || '',
             tags: selectedWorker.tags || [],
-            siteId: selectedWorker.siteId,
-            supervisorId: selectedWorker.supervisorId || undefined,
+            neighborhoodId: selectedWorker.neighborhoodId,
+            activistCoordinatorId: selectedWorker.activistCoordinatorId || undefined,
             isActive: selectedWorker.isActive,
             startDate: selectedWorker.startDate
               ? new Date(selectedWorker.startDate).toISOString().split('T')[0]

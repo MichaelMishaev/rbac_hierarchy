@@ -1,17 +1,17 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { listSites } from '@/app/actions/neighborhoods';
+import { listNeighborhoods } from '@/app/actions/neighborhoods';
 
 export function useSites() {
   return useQuery({
     queryKey: ['sites'],
     queryFn: async () => {
-      const result = await listSites({});
+      const result = await listNeighborhoods({});
       if (!result.success) {
         throw new Error(result.error);
       }
-      return result.sites || [];
+      return result.neighborhoods || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -26,8 +26,8 @@ export function useSiteMutations() {
     prefetch: () => queryClient.prefetchQuery({
       queryKey: ['sites'],
       queryFn: async () => {
-        const result = await listSites({});
-        return result.sites || [];
+        const result = await listNeighborhoods({});
+        return result.neighborhoods || [];
       },
     }),
   };

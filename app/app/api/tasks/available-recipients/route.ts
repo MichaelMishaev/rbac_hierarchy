@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const roleFilter = searchParams.get('role') as
       | 'area_manager'
       | 'corporation_manager'
-      | 'supervisor'
+      | 'activistCoordinator'
       | undefined;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);

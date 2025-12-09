@@ -2,7 +2,7 @@ import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { listUsers } from '@/app/actions/users';
 import { listCorporations } from '@/app/actions/cities';
-import { listSites } from '@/app/actions/neighborhoods';
+import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import UsersClient from '@/app/components/users/UsersClient';
 
 export default async function UsersPage() {
@@ -16,7 +16,7 @@ export default async function UsersPage() {
   const [usersResult, corporationsResult, sitesResult] = await Promise.all([
     listUsers(),
     listCorporations(),
-    listSites(),
+    listNeighborhoods(),
   ]);
 
   if (!usersResult.success) {

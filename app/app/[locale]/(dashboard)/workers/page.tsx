@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import { listWorkers } from '@/app/actions/activists';
-import { listSites } from '@/app/actions/neighborhoods';
+import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { prisma } from '@/lib/prisma';
 import WorkersClient from '@/app/components/workers/WorkersClient';
 import { Suspense } from 'react';
@@ -26,7 +26,7 @@ export default async function WorkersPage() {
   // Fetch workers and sites
   const [workersResult, sitesResult] = await Promise.all([
     listWorkers({}),
-    listSites({}),
+    listNeighborhoods({}),
   ]);
 
   // Fetch activist coordinators (ActivistCoordinator records, not User records!)
@@ -108,25 +108,25 @@ export default async function WorkersPage() {
       <WorkersClient
         workers={workers.map(w => ({
           ...w,
-          site: w.site ? {
-            id: w.site.id,
-            name: w.site.name,
-            corporationId: w.site.corporation?.id || '',
-            corporation: w.site.corporation,
+          neighborhood: w.neighborhood ? {
+            id: w.neighborhood.id,
+            name: w.neighborhood.name,
+            cityId: w.neighborhood.cityRelation?.id || '',
+            cityRelation: w.neighborhood.cityRelation,
           } : undefined,
-          supervisor: w.supervisor ? {
-            id: w.supervisor.id,
+          activistCoordinator: w.activistCoordinator ? {
+            id: w.activistCoordinator.id,
             user: {
-              fullName: w.supervisor.user.fullName,
-              email: w.supervisor.user.email,
+              fullName: w.activistCoordinator.user.fullName,
+              email: w.activistCoordinator.user.email,
             },
           } : undefined,
         }))}
         sites={sites.map(s => ({
           id: s.id,
           name: s.name,
-          corporationId: s.corporationId,
-          corporation: s.corporation,
+          cityId: s.cityId,
+          cityRelation: s.cityRelation,
         }))}
         supervisors={supervisors}
         currentUserId={session.user.id}

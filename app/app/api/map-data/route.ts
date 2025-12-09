@@ -20,25 +20,25 @@ export async function GET(request: Request) {
     // Fetch all entities based on user permissions
     const [sites, corporations, areaManagers, managers, supervisors, workers] = await Promise.all([
       // Sites with GPS coordinates
-      prisma.site.findMany({
+      prisma.neighborhood.findMany({
         where: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         include: {
-          corporation: {
+          cityRelation: {
             select: {
               id: true,
               name: true,
             },
           },
-          workers: {
+          activists: {
             where: { isActive: true },
             select: {
               id: true,
               fullName: true,
             },
           },
-          supervisorAssignments: {
+          activistCoordinatorAssignments: {
             include: {
-              supervisor: {
+              activistCoordinator: {
                 include: {
                   user: {
                     select: {
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       }),
 
       // Corporations
-      prisma.corporation.findMany({
+      prisma.city.findMany({
         where: userCorps === 'all' ? {} : { id: { in: userCorps } },
         select: {
           id: true,
@@ -64,9 +64,9 @@ export async function GET(request: Request) {
           isActive: true,
           _count: {
             select: {
-              sites: true,
-              managers: true,
-              supervisors: true,
+              neighborhoods: true,
+              coordinators: true,
+              activistCoordinators: true,
             },
           },
         },
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
                   phone: true,
                 },
               },
-              corporations: {
+              cities: {
                 select: {
                   id: true,
                   name: true,
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
           })
         : [],
 
-      // Managers
+      // City Coordinators
       prisma.cityCoordinator.findMany({
         where: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         include: {
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
               phone: true,
             },
           },
-          corporation: {
+          city: {
             select: {
               id: true,
               name: true,
@@ -115,8 +115,8 @@ export async function GET(request: Request) {
         },
       }),
 
-      // Supervisors
-      prisma.supervisor.findMany({
+      // Activist Coordinators
+      prisma.activistCoordinator.findMany({
         where: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         include: {
           user: {
@@ -127,20 +127,20 @@ export async function GET(request: Request) {
               phone: true,
             },
           },
-          corporation: {
+          city: {
             select: {
               id: true,
               name: true,
             },
           },
-          siteAssignments: {
+          neighborhoodAssignments: {
             include: {
-              site: {
+              neighborhood: {
                 select: {
                   id: true,
                   name: true,
                   address: true,
-                  city: true,
+                  cityRelation: true,
                 },
               },
             },
@@ -149,10 +149,10 @@ export async function GET(request: Request) {
       }),
 
       // Workers summary (count only, not individual records for performance)
-      prisma.worker.groupBy({
-        by: ['siteId', 'isActive'],
+      prisma.activist.groupBy({
+        by: ['neighborhoodId', 'isActive'],
         where: {
-          site: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
+          neighborhood: userCorps === 'all' ? {} : { cityId: { in: userCorps } },
         },
         _count: true,
       }),
@@ -160,13 +160,13 @@ export async function GET(request: Request) {
 
     // Calculate worker counts per site
     const workerCountsBySite = workers.reduce((acc, group) => {
-      if (!acc[group.siteId]) {
-        acc[group.siteId] = { active: 0, inactive: 0 };
+      if (!acc[group.neighborhoodId]) {
+        acc[group.neighborhoodId] = { active: 0, inactive: 0 };
       }
       if (group.isActive) {
-        acc[group.siteId].active = group._count;
+        acc[group.neighborhoodId].active = group._count;
       } else {
-        acc[group.siteId].inactive = group._count;
+        acc[group.neighborhoodId].inactive = group._count;
       }
       return acc;
     }, {} as Record<string, { active: number; inactive: number }>);
@@ -183,18 +183,18 @@ export async function GET(request: Request) {
       phone: site.phone,
       email: site.email,
       isActive: site.isActive,
-      corporation: site.corporation,
-      workers: {
+      cityRelation: site.cityRelation,
+      activists: {
         active: workerCountsBySite[site.id]?.active || 0,
         inactive: workerCountsBySite[site.id]?.inactive || 0,
         total:
           (workerCountsBySite[site.id]?.active || 0) +
           (workerCountsBySite[site.id]?.inactive || 0),
       },
-      supervisors: site.supervisorAssignments.map((sa) => ({
-        id: sa.supervisor.id,
-        name: sa.supervisor.user.fullName,
-        email: sa.supervisor.user.email,
+      activistCoordinators: site.activistCoordinatorAssignments.map((sa: any) => ({
+        id: sa.activistCoordinator.id,
+        name: sa.activistCoordinator.user.fullName,
+        email: sa.activistCoordinator.user.email,
       })),
     }));
 
@@ -218,7 +218,7 @@ export async function GET(request: Request) {
     };
 
     return NextResponse.json({
-      sites: formattedSites,
+      neighborhoods: formattedSites,
       corporations,
       areaManagers,
       managers,

@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
         where: { userId: { in: uniqueSenderIds } },
         select: { userId: true },
       }),
-      prisma.supervisor.findMany({
+      prisma.activistCoordinator.findMany({
         where: { userId: { in: uniqueSenderIds } },
         select: { userId: true },
       }),
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
       if (superAdminSet.has(userId)) return 'super_admin';
       if (areaManagerSet.has(userId)) return 'area_manager';
       if (managerSet.has(userId)) return 'corporation_manager';
-      if (supervisorSet.has(userId)) return 'supervisor';
+      if (supervisorSet.has(userId)) return 'activistCoordinator';
       return 'unknown';
     };
 

@@ -180,8 +180,8 @@ export default async function DashboardPage() {
             <Grid item xs={12} sm={6}>
               <KPICard
                 title="Your Site"
-                value={stats.supervisor?.site?.name ?? 'N/A'}
-                subtitle={`${stats.supervisor?.site?.isActive ? 'Active' : 'Inactive'}`}
+                value={stats.supervisor?.neighborhood?.name ?? 'N/A'}
+                subtitle={`${stats.supervisor?.neighborhood?.isActive ? 'Active' : 'Inactive'}`}
                 color="green"
                 icon={<LocationOnIcon sx={{ fontSize: 24 }} />}
               />

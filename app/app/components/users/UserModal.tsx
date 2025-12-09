@@ -27,9 +27,9 @@ type User = {
   fullName: string;
   email: string;
   phone: string | null;
-  role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
-  // Note: corporationId is derived from role tables, not stored directly on User
-  corporationId?: string | null;
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
+  // Note: cityId is derived from role tables, not stored directly on User
+  cityId?: string | null;
   regionName?: string | null; // For Area Manager
 };
 
@@ -42,7 +42,7 @@ type Corporation = {
 type Site = {
   id: string;
   name: string;
-  corporationId: string;
+  cityId: string;
 };
 
 type UserModalProps = {
@@ -52,7 +52,7 @@ type UserModalProps = {
   user?: User | null;
   corporations: Corporation[];
   sites?: Site[];
-  currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
+  currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
   currentUserCorporationId?: string | null;
 };
 
@@ -61,10 +61,10 @@ type FormData = {
   email: string;
   phone: string;
   password: string;
-  role: 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR' | 'SUPERADMIN';
-  corporationId: string;
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
+  cityId: string;
   regionName: string; // For Area Manager
-  siteIds: string[]; // For Supervisor - multiple sites
+  siteIds: string[]; // For ActivistCoordinator - multiple sites
 };
 
 export default function UserModal({
@@ -87,8 +87,8 @@ export default function UserModal({
     email: user?.email || '',
     phone: user?.phone || '',
     password: '',
-    role: user?.role || 'SUPERVISOR',
-    corporationId: user?.corporationId || currentUserCorporationId || '',
+    role: user?.role || 'ACTIVIST_COORDINATOR',
+    cityId: user?.cityId || currentUserCorporationId || '',
     regionName: user?.regionName || '',
     siteIds: [],
   });
@@ -105,7 +105,7 @@ export default function UserModal({
         phone: user.phone || '',
         password: '',
         role: user.role,
-        corporationId: user.corporationId || currentUserCorporationId || '',
+        cityId: user.cityId || currentUserCorporationId || '',
         regionName: user.regionName || '',
         siteIds: [],
       });
@@ -115,8 +115,8 @@ export default function UserModal({
         email: '',
         phone: '',
         password: '',
-        role: 'SUPERVISOR',
-        corporationId: currentUserCorporationId || '',
+        role: 'ACTIVIST_COORDINATOR',
+        cityId: currentUserCorporationId || '',
         regionName: '',
         siteIds: [],
       });
@@ -170,19 +170,19 @@ export default function UserModal({
       return false;
     }
 
-    // Corporation required for MANAGER/SUPERVISOR (not for SUPERADMIN or AREA_MANAGER)
+    // Corporation required for CITY_COORDINATOR/ACTIVIST_COORDINATOR (not for SUPERADMIN or AREA_MANAGER)
     if (
       formData.role !== 'SUPERADMIN' &&
       formData.role !== 'AREA_MANAGER' &&
-      (formData.role === 'MANAGER' || formData.role === 'SUPERVISOR') &&
-      !formData.corporationId
+      (formData.role === 'CITY_COORDINATOR' || formData.role === 'ACTIVIST_COORDINATOR') &&
+      !formData.cityId
     ) {
       setError('יש לבחור תאגיד עבור מנהל או מפקח');
       return false;
     }
 
-    // Sites required for SUPERVISOR
-    if (formData.role === 'SUPERVISOR' && formData.siteIds.length === 0) {
+    // Sites required for ACTIVIST_COORDINATOR
+    if (formData.role === 'ACTIVIST_COORDINATOR' && formData.siteIds.length === 0) {
       setError('יש לבחור לפחות אתר אחד עבור מפקח');
       return false;
     }
@@ -208,7 +208,7 @@ export default function UserModal({
           email: formData.email,
           phone: formData.phone || undefined,
           role: formData.role,
-          corporationId: formData.corporationId || undefined,
+          cityId: formData.cityId || undefined,
           regionName: formData.role === 'AREA_MANAGER' ? formData.regionName : undefined,
           ...(formData.password && { password: formData.password }),
         });
@@ -220,7 +220,7 @@ export default function UserModal({
           phone: formData.phone || undefined,
           password: formData.password,
           role: formData.role,
-          corporationId: formData.corporationId || undefined,
+          cityId: formData.cityId || undefined,
           regionName: formData.role === 'AREA_MANAGER' ? formData.regionName : undefined,
         });
       }
@@ -403,13 +403,13 @@ export default function UserModal({
             />
           )}
 
-          {/* Corporation (for MANAGER/SUPERVISOR) */}
-          {(formData.role === 'MANAGER' || formData.role === 'SUPERVISOR') && (
+          {/* Corporation (for CITY_COORDINATOR/ACTIVIST_COORDINATOR) */}
+          {(formData.role === 'CITY_COORDINATOR' || formData.role === 'ACTIVIST_COORDINATOR') && (
             <TextField
               label={t('corporation')}
               select
-              value={formData.corporationId}
-              onChange={handleChange('corporationId')}
+              value={formData.cityId}
+              onChange={handleChange('cityId')}
               fullWidth
               required
               disabled={loading || availableCorporations.length === 0}
@@ -432,11 +432,11 @@ export default function UserModal({
           )}
 
           {/* Sites (for SUPERVISOR only) */}
-          {formData.role === 'SUPERVISOR' && formData.corporationId && (
+          {formData.role === 'SUPERVISOR' && formData.cityId && (
             <Box sx={{ direction: 'rtl' }}>
               <Autocomplete
                 multiple
-                options={sites.filter((site) => site.corporationId === formData.corporationId)}
+                options={sites.filter((site) => site.cityId === formData.cityId)}
                 getOptionLabel={(option) => option.name}
                 value={sites.filter((site) => formData.siteIds.includes(site.id))}
                 onChange={(_, newValue) => {

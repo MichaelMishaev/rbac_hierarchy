@@ -90,7 +90,7 @@ export async function createInvitation(data: CreateInvitationInput) {
     // Validate role-based constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Managers can only invite within their corporations
-      if (!data.corporationId || !hasAccessToCorporation(currentUser, data.corporationId)) {
+      if (!data.cityId || !hasAccessToCorporation(currentUser, data.cityId)) {
         return {
           success: false,
           error: 'Must specify a corporation you have access to for invitations',
@@ -135,9 +135,9 @@ export async function createInvitation(data: CreateInvitationInput) {
 
     // Verify corporation exists
     let corporation = null;
-    if (data.corporationId) {
-      corporation = await prisma.corporation.findUnique({
-        where: { id: data.corporationId },
+    if (data.cityId) {
+      corporation = await prisma.city.findUnique({
+        where: { id: data.cityId },
       });
 
       if (!corporation) {
@@ -169,7 +169,7 @@ export async function createInvitation(data: CreateInvitationInput) {
         status: 'PENDING',
       },
       include: {
-        corporation: {
+        city: {
           select: {
             id: true,
             name: true,
@@ -250,7 +250,7 @@ export async function listInvitations(filters: ListInvitationsFilters = {}) {
     // Role-based filtering
     const userCorps = getUserCorporations(currentUser);
     if (userCorps !== 'all') {
-      where.corporationId = { in: userCorps };
+      where.cityId = { in: userCorps };
     }
 
     // Apply additional filters
@@ -262,8 +262,8 @@ export async function listInvitations(filters: ListInvitationsFilters = {}) {
       where.role = filters.role;
     }
 
-    if (filters.corporationId && currentUser.role === 'SUPERADMIN') {
-      where.corporationId = filters.corporationId;
+    if (filters.cityId && currentUser.role === 'SUPERADMIN') {
+      where.cityId = filters.cityId;
     }
 
     if (filters.search) {
@@ -277,7 +277,7 @@ export async function listInvitations(filters: ListInvitationsFilters = {}) {
     const invitations = await prisma.invitation.findMany({
       where,
       include: {
-        corporation: {
+        city: {
           select: {
             id: true,
             name: true,
@@ -328,7 +328,7 @@ export async function getInvitationByToken(token: string) {
     const invitation = await prisma.invitation.findUnique({
       where: { token },
       include: {
-        corporation: {
+        city: {
           select: {
             id: true,
             name: true,
@@ -447,7 +447,7 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
       });
 
       // Create role-specific record if corporation is provided
-      if (invitation.corporationId) {
+      if (invitation.cityId) {
         if (invitation.role === 'CITY_COORDINATOR') {
           await tx.cityCoordinator.create({
             data: {
@@ -457,11 +457,11 @@ export async function acceptInvitation(data: AcceptInvitationInput) {
             },
           });
         } else if (invitation.role === 'ACTIVIST_COORDINATOR') {
-          await tx.supervisor.create({
+          await tx.activistCoordinator.create({
             data: {
               userId: newUser.id,
-              cityId: invitation.cityId,
-              title: 'Supervisor',
+              cityId: invitation.cityId!,
+              title: 'ActivistCoordinator',
             },
           });
         }
@@ -562,7 +562,7 @@ export async function revokeInvitation(invitationId: string) {
 
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (invitation.corporationId && !hasAccessToCorporation(currentUser, invitation.corporationId)) {
+      if (invitation.cityId && !hasAccessToCorporation(currentUser, invitation.cityId)) {
         return {
           success: false,
           error: 'Cannot revoke invitation from different corporation',
@@ -632,7 +632,7 @@ export async function resendInvitation(invitationId: string) {
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
       include: {
-        corporation: true,
+        city: true,
       },
     });
 
@@ -660,7 +660,7 @@ export async function resendInvitation(invitationId: string) {
 
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (invitation.corporationId && !hasAccessToCorporation(currentUser, invitation.corporationId)) {
+      if (invitation.cityId && !hasAccessToCorporation(currentUser, invitation.cityId)) {
         return {
           success: false,
           error: 'Cannot resend invitation from different corporation',
@@ -687,7 +687,7 @@ export async function resendInvitation(invitationId: string) {
     await sendInvitationEmail(
       invitation.email,
       newToken,
-      invitation.corporation?.name ?? 'Hierarchy Platform',
+      invitation.city?.name ?? 'Hierarchy Platform',
       invitation.message ?? undefined
     );
 
@@ -749,7 +749,7 @@ export async function getInvitationStats() {
     // Apply role-based filtering
     const userCorps = getUserCorporations(currentUser);
     if (userCorps !== 'all') {
-      where.corporationId = { in: userCorps };
+      where.cityId = { in: userCorps };
     }
 
     const [
@@ -776,7 +776,7 @@ export async function getInvitationStats() {
           status: true,
           createdAt: true,
           expiresAt: true,
-          corporation: {
+          city: {
             select: {
               name: true,
             },
