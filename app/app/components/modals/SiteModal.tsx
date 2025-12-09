@@ -58,7 +58,7 @@ type Supervisor = {
 type SiteModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: SiteFormData) => Promise<void>;
+  onSubmit: (data: SiteFormData) => Promise<{ success: boolean; error?: string }>;
   initialData?: Partial<SiteFormData>;
   mode: 'create' | 'edit';
   corporations: Corporation[];
@@ -136,10 +136,18 @@ export default function SiteModal({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
-      onClose();
+      const result = await onSubmit(formData);
+      if (result.success) {
+        onClose();
+      } else {
+        // Show error message
+        const errorField: keyof SiteFormData = 'name';
+        setErrors((prev) => ({ ...prev, [errorField]: result.error || 'Failed to save site' }));
+      }
     } catch (error) {
       console.error('Error submitting site:', error);
+      const errorField: keyof SiteFormData = 'name';
+      setErrors((prev) => ({ ...prev, [errorField]: 'An unexpected error occurred' }));
     } finally {
       setLoading(false);
     }

@@ -167,12 +167,15 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
     setCreateModalOpen(true);
   };
 
-  const handleCreateSite = async (data: SiteFormData) => {
+  const handleCreateSite = async (data: SiteFormData): Promise<{ success: boolean; error?: string }> => {
     const result = await createSite(data);
     if (result.success && result.site) {
       setSites((prev) => [result.site!, ...prev]);
       setCreateModalOpen(false);
       router.refresh();
+      return { success: true };
+    } else {
+      return { success: false, error: result.error || 'Failed to create site' };
     }
   };
 
@@ -184,8 +187,8 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
     handleMenuClose();
   };
 
-  const handleEditSite = async (data: SiteFormData) => {
-    if (!selectedSite) return;
+  const handleEditSite = async (data: SiteFormData): Promise<{ success: boolean; error?: string }> => {
+    if (!selectedSite) return { success: false, error: 'No site selected' };
 
     const result = await updateSite(selectedSite.id, data);
     if (result.success && result.site) {
@@ -195,6 +198,9 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
       setEditModalOpen(false);
       setSelectedSite(null);
       router.refresh();
+      return { success: true };
+    } else {
+      return { success: false, error: result.error || 'Failed to update site' };
     }
   };
 
