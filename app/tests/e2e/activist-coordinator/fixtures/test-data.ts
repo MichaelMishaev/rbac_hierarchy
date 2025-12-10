@@ -1,125 +1,125 @@
 /**
- * Test Data Fixtures for Worker-Supervisor Automation
+ * Test Data Fixtures for Activist-ActivistCoordinator Automation
  */
 
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 export interface TestScenarioData {
-  corporation: any;
-  siteWithNoSupervisors: any;
-  siteWithOneSupervisor: any;
-  siteWithMultipleSupervisors: any;
-  supervisor1: any;
-  supervisor2: any;
-  supervisor3: any;
-  supervisor1User: any;
-  supervisor2User: any;
-  supervisor3User: any;
-  manager: any;
-  managerUser: any;
+  city: any;
+  neighborhoodWithNoActivistCoordinators: any;
+  neighborhoodWithOneActivistCoordinator: any;
+  neighborhoodWithMultipleActivistCoordinators: any;
+  activistCoordinator1: any;
+  activistCoordinator2: any;
+  activistCoordinator3: any;
+  activistCoordinator1User: any;
+  activistCoordinator2User: any;
+  activistCoordinator3User: any;
+  cityCoordinator: any;
+  cityCoordinatorUser: any;
 }
 
 /**
  * Setup comprehensive test data for all scenarios
  */
-export async function setupWorkerSupervisorTestData(): Promise<TestScenarioData> {
+export async function setupActivistCoordinatorTestData(): Promise<TestScenarioData> {
   const passwordHash = await bcrypt.hash('TestPassword123!', 10);
 
   // Create manager user
-  const managerUser = await prisma.user.create({
+  const cityCoordinatorUser = await prisma.user.create({
     data: {
       email: 'test-manager@worker-supervisor-test.com',
-      fullName: 'Test Manager',
+      fullName: 'Test City Coordinator',
       passwordHash,
-      role: 'MANAGER',
+      role: 'CITY_COORDINATOR',
       isActive: true,
     },
   });
 
   // Create corporation
-  const corporation = await prisma.corporation.create({
+  const city = await prisma.city.create({
     data: {
-      name: 'Test Corp - Worker Supervisor Scenarios',
+      name: 'Test City - Activist Coordinator Scenarios',
       code: 'TEST-WS',
       isActive: true,
     },
   });
 
   // Create manager
-  const manager = await prisma.corporationManager.create({
+  const cityCoordinator = await prisma.cityCoordinator.create({
     data: {
       userId: managerUser.id,
-      corporationId: corporation.id,
-      title: 'Test Manager',
+      cityId: corporation.id,
+      title: 'Test City Coordinator',
       isActive: true,
     },
   });
 
   // Create supervisor users
-  const supervisor1User = await prisma.user.create({
+  const activistCoordinator1User = await prisma.user.create({
     data: {
       email: 'supervisor1@test.com',
-      fullName: 'Supervisor One',
+      fullName: 'Activist Coordinator One',
       passwordHash,
-      role: 'SUPERVISOR',
+      role: 'ACTIVIST_COORDINATOR',
       isActive: true,
     },
   });
 
-  const supervisor2User = await prisma.user.create({
+  const activistCoordinator2User = await prisma.user.create({
     data: {
       email: 'supervisor2@test.com',
-      fullName: 'Supervisor Two',
+      fullName: 'Activist Coordinator Two',
       passwordHash,
-      role: 'SUPERVISOR',
+      role: 'ACTIVIST_COORDINATOR',
       isActive: true,
     },
   });
 
-  const supervisor3User = await prisma.user.create({
+  const activistCoordinator3User = await prisma.user.create({
     data: {
       email: 'supervisor3@test.com',
-      fullName: 'Supervisor Three',
+      fullName: 'Activist Coordinator Three',
       passwordHash,
-      role: 'SUPERVISOR',
+      role: 'ACTIVIST_COORDINATOR',
       isActive: true,
     },
   });
 
   // Create supervisors
-  const supervisor1 = await prisma.supervisor.create({
+  const activistCoordinator1 = await prisma.activistCoordinator.create({
     data: {
       userId: supervisor1User.id,
-      corporationId: corporation.id,
+      cityId: corporation.id,
       title: 'Supervisor 1',
       isActive: true,
     },
   });
 
-  const supervisor2 = await prisma.supervisor.create({
+  const activistCoordinator2 = await prisma.activistCoordinator.create({
     data: {
       userId: supervisor2User.id,
-      corporationId: corporation.id,
+      cityId: corporation.id,
       title: 'Supervisor 2',
       isActive: true,
     },
   });
 
-  const supervisor3 = await prisma.supervisor.create({
+  const activistCoordinator3 = await prisma.activistCoordinator.create({
     data: {
       userId: supervisor3User.id,
-      corporationId: corporation.id,
+      cityId: corporation.id,
       title: 'Supervisor 3',
       isActive: true,
     },
   });
 
   // Site 1: No supervisors
-  const siteWithNoSupervisors = await prisma.site.create({
+  const neighborhoodWithNoActivistCoordinators = await prisma.neighborhood.create({
     data: {
       name: 'Site A - No Supervisors',
-      corporationId: corporation.id,
+      cityId: corporation.id,
       address: 'Address A',
       city: 'City A',
       isActive: true,
@@ -127,96 +127,96 @@ export async function setupWorkerSupervisorTestData(): Promise<TestScenarioData>
   });
 
   // Site 2: One supervisor
-  const siteWithOneSupervisor = await prisma.site.create({
+  const neighborhoodWithOneActivistCoordinator = await prisma.neighborhood.create({
     data: {
       name: 'Site B - One Supervisor',
-      corporationId: corporation.id,
+      cityId: corporation.id,
       address: 'Address B',
       city: 'City B',
       isActive: true,
     },
   });
 
-  await prisma.supervisorSite.create({
+  await prisma.activistCoordinatorNeighborhood.create({
     data: {
-      supervisorId: supervisor1.id,
-      siteId: siteWithOneSupervisor.id,
-      corporationId: corporation.id,
+      activistCoordinatorId: supervisor1.id,
+      neighborhoodId: siteWithOneSupervisor.id,
+      cityId: corporation.id,
       legacySupervisorUserId: supervisor1User.id,
     },
   });
 
   // Site 3: Multiple supervisors
-  const siteWithMultipleSupervisors = await prisma.site.create({
+  const neighborhoodWithMultipleActivistCoordinators = await prisma.neighborhood.create({
     data: {
       name: 'Site C - Multiple Supervisors',
-      corporationId: corporation.id,
+      cityId: corporation.id,
       address: 'Address C',
       city: 'City C',
       isActive: true,
     },
   });
 
-  await prisma.supervisorSite.createMany({
+  await prisma.activistCoordinatorNeighborhood.createMany({
     data: [
       {
-        supervisorId: supervisor2.id,
-        siteId: siteWithMultipleSupervisors.id,
-        corporationId: corporation.id,
+        activistCoordinatorId: supervisor2.id,
+        neighborhoodId: siteWithMultipleSupervisors.id,
+        cityId: corporation.id,
         legacySupervisorUserId: supervisor2User.id,
       },
       {
-        supervisorId: supervisor3.id,
-        siteId: siteWithMultipleSupervisors.id,
-        corporationId: corporation.id,
+        activistCoordinatorId: supervisor3.id,
+        neighborhoodId: siteWithMultipleSupervisors.id,
+        cityId: corporation.id,
         legacySupervisorUserId: supervisor3User.id,
       },
     ],
   });
 
   return {
-    corporation,
-    siteWithNoSupervisors,
-    siteWithOneSupervisor,
-    siteWithMultipleSupervisors,
-    supervisor1,
-    supervisor2,
-    supervisor3,
-    supervisor1User,
-    supervisor2User,
-    supervisor3User,
-    manager,
-    managerUser,
+    city,
+    neighborhoodWithNoActivistCoordinators,
+    neighborhoodWithOneActivistCoordinator,
+    neighborhoodWithMultipleActivistCoordinators,
+    activistCoordinator1,
+    activistCoordinator2,
+    activistCoordinator3,
+    activistCoordinator1User,
+    activistCoordinator2User,
+    activistCoordinator3User,
+    cityCoordinator,
+    cityCoordinatorUser,
   };
 }
 
 /**
  * Cleanup test data
  */
-export async function cleanupWorkerSupervisorTestData(testData: TestScenarioData) {
+export async function cleanupActivistCoordinatorTestData(testData: TestScenarioData) {
   // Delete in correct order due to foreign keys
-  await prisma.worker.deleteMany({
-    where: { corporationId: testData.corporation.id },
+  await prisma.activist.deleteMany({
+    where: { cityId: testData.city.id },
   });
 
-  await prisma.supervisorSite.deleteMany({
-    where: { corporationId: testData.corporation.id },
+  await prisma.activistCoordinatorNeighborhood.deleteMany({
+    where: { cityId: testData.city.id },
   });
 
-  await prisma.supervisor.deleteMany({
-    where: { corporationId: testData.corporation.id },
+  await prisma.activistCoordinator.deleteMany({
+    where: { cityId: testData.city.id },
   });
 
-  await prisma.corporationManager.deleteMany({
-    where: { corporationId: testData.corporation.id },
+  await prisma.cityCoordinator.deleteMany({
+    where: { cityId: testData.city.id },
   });
 
-  await prisma.site.deleteMany({
-    where: { corporationId: testData.corporation.id },
+  await prisma.neighborhood.deleteMany({
+    where: { cityId: testData.city.id },
   });
 
-  await prisma.corporation.delete({
-    where: { id: testData.corporation.id },
+  await prisma.city.delete({
+    where: { id: testData.city.id },
   });
 
   await prisma.user.deleteMany({
