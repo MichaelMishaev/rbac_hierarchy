@@ -51,9 +51,9 @@ type UserModalProps = {
   onSuccess: () => void;
   user?: User | null;
   cities: Corporation[];
-  sites?: Site[];
+  neighborhoods?: Site[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
-  currentUserCorporationId?: string | null;
+  currentUserCityId?: string | null;
 };
 
 type FormData = {
@@ -64,7 +64,7 @@ type FormData = {
   role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
   cityId: string;
   regionName: string; // For Area Manager
-  siteIds: string[]; // For ActivistCoordinator - multiple sites
+  neighborhoodIds: string[]; // For ActivistCoordinator - multiple neighborhoods
 };
 
 export default function UserModal({
@@ -72,10 +72,10 @@ export default function UserModal({
   onClose,
   onSuccess,
   user,
-  corporations,
-  sites = [],
+  cities,
+  neighborhoods = [],
   currentUserRole,
-  currentUserCorporationId,
+  currentUserCityId,
 }: UserModalProps) {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
@@ -88,9 +88,9 @@ export default function UserModal({
     phone: user?.phone || '',
     password: '',
     role: user?.role || 'ACTIVIST_COORDINATOR',
-    cityId: user?.cityId || currentUserCorporationId || '',
+    cityId: user?.cityId || currentUserCityId || '',
     regionName: user?.regionName || '',
-    siteIds: [],
+    neighborhoodIds: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -105,9 +105,9 @@ export default function UserModal({
         phone: user.phone || '',
         password: '',
         role: user.role,
-        cityId: user.cityId || currentUserCorporationId || '',
+        cityId: user.cityId || currentUserCityId || '',
         regionName: user.regionName || '',
-        siteIds: [],
+        neighborhoodIds: [],
       });
     } else {
       setFormData({
@@ -116,13 +116,13 @@ export default function UserModal({
         phone: '',
         password: '',
         role: 'ACTIVIST_COORDINATOR',
-        cityId: currentUserCorporationId || '',
+        cityId: currentUserCityId || '',
         regionName: '',
-        siteIds: [],
+        neighborhoodIds: [],
       });
     }
     setError(null);
-  }, [user, currentUserCorporationId]);
+  }, [user, currentUserCityId]);
 
   const handleChange = (field: keyof FormData) => (
     e: React.ChangeEvent<HTMLInputElement>
@@ -182,7 +182,7 @@ export default function UserModal({
     }
 
     // Sites required for ACTIVIST_COORDINATOR
-    if (formData.role === 'ACTIVIST_COORDINATOR' && formData.siteIds.length === 0) {
+    if (formData.role === 'ACTIVIST_COORDINATOR' && formData.neighborhoodIds.length === 0) {
       setError('יש לבחור לפחות אתר אחד עבור מפקח');
       return false;
     }
@@ -240,11 +240,11 @@ export default function UserModal({
     }
   };
 
-  // Filter corporations for MANAGER role
+  // Filter cities for MANAGER role
   const availableCorporations =
     currentUserRole === 'SUPERADMIN'
-      ? corporations
-      : corporations.filter((corp) => corp.id === currentUserCorporationId);
+      ? cities
+      : cities.filter((corp) => corp.id === currentUserCityId);
 
   // Role options based on current user
   const roleOptions =
@@ -253,11 +253,11 @@ export default function UserModal({
           { value: 'SUPERADMIN', label: t('superadmin') },
           { value: 'AREA_MANAGER', label: t('area_manager') },
           { value: 'MANAGER', label: t('manager') },
-          { value: 'SUPERVISOR', label: t('supervisor') },
+          { value: 'ACTIVIST_COORDINATOR', label: t('supervisor') },
         ]
       : [
           { value: 'MANAGER', label: t('manager') },
-          { value: 'SUPERVISOR', label: t('supervisor') },
+          { value: 'ACTIVIST_COORDINATOR', label: t('supervisor') },
         ];
 
   return (
@@ -432,19 +432,19 @@ export default function UserModal({
           )}
 
           {/* Sites (for SUPERVISOR only) */}
-          {formData.role === 'SUPERVISOR' && formData.cityId && (
+          {formData.role === 'ACTIVIST_COORDINATOR' && formData.cityId && (
             <Box sx={{ direction: 'rtl' }}>
               <Autocomplete
                 multiple
-                options={sites.filter((site) => site.cityId === formData.cityId)}
+                options={neighborhoods.filter((site) => site.cityId === formData.cityId)}
                 getOptionLabel={(option) => option.name}
-                value={sites.filter((site) => formData.siteIds.includes(site.id))}
+                value={neighborhoods.filter((site) => formData.neighborhoodIds.includes(site.id))}
                 onChange={(_, newValue) => {
                   console.log('Autocomplete onChange called. New value:', newValue);
                   console.log('Site IDs:', newValue.map((site) => site.id));
                   setFormData((prev) => ({
                     ...prev,
-                    siteIds: newValue.map((site) => site.id),
+                    neighborhoodIds: newValue.map((site) => site.id),
                   }));
                   setError(null);
                 }}
@@ -488,12 +488,12 @@ export default function UserModal({
                       console.log('🔴 CHIP ONDELETE FIRED!', option.name);
                       event.stopPropagation();
                       event.preventDefault();
-                      const newSiteIds = formData.siteIds.filter(id => id !== option.id);
+                      const newSiteIds = formData.neighborhoodIds.filter(id => id !== option.id);
                       console.log('Removing ID:', option.id);
                       console.log('New site IDs:', newSiteIds);
                       setFormData((prev) => ({
                         ...prev,
-                        siteIds: newSiteIds,
+                        neighborhoodIds: newSiteIds,
                       }));
                     };
 
@@ -546,7 +546,7 @@ export default function UserModal({
                     margin: '2px',
                   },
                 }}
-                data-testid="sites-autocomplete"
+                data-testid="neighborhoods-autocomplete"
               />
             </Box>
           )}

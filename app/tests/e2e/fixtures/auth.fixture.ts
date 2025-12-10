@@ -15,27 +15,27 @@ export interface AuthUser {
 
 export const testUsers = {
   superAdmin: {
-    email: 'admin@rbac.shop',
-    password: 'admin123', // FIX: Corrected to match actual seed password
+    email: 'admin@election.test',
+    password: 'admin123', // Matches seed password
     role: 'SUPERADMIN',
-    name: 'Super Admin',
-  },
-  manager: {
-    email: 'david.cohen@electra-tech.co.il',
-    password: 'manager123', // FIX: Corrected to match actual seed password
-    role: 'MANAGER',
-    name: 'דוד כהן',
+    name: 'מנהל מערכת',
   },
   areaManager: {
     email: 'regional@rbac.shop',
-    password: 'area123', // FIX: Corrected to match actual seed password
+    password: 'area123', // Corrected to match actual seed password
     role: 'AREA_MANAGER',
     name: 'Regional Manager',
   },
-  supervisor: {
+  cityCoordinator: {
+    email: 'david.cohen@electra-tech.co.il',
+    password: 'manager123',
+    role: 'CITY_COORDINATOR',
+    name: 'דוד כהן',
+  },
+  activistCoordinator: {
     email: 'moshe.israeli@electra-tech.co.il',
-    password: 'supervisor123', // FIX: Corrected to match actual seed password
-    role: 'SUPERVISOR',
+    password: 'supervisor123',
+    role: 'ACTIVIST_COORDINATOR',
     name: 'משה ישראלי',
   },
 } as const;
@@ -90,8 +90,8 @@ type AuthFixtures = {
 
 export const test = base.extend<AuthFixtures>({
   authenticatedRequest: async ({ page, baseURL }, use) => {
-    // Default to manager for most tests
-    const context = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    // Default to cityCoordinator for most tests
+    const context = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
     await use(context);
     await context.dispose();
   },

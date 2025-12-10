@@ -4,9 +4,9 @@ const prisma = new PrismaClient();
 
 async function checkFailedTestUsers() {
   const failedEmails = [
-    'manager@corp2.test',  // Test 2 failure
-    'manager@corp3.test',  // Test 3 failure
-    'supervisor@corp2.test' // Test 4 failure
+    'city.coordinator@city2.test',  // Test 2 failure
+    'city.coordinator@city3.test',  // Test 3 failure
+    'activist.coordinator@city2.test' // Test 4 failure
   ];
 
   for (const email of failedEmails) {
@@ -18,14 +18,14 @@ async function checkFailedTestUsers() {
         fullName: true,
         role: true,
         passwordHash: true,
-        managerOf: {
+        coordinatorOf: {
           select: {
-            corporationId: true
+            cityId: true
           }
         },
-        supervisorOf: {
+        activistCoordinatorOf: {
           select: {
-            corporationId: true
+            cityId: true
           }
         }
       }
@@ -40,8 +40,8 @@ async function checkFailedTestUsers() {
     console.log(`   Full Name: ${user.fullName}`);
     console.log(`   Role: ${user.role}`);
     console.log(`   Has Password: ${user.passwordHash ? 'YES' : 'NO'}`);
-    console.log(`   Manager of: ${user.managerOf.map(m => m.corporationId).join(', ') || 'none'}`);
-    console.log(`   Supervisor of: ${user.supervisorOf.map(s => s.corporationId).join(', ') || 'none'}`);
+    console.log(`   City Coordinator of: ${user.coordinatorOf.map(m => m.cityId).join(', ') || 'none'}`);
+    console.log(`   Activist Coordinator of: ${user.activistCoordinatorOf.map(s => s.cityId).join(', ') || 'none'}`);
     console.log('');
   }
 

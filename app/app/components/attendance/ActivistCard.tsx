@@ -25,12 +25,12 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import WorkIcon from '@mui/icons-material/Work';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
-import { checkInWorker, undoCheckIn } from '@/actions/attendance';
+import { checkInActivist, undoCheckIn } from '@/actions/attendance';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 type ActivistCardProps = {
-  worker?: any; // Not checked in worker
+  activist?: any; // Not checked in activist
   record?: any; // Checked in record
   isCheckedIn: boolean;
   onUpdate: () => void;
@@ -38,7 +38,7 @@ type ActivistCardProps = {
 };
 
 export default function ActivistCard({
-  worker,
+  activist,
   record,
   isCheckedIn,
   onUpdate,
@@ -50,15 +50,15 @@ export default function ActivistCard({
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [notes, setNotes] = useState('');
 
-  // Extract worker data
-  const workerData = isCheckedIn ? record.worker : worker;
-  const workerId = workerData.id;
-  const workerName = workerData.fullName;
-  const workerPhone = workerData.phone;
-  const workerPosition = workerData.position;
-  const workerAvatar = workerData.avatarUrl;
-  const siteId = isCheckedIn ? record.neighborhoodId : (worker?.neighborhoodId || worker?.site?.id);
-  const siteName = isCheckedIn ? record.site?.name : worker?.site?.name;
+  // Extract activist data
+  const activistData = isCheckedIn ? record.activist : activist;
+  const activistId = activistData.id;
+  const activistName = activistData.fullName;
+  const activistPhone = activistData.phone;
+  const activistPosition = activistData.position;
+  const activistAvatar = activistData.avatarUrl;
+  const neighborhoodId = isCheckedIn ? record.neighborhoodId : (activist?.neighborhoodId || activist?.neighborhood?.id);
+  const neighborhoodName = isCheckedIn ? record.neighborhood?.name : activist?.neighborhood?.name;
 
   // Check-in data
   const checkedInAt = isCheckedIn ? record.checkedInAt : null;
@@ -78,17 +78,17 @@ export default function ActivistCard({
     }
 
     // Validate required fields
-    if (!workerId || !siteId) {
+    if (!activistId || !neighborhoodId) {
       alert('חסרים נתונים נדרשים לסימון נוכחות');
-      console.error('Missing data:', { workerId, siteId, worker, record });
+      console.error('Missing data:', { activistId, neighborhoodId, activist, record });
       return;
     }
 
     try {
       setLoading(true);
-      const result = await checkInWorker({
-        neighborhoodId: siteId,
-        activistId: workerId,
+      const result = await checkInActivist({
+        neighborhoodId: neighborhoodId,
+        activistId: activistId,
         notes: notes || undefined,
       });
 
@@ -117,7 +117,7 @@ export default function ActivistCard({
       setLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
       const result = await undoCheckIn({
-        activistId: workerId,
+        activistId: activistId,
         date: today,
         reason: undoReason,
       });
@@ -168,7 +168,7 @@ export default function ActivistCard({
             }}
           >
             <Avatar
-              src={workerAvatar}
+              src={activistAvatar}
               sx={{
                 width: 56,
                 height: 56,
@@ -177,7 +177,7 @@ export default function ActivistCard({
                 fontWeight: 700,
               }}
             >
-              {workerName?.charAt(0)}
+              {activistName?.charAt(0)}
             </Avatar>
 
             <Box sx={{ flex: 1 }}>
@@ -191,7 +191,7 @@ export default function ActivistCard({
                   textAlign: 'right',
                 }}
               >
-                {workerName}
+                {activistName}
               </Typography>
 
               {/* Status Badge */}
@@ -237,31 +237,31 @@ export default function ActivistCard({
             </Box>
           </Box>
 
-          {/* Worker Info */}
+          {/* Activist Info */}
           <Box sx={{ mb: 2, direction: 'rtl' }}>
-            {workerPosition && (
+            {activistPosition && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <WorkIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
                 <Typography
                   variant="body2"
                   sx={{ color: colors.neutral[600], textAlign: 'right' }}
                 >
-                  {workerPosition}
+                  {activistPosition}
                 </Typography>
               </Box>
             )}
-            {workerPhone && (
+            {activistPhone && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <PhoneIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
                 <Typography
                   variant="body2"
                   sx={{ color: colors.neutral[600], textAlign: 'right', direction: 'ltr' }}
                 >
-                  {workerPhone}
+                  {activistPhone}
                 </Typography>
               </Box>
             )}
-            {siteName && (
+            {neighborhoodName && (
               <Typography
                 variant="caption"
                 sx={{
@@ -270,7 +270,7 @@ export default function ActivistCard({
                   textAlign: 'right',
                 }}
               >
-                אתר: {siteName}
+                שכונה: {neighborhoodName}
               </Typography>
             )}
           </Box>
@@ -465,7 +465,7 @@ export default function ActivistCard({
         }}
       >
         <DialogTitle sx={{ textAlign: 'right', fontWeight: 700 }}>
-          ביטול נוכחות - {workerName}
+          ביטול נוכחות - {activistName}
         </DialogTitle>
         <DialogContent>
           <TextField
@@ -474,7 +474,7 @@ export default function ActivistCard({
             rows={3}
             fullWidth
             label="סיבה לביטול"
-            placeholder="למשל: סומן בטעות, העובד לא הגיע..."
+            placeholder="למשל: סומן בטעות, הפעיל לא הגיע..."
             value={undoReason}
             onChange={(e) => setUndoReason(e.target.value)}
             sx={{
@@ -527,7 +527,7 @@ export default function ActivistCard({
         }}
       >
         <DialogTitle sx={{ textAlign: 'right', fontWeight: 700 }}>
-          הוסף הערה - {workerName}
+          הוסף הערה - {activistName}
         </DialogTitle>
         <DialogContent>
           <TextField

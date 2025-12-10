@@ -579,6 +579,14 @@ model AttendanceRecord {
   lastEditedAt   DateTime? @map("last_edited_at") @db.Timestamptz
   editReason     String?   @map("edit_reason") @db.Text
 
+  // GPS Tracking (Phase 5)
+  checkedInLatitude  Float?    @map("checked_in_latitude")   // Decimal degrees (e.g., 32.0853)
+  checkedInLongitude Float?    @map("checked_in_longitude")  // Decimal degrees (e.g., 34.7818)
+  checkedInAccuracy  Float?    @map("checked_in_accuracy")   // GPS accuracy in meters
+  checkedInGpsTime   DateTime? @map("checked_in_gps_time") @db.Timestamptz // GPS timestamp
+  isWithinGeofence   Boolean   @default(true) @map("is_within_geofence") // Was check-in within geofence?
+  distanceFromSite   Float?    @map("distance_from_site")    // Distance from neighborhood in meters
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -587,6 +595,7 @@ model AttendanceRecord {
   @@index([cityId, date]) // Multi-tenant isolation
   @@index([date]) // Fast lookup: all attendance on date
   @@index([lastEditedAt]) // For audit queries
+  @@index([isWithinGeofence]) // Phase 5: GPS analytics
   @@map("attendance_records")
 }
 

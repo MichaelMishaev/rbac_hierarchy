@@ -5,6 +5,7 @@ import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import { listWorkers } from '@/app/actions/activists';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
+import { getAreaManagers, listCities } from '@/app/actions/cities';
 import { prisma } from '@/lib/prisma';
 import ActivistsClient from '@/app/components/activists/ActivistsClient';
 import { Suspense } from 'react';
@@ -23,10 +24,12 @@ export default async function WorkersPage() {
     redirect('/login');
   }
 
-  // Fetch workers and sites
-  const [workersResult, sitesResult] = await Promise.all([
+  // Fetch activists, neighborhoods, areas, and cities
+  const [workersResult, sitesResult, areasResult, citiesResult] = await Promise.all([
     listWorkers({}),
     listNeighborhoods({}),
+    getAreaManagers(),
+    listCities({}),
   ]);
 
   // Fetch activist coordinators (ActivistCoordinator records, not User records!)
@@ -67,6 +70,8 @@ export default async function WorkersPage() {
 
   const activists = workersResult.activists || [];
   const neighborhoods = sitesResult.neighborhoods || [];
+  const areas = areasResult.areaManagers || [];
+  const cities = citiesResult.cities || [];
 
   return (
     <Box
@@ -129,6 +134,17 @@ export default async function WorkersPage() {
           cityRelation: n.cityRelation,
         }))}
         activistCoordinators={activistCoordinators}
+        areas={areas.map(a => ({
+          id: a.id,
+          regionName: a.regionName,
+          regionCode: a.regionCode,
+        }))}
+        cities={cities.map(c => ({
+          id: c.id,
+          name: c.name,
+          code: c.code,
+          areaManagerId: c.areaManagerId || '',
+        }))}
         currentUserId={session.user.id}
         defaultActivistCoordinatorId={defaultActivistCoordinatorId}
       />

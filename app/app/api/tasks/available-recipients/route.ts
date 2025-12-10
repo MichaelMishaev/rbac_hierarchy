@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
     // 3. Parse query parameters
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || undefined;
-    const corporationId = searchParams.get('corporation_id') || undefined;
+    const cityId = searchParams.get('city_id') || undefined;
     const roleFilter = searchParams.get('role') as
       | 'area_manager'
-      | 'corporation_manager'
-      | 'activistCoordinator'
+      | 'city_coordinator'
+      | 'activist_coordinator'
       | undefined;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
         full_name: r.fullName,
         email: r.email,
         role: r.role,
-        corporation_name: r.corporationName,
-        site_names: r.siteNames || [],
+        corporation_name: r.city_name,
+        site_names: r.neighborhood_names || [],
       })),
       pagination: {
         page,

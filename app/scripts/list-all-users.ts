@@ -9,20 +9,20 @@ async function listAllUsers() {
       fullName: true,
       role: true,
       isSuperAdmin: true,
-      managerOf: {
+      coordinatorOf: {
         select: {
-          corporationId: true,
-          corporation: {
+          cityId: true,
+          city: {
             select: {
               name: true
             }
           }
         }
       },
-      supervisorOf: {
+      activistCoordinatorOf: {
         select: {
-          corporationId: true,
-          corporation: {
+          cityId: true,
+          city: {
             select: {
               name: true
             }
@@ -42,11 +42,11 @@ async function listAllUsers() {
     console.log(`  Name: ${user.fullName}`);
     console.log(`  Role: ${user.role}`);
     console.log(`  SuperAdmin: ${user.isSuperAdmin ? 'YES' : 'NO'}`);
-    if (user.managerOf.length > 0) {
-      console.log(`  Manager of: ${user.managerOf.map(m => `${m.corporation.name} (${m.corporationId})`).join(', ')}`);
+    if (user.coordinatorOf.length > 0) {
+      console.log(`  City Coordinator of: ${user.coordinatorOf.map(m => `${m.city.name} (${m.cityId})`).join(', ')}`);
     }
-    if (user.supervisorOf.length > 0) {
-      console.log(`  Supervisor of: ${user.supervisorOf.map(s => `${s.corporation.name} (${s.corporationId})`).join(', ')}`);
+    if (user.activistCoordinatorOf.length > 0) {
+      console.log(`  Activist Coordinator of: ${user.activistCoordinatorOf.map(s => `${s.city.name} (${s.cityId})`).join(', ')}`);
     }
     console.log('');
   }

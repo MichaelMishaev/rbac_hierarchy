@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from 'react-hot-toast';
-import { colors, borderRadius, shadows } from '@/lib/design-system';
+import { colors } from '@/lib/design-system';
 
 export default function ToastProvider() {
   return (
@@ -10,48 +10,34 @@ export default function ToastProvider() {
       reverseOrder={false}
       gutter={8}
       toastOptions={{
-        // Default options
-        duration: 3000,
+        duration: 4000,
         style: {
-          background: colors.neutral[900],
-          color: colors.neutral[0],
-          borderRadius: borderRadius.xl,
-          padding: '16px 20px',
+          background: colors.neutral[0],
+          color: colors.neutral[900],
+          padding: '16px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          fontFamily: 'Figtree, sans-serif',
           fontSize: '14px',
           fontWeight: 500,
-          boxShadow: shadows.xl,
-          maxWidth: '500px',
+          direction: 'rtl',
+          textAlign: 'right',
+          maxWidth: '500px'
         },
-
-        // Success
         success: {
           duration: 3000,
-          iconTheme: {
-            primary: colors.success,
-            secondary: colors.neutral[0],
-          },
           style: {
-            background: colors.neutral[900],
+            background: colors.pastel.greenLight,
+            color: colors.status.green,
+            border: `2px solid ${colors.status.green}`
           },
         },
-
-        // Error
         error: {
-          duration: 4000,
-          iconTheme: {
-            primary: colors.error,
-            secondary: colors.neutral[0],
-          },
+          duration: 5000,
           style: {
-            background: colors.neutral[900],
-          },
-        },
-
-        // Loading
-        loading: {
-          iconTheme: {
-            primary: colors.primary.main,
-            secondary: colors.neutral[0],
+            background: colors.pastel.redLight,
+            color: colors.error,
+            border: `2px solid ${colors.error}`
           },
         },
       }}

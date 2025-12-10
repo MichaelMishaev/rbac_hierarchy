@@ -1,14 +1,14 @@
 {
-  "name": "Hierarchy Platform - פלטפורמת היררכיה",
-  "short_name": "Hierarchy",
-  "description": "RBAC Hierarchy Management Platform - פלטפורמת ניהול היררכיה",
+  "name": "מערכת ניהול קמפיין בחירות",
+  "short_name": "קמפיין",
+  "description": "מערכת ניהול פעילויות בחירות וניהול פעילים במגרשים - Election Campaign Management System",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1976d2",
+  "theme_color": "#6161FF",
+  "orientation": "portrait-primary",
   "dir": "rtl",
   "lang": "he",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -23,7 +23,23 @@
       "purpose": "any maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "רישום נוכחות",
+      "short_name": "נוכחות",
+      "description": "רישום נוכחות מהיר",
+      "url": "/attendance?quick=true",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "צור משימה",
+      "short_name": "משימה",
+      "description": "יצירת משימה חדשה",
+      "url": "/tasks/new",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "96x96" }]
+    }
+  ],
   "scope": "/",
-  "categories": ["business", "productivity"],
+  "categories": ["productivity", "business"],
   "prefer_related_applications": false
 }

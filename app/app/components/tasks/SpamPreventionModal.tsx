@@ -22,11 +22,11 @@ interface RecipientPreview {
   breakdown: {
     by_role: {
       area_manager: number;
-      corporation_manager: number;
+      city_coordinator: number;
       activistCoordinator: number;
     };
     by_city: Array<{
-      corporation_id: string;
+      city_id: string;
       name: string;
       count: number;
     }>;
@@ -132,14 +132,14 @@ export default function SpamPreventionModal({
               <PeopleIcon fontSize="small" />
             </Typography>
             <Box sx={{ textAlign: 'right' }}>
-              {recipientPreview.breakdown.by_role.corporation_manager > 0 && (
+              {recipientPreview.breakdown.by_role.city_coordinator > 0 && (
                 <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  • {recipientPreview.breakdown.by_role.corporation_manager} {t('managers')}
+                  • {recipientPreview.breakdown.by_role.city_coordinator} {t('managers')}
                 </Typography>
               )}
-              {recipientPreview.breakdown.by_role.supervisor > 0 && (
+              {recipientPreview.breakdown.by_role.activistCoordinator > 0 && (
                 <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  • {recipientPreview.breakdown.by_role.supervisor} {tNav('supervisors')}
+                  • {recipientPreview.breakdown.by_role.activistCoordinator} {tNav('activistCoordinators')}
                 </Typography>
               )}
               {recipientPreview.breakdown.by_role.area_manager > 0 && (
@@ -151,7 +151,7 @@ export default function SpamPreventionModal({
           </Box>
 
           {/* Breakdown by Corporation */}
-          {recipientPreview.breakdown.by_corporation.length > 0 && (
+          {recipientPreview.breakdown.by_city.length > 0 && (
             <Box
               sx={{
                 mb: 3,
@@ -175,7 +175,7 @@ export default function SpamPreventionModal({
                 <BusinessIcon fontSize="small" />
               </Typography>
               <Box sx={{ textAlign: 'right' }}>
-                {recipientPreview.breakdown.by_corporation.map((corp, index) => (
+                {recipientPreview.breakdown.by_city.map((corp, index) => (
                   <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
                     • {corp.name} ({corp.count} {t('recipients')})
                   </Typography>

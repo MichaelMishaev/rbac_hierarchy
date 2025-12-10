@@ -1,127 +1,122 @@
-# Premium UI MVP - Specialized Agents
+# 🗳️ Election Campaign Management System - Specialized Agents
 
-This directory contains specialized AI agents for developing the corporations Premium UI MVP.
+This directory contains specialized AI agents for developing the Election Campaign Management System for politicians and campaign managers.
 
 ## 🤖 Available Agents
 
 ### 1. Backend Developer (`backend-developer`)
-**Purpose:** Expert backend developer for Railway + Prisma + NextAuth
+**Purpose:** Expert backend developer for campaign database, APIs, and authentication
 
 **Responsibilities:**
-- Database schema and migrations (Prisma)
-- Authentication (NextAuth v5)
-- API routes and server actions
-- Role-based access control
-- Data validation (Zod)
-- Security best practices
+- Database schema and migrations (Prisma) - Election domain
+- Authentication (NextAuth v5) - Campaign team access control
+- API routes and server actions - Campaign operations
+- Role-based access control (RBAC) - Multi-city data isolation
+- Campaign data validation (Zod)
+- Security best practices for political campaigns
 
 **Tools:** Read, Write, Edit, Bash, Grep, Glob
 **Model:** Sonnet
 
 **Use for:**
-- Creating/updating Prisma schema
-- Building API endpoints
-- Implementing authentication
-- Server-side logic
-- Database queries and mutations
+- Creating/updating Prisma schema for campaign entities
+- Building campaign APIs (activists, tasks, attendance)
+- Implementing RBAC for campaign hierarchy
+- Server-side campaign logic
+- Database queries for activists, neighborhoods, cities
 
 ---
 
 ### 2. Frontend Developer (`frontend-developer`)
-**Purpose:** Expert frontend developer for Premium UI with MUI + Next.js 15
+**Purpose:** Expert frontend developer for campaign UI with Hebrew/RTL support
 
 **Responsibilities:**
-- Premium UI components (Material-UI v6)
-- Advanced forms (React Hook Form + Zod)
-- Data tables (TanStack Table)
-- Responsive design (mobile-first)
-- Animations (Framer Motion)
-- Dark mode (next-themes)
-- RTL support (Hebrew)
+- Campaign UI components (Material-UI v6) - Hebrew-first
+- Advanced forms (React Hook Form + Zod) - Activist registration, task assignment
+- Data tables (TanStack Table) - Activist lists, attendance logs
+- **Mobile-first design** - Field activists use mobile devices
+- **RTL support** - Hebrew is primary language
+- Campaign maps (neighborhood visualization)
+- Real-time updates for campaign activity
 
 **Tools:** Read, Write, Edit, Bash, Grep, Glob
 **Model:** Sonnet
 
 **Use for:**
-- Building UI components
-- Creating forms and tables
-- Implementing responsive layouts
-- Adding animations
-- Dark mode implementation
-- RTL localization
+- Building campaign dashboard UI
+- Creating activist management forms
+- Implementing task assignment interfaces
+- Mobile-optimized field volunteer views
+- Hebrew/RTL layouts
+- Map-based neighborhood views
 
 ---
 
 ### 3. QA Tester (`qa-tester`)
-**Purpose:** Expert QA engineer for comprehensive testing
+**Purpose:** Expert QA engineer for campaign system testing
 
 **Responsibilities:**
-- Functional testing (all user flows)
-- Authentication testing
-- Database integrity testing
-- API testing
-- UI/UX testing
-- Performance testing (Lighthouse)
-- Security testing
-- Browser compatibility
-- Regression testing
+- Functional testing (all campaign workflows)
+- Authentication testing (campaign team login)
+- **Data isolation testing** - Cross-city/area data leakage
+- **RBAC testing** - Role permission boundaries
+- Campaign API testing
+- Mobile UI/UX testing (field activists)
+- Performance testing (real-time updates)
+- Security testing (multi-tenant isolation)
 
 **Tools:** Read, Bash, Grep, Glob (read-only)
 **Model:** Sonnet
 
 **Use for:**
-- Testing new features
-- Regression testing after changes
-- Security audits
-- Performance validation
-- Accessibility checks
+- Testing campaign features
+- Verifying RBAC boundaries
+- Cross-city isolation validation
+- Mobile responsiveness testing
+- Security audits for campaign data
 - Bug reporting
 
 ---
 
 ### 4. UI Designer (`ui-designer`)
-**Purpose:** World-class UI/UX designer for Premium UI standards
+**Purpose:** World-class UI/UX designer for campaign interfaces
 
 **Responsibilities:**
-- Design system consistency
-- Component design review
-- Screen layout validation
-- Responsive design validation
-- Animation and interaction design
-- Dark mode design validation
-- RTL (Hebrew) support
+- Campaign design system consistency
+- **Hebrew/RTL layout validation** - Primary language
+- **Mobile-first design review** - Field activists use phones
+- Dashboard layout validation (politicians, coordinators)
+- Map interface design (neighborhood visualization)
+- Real-time update UX (live campaign activity)
 - Accessibility compliance (WCAG AA)
-- User flow validation
-- Design QA
+- User flow validation (campaign workflows)
+- Monday.com-inspired design system
 
 **Tools:** Read, Bash, Grep, Glob (read-only)
 **Model:** Sonnet
 
 **Use for:**
-- Design system validation
-- Component design reviews
-- User flow validation
+- Campaign UI design reviews
+- Hebrew/RTL validation
+- Mobile layout optimization
+- Dashboard design feedback
+- Map interface review
 - Accessibility audits
-- Dark mode checks
-- RTL layout validation
-- Design feedback
 
 ---
 
 ### 5. Project Manager (`project-manager`)
-**Purpose:** Senior project manager for 3-week MVP timeline
+**Purpose:** Senior project manager for campaign system development
 
 **Responsibilities:**
-- Timeline management (3-week sprint)
+- Development timeline management
 - Task coordination across agents
-- Progress tracking
+- Campaign feature prioritization
 - Risk management
-- Priority management (P0/P1/P2)
-- Quality gates (Week 1/2/3)
-- Communication and reporting
-- Decision making
+- Quality gates enforcement
 - Technical debt management
-- Launch readiness
+- Launch readiness for campaign season
+- Stakeholder communication
 
 **Tools:** Read, Write, Bash, Grep, Glob
 **Model:** Sonnet
@@ -137,51 +132,75 @@ This directory contains specialized AI agents for developing the corporations Pr
 
 ---
 
+### 6. Campaign Analyst (`campaign-analyst`)
+**Purpose:** Campaign analytics and reporting specialist
+
+**Responsibilities:**
+- Campaign metrics tracking
+- Activist engagement analytics
+- Task completion reporting
+- Attendance analysis
+- Geographic coverage analytics
+- Performance dashboards for politicians
+- SQL queries for campaign data
+- Export campaign reports
+
+**Tools:** Read, Write, Bash, Grep, Glob
+**Model:** Sonnet
+
+**Use for:**
+- Building analytics dashboards
+- Creating campaign reports
+- Analyzing activist productivity
+- Geographic coverage analysis
+- Performance metrics for politicians
+- Data exports for campaign managers
+
+---
+
 ## 🎯 Agent Coordination Pattern
 
-### Pattern 1: New Feature Development
+### Pattern 1: New Campaign Feature
 ```
-1. Project Manager: Define scope, assign to Backend Developer
-2. Backend Developer: Build API, notify PM
+1. Project Manager: Define campaign feature scope, assign to Backend Developer
+2. Backend Developer: Build campaign API (e.g., attendance tracking), notify PM
 3. Project Manager: Assign UI to Frontend Developer
-4. Frontend Developer: Build UI, notify PM
+4. Frontend Developer: Build Hebrew/RTL mobile-first UI, notify PM
 5. Project Manager: Assign review to UI Designer
-6. UI Designer: Review design, provide feedback
+6. UI Designer: Review mobile design & RTL, provide feedback
 7. Project Manager: Assign testing to QA Tester
-8. QA Tester: Test feature, report findings
+8. QA Tester: Test RBAC & data isolation, report findings
 9. Project Manager: Coordinate fixes, verify completion
 ```
 
-### Pattern 2: Bug Fix
+### Pattern 2: Campaign Bug Fix
 ```
-1. QA Tester: Report bug with reproduction steps
+1. QA Tester: Report bug with reproduction steps (e.g., cross-city data leak)
 2. Project Manager: Assess severity, assign to appropriate dev
 3. Backend/Frontend Developer: Fix bug
-4. QA Tester: Verify fix, close bug
+4. QA Tester: Verify fix with RBAC testing, close bug
 ```
 
-### Pattern 3: Design Review
+### Pattern 3: Campaign Analytics Request
 ```
-1. Frontend Developer: Complete screen
-2. UI Designer: Review design compliance
-3. Frontend Developer: Implement feedback
-4. QA Tester: Test final implementation
+1. Campaign Analyst: Design analytics dashboard
+2. Backend Developer: Create analytics queries
+3. Frontend Developer: Build charts and visualizations
+4. UI Designer: Review data visualization design
+5. QA Tester: Test analytics accuracy
 ```
 
 ---
 
 ## 📚 Reference Documentation
 
-All agents reference the MVP documentation:
+All agents reference the campaign system documentation:
 
-- **`/docs/syAnalyse/mvp/00_OVERVIEW.md`** - Project overview
-- **`/docs/syAnalyse/mvp/01_TECH_STACK.md`** - Technology choices
-- **`/docs/syAnalyse/mvp/02_DATABASE_SCHEMA.md`** - Database structure
-- **`/docs/syAnalyse/mvp/03_API_DESIGN.md`** - API patterns
-- **`/docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md`** - Screen designs
-- **`/docs/syAnalyse/mvp/05_IMPLEMENTATION_PLAN.md`** - 3-week timeline
-- **`/docs/syAnalyse/mvp/06_FEATURE_SPECIFICATIONS.md`** - Feature behavior
-- **`/docs/syAnalyse/mvp/07_TESTING_CHECKLIST.md`** - QA standards
+- **`/CLAUDE.md`** - Complete system overview (Election Campaign System)
+- **`/docs/syAnalyse/mvp/02_DATABASE_SCHEMA.md`** - Campaign database structure
+- **`/docs/syAnalyse/mvp/03_API_DESIGN.md`** - Campaign API patterns
+- **`/docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md`** - Campaign UI designs
+- **`/docs/syAnalyse/PRD_2025_Updated_Industry_Standards.md`** - Campaign requirements
 
 ---
 
@@ -191,85 +210,107 @@ All agents reference the MVP documentation:
 When you need an agent, mention them by name in your request:
 
 **Examples:**
-- "Backend developer: Create the Prisma schema for corporations"
-- "Frontend developer: Build the SuperAdmin dashboard"
-- "QA tester: Test the authentication flow"
-- "UI designer: Review the dark mode implementation"
-- "Project manager: What's our current progress?"
+- "Backend developer: Create the activist attendance tracking API"
+- "Frontend developer: Build the mobile-first activist dashboard in Hebrew"
+- "QA tester: Test cross-city data isolation for area managers"
+- "UI designer: Review the Hebrew/RTL neighborhood map interface"
+- "Project manager: What's our progress on campaign features?"
+- "Campaign analyst: Create a dashboard showing activist productivity by neighborhood"
 
 ### Agent-Specific Guidelines
 
 **Backend Developer:**
-- Always use Prisma for database operations
+- Always use Prisma for campaign database operations
 - Always validate input with Zod
-- Always implement role-based access control
+- **Always implement RBAC** - Campaign data isolation is critical
+- **Always filter by city_id** - Except for SuperAdmin
 - Always hash passwords with bcryptjs
+- **Test multi-city isolation** - Prevent data leakage
 
 **Frontend Developer:**
-- Always use MUI components (not custom)
-- Always make responsive (mobile-first)
+- Always use MUI components (Material-UI v6)
+- **Always design mobile-first** - Field activists use phones
+- **Always implement Hebrew/RTL** - Primary language
 - Always add loading/error/empty states
-- Always test dark mode and RTL
+- **Always test on mobile devices** - Campaign coordinators are mobile
+- Always use RTL-compatible CSS (`marginInlineStart`/`End`)
 
 **QA Tester:**
-- Always test P0 features first
-- Always check all 3 role dashboards
-- Always verify mobile responsive
-- Always test security (auth, RBAC)
+- **Always test RBAC boundaries** - Cross-role access attempts
+- **Always test multi-city isolation** - Data leakage prevention
+- Always check all role dashboards (SuperAdmin, Area Manager, City Coordinator, Activist Coordinator)
+- **Always verify mobile responsive** - Field activists use mobile
+- Always test security (auth, RBAC, data isolation)
 
 **UI Designer:**
-- Always check design system consistency
+- Always check design system consistency (Monday.com-inspired)
+- **Always validate Hebrew/RTL layouts** - Primary language
+- **Always review mobile-first design** - Field activists priority
 - Always validate all states (loading, error, empty)
-- Always test at all breakpoints
+- Always test at all breakpoints (xs, md, lg)
 - Always verify WCAG AA compliance
 
 **Project Manager:**
-- Always prioritize P0 over P1/P2
-- Always track against 3-week timeline
+- Always prioritize campaign-critical features (P0)
+- Always track against development timeline
 - Always coordinate agents efficiently
 - Always make fast decisions
+- **Prioritize features for campaign season** - Time-sensitive
+
+**Campaign Analyst:**
+- Always focus on politician-facing insights
+- Always provide actionable campaign metrics
+- Always consider geographic dimensions (city, neighborhood)
+- Always optimize SQL queries for performance
+- Always create exportable reports
 
 ---
 
 ## 🎨 Design System Quick Reference
 
-**Colors:**
-- Primary: #1976d2 (Blue)
-- Secondary: #dc004e (Pink)
-- Success: #4caf50 (Green)
-- Warning: #ff9800 (Orange)
-- Error: #f44336 (Red)
+**Campaign Color Palette (Monday.com-inspired):**
+- Primary: #1976d2 (Blue) - Campaign actions
+- Secondary: #dc004e (Pink) - Urgent tasks
+- Success: #4caf50 (Green) - Completed tasks
+- Warning: #ff9800 (Orange) - Pending tasks
+- Error: #f44336 (Red) - Critical issues
 
-**Typography:**
-- h1: 2.5rem - Page titles
+**Typography (Hebrew-first):**
+- h1: 2.5rem - Page titles (Hebrew)
 - h3: 1.75rem - KPI values
-- body1: 1rem - Default text
-- body2: 0.875rem - Secondary text
+- body1: 1rem - Default text (RTL)
+- body2: 0.875rem - Secondary text (RTL)
 
 **Spacing (8px grid):**
 - xs: 8px, sm: 16px, md: 24px, lg: 32px, xl: 48px
 
 **Breakpoints:**
-- xs: 0px (Mobile), md: 900px (Tablet), lg: 1200px (Desktop)
+- xs: 0px (Mobile - Field activists), md: 900px (Tablet), lg: 1200px (Desktop - Campaign HQ)
 
 ---
 
 ## ✅ Development Workflow
 
-### Week 1: Backend Foundation
-- Backend Developer: Schema, auth, APIs
+### Phase 1: Campaign Infrastructure
+- Backend Developer: Campaign schema, auth, RBAC APIs
 - Project Manager: Track progress
-- QA Tester: API testing
+- QA Tester: RBAC and data isolation testing
 
-### Week 2: Premium UI
-- Frontend Developer: All 14 screens
-- UI Designer: Design reviews
-- QA Tester: UI/UX testing
+### Phase 2: Campaign UI (Hebrew/RTL)
+- Frontend Developer: All campaign screens (mobile-first)
+- UI Designer: Hebrew/RTL design reviews
+- QA Tester: Mobile UI/UX testing
 
-### Week 3: Polish & Launch
+### Phase 3: Campaign Analytics
+- Campaign Analyst: Analytics dashboard design
+- Backend Developer: Analytics queries and APIs
+- Frontend Developer: Data visualization charts
+- QA Tester: Analytics accuracy testing
+
+### Phase 4: Launch Preparation
 - All Agents: Bug fixes, polish
-- QA Tester: Comprehensive testing
-- Project Manager: Launch readiness
+- QA Tester: Comprehensive RBAC and security testing
+- Project Manager: Campaign season readiness
 
 ---
 
@@ -277,31 +318,35 @@ When you need an agent, mention them by name in your request:
 
 **Each agent is successful when:**
 
-- **Backend Developer:** All APIs work, auth secure, no data corruption
-- **Frontend Developer:** All 14 screens perfect, mobile responsive, dark mode works
-- **QA Tester:** 0 P0 bugs, <5 P1 bugs, all critical flows tested
-- **UI Designer:** Design system consistent, WCAG AA compliant, Premium feel
-- **Project Manager:** Ship on Day 21, P0 features complete, quality gates passed
+- **Backend Developer:** All campaign APIs work, RBAC enforced, no cross-city data leaks, activist data secure
+- **Frontend Developer:** All campaign screens perfect, Hebrew/RTL flawless, mobile-optimized, real-time updates work
+- **QA Tester:** 0 P0 bugs, <5 P1 bugs, RBAC boundaries tested, cross-city isolation verified
+- **UI Designer:** Design system consistent, Hebrew/RTL validated, mobile-first optimized, WCAG AA compliant
+- **Project Manager:** Campaign features delivered on time, quality gates passed, ready for campaign season
+- **Campaign Analyst:** Politician dashboards insightful, analytics accurate, reports actionable
 
 ---
 
 ## 📞 Agent Invocation Examples
 
 ```markdown
-# Example 1: Start backend work
-"Backend developer: Set up the Prisma schema following the database specification in /docs/syAnalyse/mvp/02_DATABASE_SCHEMA.md"
+# Example 1: Start campaign backend work
+"Backend developer: Set up the Prisma schema for activists, neighborhoods, and attendance tracking following the election campaign database specification"
 
-# Example 2: Build UI
-"Frontend developer: Build the SuperAdmin dashboard with KPI cards and corporations table, following /docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md"
+# Example 2: Build campaign UI
+"Frontend developer: Build the mobile-first activist coordinator dashboard in Hebrew with RTL support, showing neighborhood map and active tasks"
 
-# Example 3: Test feature
-"QA tester: Test the complete SuperAdmin flow from login to creating a corporation and inviting a manager"
+# Example 3: Test campaign RBAC
+"QA tester: Test that City Coordinators cannot access other cities' activist data and verify Area Managers can see cross-city analytics"
 
-# Example 4: Design review
-"UI designer: Review the manager dashboard for design system consistency, responsive behavior, and dark mode compatibility"
+# Example 4: Design review for campaign
+"UI designer: Review the activist registration form for Hebrew/RTL compliance and mobile usability for field coordinators"
 
-# Example 5: Track progress
-"Project manager: Give me a status update on Week 1 progress and identify any risks"
+# Example 5: Track campaign progress
+"Project manager: Give me a status update on campaign core features (attendance, tasks, neighborhoods) and identify any RBAC risks"
+
+# Example 6: Campaign analytics
+"Campaign analyst: Create a dashboard showing activist engagement rates by neighborhood for politicians to review campaign coverage"
 ```
 
 ---
@@ -313,7 +358,33 @@ All agents are configured with:
 - **Location:** `.claude/agents/[agent-name].md`
 - **Model:** Sonnet (balance of speed + quality)
 - **Tools:** Appropriate tool access per role
+- **Context:** Election Campaign Management System
 
 ---
 
-**Premium UI MVP - Ship in 21 days with specialized agents! 🚀**
+## 🗳️ Campaign System Key Concepts
+
+**Organizational Hierarchy:**
+```
+SuperAdmin (Platform admin)
+└── Election Campaign System
+    ├── Area Managers (Regional campaign directors)
+    └── City Coordinators (City campaign managers)
+        └── Activist Coordinators (Neighborhood organizers)
+            └── Neighborhoods (Geographic districts)
+                └── Activists (Field volunteers)
+```
+
+**Critical Features:**
+- **Multi-city isolation** - Campaign data cannot leak across cities
+- **RBAC enforcement** - Role-based permissions strictly enforced
+- **Mobile-first** - Field activists use mobile devices primarily
+- **Hebrew/RTL** - Primary language for all UI
+- **Real-time updates** - Live campaign activity tracking
+- **GPS tracking** - Attendance verification for field activists
+- **Task management** - Canvassing routes, phone banking shifts
+- **Analytics** - Politician-facing campaign performance dashboards
+
+---
+
+**🗳️ Election Campaign Management System - Specialized agents for political campaign success! 🚀**

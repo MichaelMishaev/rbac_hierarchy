@@ -12,8 +12,8 @@ export interface Recipient {
   fullName: string;
   email: string;
   role: string;
-  corporationName?: string;
-  siteNames?: string[];
+  city_name?: string;
+  neighborhood_names?: string[];
 }
 
 export interface RecipientBreakdown {
@@ -21,11 +21,11 @@ export interface RecipientBreakdown {
   breakdown: {
     by_role: {
       area_manager: number;
-      corporation_manager: number;
-      supervisor: number;
+      city_coordinator: number;
+      activistCoordinator: number;
     };
-    by_corporation: Array<{
-      corporation_id: string;
+    by_city: Array<{
+      city_id: string;
       name: string;
       count: number;
     }>;
@@ -56,7 +56,7 @@ export async function getAllRecipientsUnderMe(
         u.full_name as "fullName",
         u.email,
         u.role,
-        COALESCE(c1.name, c2.name, c3.name) as "corporationName"
+        COALESCE(c1.name, c2.name, c3.name) as "city_name"
       FROM users u
       LEFT JOIN area_managers am ON am.user_id = u.id
       LEFT JOIN corporations c1 ON c1.area_manager_id = am.id
@@ -75,7 +75,7 @@ export async function getAllRecipientsUnderMe(
       fullName: u.fullName,
       email: u.email,
       role: u.role.toLowerCase(),
-      corporationName: u.corporationName,
+      city_name: u.city_name,
     }));
   }
 
@@ -96,7 +96,7 @@ export async function getAllRecipientsUnderMe(
         u.full_name as "fullName",
         u.email,
         'CITY_COORDINATOR' as role,
-        c.name as "corporationName"
+        c.name as "city_name"
       FROM corporation_managers cm
       JOIN users u ON u.id = cm.user_id
       JOIN corporations c ON c.id = cm.corporation_id
@@ -112,7 +112,7 @@ export async function getAllRecipientsUnderMe(
         u.full_name as "fullName",
         u.email,
         'ACTIVIST_COORDINATOR' as role,
-        c.name as "corporationName"
+        c.name as "city_name"
       FROM supervisors s
       JOIN users u ON u.id = s.user_id
       JOIN corporations c ON c.id = s.corporation_id
@@ -128,7 +128,7 @@ export async function getAllRecipientsUnderMe(
       fullName: u.fullName,
       email: u.email,
       role: u.role.toLowerCase(),
-      corporationName: u.corporationName,
+      city_name: u.city_name,
     }));
   }
 
@@ -136,14 +136,14 @@ export async function getAllRecipientsUnderMe(
     // Corporation Manager: Supervisors in their corporation
     const manager = await prisma.cityCoordinator.findFirst({
       where: { userId },
-      include: { corporation: true },
+      include: { city: true },
     });
 
     if (!manager) {
       throw new Error('Corporation Manager record not found');
     }
 
-    const supervisors = await prisma.supervisor.findMany({
+    const supervisors = await prisma.activistCoordinator.findMany({
       where: {
         cityId: manager.cityId,
         isActive: true,
@@ -151,10 +151,10 @@ export async function getAllRecipientsUnderMe(
       },
       include: {
         user: true,
-        corporation: true,
-        siteAssignments: {
+        city: true,
+        neighborhoodAssignments: {
           include: {
-            site: {
+            neighborhood: {
               select: { name: true },
             },
           },
@@ -166,9 +166,9 @@ export async function getAllRecipientsUnderMe(
       userId: s.userId,
       fullName: s.user.fullName,
       email: s.user.email,
-      role: 'supervisor',
-      corporationName: s.corporation.name,
-      siteNames: s.siteAssignments.map((sa) => sa.site.name),
+      role: 'activist_coordinator',
+      city_name: s.city.name,
+      neighborhood_names: s.neighborhoodAssignments.map((sa) => sa.neighborhood.name),
     }));
   }
 
@@ -212,7 +212,7 @@ export async function getAvailableRecipients(
   options: {
     search?: string;
     cityId?: string;
-    role?: 'area_manager' | 'corporation_manager' | 'supervisor';
+    role?: 'area_manager' | 'city_coordinator' | 'activist_coordinator';
     page?: number;
     limit?: number;
   } = {}
@@ -235,8 +235,8 @@ export async function getAvailableRecipients(
     );
   }
 
-  if (corporationId) {
-    filtered = filtered.filter((r) => r.corporationName === corporationId);
+  if (cityId) {
+    filtered = filtered.filter((r) => r.city_name === cityId);
   }
 
   if (role) {
@@ -275,32 +275,32 @@ export async function previewRecipients(
   // Count by role
   const roleCount = {
     area_manager: 0,
-    corporation_manager: 0,
-    supervisor: 0,
+    city_coordinator: 0,
+    activistCoordinator: 0,
   };
 
   recipients.forEach((r) => {
     if (r.role === 'area_manager') roleCount.area_manager++;
-    else if (r.role === 'manager' || r.role === 'corporation_manager')
-      roleCount.corporation_manager++;
-    else if (r.role === 'supervisor') roleCount.supervisor++;
+    else if (r.role === 'manager' || r.role === 'city_coordinator')
+      roleCount.city_coordinator++;
+    else if (r.role === 'activist_coordinator') roleCount.activistCoordinator++;
   });
 
   // Count by corporation
-  const corpMap = new Map<string, { name: string; count: number }>();
+  const cityMap = new Map<string, { name: string; count: number }>();
   recipients.forEach((r) => {
-    if (r.corporationName) {
-      const existing = corpMap.get(r.corporationName);
+    if (r.city_name) {
+      const existing = cityMap.get(r.city_name);
       if (existing) {
         existing.count++;
       } else {
-        corpMap.set(r.corporationName, { name: r.corporationName, count: 1 });
+        cityMap.set(r.city_name, { name: r.city_name, count: 1 });
       }
     }
   });
 
-  const byCorporation = Array.from(corpMap.entries()).map(([_, value]) => ({
-    corporation_id: '',
+  const byCity = Array.from(cityMap.entries()).map(([_, value]) => ({
+    city_id: '',
     name: value.name,
     count: value.count,
   }));
@@ -309,7 +309,7 @@ export async function previewRecipients(
     count: recipients.length,
     breakdown: {
       by_role: roleCount,
-      by_corporation: byCorporation,
+      by_city: byCity,
     },
   };
 }
@@ -338,7 +338,7 @@ export async function logTaskAudit(params: {
       userId: params.userId,
       userEmail: null, // Will be filled by middleware if needed
       userRole: null, // Will be filled by middleware if needed
-      cityId: params.corporationId || null,
+      cityId: params.cityId || null,
       ipAddress: params.ipAddress || null,
       userAgent: params.userAgent || null,
     },

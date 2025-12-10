@@ -2,12 +2,13 @@
 
 /**
  * Attendance Server Actions
- * Handles worker check-in, check-out, and attendance history
+ * Handles activist check-in, check-out, and attendance history
  */
 
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { unstable_cache } from 'next/cache';
 import {
   validateTimeWindow,
   getTodayDateInIsrael,
@@ -20,7 +21,7 @@ import { AttendanceStatus, Prisma } from '@prisma/client';
 /**
  * Validation Schemas
  */
-const CheckInWorkerSchema = z.object({
+const CheckInActivistSchema = z.object({
   activistId: z.string().uuid('מזהה פעיל לא תקין'),
   neighborhoodId: z.string().min(1, 'מזהה שכונה לא תקין'),
   notes: z.string().max(500, 'הערות ארוכות מדי (מקסימום 500 תווים)').optional(),
@@ -42,12 +43,12 @@ const GetAttendanceHistorySchema = z.object({
 });
 
 /**
- * Check in a worker
+ * Check in an activist
  */
-export async function checkInWorker(input: z.infer<typeof CheckInWorkerSchema>) {
+export async function checkInActivist(input: z.infer<typeof CheckInActivistSchema>) {
   try {
     // 1. Validate input
-    const validated = CheckInWorkerSchema.parse(input);
+    const validated = CheckInActivistSchema.parse(input);
 
     // 2. Get current user and validate authentication
     const user = await getCurrentUser();
@@ -200,7 +201,7 @@ export async function checkInWorker(input: z.infer<typeof CheckInWorkerSchema>) 
       },
     };
   } catch (error) {
-    console.error('Error checking in worker:', error);
+    console.error('Error checking in activist:', error);
 
     if (error instanceof z.ZodError) {
       return {
@@ -217,7 +218,153 @@ export async function checkInWorker(input: z.infer<typeof CheckInWorkerSchema>) 
 }
 
 /**
+ * Get today's attendance for a neighborhood or all neighborhoods (UNCACHED)
+ * Optimized to eliminate duplicate queries
+ */
+async function getTodaysAttendanceUncached(userId: string, userRole: string, isSuperAdmin: boolean, neighborhoodId?: string) {
+  const today = getTodayDateInIsrael();
+
+  // OPTIMIZATION: Fetch user cities and coordinator neighborhoods ONCE at the start
+  let userCities: string[] = [];
+  let coordinatorNeighborhoodIds: string[] = [];
+
+  if (!isSuperAdmin) {
+    userCities = await getUserCities(userId);
+  }
+
+  if (userRole === 'ACTIVIST_COORDINATOR' && !isSuperAdmin) {
+    const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
+      where: { legacyActivistCoordinatorUserId: userId },
+      select: { neighborhoodId: true },
+    });
+    coordinatorNeighborhoodIds = activistCoordinatorNeighborhoods.map((acn) => acn.neighborhoodId);
+
+    // Validate neighborhood access if specific neighborhood requested
+    if (neighborhoodId && !coordinatorNeighborhoodIds.includes(neighborhoodId)) {
+      throw new Error('אין לך הרשאה לשכונה זו');
+    }
+  }
+
+  // Build where clause for attendance records
+  const attendanceWhere: any = {
+    date: new Date(today),
+  };
+
+  if (!isSuperAdmin) {
+    attendanceWhere.cityId = { in: userCities };
+  }
+
+  if (neighborhoodId) {
+    attendanceWhere.neighborhoodId = neighborhoodId;
+  } else if (userRole === 'ACTIVIST_COORDINATOR' && !isSuperAdmin) {
+    attendanceWhere.neighborhoodId = { in: coordinatorNeighborhoodIds };
+  }
+
+  // Fetch attendance records
+  const records = await prisma.attendanceRecord.findMany({
+    where: attendanceWhere,
+    include: {
+      activist: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          position: true,
+          avatarUrl: true,
+        },
+      },
+      neighborhood: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      checkedInBy: {
+        select: {
+          fullName: true,
+        },
+      },
+      lastEditedBy: {
+        select: {
+          fullName: true,
+        },
+      },
+    },
+    orderBy: [
+      { status: 'asc' }, // PRESENT first, then NOT_PRESENT
+      { checkedInAt: 'desc' },
+    ],
+  });
+
+  // Get activists who haven't been checked in
+  const checkedInActivistIds = records.map((r) => r.activistId);
+
+  const uncheckedActivistsWhere: any = {
+    isActive: true,
+    id: { notIn: checkedInActivistIds },
+  };
+
+  // OPTIMIZATION: Reuse userCities and coordinatorNeighborhoodIds instead of re-querying
+  if (neighborhoodId) {
+    uncheckedActivistsWhere.neighborhoodId = neighborhoodId;
+  } else if (userRole === 'ACTIVIST_COORDINATOR' && !isSuperAdmin) {
+    uncheckedActivistsWhere.neighborhoodId = { in: coordinatorNeighborhoodIds };
+  }
+
+  if (!isSuperAdmin) {
+    uncheckedActivistsWhere.cityId = { in: userCities };
+  }
+
+  const uncheckedActivists = await prisma.activist.findMany({
+    where: uncheckedActivistsWhere,
+    select: {
+      id: true,
+      fullName: true,
+      phone: true,
+      position: true,
+      avatarUrl: true,
+      neighborhoodId: true,
+      neighborhood: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      fullName: 'asc',
+    },
+  });
+
+  return {
+    checkedIn: records,
+    notCheckedIn: uncheckedActivists,
+    summary: {
+      total: records.length + uncheckedActivists.length,
+      present: records.filter((r) => r.status === AttendanceStatus.PRESENT).length,
+      notPresent: uncheckedActivists.length,
+      date: today,
+    },
+  };
+}
+
+/**
+ * Cached wrapper for getTodaysAttendance
+ * Cache for 30 seconds to balance freshness with performance
+ */
+const getCachedTodaysAttendance = unstable_cache(
+  async (userId: string, userRole: string, isSuperAdmin: boolean, neighborhoodId?: string) =>
+    getTodaysAttendanceUncached(userId, userRole, isSuperAdmin, neighborhoodId),
+  ['attendance-today'],
+  {
+    revalidate: 30, // Cache for 30 seconds
+    tags: ['attendance', 'todays-attendance']
+  }
+);
+
+/**
  * Get today's attendance for a neighborhood or all neighborhoods
+ * PUBLIC API - uses caching for performance
  */
 export async function getTodaysAttendance(neighborhoodId?: string) {
   try {
@@ -226,132 +373,8 @@ export async function getTodaysAttendance(neighborhoodId?: string) {
       throw new Error('לא מחובר למערכת');
     }
 
-    const today = getTodayDateInIsrael();
-
-    // Build where clause based on role
-    const where: any = {
-      date: new Date(today),
-    };
-
-    // City filter (except for superadmin)
-    if (!user.isSuperAdmin) {
-      // Get user's cities
-      const userCities = await getUserCities(user.id);
-      where.cityId = { in: userCities };
-    }
-
-    // Neighborhood filter (if provided)
-    if (neighborhoodId) {
-      where.neighborhoodId = neighborhoodId;
-    }
-
-    // Activist coordinator-specific filtering
-    if (user.role === 'ACTIVIST_COORDINATOR' && !user.isSuperAdmin) {
-      // Get activist coordinator's assigned neighborhoods
-      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: user.id },
-        select: { neighborhoodId: true },
-      });
-
-      const neighborhoodIds = activistCoordinatorNeighborhoods.map((acn) => acn.neighborhoodId);
-
-      if (neighborhoodId && !neighborhoodIds.includes(neighborhoodId)) {
-        throw new Error('אין לך הרשאה לשכונה זו');
-      }
-
-      where.neighborhoodId = { in: neighborhoodIds };
-    }
-
-    // Fetch attendance records
-    const records = await prisma.attendanceRecord.findMany({
-      where,
-      include: {
-        activist: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            position: true,
-            avatarUrl: true,
-          },
-        },
-        neighborhood: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        checkedInBy: {
-          select: {
-            fullName: true,
-          },
-        },
-        lastEditedBy: {
-          select: {
-            fullName: true,
-          },
-        },
-      },
-      orderBy: [
-        { status: 'asc' }, // PRESENT first, then NOT_PRESENT
-        { checkedInAt: 'desc' },
-      ],
-    });
-
-    // Also get activists who haven't been checked in
-    const checkedInActivistIds = records.map((r) => r.activistId);
-
-    const uncheckedActivistsWhere: any = {
-      isActive: true,
-      id: { notIn: checkedInActivistIds },
-    };
-
-    if (neighborhoodId) {
-      uncheckedActivistsWhere.neighborhoodId = neighborhoodId;
-    } else if (user.role === 'ACTIVIST_COORDINATOR' && !user.isSuperAdmin) {
-      const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: user.id },
-        select: { neighborhoodId: true },
-      });
-      uncheckedActivistsWhere.neighborhoodId = { in: activistCoordinatorNeighborhoods.map((acn) => acn.neighborhoodId) };
-    }
-
-    if (!user.isSuperAdmin) {
-      const userCities = await getUserCities(user.id);
-      uncheckedActivistsWhere.cityId = { in: userCities };
-    }
-
-    const uncheckedActivists = await prisma.activist.findMany({
-      where: uncheckedActivistsWhere,
-      select: {
-        id: true,
-        fullName: true,
-        phone: true,
-        position: true,
-        avatarUrl: true,
-        neighborhoodId: true,
-        neighborhood: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        fullName: 'asc',
-      },
-    });
-
-    return {
-      checkedIn: records,
-      notCheckedIn: uncheckedActivists,
-      summary: {
-        total: records.length + uncheckedActivists.length,
-        present: records.filter((r) => r.status === AttendanceStatus.PRESENT).length,
-        notPresent: uncheckedActivists.length,
-        date: today,
-      },
-    };
+    // Use cached version with user params as cache keys
+    return await getCachedTodaysAttendance(user.id, user.role, user.isSuperAdmin, neighborhoodId);
   } catch (error) {
     console.error('Error fetching today\'s attendance:', error);
     throw error;

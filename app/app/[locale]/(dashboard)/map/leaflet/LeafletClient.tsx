@@ -143,7 +143,7 @@ export default function LeafletClient() {
     return null;
   }
 
-  const sitesWithGPS = data.sites.filter((s) => s.latitude && s.longitude);
+  const sitesWithGPS = data.neighborhoods.filter((s) => s.latitude && s.longitude);
 
   return (
     <Box sx={{ height: '100vh', width: '100%', position: 'relative', margin: 0, padding: 0, overflow: 'hidden' }}>
@@ -249,7 +249,7 @@ export default function LeafletClient() {
             {/* Corporations */}
             <ListItem
               component="div"
-              onClick={() => toggleSection('corporations')}
+              onClick={() => toggleSection('cities')}
               sx={{
                 background: colors.pastel.greenLight,
                 borderRadius: '8px',
@@ -265,14 +265,14 @@ export default function LeafletClient() {
             >
               <BusinessIcon sx={{ mr: 2, color: colors.status.green }} />
               <ListItemText
-                primary={`תאגידים (${data.corporations.length})`}
+                primary={`ערים (${data.cities.length})`}
                 primaryTypographyProps={{ fontWeight: 600 }}
               />
-              {expandedSections.corporations ? <ExpandLess /> : <ExpandMore />}
+              {expandedSections.cities ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
-            <Collapse in={expandedSections.corporations} timeout="auto" unmountOnExit>
+            <Collapse in={expandedSections.cities} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ mt: 1 }}>
-                {data.corporations.map((corp: any) => (
+                {data.cities.map((corp: any) => (
                   <ListItem 
                     key={corp.id} 
                     sx={{ 
@@ -302,7 +302,7 @@ export default function LeafletClient() {
                     </Avatar>
                     <ListItemText
                       primary={corp.name}
-                      secondary={`${corp._count.sites} אתרים, ${corp._count.managers} מנהלים`}
+                      secondary={`${corp._count.neighborhoods} שכונות, ${corp._count.coordinators} רכזי עיר`}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                       secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
@@ -314,7 +314,7 @@ export default function LeafletClient() {
             {/* Sites */}
             <ListItem
               component="div"
-              onClick={() => toggleSection('sites')}
+              onClick={() => toggleSection('neighborhoods')}
               sx={{
                 background: colors.pastel.blueLight,
                 borderRadius: '8px',
@@ -330,19 +330,19 @@ export default function LeafletClient() {
             >
               <LocationIcon sx={{ mr: 2, color: colors.primary }} />
               <ListItemText
-                primary={`אתרים (${data.sites.length})`}
+                primary={`שכונות (${data.neighborhoods.length})`}
                 primaryTypographyProps={{ fontWeight: 600 }}
               />
-              {expandedSections.sites ? <ExpandLess /> : <ExpandMore />}
+              {expandedSections.neighborhoods ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
-            <Collapse in={expandedSections.sites} timeout="auto" unmountOnExit>
+            <Collapse in={expandedSections.neighborhoods} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ mt: 1 }}>
-                {data.sites.map((neighborhood: any) => (
+                {data.neighborhoods.map((neighborhood: any) => (
                   <ListItem
-                    key={site.id}
+                    key={neighborhood.id}
                     component="button"
-                    onClick={() => handleSiteClick(site.id)}
-                    disabled={!site.latitude || !site.longitude}
+                    onClick={() => handleSiteClick(neighborhood.id)}
+                    disabled={!neighborhood.latitude || !neighborhood.longitude}
                     sx={{
                       pl: 2,
                       pr: 1,
@@ -350,17 +350,17 @@ export default function LeafletClient() {
                       transition: 'all 0.2s ease',
                       borderRadius: '8px',
                       mx: 1,
-                      cursor: site.latitude && site.longitude ? 'pointer' : 'not-allowed',
-                      opacity: site.latitude && site.longitude ? 1 : 0.5,
-                      background: selectedSiteId === site.id ? colors.pastel.blueLight : 'transparent',
-                      border: selectedSiteId === site.id ? `2px solid ${colors.primary}` : '2px solid transparent',
+                      cursor: neighborhood.latitude && neighborhood.longitude ? 'pointer' : 'not-allowed',
+                      opacity: neighborhood.latitude && neighborhood.longitude ? 1 : 0.5,
+                      background: selectedSiteId === neighborhood.id ? colors.pastel.blueLight : 'transparent',
+                      border: selectedSiteId === neighborhood.id ? `2px solid ${colors.primary}` : '2px solid transparent',
                       '&:hover': {
-                        background: site.latitude && site.longitude
-                          ? selectedSiteId === site.id
+                        background: neighborhood.latitude && neighborhood.longitude
+                          ? selectedSiteId === neighborhood.id
                             ? colors.pastel.blue
                             : colors.neutral[50]
                           : 'transparent',
-                        transform: site.latitude && site.longitude ? 'translateX(-2px)' : 'none',
+                        transform: neighborhood.latitude && neighborhood.longitude ? 'translateX(-2px)' : 'none',
                       },
                       '&:disabled': {
                         cursor: 'not-allowed',
@@ -378,14 +378,14 @@ export default function LeafletClient() {
                         fontWeight: 600,
                       }}
                     >
-                      {site.name.charAt(0)}
+                      {neighborhood.name.charAt(0)}
                     </Avatar>
                     <ListItemText
-                      primary={site.name}
+                      primary={neighborhood.name}
                       secondary={
-                        site.latitude && site.longitude
-                          ? `${site.corporation.name} • ${site.workers.active} עובדים פעילים`
-                          : `${site.corporation.name} • אין נתוני מיקום`
+                        neighborhood.latitude && neighborhood.longitude
+                          ? `${neighborhood.cityRelation?.name || ''} • ${neighborhood.activists?.length || 0} פעילים`
+                          : `${neighborhood.cityRelation?.name || ''} • אין נתוני מיקום`
                       }
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                       secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
@@ -414,7 +414,7 @@ export default function LeafletClient() {
             >
               <ManagerIcon sx={{ mr: 2, color: colors.pastel.purple }} />
               <ListItemText
-                primary={`מנהלים (${data.managers.length})`}
+                primary={`רכזי עיר (${data.managers.length})`}
                 primaryTypographyProps={{ fontWeight: 600 }}
               />
               {expandedSections.managers ? <ExpandLess /> : <ExpandMore />}
@@ -449,7 +449,7 @@ export default function LeafletClient() {
                     </Avatar>
                     <ListItemText
                       primary={manager.user.fullName}
-                      secondary={manager.corporation.name}
+                      secondary={manager.city.name}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                       secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
@@ -461,7 +461,7 @@ export default function LeafletClient() {
             {/* Supervisors */}
             <ListItem
               component="div"
-              onClick={() => toggleSection('supervisors')}
+              onClick={() => toggleSection('activistCoordinators')}
               sx={{
                 background: colors.pastel.orangeLight,
                 borderRadius: '8px',
@@ -477,16 +477,16 @@ export default function LeafletClient() {
             >
               <ManagerIcon sx={{ mr: 2, color: colors.pastel.orange }} />
               <ListItemText
-                primary={`מפקחים (${data.supervisors.length})`}
+                primary={`רכזי פעילים (${data.activistCoordinators.length})`}
                 primaryTypographyProps={{ fontWeight: 600 }}
               />
-              {expandedSections.supervisors ? <ExpandLess /> : <ExpandMore />}
+              {expandedSections.activistCoordinators ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
-            <Collapse in={expandedSections.supervisors} timeout="auto" unmountOnExit>
+            <Collapse in={expandedSections.activistCoordinators} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ mt: 1 }}>
-                {data.supervisors.map((activistCoordinator: any) => (
-                  <ListItem 
-                    key={supervisor.id} 
+                {data.activistCoordinators.map((activistCoordinator: any) => (
+                  <ListItem
+                    key={activistCoordinator.id} 
                     sx={{ 
                       pl: 2, 
                       pr: 1,
@@ -508,11 +508,11 @@ export default function LeafletClient() {
                       fontWeight: 600,
                       fontSize: '12px',
                     }}>
-                      {supervisor.user.fullName.charAt(0)}
+                      {activistCoordinator.user.fullName.charAt(0)}
                     </Avatar>
                     <ListItemText
-                      primary={supervisor.user.fullName}
-                      secondary={`${supervisor.siteAssignments.length} אתרים`}
+                      primary={activistCoordinator.user.fullName}
+                      secondary={`${activistCoordinator.neighborhoodAssignments.length} שכונות`}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                       secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
@@ -577,7 +577,7 @@ export default function LeafletClient() {
                         </Avatar>
                         <ListItemText
                           primary={am.user.fullName}
-                          secondary={`${am.corporations.length} תאגידים`}
+                          secondary={`${am.cities.length} ערים`}
                           primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                           secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                         />
@@ -662,7 +662,7 @@ export default function LeafletClient() {
         }}
       >
         <LeafletMap
-          sites={sitesWithGPS}
+          neighborhoods={sitesWithGPS}
           selectedSiteId={selectedSiteId}
           onSiteSelect={setSelectedSiteId}
         />

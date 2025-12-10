@@ -38,7 +38,7 @@ type TodayAttendanceProps = {
 export default function TodayAttendance({ user }: TodayAttendanceProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSite, setSelectedSite] = useState<string>('all');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isTimeWindowValid, setIsTimeWindowValid] = useState(true);
@@ -50,7 +50,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
       setLoading(true);
       setError(null);
       const result = await getTodaysAttendance(
-        selectedSite === 'all' ? undefined : selectedSite
+        selectedNeighborhood === 'all' ? undefined : selectedNeighborhood
       );
       setData(result);
     } catch (err: any) {
@@ -63,7 +63,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
   // Initial fetch
   useEffect(() => {
     fetchAttendance();
-  }, [selectedSite]);
+  }, [selectedNeighborhood]);
 
   // Check time window and update current time
   useEffect(() => {
@@ -78,46 +78,46 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Get unique sites for filter
-  const sites = useMemo(() => {
+  // Get unique neighborhoods for filter
+  const neighborhoods = useMemo(() => {
     if (!data) return [];
 
-    const siteMap = new Map();
+    const neighborhoodMap = new Map();
 
-    // Add sites from checked-in workers
+    // Add neighborhoods from checked-in activists
     data.checkedIn?.forEach((record: any) => {
-      if (record.site && !siteMap.has(record.site.id)) {
-        siteMap.set(record.site.id, record.site);
+      if (record.neighborhood && !neighborhoodMap.has(record.neighborhood.id)) {
+        neighborhoodMap.set(record.neighborhood.id, record.neighborhood);
       }
     });
 
-    // Add sites from unchecked workers
+    // Add neighborhoods from unchecked activists
     data.notCheckedIn?.forEach((activist: any) => {
-      if (worker.site && !siteMap.has(worker.site.id)) {
-        siteMap.set(worker.site.id, worker.site);
+      if (activist.neighborhood && !neighborhoodMap.has(activist.neighborhood.id)) {
+        neighborhoodMap.set(activist.neighborhood.id, activist.neighborhood);
       }
     });
 
-    return Array.from(siteMap.values());
+    return Array.from(neighborhoodMap.values());
   }, [data]);
 
-  // Filter workers by search query
-  const filteredWorkers = useMemo(() => {
+  // Filter activists by search query
+  const filteredActivists = useMemo(() => {
     if (!data) return { checkedIn: [], notCheckedIn: [] };
 
-    const filterWorker = (activist: any) => {
+    const filterActivist = (activist: any) => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
-      const name = worker.worker?.fullName || worker.fullName || '';
-      const phone = worker.worker?.phone || worker.phone || '';
+      const name = activist.activist?.fullName || activist.fullName || '';
+      const phone = activist.activist?.phone || activist.phone || '';
       return (
         name.toLowerCase().includes(query) || phone.toLowerCase().includes(query)
       );
     };
 
     return {
-      checkedIn: data.checkedIn?.filter(filterWorker) || [],
-      notCheckedIn: data.notCheckedIn?.filter(filterWorker) || [],
+      checkedIn: data.checkedIn?.filter(filterActivist) || [],
+      notCheckedIn: data.notCheckedIn?.filter(filterActivist) || [],
     };
   }, [data, searchQuery]);
 
@@ -208,7 +208,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
                       fontWeight: 500,
                     }}
                   >
-                    עובדים נוכחים
+                    פעילים נוכחים
                   </Typography>
                 </Box>
                 <CheckCircleIcon
@@ -351,7 +351,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
       >
         {/* Search */}
         <TextField
-          placeholder="חיפוש עובד..."
+          placeholder="חיפוש פעיל..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           fullWidth
@@ -370,8 +370,8 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
           }}
         />
 
-        {/* Site Filter */}
-        {sites.length > 1 && (
+        {/* Neighborhood Filter */}
+        {neighborhoods.length > 1 && (
           <FormControl
             sx={{
               minWidth: 200,
@@ -380,17 +380,17 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
               },
             }}
           >
-            <InputLabel>אתר</InputLabel>
+            <InputLabel>שכונה</InputLabel>
             <Select
-              value={selectedSite}
-              onChange={(e) => setSelectedSite(e.target.value)}
-              label="אתר"
+              value={selectedNeighborhood}
+              onChange={(e) => setSelectedNeighborhood(e.target.value)}
+              label="שכונה"
               sx={{ direction: 'rtl' }}
             >
-              <MenuItem value="all">כל האתרים</MenuItem>
-              {sites.map((neighborhood: any) => (
-                <MenuItem key={site.id} value={site.id}>
-                  {site.name}
+              <MenuItem value="all">כל השכונות</MenuItem>
+              {neighborhoods.map((neighborhood: any) => (
+                <MenuItem key={neighborhood.id} value={neighborhood.id}>
+                  {neighborhood.name}
                 </MenuItem>
               ))}
             </Select>
@@ -398,10 +398,10 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
         )}
       </Box>
 
-      {/* Workers List */}
+      {/* Activists List */}
       <Box>
-        {/* Present Workers */}
-        {filteredWorkers.checkedIn.length > 0 && (
+        {/* Present Activists */}
+        {filteredActivists.checkedIn.length > 0 && (
           <Box sx={{ mb: 4 }}>
             <Box
               sx={{
@@ -418,7 +418,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
                   color: colors.neutral[800],
                 }}
               >
-                נוכחים ({filteredWorkers.checkedIn.length})
+                נוכחים ({filteredActivists.checkedIn.length})
               </Typography>
               <Chip
                 icon={<CheckCircleIcon />}
@@ -433,7 +433,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
               />
             </Box>
             <Grid container spacing={2}>
-              {filteredWorkers.checkedIn.map((record: any) => (
+              {filteredActivists.checkedIn.map((record: any) => (
                 <Grid item xs={12} sm={6} md={4} key={record.id}>
                   <ActivistCard
                     record={record}
@@ -447,8 +447,8 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
           </Box>
         )}
 
-        {/* Not Checked In Workers */}
-        {filteredWorkers.notCheckedIn.length > 0 && (
+        {/* Not Checked In Activists */}
+        {filteredActivists.notCheckedIn.length > 0 && (
           <Box>
             <Box
               sx={{
@@ -465,7 +465,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
                   color: colors.neutral[800],
                 }}
               >
-                לא נבדקו ({filteredWorkers.notCheckedIn.length})
+                לא נבדקו ({filteredActivists.notCheckedIn.length})
               </Typography>
               <Chip
                 icon={<PendingIcon />}
@@ -480,10 +480,10 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
               />
             </Box>
             <Grid container spacing={2}>
-              {filteredWorkers.notCheckedIn.map((activist: any) => (
-                <Grid item xs={12} sm={6} md={4} key={worker.id}>
+              {filteredActivists.notCheckedIn.map((activist: any) => (
+                <Grid item xs={12} sm={6} md={4} key={activist.id}>
                   <ActivistCard
-                    worker={worker}
+                    activist={activist}
                     isCheckedIn={false}
                     onUpdate={fetchAttendance}
                     isTimeWindowValid={isTimeWindowValid}
@@ -495,8 +495,8 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
         )}
 
         {/* Empty State */}
-        {filteredWorkers.checkedIn.length === 0 &&
-          filteredWorkers.notCheckedIn.length === 0 && (
+        {filteredActivists.checkedIn.length === 0 &&
+          filteredActivists.notCheckedIn.length === 0 && (
             <Box
               sx={{
                 textAlign: 'center',
@@ -510,7 +510,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
                   mb: 1,
                 }}
               >
-                לא נמצאו עובדים
+                לא נמצאו פעילים
               </Typography>
               <Typography
                 variant="body2"
@@ -520,7 +520,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
               >
                 {searchQuery
                   ? 'נסה לשנות את החיפוש'
-                  : 'אין עובדים פעילים באתר זה'}
+                  : 'אין פעילים פעילים בשכונה זו'}
               </Typography>
             </Box>
           )}

@@ -877,7 +877,7 @@ export default async function SystemRulesPage() {
                     <TableCell sx={{ fontWeight: 600 }}>{item.capability}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{item.superAdmin}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{item.manager}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{item.supervisor}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{item.activistCoordinator}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -922,7 +922,7 @@ export default async function SystemRulesPage() {
                         {t('roleCapabilities.supervisor')}:
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                        {item.supervisor}
+                        {item.activistCoordinator}
                       </Typography>
                     </Box>
                   </Box>

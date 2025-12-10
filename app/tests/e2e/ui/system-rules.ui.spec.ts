@@ -56,7 +56,7 @@ test.describe('System Rules UI - SuperAdmin', () => {
 
 test.describe('System Rules UI - Manager', () => {
   test('should handle city coordinator access to system rules', async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     // Try to access system rules
@@ -73,9 +73,9 @@ test.describe('System Rules UI - Manager', () => {
   });
 });
 
-test.describe('System Rules UI - Supervisor', () => {
+test.describe('System Rules UI - activist coordinator', () => {
   test('should handle activist coordinator access to system rules', async ({ page }) => {
-    await loginAs(page, testUsers.supervisor);
+    await loginAs(page, testUsers.activistCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     // Try to access system rules

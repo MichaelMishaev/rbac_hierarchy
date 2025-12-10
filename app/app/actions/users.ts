@@ -46,20 +46,43 @@ export type ListUsersFilters = {
 /**
  * Create a new user with role-based validation
  *
+ * STRICT BUSINESS RULES (from ADD_NEW_DESIGN.md):
+ * 1. SuperAdmin:
+ *    - Can create: Area Managers, City Coordinators, Activist Coordinators
+ *    - CANNOT create SuperAdmin via UI (DB only)
+ * 2. Area Manager:
+ *    - Can create: City Coordinators (cities in their area), Activist Coordinators (cities in their area)
+ *    - MUST assign to city in their area
+ * 3. City Coordinator:
+ *    - Can create: Activist Coordinators ONLY
+ *    - MUST assign to their city
+ * 4. Email MUST be unique
+ * 5. Role MUST be valid
+ * 6. If role requires city/area → MUST provide and validate scope
+ *
  * Permissions:
- * - SUPERADMIN: Can create any user in any corporation
- * - MANAGER: Can create MANAGER or SUPERVISOR in their corporation only
- * - SUPERVISOR: Cannot create users
+ * - SUPERADMIN: Can create Area Managers, City Coordinators, Activist Coordinators
+ * - AREA_MANAGER: Can create City Coordinators, Activist Coordinators (cities in their area)
+ * - CITY_COORDINATOR: Can create Activist Coordinators (their city ONLY)
+ * - ACTIVIST_COORDINATOR: Cannot create users
  */
 export async function createUser(data: CreateUserInput) {
   try {
     const currentUser = await getCurrentUser();
 
-    // SUPERVISOR cannot create users
+    // ACTIVIST_COORDINATOR cannot create users
     if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       return {
         success: false,
-        error: 'Supervisors cannot create users',
+        error: 'Activist Coordinators cannot create users.',
+      };
+    }
+
+    // CANNOT create SUPERADMIN via UI (database/seed only)
+    if (data.role === 'SUPERADMIN') {
+      return {
+        success: false,
+        error: 'SuperAdmin users can only be created via database/seed script.',
       };
     }
 
@@ -67,7 +90,7 @@ export async function createUser(data: CreateUserInput) {
     if (data.role === 'AREA_MANAGER' && currentUser.role !== 'SUPERADMIN') {
       return {
         success: false,
-        error: 'Only SuperAdmin can create Area Manager users',
+        error: 'Only SuperAdmin can create Area Manager users.',
       };
     }
 
@@ -75,34 +98,82 @@ export async function createUser(data: CreateUserInput) {
     if (data.role === 'AREA_MANAGER' && !data.regionName) {
       return {
         success: false,
-        error: 'Region name is required for Area Manager',
+        error: 'Region name is required for Area Manager role.',
       };
     }
 
-    // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      // Must provide corporation ID for MANAGER/SUPERVISOR roles
-      if ((data.role === 'CITY_COORDINATOR' || data.role === 'ACTIVIST_COORDINATOR') && !data.cityId) {
+    // City-based roles require cityId
+    if ((data.role === 'CITY_COORDINATOR' || data.role === 'ACTIVIST_COORDINATOR') && !data.cityId) {
+      return {
+        success: false,
+        error: 'City is required for this role.',
+      };
+    }
+
+    // CRITICAL SCOPE VALIDATION: Enforce strict hierarchy
+    if (currentUser.role === 'AREA_MANAGER') {
+      // Area Manager can create: City Coordinators, Activist Coordinators
+      if (data.role !== 'CITY_COORDINATOR' && data.role !== 'ACTIVIST_COORDINATOR') {
         return {
           success: false,
-          error: 'Corporation ID is required',
+          error: 'Area Managers can only create City Coordinators or Activist Coordinators.',
         };
       }
 
-      // Can only create users in corporations they have access to
-      if (data.cityId && !hasAccessToCorporation(currentUser, data.cityId)) {
+      // Validate city belongs to Area Manager's area
+      if (data.cityId) {
+        const currentUserAreaManager = await prisma.areaManager.findFirst({
+          where: { userId: currentUser.id },
+        });
+
+        if (!currentUserAreaManager) {
+          return {
+            success: false,
+            error: 'Area Manager record not found for current user.',
+          };
+        }
+
+        const city = await prisma.city.findUnique({
+          where: { id: data.cityId },
+          select: { areaManagerId: true },
+        });
+
+        if (!city || city.areaManagerId !== currentUserAreaManager.id) {
+          return {
+            success: false,
+            error: 'Area Managers can only create users in cities within their area.',
+          };
+        }
+      }
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      // City Coordinator can ONLY create Activist Coordinators
+      if (data.role !== 'ACTIVIST_COORDINATOR') {
         return {
           success: false,
-          error: 'Cannot create user for different corporation',
+          error: 'City Coordinators can only create Activist Coordinators.',
         };
       }
 
-      // Cannot create SUPERADMIN or AREA_MANAGER
-      if (data.role === 'SUPERADMIN' || data.role === 'AREA_MANAGER') {
-        return {
-          success: false,
-          error: 'Cannot create SuperAdmin or Area Manager users',
-        };
+      // Validate city matches City Coordinator's city
+      if (data.cityId) {
+        const currentUserCityCoordinator = await prisma.cityCoordinator.findFirst({
+          where: { userId: currentUser.id },
+        });
+
+        if (!currentUserCityCoordinator) {
+          return {
+            success: false,
+            error: 'City Coordinator record not found for current user.',
+          };
+        }
+
+        // STRICT: Can ONLY create in their city
+        if (data.cityId !== currentUserCityCoordinator.cityId) {
+          return {
+            success: false,
+            error: 'City Coordinators can only create users in their own city.',
+          };
+        }
       }
     }
 

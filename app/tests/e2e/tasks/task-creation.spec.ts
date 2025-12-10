@@ -44,7 +44,7 @@ test.describe('Task Creation - Recipients Count Insert Order', () => {
     // to avoid constraint violation (recipients_count > 0)
 
     // 1. Login as City City Coordinator (has access to supervisors)
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     // 2. Create task with "all under me"
     const createResponse = await request.post('/api/tasks', {
@@ -82,7 +82,7 @@ test.describe('Task Creation - Recipients Count Insert Order', () => {
 
   test('should create task with specific recipients', async ({ page, baseURL }) => {
     // 1. Login as City Manager
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     // 2. Get available recipients
     const recipientsResponse = await request.get('/api/tasks/available-recipients');
@@ -160,7 +160,7 @@ test.describe('Task Creation - RBAC Permissions', () => {
   });
 
   test('TC-TASK-004: City City Coordinator can send tasks', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
@@ -176,7 +176,7 @@ test.describe('Task Creation - RBAC Permissions', () => {
   });
 
   test('TC-TASK-004: Activist Coordinator CANNOT send tasks', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
@@ -198,7 +198,7 @@ test.describe('Task Creation - RBAC Permissions', () => {
 
 test.describe('Task Creation - Validation', () => {
   test('should reject task with body too short', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
@@ -217,7 +217,7 @@ test.describe('Task Creation - Validation', () => {
   });
 
   test('should reject task with execution date in past', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
@@ -236,7 +236,7 @@ test.describe('Task Creation - Validation', () => {
   });
 
   test('should reject task with no recipients when send_to = selected', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
@@ -258,11 +258,11 @@ test.describe('Task Creation - Validation', () => {
 
 test.describe('Task Creation - Audit Logging', () => {
   test('should create audit log entry when task is created', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     // FIX: Get user ID from database instead of DOM
     const managerUser = await prisma.user.findUnique({
-      where: { email: testUsers.manager.email },
+      where: { email: testUsers.cityCoordinator.email },
     });
 
     expect(managerUser).toBeDefined();

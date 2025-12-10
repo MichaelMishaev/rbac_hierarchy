@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Button,
   Grid,
   IconButton,
   Menu,
@@ -14,8 +13,9 @@ import {
   Chip,
   Avatar,
   Tooltip,
-  Select,
+  Autocomplete,
 } from '@mui/material';
+import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -68,19 +68,26 @@ type Site = {
   email: string | null;
   isActive: boolean;
   cityId: string;
-  city?: City;
+  cityRelation?: City;
   _count?: {
-    supervisorAssignments: number;
+    activistCoordinatorAssignments: number;
     activists: number;
   };
+};
+
+type Area = {
+  id: string;
+  regionName: string;
+  regionCode: string;
 };
 
 type NeighborhoodsClientProps = {
   neighborhoods: Site[];
   cities: City[];
+  areas: Area[];
 };
 
-export default function NeighborhoodsClient({ neighborhoods: initialSites, cities }: NeighborhoodsClientProps) {
+export default function NeighborhoodsClient({ neighborhoods: initialSites, cities, areas }: NeighborhoodsClientProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -90,6 +97,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
   const [sites, setSites] = useState(initialSites);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCity, setFilterCorporation] = useState<string>('all');
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -112,8 +120,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
         (site) =>
           site.name.toLowerCase().includes(query) ||
           site.city?.toLowerCase().includes(query) ||
-          site.address?.toLowerCase().includes(query) ||
-          site.corporation?.name.toLowerCase().includes(query)
+          site.address?.toLowerCase().includes(query)
       );
     }
     
@@ -121,18 +128,30 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
   }, [sites, searchQuery, filterCity]);
 
   // Stats
-  const stats = useMemo(() => ({
-    total: sites.length,
-    active: sites.filter((s) => s.isActive).length,
-    inactive: sites.filter((s) => !s.isActive).length,
-    totalWorkers: sites.reduce((acc, s) => acc + (s._count?.workers || 0), 0),
-    totalSupervisors: sites.reduce((acc, s) => acc + (s._count?.supervisorAssignments || 0), 0),
-  }), [sites]);
+  const stats = useMemo(() => {
+    if (!sites || !Array.isArray(sites)) {
+      return {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        totalActivists: 0,
+        totalCoordinators: 0,
+      };
+    }
+    
+    return {
+      total: sites.length,
+      active: sites.filter((s) => s.isActive).length,
+      inactive: sites.filter((s) => !s.isActive).length,
+      totalActivists: sites.reduce((acc, s) => acc + (s._count?.activists || 0), 0),
+      totalCoordinators: sites.reduce((acc, s) => acc + (s._count?.activistCoordinatorAssignments || 0), 0),
+    };
+  }, [sites]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, neighborhood: Site) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
-    setSelectedSite(site);
+    setSelectedSite(neighborhood);
   };
 
   const handleMenuClose = () => {
@@ -250,10 +269,10 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
       {/* Stats Overview - Neo-Morphic KPI Cards */}
       <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: 4 }}>
         {[
-          { label: isRTL ? 'סה"כ אתרים' : 'Total Sites', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight, glow: shadows.glowBlue },
-          { label: isRTL ? 'פעילים' : 'Active', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight, glow: shadows.glowGreen },
-          { label: isRTL ? 'לא פעילים' : 'Inactive', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight, glow: '0 0 20px rgba(228, 66, 88, 0.3)' },
-          { label: isRTL ? 'עובדים' : 'Workers', value: stats.totalWorkers, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight, glow: shadows.glowPurple },
+          { label: isRTL ? 'סה"כ שכונות' : 'Total Neighborhoods', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight, glow: shadows.glowBlue },
+          { label: isRTL ? 'פעילות' : 'Active', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight, glow: shadows.glowGreen },
+          { label: isRTL ? 'לא פעילות' : 'Inactive', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight, glow: '0 0 20px rgba(228, 66, 88, 0.3)' },
+          { label: isRTL ? 'פעילים' : 'Activists', value: stats.totalActivists, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight, glow: shadows.glowPurple },
         ].map((stat, index) => (
           <Grid item xs={6} sm={3} key={index}>
             <Box
@@ -345,53 +364,90 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
             }}
           />
           
-          {/* Filter Dropdown - Clean style without floating label */}
-          <Select
-            value={filterCity}
-            onChange={(e) => setFilterCorporation(e.target.value)}
-            displayEmpty
+          {/* City Filter - Autocomplete with clean pill style */}
+          <Autocomplete
+            value={selectedCity}
+            onChange={(event, newValue) => {
+              setSelectedCity(newValue);
+              setFilterCorporation(newValue ? newValue.id : 'all');
+            }}
+            options={cities}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            noOptionsText={isRTL ? 'לא נמצאו ערים' : 'No cities found'}
             size="small"
             sx={{
-              minWidth: 200,
-              height: '44px',
-              borderRadius: borderRadius['2xl'], // 20px pill shape
-              backgroundColor: colors.neutral[0],
-              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', // Inner shadow like search
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'transparent',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: colors.neutral[300],
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: colors.primary.main,
-                borderWidth: 2,
-              },
-              '& .MuiSelect-select': {
-                fontWeight: 500,
-                color: filterCity === 'all' ? colors.neutral[500] : colors.neutral[900],
-              },
-            }}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  borderRadius: borderRadius.lg,
-                  boxShadow: shadows.large,
-                  mt: 1,
+              minWidth: 250,
+              '& .MuiOutlinedInput-root': {
+                height: '44px',
+                borderRadius: borderRadius['2xl'], // 20px pill shape
+                backgroundColor: colors.neutral[0],
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)', // Inner shadow like search
+                paddingTop: '0 !important',
+                paddingBottom: '0 !important',
+                '& fieldset': {
+                  borderColor: 'transparent',
+                },
+                '&:hover fieldset': {
+                  borderColor: colors.neutral[300],
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: colors.primary.main,
+                  borderWidth: 2,
+                },
+                '& .MuiAutocomplete-input': {
+                  fontWeight: 500,
+                  color: selectedCity ? colors.neutral[900] : colors.neutral[500],
+                  padding: '0 !important',
                 },
               },
             }}
-          >
-            <MenuItem value="all">{isRTL ? 'כל הערים' : 'All Cities'}</MenuItem>
-            {cities.map((corp) => (
-              <MenuItem key={corp.id} value={corp.id}>
-                {corp.name}
-              </MenuItem>
-            ))}
-          </Select>
+            ListboxProps={{
+              sx: {
+                '& .MuiAutocomplete-option': {
+                  fontWeight: 500,
+                  '&:hover': {
+                    backgroundColor: colors.pastel.blueLight,
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: colors.pastel.blueLight,
+                  },
+                },
+              },
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder={isRTL ? 'כל הערים' : 'All Cities'}
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <>
+                      <InputAdornment position="start">
+                        <BusinessIcon sx={{ color: colors.neutral[400], fontSize: 20 }} />
+                      </InputAdornment>
+                      {params.InputProps.startAdornment}
+                    </>
+                  ),
+                }}
+              />
+            )}
+            PaperComponent={({ children }) => (
+              <Box
+                sx={{
+                  borderRadius: borderRadius.lg,
+                  boxShadow: shadows.large,
+                  mt: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                {children}
+              </Box>
+            )}
+          />
         </Box>
 
-        <Button
+        <RtlButton
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleOpenCreateModal}
@@ -417,7 +473,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
           }}
         >
           {t('newSite')}
-        </Button>
+        </RtlButton>
       </Box>
 
       {/* Sites Grid */}
@@ -477,7 +533,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                 : 'Create your first site to get started'}
           </Typography>
           {!searchQuery && filterCity === 'all' && (
-            <Button
+            <RtlButton
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleOpenCreateModal}
@@ -491,7 +547,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
               }}
             >
               {t('newSite')}
-            </Button>
+            </RtlButton>
           )}
         </Box>
       ) : (
@@ -573,10 +629,10 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                         >
                           {site.name}
                         </Typography>
-                        {site.corporation && (
+                        {site.cityRelation && (
                           <Chip
                             icon={<BusinessIcon sx={{ fontSize: 14 }} />}
-                            label={site.corporation.name}
+                            label={site.cityRelation.name}
                             size="small"
                             sx={{
                               backgroundColor: colors.neutral[0],
@@ -665,7 +721,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                         borderTop: `1px solid ${colors.neutral[200]}`,
                       }}
                     >
-                      <Tooltip title={isRTL ? 'מפקחים' : 'Supervisors'}>
+                      <Tooltip title={isRTL ? 'רכזי פעילים' : 'Activist Coordinators'}>
                         <Box
                           sx={{
                             flex: 1,
@@ -684,11 +740,11 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                             variant="body2"
                             sx={{ fontWeight: 600, color: colors.pastel.purple }}
                           >
-                            {site._count?.supervisorAssignments || 0}
+                            {site._count?.activistCoordinatorAssignments || 0}
                           </Typography>
                         </Box>
                       </Tooltip>
-                      <Tooltip title={isRTL ? 'עובדים' : 'Workers'}>
+                      <Tooltip title={isRTL ? 'פעילים' : 'Activists'}>
                         <Box
                           sx={{
                             flex: 1,
@@ -707,7 +763,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                             variant="body2"
                             sx={{ fontWeight: 600, color: colors.pastel.blue }}
                           >
-                            {site._count?.workers || 0}
+                            {site._count?.activists || 0}
                           </Typography>
                         </Box>
                       </Tooltip>
@@ -806,8 +862,9 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateSite}
         mode="create"
+        areas={areas}
         cities={cities}
-        supervisors={supervisors}
+        activistCoordinators={supervisors}
         onCityChange={fetchSupervisors}
       />
 
@@ -832,8 +889,9 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
             isActive: selectedSite.isActive,
           }}
           mode="edit"
+          areas={areas}
           cities={cities}
-          supervisors={supervisors}
+          activistCoordinators={supervisors}
           onCityChange={fetchSupervisors}
         />
       )}

@@ -5,6 +5,7 @@ import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { listCities } from '@/app/actions/cities';
+import { listAreas } from '@/app/actions/areas';
 import NeighborhoodsClient from '@/app/components/neighborhoods/NeighborhoodsClient';
 import { Suspense } from 'react';
 
@@ -33,10 +34,11 @@ export default async function SitesPage() {
     );
   }
 
-  // Fetch sites and cities
-  const [sitesResult, citiesResult] = await Promise.all([
+  // Fetch neighborhoods, cities, and areas
+  const [sitesResult, citiesResult, areasResult] = await Promise.all([
     listNeighborhoods({}),
     listCities({}),
+    listAreas(),
   ]);
 
   if (!sitesResult.success) {
@@ -49,8 +51,9 @@ export default async function SitesPage() {
     );
   }
 
-  const sites = sitesResult.sites || [];
+  const neighborhoods = sitesResult.neighborhoods || [];
   const cities = citiesResult.cities || [];
+  const areas = areasResult.areas || [];
 
   return (
     <Box
@@ -90,8 +93,9 @@ export default async function SitesPage() {
 
       {/* Client Component with Modals */}
       <NeighborhoodsClient
-        sites={sites}
+        neighborhoods={neighborhoods}
         cities={cities.map(c => ({ id: c.id, name: c.name, code: c.code }))}
+        areas={areas.map(a => ({ id: a.id, regionName: a.regionName, regionCode: a.regionCode }))}
       />
     </Box>
   );

@@ -16,7 +16,7 @@ export type CreateNeighborhoodInput = {
   phone?: string;
   email?: string;
   cityId: string;
-  activistCoordinatorId: string; // REQUIRED: ActivistCoordinator must be assigned at creation
+  activistCoordinatorId?: string; // OPTIONAL: ActivistCoordinator can be assigned at creation or later
   isActive?: boolean;
 };
 
@@ -44,73 +44,131 @@ export type ListNeighborhoodsFilters = {
 /**
  * Create a new neighborhood
  *
+ * STRICT BUSINESS RULES (from ADD_NEW_DESIGN.md):
+ * 1. SuperAdmin: Can create in any city
+ * 2. Area Manager:
+ *    - Get their area from `area_managers` table
+ *    - Filter cities by `area_manager_id`
+ *    - Can create in ANY city in their area
+ * 3. City Coordinator:
+ *    - Get their city from `city_coordinators` table
+ *    - Can ONLY create in their assigned city
+ *    - Cannot access other cities
+ * 4. neighborhoodName MUST NOT be empty
+ * 5. cityId MUST be valid and within scope
+ *
  * Permissions:
  * - SUPERADMIN: Can create neighborhoods in any city
- * - AREA_MANAGER: Can create neighborhoods in their cities only
- * - CITY_COORDINATOR: Can create neighborhoods in their city only
+ * - AREA_MANAGER: Can create neighborhoods in cities within their area
+ * - CITY_COORDINATOR: Can create neighborhoods in their city ONLY
  * - ACTIVIST_COORDINATOR: Cannot create neighborhoods
  */
 export async function createNeighborhood(data: CreateNeighborhoodInput) {
   try {
-    // Only SUPERADMIN and MANAGER can create sites
-    const currentUser = await requireManager();
+    // Get current user
+    const currentUser = await getCurrentUser();
 
-    // Validate MANAGER and AREA_MANAGER constraints
-    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      // Can only create sites in corporations they have access to
-      if (!hasAccessToCorporation(currentUser, data.cityId)) {
-        return {
-          success: false,
-          error: 'Cannot create neighborhood for different corporation',
-        };
-      }
+    // Only SUPERADMIN, AREA_MANAGER, and CITY_COORDINATOR can create neighborhoods
+    if (
+      currentUser.role !== 'SUPERADMIN' &&
+      currentUser.role !== 'AREA_MANAGER' &&
+      currentUser.role !== 'CITY_COORDINATOR'
+    ) {
+      return {
+        success: false,
+        error: 'Only SuperAdmin, Area Managers, and City Coordinators can create neighborhoods.',
+      };
     }
 
-    // Verify corporation exists
-    const corporation = await prisma.city.findUnique({
+    // Verify city exists first
+    const city = await prisma.city.findUnique({
       where: { id: data.cityId },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        areaManagerId: true,
+      },
     });
 
-    if (!corporation) {
+    if (!city) {
       return {
         success: false,
         error: 'City not found',
       };
     }
 
-    // Validate supervisor is provided
-    if (!data.activistCoordinatorId) {
-      return {
-        success: false,
-        error: 'ActivistCoordinator is required when creating a site',
-      };
+    // CRITICAL SCOPE VALIDATION: Enforce strict hierarchy
+    if (currentUser.role === 'AREA_MANAGER') {
+      // Area Manager: Get their area and validate city belongs to it
+      const currentUserAreaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!currentUserAreaManager) {
+        return {
+          success: false,
+          error: 'Area Manager record not found for current user.',
+        };
+      }
+
+      // STRICT: City must belong to Area Manager's area
+      if (city.areaManagerId !== currentUserAreaManager.id) {
+        return {
+          success: false,
+          error: 'Area Managers can only create neighborhoods in cities within their area.',
+        };
+      }
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      // City Coordinator: Get their city and validate
+      const currentUserCityCoordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!currentUserCityCoordinator) {
+        return {
+          success: false,
+          error: 'City Coordinator record not found for current user.',
+        };
+      }
+
+      // STRICT: Can ONLY create in their assigned city
+      if (data.cityId !== currentUserCityCoordinator.cityId) {
+        return {
+          success: false,
+          error: 'City Coordinators can only create neighborhoods in their own city.',
+        };
+      }
     }
 
-    // Verify supervisor exists and belongs to the same corporation
-    const supervisor = await prisma.activistCoordinator.findFirst({
-      where: {
-        id: data.activistCoordinatorId,
-        cityId: data.cityId,
-        isActive: true,
-      },
-      include: {
-        user: {
-          select: {
-            fullName: true,
-            email: true,
+    // OPTIONAL: Verify activist coordinator if provided
+    let supervisor = null;
+    if (data.activistCoordinatorId) {
+      supervisor = await prisma.activistCoordinator.findFirst({
+        where: {
+          id: data.activistCoordinatorId,
+          cityId: data.cityId,
+          isActive: true,
+        },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!supervisor) {
-      return {
-        success: false,
-        error: 'ActivistCoordinator not found or belongs to different corporation',
-      };
+      if (!supervisor) {
+        return {
+          success: false,
+          error: 'ActivistCoordinator not found or belongs to different corporation',
+        };
+      }
     }
 
-    // Create site + supervisor assignment in transaction
+    // Create site (+ optional supervisor assignment) in transaction
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create site
       const newNeighborhood = await tx.neighborhood.create({
@@ -140,16 +198,18 @@ export async function createNeighborhood(data: CreateNeighborhoodInput) {
         },
       });
 
-      // 2. Create supervisor assignment
-      await tx.activistCoordinatorNeighborhood.create({
-        data: {
-          neighborhoodId: newNeighborhood.id,
-          activistCoordinatorId: data.activistCoordinatorId,
-          cityId: data.cityId,
-          legacyActivistCoordinatorUserId: supervisor.userId,
-          assignedBy: currentUser.id,
-        },
-      });
+      // 2. OPTIONAL: Create supervisor assignment if supervisor provided
+      if (data.activistCoordinatorId && supervisor) {
+        await tx.activistCoordinatorNeighborhood.create({
+          data: {
+            neighborhoodId: newNeighborhood.id,
+            activistCoordinatorId: data.activistCoordinatorId,
+            cityId: data.cityId,
+            legacyActivistCoordinatorUserId: supervisor.userId,
+            assignedBy: currentUser.id,
+          },
+        });
+      }
 
       return newNeighborhood;
     });
@@ -173,7 +233,7 @@ export async function createNeighborhood(data: CreateNeighborhoodInput) {
           cityId: newNeighborhood.cityId,
           isActive: newNeighborhood.isActive,
           activistCoordinatorId: data.activistCoordinatorId,
-          supervisorName: supervisor.user.fullName,
+          supervisorName: supervisor?.user.fullName,
         },
       },
     });
@@ -263,8 +323,8 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
       where.isActive = filters.isActive;
     }
 
-    // Query sites
-    const sites = await prisma.neighborhood.findMany({
+    // Query neighborhoods
+    const neighborhoods = await prisma.neighborhood.findMany({
       where,
       include: { cityRelation: {
           select: {
@@ -286,14 +346,14 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
 
     return {
       success: true,
-      sites,
-      count: sites.length,
+      neighborhoods,
+      count: neighborhoods.length,
     };
   } catch (error) {
     console.error('Error listing neighborhoods:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to list sites',
+      error: error instanceof Error ? error.message : 'Failed to list neighborhoods',
       neighborhoods: [],
       count: 0,
     };

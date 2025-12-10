@@ -56,14 +56,26 @@ npm run db:studio    # Open Prisma Studio
 
 ## Project Overview
 
-**Election/Activism Management System (v2.0)** - A hierarchical organization management platform for election campaigns and activism coordination with strict role-based access control.
+**🗳️ Election Campaign Management System (v2.0)** - A comprehensive field operations platform for politicians and campaign managers to coordinate election campaigns, track activist activity, and manage ground operations across cities and neighborhoods.
 
-**IMPORTANT MIGRATION NOTE**: This system was migrated from a corporate hierarchy platform to an election/activism system. The repository name "corporations" is historical. The actual domain is now:
-- **Election System** (formerly Corporations)
-- **Activists** (formerly Workers)
-- **Neighborhoods** (formerly Sites)
-- **City Coordinators** (formerly Managers)
-- **Activist Coordinators** (formerly Supervisors)
+### 🎯 System Purpose
+
+This system enables **politicians and campaign managers** to:
+- **Track Campaign Ground Operations**: Monitor activist activity, attendance, and task completion in real-time
+- **Coordinate Field Teams**: Organize activists across neighborhoods and cities with clear hierarchical management
+- **Assign & Monitor Tasks**: Distribute campaign tasks to field activists and track their progress
+- **Analyze Campaign Performance**: View analytics and reports on activist engagement, task completion rates, and attendance patterns
+- **Manage Geographic Operations**: Organize campaign activities by area, city, and neighborhood (שכונות)
+- **Real-time Communication**: Push notifications for urgent tasks and campaign updates
+
+**Primary Users**: Politicians, Campaign Managers, Area Coordinators, Neighborhood Organizers
+
+**IMPORTANT MIGRATION NOTE**: This system was migrated from a corporate hierarchy platform to an election campaign system. The repository name "corporations" is historical. The actual domain is now:
+- **Election Campaign System** (formerly Corporations)
+- **Activists** (formerly Workers) - Field volunteers and campaign workers
+- **Neighborhoods** (formerly Sites) - Geographic campaign areas
+- **City Coordinators** (formerly Managers) - City-level campaign managers
+- **Activist Coordinators** (formerly Supervisors) - Neighborhood-level organizers
 
 **Current State**:
 - ✅ **Next.js 15 app** - Running at http://localhost:3200 (dev), http://localhost:3000 (tests)
@@ -180,17 +192,31 @@ DATABASE_URL="postgresql://postgres:postgres_dev_password@localhost:5434/hierarc
 
 ## Architecture
 
-### Organizational Hierarchy (Election/Activism Domain)
+### Campaign Organizational Hierarchy
+
+**The system reflects a typical political campaign structure:**
 
 ```
-SuperAdmin (system-wide access)
-└── Election System (multi-region root)
-    ├── Area Managers (region-wide access)
-    └── City Coordinators (city-scoped access)
-        └── Activist Coordinators (neighborhood-scoped access)
-            └── Neighborhoods (physical locations)
-                └── Activists (tracked individuals with attendance)
+SuperAdmin (Platform Administrator - system-wide access)
+└── Election Campaign System (multi-region coordination)
+    ├── Area Managers (Regional Campaign Directors - oversee multiple cities)
+    │   └── Manage regional strategy, cross-city analytics, resource allocation
+    └── City Coordinators (City Campaign Managers - single city operations)
+        └── Activist Coordinators (Neighborhood Organizers - on-the-ground leaders)
+            └── Neighborhoods (Geographic Campaign Districts/Precincts)
+                └── Activists (Field Volunteers & Campaign Workers)
+                    ├── Door-to-door canvassing
+                    ├── Phone banking
+                    ├── Event coordination
+                    └── Voter outreach
 ```
+
+**Campaign Structure Example:**
+- **SuperAdmin**: Platform administrator (technical role)
+- **Area Manager**: Regional Campaign Director for Tel Aviv District (manages 5 cities)
+- **City Coordinator**: Campaign Manager for Tel Aviv-Yafo (manages 12 neighborhoods)
+- **Activist Coordinator**: Neighborhood Organizer for Florentin (leads 30 activists)
+- **Activists**: Field volunteers doing canvassing, phone banking, voter registration
 
 ### Role-Based Access Control (RBAC)
 
@@ -240,11 +266,16 @@ SuperAdmin (system-wide access)
 - Use Prisma middleware or API middleware to enforce data filters
 - Test cross-city and cross-area isolation thoroughly
 
-**Special Features**:
-- **Attendance Tracking**: Record check-in/out times, notes, GPS coordinates
-- **Task Management**: Assign tasks to activists with priority and deadlines
-- **Push Notifications**: Web push notifications for task assignments
-- **Analytics**: Area-wide and city-wide reporting dashboards
+**Campaign Management Features**:
+- **Activist Attendance Tracking**: Monitor field volunteer check-ins/outs, track hours worked, GPS location verification
+- **Campaign Task Management**: Assign canvassing routes, phone banking shifts, event coordination tasks with priority and deadlines
+- **Real-time Push Notifications**: Instant updates for urgent campaign tasks, event changes, and coordination needs
+- **Campaign Analytics & Reporting**:
+  - Track activist engagement and productivity
+  - Monitor task completion rates by neighborhood
+  - Measure campaign reach and coverage
+  - Generate reports for campaign managers and politicians
+  - View real-time campaign activity across all regions
 
 ## Database Schema
 
@@ -351,44 +382,56 @@ npm run test:e2e:debug     # Run in debug mode
 - **Web server**: Auto-starts in dev mode (when `npm run dev` is available)
 - **Config file**: `app/playwright.config.ts`
 
-## System Flows
+## Campaign Management Workflows
 
-### Invitation & Onboarding
+### Campaign Team Onboarding
 
-1. Admin creates invitation with role type (area_manager, city_coordinator, activist_coordinator)
-2. System generates unique token → stored in `invitations` table
-3. Email sent via SMTP (MailHog in dev, SendGrid/Resend in production)
-4. User clicks invitation link → token validated and not expired
-5. New user created if doesn't exist, appropriate role table populated
+**Use Case**: City Coordinator invites neighborhood organizers to join the campaign team
+
+1. Campaign manager creates invitation with role type (area_manager, city_coordinator, activist_coordinator)
+2. System generates unique secure token → stored in `invitations` table
+3. Invitation email sent via SMTP (MailHog in dev, SendGrid/Resend in production)
+4. Team member clicks invitation link → token validated and not expired
+5. New user account created if doesn't exist, appropriate campaign role assigned
 6. Invitation marked with `accepted_at` timestamp
-7. User redirected to role-specific dashboard
+7. User redirected to role-specific campaign dashboard
 
-### Authentication Flow (NextAuth v5)
+### Campaign Authentication Flow (NextAuth v5)
 
-1. User logs in with email/password (bcrypt verification)
+1. Campaign team member logs in with email/password (bcrypt verification)
 2. Session token stored in HTTP-only cookie
 3. Session payload: `user_id`, `email`, `role`, `isSuperAdmin`, area/city scope
 4. Middleware validates session on protected routes
-5. Server Actions/API Routes verify permissions per-request
+5. Server Actions/API Routes verify campaign permissions per-request
 6. Token refresh handled automatically by NextAuth
 
-### Attendance Tracking Flow
+### Field Activist Attendance Tracking
 
-1. Coordinator marks activist as "checked in" with timestamp
-2. System records GPS coordinates (if available)
-3. Coordinator can add notes about activist status
-4. Check-out recorded with duration calculation
-5. Attendance history displayed in activist profile
-6. Analytics aggregate attendance by neighborhood/city
+**Use Case**: Activist coordinator tracks field volunteers during canvassing operations
 
-### Task Management Flow
+1. Coordinator marks activist as "checked in" at campaign location with timestamp
+2. System records GPS coordinates (verifies activist is at assigned location)
+3. Coordinator can add notes about activist assignment (e.g., "Door-to-door in blocks 5-8")
+4. Check-out recorded with duration calculation and work summary
+5. Attendance history displayed in activist profile with total hours contributed
+6. Analytics aggregate attendance by neighborhood/city for campaign reporting
+7. Politicians can view real-time field activity across all regions
 
-1. Coordinator creates task with title, description, priority, deadline
-2. Assigns task to specific activists or neighborhoods
-3. Push notification sent to assigned activists (if subscribed)
-4. Activists see tasks in their dashboard/notifications
+### Campaign Task Assignment & Coordination
+
+**Use Case**: City Coordinator assigns canvassing tasks to neighborhood teams
+
+1. Coordinator creates campaign task:
+   - **Canvassing**: Door-to-door routes with target addresses
+   - **Phone Banking**: Call lists with voter contact info
+   - **Event Coordination**: Rally setup, voter registration drives
+   - **Data Collection**: Survey responses, voter sentiment tracking
+2. Assigns task to specific activists or entire neighborhoods
+3. Push notification sent to assigned activists (if subscribed to web push)
+4. Activists see tasks in their mobile-friendly dashboard with maps and details
 5. Task status tracked: pending → in_progress → completed
-6. Coordinators monitor completion rates
+6. Coordinators and politicians monitor completion rates and campaign progress
+7. Real-time updates on campaign coverage and voter outreach metrics
 
 ## UI/UX Requirements
 
@@ -491,45 +534,54 @@ Activist Coordinator:
 ### When Implementing Backend
 
 1. Start with Prisma schema matching database specification
-2. Implement RBAC guards/middleware before controllers
-3. Test multi-corporation isolation first
-4. Always log mutations to `audit_logs`
-5. Use Prisma middleware to auto-inject corporation filters
-6. Never allow cross-corporation data leakage
+2. Implement RBAC guards/middleware before controllers (campaign data isolation is critical)
+3. Test multi-city isolation first (prevent cross-campaign data leakage)
+4. Always log mutations to `audit_logs` (campaign operations audit trail)
+5. Use Prisma middleware to auto-inject city/area filters (except for SuperAdmin)
+6. Never allow cross-city campaign data leakage (strict data isolation)
+7. Consider mobile-first for activist-facing features (field volunteers use mobile devices)
+8. Optimize for real-time updates (campaign coordinators need live activity tracking)
 
 ### When Implementing Frontend
 
-1. Setup MUI theme with RTL support first
-2. Use `data-testid` attributes for all interactive elements
+1. Setup MUI theme with RTL support first (Hebrew is primary language)
+2. Use `data-testid` attributes for all interactive elements (E2E testing)
 3. Implement React Hook Form + Zod for all forms
-4. Use TanStack Table for data grids
-5. Ensure all UI is responsive and mobile-friendly
-6. Test with `he-IL` locale enabled
+4. Use TanStack Table for data grids (activist lists, task assignments, attendance logs)
+5. **Mobile-first design** - Field activists primarily use mobile devices
+6. **Real-time updates** - Use polling or WebSockets for live campaign activity
+7. **GPS integration** - Location tracking for attendance verification
+8. **Offline support** (future) - Field activists may have poor connectivity
+9. Ensure all UI is responsive and works on mobile browsers
+10. Test with `he-IL` locale enabled (Hebrew-only system)
+11. Use maps integration (Google Maps/Mapbox) for neighborhood visualization
 
-### Terminology (v2.0 Election System)
+### Terminology (v2.0 Election Campaign System)
 
-**IMPORTANT**: As of v2.0, the system was migrated from corporate hierarchy to election/activism:
+**IMPORTANT**: As of v2.0, the system was migrated from corporate hierarchy to election campaign management:
 
-| Domain Entity | Database Table | Code Reference |
-|---------------|----------------|----------------|
-| Election System | N/A (organizational concept) | - |
-| Area Manager | `area_managers` | `AreaManager` |
-| City | `cities` | `City` |
-| City Coordinator | `city_coordinators` | `CityCoordinator` |
-| Activist Coordinator | `activist_coordinators` | `ActivistCoordinator` |
-| Neighborhood | `neighborhoods` | `Neighborhood` |
-| Activist | `activists` | `Activist` |
-| Task | `tasks` | `Task` |
-| Attendance | `attendance_records` | `AttendanceRecord` |
+| Campaign Role | Database Table | Code Reference | Real-world Example |
+|---------------|----------------|----------------|-------------------|
+| Election Campaign System | N/A (organizational concept) | - | National/Regional Campaign |
+| Area Manager | `area_managers` | `AreaManager` | Regional Campaign Director |
+| City | `cities` | `City` | Tel Aviv-Yafo, Jerusalem |
+| City Coordinator | `city_coordinators` | `CityCoordinator` | City Campaign Manager |
+| Activist Coordinator | `activist_coordinators` | `ActivistCoordinator` | Neighborhood Organizer |
+| Neighborhood | `neighborhoods` | `Neighborhood` | Florentin, Neve Tzedek (שכונות) |
+| Activist | `activists` | `Activist` | Field Volunteer, Campaign Worker |
+| Task | `tasks` | `Task` | Canvassing Route, Phone Banking Shift |
+| Attendance | `attendance_records` | `AttendanceRecord` | Check-in/out at Campaign HQ |
 
-**Migration from v1.x (Corporate)**:
-- Corporation → Election System (conceptual)
-- Manager → Area Manager / City Coordinator
-- Supervisor → Activist Coordinator
-- Site → Neighborhood
-- Worker → Activist
+**Migration from v1.x (Corporate Hierarchy)**:
+- Corporation → Election Campaign System
+- Manager → Area Manager / City Coordinator (Campaign Managers)
+- Supervisor → Activist Coordinator (Neighborhood Organizers)
+- Site → Neighborhood (Campaign Districts/Precincts)
+- Worker → Activist (Field Volunteers)
 
-**Historical Note**: Pre-v2.0 was a corporate hierarchy system. Repository name "corporations" remains for continuity but domain is now elections/activism.
+**Domain Context**: This is a political campaign field operations system. All terminology and features are designed around coordinating activists, tracking campaign activities, and providing analytics to politicians and campaign managers.
+
+**Historical Note**: Pre-v2.0 was a corporate hierarchy system. Repository name "corporations" remains for continuity but the domain is now exclusively election campaign management.
 
 ## File Structure
 

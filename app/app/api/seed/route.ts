@@ -211,7 +211,7 @@ export async function POST(request: Request) {
       data: {
         name: 'מפעל תל אביב',
         address: 'רחוב הברזל 1',
-        cityRelation: 'תל אביב',
+        city: 'תל אביב',
         country: 'ישראל',
         phone: '+972-3-500-1001',
         email: 'tlv@electra-tech.co.il',
@@ -224,7 +224,7 @@ export async function POST(request: Request) {
       data: {
         name: 'אתר בנייה - פרויקט הרצליה',
         address: 'רחוב ויצמן 10',
-        cityRelation: 'הרצליה',
+        city: 'הרצליה',
         country: 'ישראל',
         phone: '+972-9-900-3001',
         email: 'herzliya@binui.co.il',
@@ -237,7 +237,7 @@ export async function POST(request: Request) {
       data: {
         name: 'סניף דיזנגוף',
         address: 'רחוב דיזנגוף 100',
-        cityRelation: 'תל אביב',
+        city: 'תל אביב',
         country: 'ישראל',
         phone: '+972-3-700-5001',
         email: 'dizengoff@taim-food.co.il',

@@ -12,6 +12,7 @@ import MonthlyTrendsChart from '@/app/components/dashboard/MonthlyTrendsChart';
 import StatusDistributionChart from '@/app/components/dashboard/StatusDistributionChart';
 import CollapsibleCard from '@/app/components/ui/CollapsibleCard';
 import EmptyState from '@/app/components/ui/EmptyState';
+import LiveActivityFeed from '@/app/components/dashboard/LiveActivityFeed';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -62,17 +63,17 @@ export default async function DashboardContent() {
     if (role === 'SUPERADMIN') {
       const superadminCards = [
         {
-          title: t('totalCorporations'),
-          value: stats.superadmin?.totalCorporations ?? 0,
-          subtitle: t('activeCompanies'),
+          title: t('totalCities'),
+          value: stats.superadmin?.totalCities ?? 0,
+          subtitle: t('activeCities'),
           color: 'blue' as const,
           icon: <BusinessIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/cities`,
         },
         {
-          title: t('totalSites'),
-          value: stats.superadmin?.totalSites ?? 0,
-          subtitle: `${stats.superadmin?.activeSites ?? 0} ${tCommon('active')}`,
+          title: t('totalNeighborhoods'),
+          value: stats.superadmin?.totalNeighborhoods ?? 0,
+          subtitle: `${stats.superadmin?.activeNeighborhoods ?? 0} ${tCommon('active')}`,
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/neighborhoods`,
@@ -90,9 +91,9 @@ export default async function DashboardContent() {
           href: `/${locale}/users`,
         },
         {
-          title: t('totalWorkers'),
-          value: stats.superadmin?.totalWorkers ?? 0,
-          subtitle: `${stats.superadmin?.activeWorkers ?? 0} ${tCommon('active')}`,
+          title: t('totalActivists'),
+          value: stats.superadmin?.totalActivists ?? 0,
+          subtitle: `${stats.superadmin?.activeActivists ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/activists`,
@@ -108,19 +109,19 @@ export default async function DashboardContent() {
 
       // Mock data for monthly trends (replace with real data from API)
       const monthlyTrendsData = [
-        { month: 'ינואר', cities: 12, neighborhoods: 45, activists: 320 },
-        { month: 'פברואר', cities: 15, neighborhoods: 52, activists: 380 },
-        { month: 'מרץ', cities: 18, neighborhoods: 61, activists: 425 },
-        { month: 'אפריל', cities: 20, neighborhoods: 70, activists: 490 },
-        { month: 'מאי', cities: 23, neighborhoods: 78, activists: 550 },
-        { month: 'יוני', cities: stats.superadmin?.totalCorporations ?? 25, neighborhoods: stats.superadmin?.totalSites ?? 85, activists: stats.superadmin?.totalWorkers ?? 600 },
+        { month: 'ינואר', corporations: 12, sites: 45, workers: 320 },
+        { month: 'פברואר', corporations: 15, sites: 52, workers: 380 },
+        { month: 'מרץ', corporations: 18, sites: 61, workers: 425 },
+        { month: 'אפריל', corporations: 20, sites: 70, workers: 490 },
+        { month: 'מאי', corporations: 23, sites: 78, workers: 550 },
+        { month: 'יוני', corporations: stats.superadmin?.totalCities ?? 25, sites: stats.superadmin?.totalNeighborhoods ?? 85, workers: stats.superadmin?.totalActivists ?? 600 },
       ];
 
       // Mock data for status distribution (replace with real data)
       const statusDistributionData = [
-        { name: 'תאגידים פעילים', value: stats.superadmin?.totalCorporations ?? 0, color: colors.status.blue },
-        { name: 'אתרים פעילים', value: stats.superadmin?.activeSites ?? 0, color: colors.status.green },
-        { name: 'עובדים פעילים', value: stats.superadmin?.activeWorkers ?? 0, color: colors.status.orange },
+        { name: 'ערים פעילות', value: stats.superadmin?.totalCities ?? 0, color: colors.status.blue },
+        { name: 'שכונות פעילות', value: stats.superadmin?.activeNeighborhoods ?? 0, color: colors.status.green },
+        { name: 'פעילים פעילים', value: stats.superadmin?.activeActivists ?? 0, color: colors.status.orange },
       ];
 
       return (
@@ -136,9 +137,9 @@ export default async function DashboardContent() {
                 <MonthlyTrendsChart
                   data={monthlyTrendsData}
                   dataKeys={[
-                    { key: 'corporations', label: isRTL ? 'תאגידים' : 'Corporations', color: colors.status.blue },
-                    { key: 'sites', label: isRTL ? 'אתרים' : 'Sites', color: colors.status.green },
-                    { key: 'workers', label: isRTL ? 'עובדים' : 'Workers', color: colors.status.orange },
+                    { key: 'corporations', label: isRTL ? 'ערים' : 'Cities', color: colors.status.blue },
+                    { key: 'sites', label: isRTL ? 'שכונות' : 'Neighborhoods', color: colors.status.green },
+                    { key: 'workers', label: isRTL ? 'פעילים' : 'Activists', color: colors.status.orange },
                   ]}
                 />
               </CollapsibleCard>
@@ -185,17 +186,17 @@ export default async function DashboardContent() {
     if (role === 'MANAGER') {
       const managerCards = [
         {
-          title: t('totalSites'),
-          value: stats.manager?.totalSites ?? 0,
+          title: t('totalNeighborhoods'),
+          value: stats.manager?.totalNeighborhoods ?? 0,
           subtitle: t('allLocations'),
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/neighborhoods`,
         },
         {
-          title: t('totalWorkers'),
-          value: stats.manager?.totalWorkers ?? 0,
-          subtitle: `${stats.manager?.activeWorkers ?? 0} ${tCommon('active')}`,
+          title: t('totalActivists'),
+          value: stats.manager?.totalActivists ?? 0,
+          subtitle: `${stats.manager?.activeActivists ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/activists`,
@@ -212,8 +213,39 @@ export default async function DashboardContent() {
 
       return (
         <>
-          {/* Manager KPIs with Navigation */}
-          <DashboardClient cards={managerCards} />
+          {/* Manager KPIs and Live Feed - Two Column Layout */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Left: KPI Cards */}
+            <Grid item xs={12} lg={8}>
+              <DashboardClient cards={managerCards} />
+            </Grid>
+
+            {/* Right: Live Activity Feed */}
+            <Grid item xs={12} lg={4}>
+              <Box
+                sx={{
+                  p: 3,
+                  background: colors.neutral[0],
+                  borderRadius: borderRadius.xl,
+                  boxShadow: shadows.medium,
+                  border: `1px solid ${colors.neutral[200]}`,
+                  height: '100%',
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: colors.neutral[800],
+                    mb: 2,
+                  }}
+                >
+                  {isRTL ? 'פעילות בזמן אמת' : 'Live Activity'}
+                </Typography>
+                <LiveActivityFeed />
+              </Box>
+            </Grid>
+          </Grid>
         </>
       );
     }
@@ -221,15 +253,15 @@ export default async function DashboardContent() {
     if (role === 'SUPERVISOR') {
       const supervisorCards = [
         {
-          title: t('totalWorkers'),
-          value: stats.supervisor?.totalWorkers ?? 0,
-          subtitle: `${stats.supervisor?.activeWorkers ?? 0} ${tCommon('active')}`,
+          title: t('totalActivists'),
+          value: stats.supervisor?.totalActivists ?? 0,
+          subtitle: `${stats.supervisor?.activeActivists ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/activists`,
         },
         {
-          title: t('totalSites'),
+          title: t('totalNeighborhoods'),
           value: stats.supervisor?.neighborhood?.name ?? 'N/A',
           subtitle: stats.supervisor?.neighborhood?.isActive ? tCommon('active') : tCommon('inactive'),
           color: 'green' as const,
@@ -240,8 +272,39 @@ export default async function DashboardContent() {
 
       return (
         <>
-          {/* Supervisor KPIs with Navigation - Mobile-First */}
-          <DashboardClient cards={supervisorCards} />
+          {/* Supervisor KPIs and Live Feed - Two Column Layout */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Left: KPI Cards */}
+            <Grid item xs={12} md={8}>
+              <DashboardClient cards={supervisorCards} />
+            </Grid>
+
+            {/* Right: Live Activity Feed */}
+            <Grid item xs={12} md={4}>
+              <Box
+                sx={{
+                  p: 3,
+                  background: colors.neutral[0],
+                  borderRadius: borderRadius.xl,
+                  boxShadow: shadows.medium,
+                  border: `1px solid ${colors.neutral[200]}`,
+                  height: '100%',
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: colors.neutral[800],
+                    mb: 2,
+                  }}
+                >
+                  {isRTL ? 'פעילות בזמן אמת' : 'Live Activity'}
+                </Typography>
+                <LiveActivityFeed />
+              </Box>
+            </Grid>
+          </Grid>
         </>
       );
     }

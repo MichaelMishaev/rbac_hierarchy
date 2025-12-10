@@ -6,9 +6,12 @@ import { colors } from '@/lib/design-system';
 import { prisma } from '@/lib/prisma';
 import CitiesClient from '@/app/components/cities/CitiesClient';
 
+// Enable route caching - revalidate every 30 seconds
+export const revalidate = 30;
+
 export default async function CorporationsPage() {
   const session = await auth();
-  const t = await getTranslations('corporations');
+  const t = await getTranslations('citys');
   const tCommon = await getTranslations('common');
   const locale = await getLocale();
   const isRTL = locale === 'he';
@@ -70,8 +73,7 @@ export default async function CorporationsPage() {
       },
     },
     orderBy: [
-      { isActive: 'desc' },
-      { createdAt: 'desc' },
+      { name: 'asc' },
     ],
   });
 

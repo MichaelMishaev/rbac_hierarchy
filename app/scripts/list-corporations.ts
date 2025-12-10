@@ -3,11 +3,11 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function listCorporations() {
-  const corps = await prisma.corporation.findMany({
+  const corps = await prisma.city.findMany({
     select: {
       id: true,
       name: true,
-      managers: {
+      coordinators: {
         select: {
           user: {
             select: {
@@ -17,7 +17,7 @@ async function listCorporations() {
           }
         }
       },
-      supervisors: {
+      activistCoordinators: {
         select: {
           user: {
             select: {
@@ -33,17 +33,17 @@ async function listCorporations() {
     }
   });
 
-  console.log(`\nTotal corporations: ${corps.length}\n`);
+  console.log(`\nTotal cities: ${corps.length}\n`);
 
   for (const corp of corps) {
     console.log(`${corp.name}`);
     console.log(`  ID: ${corp.id}`);
-    console.log(`  Managers: ${corp.managers.length}`);
-    for (const m of corp.managers) {
+    console.log(`  City Coordinators: ${corp.coordinators.length}`);
+    for (const m of corp.coordinators) {
       console.log(`    - ${m.user.email} (${m.user.fullName})`);
     }
-    console.log(`  Supervisors: ${corp.supervisors.length}`);
-    for (const s of corp.supervisors) {
+    console.log(`  Activist Coordinators: ${corp.activistCoordinators.length}`);
+    for (const s of corp.activistCoordinators) {
       console.log(`    - ${s.user.email} (${s.user.fullName})`);
     }
     console.log('');

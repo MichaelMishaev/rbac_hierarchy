@@ -48,15 +48,15 @@ test.describe('Users UI - SuperAdmin', () => {
     console.log('✅ Create User button is visible');
   });
 
-  test('should display users from all corporations', async ({ page }) => {
+  test('should display users from all cities', async ({ page }) => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
 
-    // SuperAdmin should see users from all corporations
+    // SuperAdmin should see users from all cities
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ SuperAdmin sees users from all corporations');
+    console.log('✅ SuperAdmin sees users from all cities');
   });
 
   test('should be responsive on mobile', async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe('Users UI - SuperAdmin', () => {
 
 test.describe('Users UI - Manager', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     // Check if users link exists in navigation
@@ -85,7 +85,7 @@ test.describe('Users UI - Manager', () => {
     }
   });
 
-  test('should see only users from their corporation', async ({ page }) => {
+  test('should see only users from their city', async ({ page }) => {
     const url = page.url();
 
     if (url.includes('/users')) {
@@ -93,7 +93,7 @@ test.describe('Users UI - Manager', () => {
 
       const pageContent = await page.textContent('body');
 
-      // Should see only users from their corporation
+      // Should see only users from their city
       expect(pageContent).toBeTruthy();
 
       console.log('✅ City Coordinator sees only their city users');
@@ -119,7 +119,7 @@ test.describe('Users UI - Manager', () => {
 
 test.describe('Users UI - Activist Coordinator (Should Not Access)', () => {
   test('should NOT display users in navigation', async ({ page }) => {
-    await loginAs(page, testUsers.supervisor);
+    await loginAs(page, testUsers.activistCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     const nav = page.locator('nav');

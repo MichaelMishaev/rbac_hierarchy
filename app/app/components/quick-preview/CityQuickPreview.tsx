@@ -9,7 +9,6 @@ import {
   Typography,
   Avatar,
   IconButton,
-  Button,
   Stack,
   Grid,
   useMediaQuery,
@@ -28,6 +27,7 @@ import { colors, shadows, borderRadius } from '@/lib/design-system';
 import QuickPreviewSkeleton from './QuickPreviewSkeleton';
 import StatChip from './StatChip';
 import ListPreviewModal from './ListPreviewModal';
+import RtlButton from '@/app/components/ui/RtlButton';
 
 type CityQuickPreviewProps = {
   corporationId: string;
@@ -48,7 +48,7 @@ export default function CityQuickPreview({
 
   // List preview modal state
   const [listPreview, setListPreview] = useState<{
-    type: 'sites' | 'workers' | 'managers' | 'supervisors' | null;
+    type: 'neighborhoods' | 'activists' | 'managers' | 'activistCoordinators' | null;
     title: string;
   }>({ type: null, title: '' });
 
@@ -63,7 +63,7 @@ export default function CityQuickPreview({
     phone: '050-1234567',
     address: 'רחוב הדוגמה 123, תל אביב',
     _count: {
-      managers: 5,
+      coordinators: 5,
       activistCoordinators: 12,
       neighborhoods: 8,
       activists: 145,
@@ -131,9 +131,9 @@ export default function CityQuickPreview({
                 <StatChip
                   icon={<PeopleIcon />}
                   label="מנהלים"
-                  value={data?._count.managers || 0}
+                  value={data?._count.coordinators || 0}
                   color="purple"
-                  clickable={data?._count.managers > 0}
+                  clickable={data?._count.coordinators > 0}
                   onClick={() => setListPreview({ type: 'managers', title: 'מנהלים' })}
                 />
               </Grid>
@@ -141,30 +141,30 @@ export default function CityQuickPreview({
                 <StatChip
                   icon={<SupervisorAccountIcon />}
                   label="מפקחים"
-                  value={data?._count.supervisors || 0}
+                  value={data?._count.activistCoordinators || 0}
                   color="blue"
-                  clickable={data?._count.supervisors > 0}
-                  onClick={() => setListPreview({ type: 'supervisors', title: 'מפקחים' })}
+                  clickable={data?._count.activistCoordinators > 0}
+                  onClick={() => setListPreview({ type: 'activistCoordinators', title: 'מפקחים' })}
                 />
               </Grid>
               <Grid item xs={6}>
                 <StatChip
                   icon={<LocationOnIcon />}
                   label="אתרים"
-                  value={data?._count.sites || 0}
+                  value={data?._count.neighborhoods || 0}
                   color="green"
-                  clickable={data?._count.sites > 0}
-                  onClick={() => setListPreview({ type: 'sites', title: 'אתרים' })}
+                  clickable={data?._count.neighborhoods > 0}
+                  onClick={() => setListPreview({ type: 'neighborhoods', title: 'אתרים' })}
                 />
               </Grid>
               <Grid item xs={6}>
                 <StatChip
                   icon={<GroupIcon />}
                   label="עובדים"
-                  value={data?._count.workers || 0}
+                  value={data?._count.activists || 0}
                   color="orange"
-                  clickable={data?._count.workers > 0}
-                  onClick={() => setListPreview({ type: 'workers', title: 'עובדים' })}
+                  clickable={data?._count.activists > 0}
+                  onClick={() => setListPreview({ type: 'activists', title: 'עובדים' })}
                 />
               </Grid>
             </Grid>
@@ -235,7 +235,7 @@ export default function CityQuickPreview({
         }}
       >
         <Stack spacing={2}>
-          <Button
+          <RtlButton
             fullWidth
             variant="contained"
             startIcon={<VisibilityIcon />}
@@ -246,24 +246,24 @@ export default function CityQuickPreview({
             }}
           >
             צפה במלואו
-          </Button>
+          </RtlButton>
           <Stack direction="row" spacing={2}>
-            <Button
+            <RtlButton
               fullWidth
               variant="outlined"
               startIcon={<EditIcon />}
               sx={{ borderRadius: borderRadius.lg }}
             >
               ערוך
-            </Button>
-            <Button
+            </RtlButton>
+            <RtlButton
               fullWidth
               variant="outlined"
               startIcon={<MailIcon />}
               sx={{ borderRadius: borderRadius.lg }}
             >
               הזמן מנהל
-            </Button>
+            </RtlButton>
           </Stack>
         </Stack>
       </Box>
@@ -275,12 +275,12 @@ export default function CityQuickPreview({
     switch (listPreview.type) {
       case 'managers':
         return data.managers || [];
-      case 'supervisors':
-        return data.supervisors || [];
-      case 'sites':
-        return data.sites || [];
-      case 'workers':
-        return data.workers || [];
+      case 'activistCoordinators':
+        return data.activistCoordinators || [];
+      case 'neighborhoods':
+        return data.neighborhoods || [];
+      case 'activists':
+        return data.activists || [];
       default:
         return [];
     }
@@ -325,7 +325,7 @@ export default function CityQuickPreview({
           onClose={() => setListPreview({ type: null, title: '' })}
           title={listPreview.title}
           items={getListItems()}
-          type={listPreview.type || 'sites'}
+          type={listPreview.type || 'neighborhoods'}
           onItemClick={(id) => {
             // TODO: Open entity quick preview
             console.log('Clicked item:', id);
@@ -360,7 +360,7 @@ export default function CityQuickPreview({
         onClose={() => setListPreview({ type: null, title: '' })}
         title={listPreview.title}
         items={getListItems()}
-        type={listPreview.type || 'sites'}
+        type={listPreview.type || 'neighborhoods'}
         onItemClick={(id) => {
           // TODO: Open entity quick preview
           console.log('Clicked item:', id);

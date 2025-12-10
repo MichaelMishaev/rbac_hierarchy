@@ -52,23 +52,60 @@ export type ListWorkersFilters = {
 // ============================================
 
 /**
- * Create a new worker
+ * Create a new activist
+ *
+ * STRICT BUSINESS RULES (from ADD_NEW_DESIGN.md):
+ * 1. SuperAdmin: Can create in any neighborhood
+ * 2. Area Manager:
+ *    - Filter neighborhoods by area
+ *    - Join: neighborhoods → cities → area_managers
+ * 3. City Coordinator:
+ *    - Filter neighborhoods by city_id
+ *    - Join: neighborhoods → cities
+ * 4. Activist Coordinator:
+ *    - MUST check `activist_coordinator_neighborhoods` M2M table
+ *    - Get assigned neighborhood IDs
+ *    - Can ONLY create in assigned neighborhoods
+ *    - CRITICAL: Use junction table validation
+ * 5. fullName + phone MUST be unique per neighborhood
+ * 6. neighborhoodId MUST be valid and within scope
  *
  * Permissions:
- * - SUPERADMIN: Can create workers in any site
- * - MANAGER: Can create workers in sites within their corporation
- * - SUPERVISOR: Can create workers in their assigned site only
+ * - SUPERADMIN: Can create activists in any neighborhood
+ * - AREA_MANAGER: Can create activists in neighborhoods within their area
+ * - CITY_COORDINATOR: Can create activists in neighborhoods within their city
+ * - ACTIVIST_COORDINATOR: Can create activists in ASSIGNED neighborhoods ONLY (M2M validation)
  */
 export async function createWorker(data: CreateWorkerInput) {
   try {
-    // All roles can create workers (with restrictions)
-    const currentUser = await requireSupervisor();
+    // Get current user
+    const currentUser = await getCurrentUser();
+
+    // Only SUPERADMIN, AREA_MANAGER, CITY_COORDINATOR, and ACTIVIST_COORDINATOR can create activists
+    if (
+      currentUser.role !== 'SUPERADMIN' &&
+      currentUser.role !== 'AREA_MANAGER' &&
+      currentUser.role !== 'CITY_COORDINATOR' &&
+      currentUser.role !== 'ACTIVIST_COORDINATOR'
+    ) {
+      return {
+        success: false,
+        error: 'Only SuperAdmin, Area Managers, City Coordinators, and Activist Coordinators can create activists.',
+      };
+    }
 
     // Get neighborhood to validate access and get cityId
     const neighborhood = await prisma.neighborhood.findUnique({
       where: { id: data.neighborhoodId },
       include: {
-        cityRelation: true,
+        cityRelation: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            areaManagerId: true,
+          },
+        },
       },
     });
 
@@ -79,20 +116,52 @@ export async function createWorker(data: CreateWorkerInput) {
       };
     }
 
-    // Validate access based on role
-    if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      // City coordinators can only create activists in their city's neighborhoods
-      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
+    // CRITICAL SCOPE VALIDATION: Enforce strict hierarchy
+    if (currentUser.role === 'AREA_MANAGER') {
+      // Area Manager: Validate neighborhood's city belongs to their area
+      const currentUserAreaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!currentUserAreaManager) {
         return {
           success: false,
-          error: 'Cannot create activist for neighborhood in different city',
+          error: 'Area Manager record not found for current user.',
+        };
+      }
+
+      // STRICT: City must belong to Area Manager's area
+      if (neighborhood.cityRelation.areaManagerId !== currentUserAreaManager.id) {
+        return {
+          success: false,
+          error: 'Area Managers can only create activists in neighborhoods within their area.',
+        };
+      }
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      // City Coordinator: Validate neighborhood belongs to their city
+      const currentUserCityCoordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!currentUserCityCoordinator) {
+        return {
+          success: false,
+          error: 'City Coordinator record not found for current user.',
+        };
+      }
+
+      // STRICT: Can ONLY create in their assigned city's neighborhoods
+      if (neighborhood.cityId !== currentUserCityCoordinator.cityId) {
+        return {
+          success: false,
+          error: 'City Coordinators can only create activists in neighborhoods within their city.',
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Coordinators can only create activists in their assigned neighborhoods (using legacyActivistCoordinatorUserId for User.id)
+      // CRITICAL M2M VALIDATION: Activist Coordinator can ONLY create in assigned neighborhoods
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: currentUser.id,
+          legacyActivistCoordinatorUserId: currentUser.id, // Uses User.id from the M2M table
           neighborhoodId: data.neighborhoodId,
         },
       });
@@ -100,14 +169,14 @@ export async function createWorker(data: CreateWorkerInput) {
       if (!activistCoordinatorNeighborhood) {
         return {
           success: false,
-          error: 'Cannot create worker for site you are not assigned to',
+          error: 'Activist Coordinators can only create activists in neighborhoods assigned to them.',
         };
       }
     }
 
     // Validate activist-coordinator assignment based on neighborhood's coordinator count
-    const { validateWorkerSupervisorAssignment } = await import('@/lib/activist-coordinator-assignment');
-    const validation = await validateWorkerSupervisorAssignment(data.neighborhoodId, data.activistCoordinatorId);
+    const { validateActivistActivistCoordinatorAssignment } = await import('@/lib/activist-coordinator-assignment');
+    const validation = await validateActivistActivistCoordinatorAssignment(data.neighborhoodId, data.activistCoordinatorId);
 
     if (!validation.valid) {
       return {
@@ -133,8 +202,8 @@ export async function createWorker(data: CreateWorkerInput) {
       }
 
       // Verify coordinator is assigned to this neighborhood
-      const { isSupervisorAssignedToSite } = await import('@/lib/activist-coordinator-assignment');
-      const isAssigned = await isSupervisorAssignedToSite(data.activistCoordinatorId, data.neighborhoodId);
+      const { isActivistCoordinatorAssignedToNeighborhood } = await import('@/lib/activist-coordinator-assignment');
+      const isAssigned = await isActivistCoordinatorAssignedToNeighborhood(data.activistCoordinatorId, data.neighborhoodId);
 
       if (!isAssigned) {
         return {
@@ -515,8 +584,8 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
     }
 
     // Validate supervisor assignment for the final site
-    const { validateWorkerSupervisorAssignment } = await import('@/lib/activist-coordinator-assignment');
-    const validation = await validateWorkerSupervisorAssignment(finalNeighborhoodId, finalActivistCoordinatorId);
+    const { validateActivistActivistCoordinatorAssignment } = await import('@/lib/activist-coordinator-assignment');
+    const validation = await validateActivistActivistCoordinatorAssignment(finalNeighborhoodId, finalActivistCoordinatorId);
 
     if (!validation.valid) {
       return {
@@ -542,8 +611,8 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
       }
 
       // Verify supervisor is assigned to the site
-      const { isSupervisorAssignedToSite } = await import('@/lib/activist-coordinator-assignment');
-      const isAssigned = await isSupervisorAssignedToSite(finalActivistCoordinatorId, finalNeighborhoodId);
+      const { isActivistCoordinatorAssignedToNeighborhood } = await import('@/lib/activist-coordinator-assignment');
+      const isAssigned = await isActivistCoordinatorAssignedToNeighborhood(finalActivistCoordinatorId, finalNeighborhoodId);
 
       if (!isAssigned) {
         return {
@@ -871,11 +940,11 @@ export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
       failed: [] as { activist: CreateWorkerInput; error: string }[],
     };
 
-    for (const workerData of workers) {
+    for (const workerData of activists) {
       const result = await createWorker(workerData);
 
-      if (result.success && result.worker) {
-        results.success.push(result.worker);
+      if (result.success && result.activist) {
+        results.success.push(result.activist);
       } else {
         results.failed.push({
           activist: workerData,

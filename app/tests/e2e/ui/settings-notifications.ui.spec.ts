@@ -55,7 +55,7 @@ test.describe('Settings/Notifications UI - SuperAdmin', () => {
 
 test.describe('Settings/Notifications UI - Manager', () => {
   test('should display manager-specific notification settings', async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     await page.goto('/he/settings/notifications');
@@ -69,9 +69,9 @@ test.describe('Settings/Notifications UI - Manager', () => {
   });
 });
 
-test.describe('Settings/Notifications UI - Supervisor', () => {
-  test('should display supervisor-specific notification settings', async ({ page }) => {
-    await loginAs(page, testUsers.supervisor);
+test.describe('Settings/Notifications UI - activist coordinator', () => {
+  test('should display activist coordinator-specific notification settings', async ({ page }) => {
+    await loginAs(page, testUsers.activistCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     await page.goto('/he/settings/notifications');

@@ -10,13 +10,13 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  Button,
   Autocomplete,
   Chip,
   CircularProgress,
   Tooltip,
   Alert,
 } from '@mui/material';
+import RtlButton from '@/app/components/ui/RtlButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -37,8 +37,8 @@ interface Recipient {
   full_name: string;
   email: string;
   role: string;
-  corporation_name?: string;
-  site_names?: string[];
+  city_name?: string;
+  neighborhood_names?: string[];
 }
 
 interface RecipientPreview {
@@ -46,11 +46,11 @@ interface RecipientPreview {
   breakdown: {
     by_role: {
       area_manager: number;
-      corporation_manager: number;
+      city_coordinator: number;
       activistCoordinator: number;
     };
     by_city: Array<{
-      corporation_id: string;
+      city_id: string;
       name: string;
       count: number;
     }>;
@@ -273,7 +273,7 @@ export default function TaskCreationForm({ senderId, senderRole, senderName }: T
 
             {/* Action Buttons */}
             <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
-              <Button
+              <RtlButton
                 size="medium"
                 onClick={() => {
                   toast.dismiss(toastInstance.id);
@@ -297,8 +297,8 @@ export default function TaskCreationForm({ senderId, senderRole, senderName }: T
                 }}
               >
                 {t('viewInbox')}
-              </Button>
-              <Button
+              </RtlButton>
+              <RtlButton
                 size="medium"
                 onClick={() => {
                   toast.dismiss(toastInstance.id);
@@ -322,7 +322,7 @@ export default function TaskCreationForm({ senderId, senderRole, senderName }: T
                 }}
               >
                 {t('sendAnother')}
-              </Button>
+              </RtlButton>
             </Box>
           </Box>
         ),
@@ -445,7 +445,7 @@ export default function TaskCreationForm({ senderId, senderRole, senderName }: T
                   value={selectedRecipients}
                   onChange={(_, newValue) => setSelectedRecipients(newValue)}
                   onInputChange={(_, newInputValue) => handleSearchChange(newInputValue)}
-                  getOptionLabel={(option) => `${option.full_name} - ${option.corporation_name}`}
+                  getOptionLabel={(option) => `${option.full_name} - ${option.city_name}`}
                   loading={loadingRecipients}
                   renderInput={(params) => (
                     <TextField
@@ -535,12 +535,12 @@ export default function TaskCreationForm({ senderId, senderRole, senderName }: T
 
           {/* Send Button */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-            <Button
+            <RtlButton
               variant="contained"
               size="large"
               onClick={handleSendClick}
-              disabled={submitting}
-              startIcon={submitting ? <CircularProgress size={20} /> : <SendIcon />}
+              loading={submitting}
+              startIcon={<SendIcon />}
               sx={{
                 minWidth: 200,
                 backgroundColor: colors.primary,
@@ -552,7 +552,7 @@ export default function TaskCreationForm({ senderId, senderRole, senderName }: T
               data-testid="send-task-button"
             >
               {submitting ? tCommon('loading') : t('sendTask')}
-            </Button>
+            </RtlButton>
           </Box>
         </CardContent>
       </Card>

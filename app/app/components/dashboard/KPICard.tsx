@@ -4,6 +4,8 @@ import { Card, CardContent, Typography, Box, Chip } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import AnimatedCounter from './AnimatedCounter';
+import AnimatedCard from '@/app/components/ui/AnimatedCard';
 
 export type KPICardProps = {
   title: string;
@@ -62,26 +64,25 @@ export default function KPICard({
   const currentColor = colorMap[color];
 
   return (
-    <Card
+    <AnimatedCard
       onClick={onClick}
       data-testid={dataTestId}
+      clickable={!!onClick}
+      intensity={10} // Slightly stronger lift effect
       sx={{
         background: currentColor.bg,
         border: `2px solid ${currentColor.main}40`,
         borderRadius: borderRadius['2xl'],
         boxShadow: shadows.soft,
-        cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-        '&:hover': onClick
-          ? {
-              transform: 'translateY(-4px)',
-              boxShadow: currentColor.shadow,
-              borderColor: currentColor.main,
-            }
-          : {},
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        // Enhanced hover effect with physics-based animation
+        '&:hover': onClick
+          ? {
+              borderColor: currentColor.main,
+            }
+          : {},
       }}
     >
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
@@ -127,17 +128,25 @@ export default function KPICard({
 
         {/* Main Value */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 700,
-              color: colors.neutral[900],
-              letterSpacing: '-0.02em',
-              mb: 1,
-            }}
-          >
-            {value}
-          </Typography>
+          {typeof value === 'number' ? (
+            <AnimatedCounter
+              value={value}
+              showTrend={false}
+              color={colors.neutral[900]}
+            />
+          ) : (
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 700,
+                color: colors.neutral[900],
+                letterSpacing: '-0.02em',
+                mb: 1,
+              }}
+            >
+              {value}
+            </Typography>
+          )}
 
           {/* Subtitle */}
           {subtitle && (
@@ -194,6 +203,6 @@ export default function KPICard({
           )}
         </Box>
       </CardContent>
-    </Card>
+    </AnimatedCard>
   );
 }

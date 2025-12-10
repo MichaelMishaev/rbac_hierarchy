@@ -21,7 +21,8 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "citys": "Citys",
+    "areas": "Areas",
+    "citys": "Cities",
     "users": "Users",
     "sites": "Neighborhoods",
     "workers": "Activists",
@@ -30,8 +31,8 @@
   "dashboard": {
     "welcome": "Welcome, {name}!",
     "role": "Role",
-    "totalCitys": "Total Citys",
-    "activeCompanies": "Active companies",
+    "totalCities": "Total Cities",
+    "activeCities": "Active cities",
     "systemUsers": "System Users",
     "managers": "managers",
     "supervisors": "supervisors",
@@ -40,7 +41,7 @@
     "totalActivists": "Total Activists",
     "pendingInvitations": "Pending Invitations",
     "awaitingAcceptance": "Awaiting acceptance",
-    "noActivity": "No recent activity yet. Start by creating your first corporation!",
+    "noActivity": "No recent activity yet. Start by creating your first city!",
     "recentActivity": "Recent Activity"
   },
   "citys": {
@@ -75,12 +76,15 @@
     "passwordOptional": "Password (Optional)",
     "role": "Role",
     "city": "City",
+    "corporation": "City",
     "neighborhood": "Neighborhood",
     "lastLogin": "Last Login",
     "superadmin": "Super Admin",
-    "area_manager": "Area City Coordinator",
-    "cityCoordinator": "CityCoordinator",
-    "activistCoordinator": "ActivistCoordinator",
+    "area_manager": "Area Manager",
+    "city_coordinator": "City Coordinator",
+    "activist_coordinator": "Activist Coordinator",
+    "cityCoordinator": "City Coordinator",
+    "activistCoordinator": "Activist Coordinator",
     "regionName": "Region Name",
     "regionNamePlaceholder": "e.g., Central Region",
     "noUsers": "No users yet",
@@ -121,6 +125,7 @@
     "createFirst": "Add your first worker to get started",
     "name": "Name",
     "position": "Position",
+    "site": "Neighborhood",
     "neighborhood": "Neighborhood",
     "activistCoordinator": "ActivistCoordinator",
     "phone": "Phone",
@@ -134,7 +139,8 @@
     "editTitle": "Edit Activist",
     "deleteTitle": "Delete Activist",
     "deleteConfirm": "Are you sure you want to delete this worker?",
-    "accessDenied": "Access Denied."
+    "accessDenied": "Access Denied.",
+    "smartAssignmentTooltip": "Use smart algorithm to recommend the most suitable activist for a task, based on location, availability and experience"
   },
   "invitations": {
     "title": "Invitations",

@@ -42,17 +42,35 @@ export type ListCitiesFilters = {
 // ============================================
 
 /**
- * Create a new corporation
+ * Create a new city
+ *
+ * STRICT BUSINESS RULES (from ADD_NEW_DESIGN.md):
+ * 1. SuperAdmin: Can create in any area
+ * 2. Area Manager:
+ *    - MUST exist in `area_managers` table
+ *    - MUST assign city to their area (`areaManagerId`)
+ *    - CANNOT assign to other areas
+ * 3. cityName MUST NOT be empty
+ * 4. code should be auto-generated or unique
  *
  * Permissions:
- * - SUPERADMIN: Can create corporations
- * - MANAGER: Cannot create corporations
- * - SUPERVISOR: Cannot create corporations
+ * - SUPERADMIN: Can create cities in any area
+ * - AREA_MANAGER: Can create cities (ONLY in their area)
+ * - CITY_COORDINATOR: Cannot create cities
+ * - ACTIVIST_COORDINATOR: Cannot create cities
  */
 export async function createCity(data: CreateCityInput) {
   try {
-    // Only SUPERADMIN can create corporations
-    const currentUser = await requireSuperAdmin();
+    // Get current user (SuperAdmin OR Area Manager)
+    const currentUser = await getCurrentUser();
+
+    // Only SUPERADMIN and AREA_MANAGER can create cities
+    if (currentUser.role !== 'SUPERADMIN' && currentUser.role !== 'AREA_MANAGER') {
+      return {
+        success: false,
+        error: 'Only SuperAdmin and Area Managers can create cities.',
+      };
+    }
 
     // Validate code uniqueness
     const existingCorp = await prisma.city.findUnique({
@@ -66,7 +84,7 @@ export async function createCity(data: CreateCityInput) {
       };
     }
 
-    // v1.4: Validate that Area Manager exists and is active
+    // Validate that Area Manager exists and is active
     const areaManager = await prisma.areaManager.findUnique({
       where: { id: data.areaManagerId },
     });
@@ -83,6 +101,29 @@ export async function createCity(data: CreateCityInput) {
         success: false,
         error: 'Selected Area Manager is not active.',
       };
+    }
+
+    // CRITICAL SCOPE VALIDATION: Area Managers can ONLY create in their area
+    if (currentUser.role === 'AREA_MANAGER') {
+      // Get the Area Manager record for current user
+      const currentUserAreaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!currentUserAreaManager) {
+        return {
+          success: false,
+          error: 'Area Manager record not found for current user.',
+        };
+      }
+
+      // STRICT VALIDATION: Area Manager can ONLY create cities in THEIR area
+      if (data.areaManagerId !== currentUserAreaManager.id) {
+        return {
+          success: false,
+          error: 'Area Managers can only create cities in their own area.',
+        };
+      }
     }
 
     // Create corporation
@@ -205,7 +246,7 @@ export async function listCities(filters: ListCitiesFilters = {}) {
 
     return {
       success: true,
-      corporations,
+      cities: corporations,
       count: corporations.length,
     };
   } catch (error) {
@@ -756,24 +797,57 @@ export async function toggleCityStatus(cityId: string) {
 }
 
 // ============================================
-// GET AREA MANAGERS
+// GET AREA MANAGERS (FILTERED BY SCOPE)
 // ============================================
 
 /**
- * Get all Area Managers for dropdown selection
+ * Get Area Managers for dropdown selection (filtered by user scope)
+ *
+ * SCOPE FILTERING:
+ * - SuperAdmin: See all areas in dropdown
+ * - Area Manager: Pre-fill with THEIR area (disabled field)
  *
  * Permissions:
  * - SUPERADMIN: Can see all area managers
+ * - AREA_MANAGER: Can see only their own area
  */
 export async function getAreaManagers() {
   try {
-    // Only SUPERADMIN can access area managers list
-    await requireSuperAdmin();
+    const currentUser = await getCurrentUser();
+
+    // Only SUPERADMIN and AREA_MANAGER can access this
+    if (currentUser.role !== 'SUPERADMIN' && currentUser.role !== 'AREA_MANAGER') {
+      return {
+        success: false,
+        error: 'Access denied',
+        areaManagers: [],
+      };
+    }
+
+    let whereClause: any = {
+      isActive: true,
+    };
+
+    // Area Manager can ONLY see their own area
+    if (currentUser.role === 'AREA_MANAGER') {
+      const currentUserAreaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!currentUserAreaManager) {
+        return {
+          success: false,
+          error: 'Area Manager record not found',
+          areaManagers: [],
+        };
+      }
+
+      // Filter to ONLY their area
+      whereClause.id = currentUserAreaManager.id;
+    }
 
     const areaManagers = await prisma.areaManager.findMany({
-      where: {
-        isActive: true,
-      },
+      where: whereClause,
       include: {
         user: {
           select: {

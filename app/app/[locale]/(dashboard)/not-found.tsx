@@ -1,10 +1,11 @@
 'use client';
 
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
 import Link from 'next/link';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ConstructionIcon from '@mui/icons-material/Construction';
+import RtlButton from '@/app/components/ui/RtlButton';
 
 // SVG Construction Illustration Component
 const ConstructionIllustration = () => (
@@ -206,7 +207,7 @@ export default function NotFound() {
 
         {/* Back button */}
         <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-          <Button
+          <RtlButton
             variant="contained"
             startIcon={<ArrowBackIcon />}
             sx={{
@@ -228,12 +229,14 @@ export default function NotFound() {
             }}
           >
             Back to Dashboard / חזרה ללוח בקרה
-          </Button>
+          </RtlButton>
         </Link>
       </Box>
     </Box>
   );
 }
+
+
 
 
 

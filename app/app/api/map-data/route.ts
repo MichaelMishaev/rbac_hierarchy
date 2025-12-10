@@ -30,10 +30,10 @@ export async function GET(request: Request) {
             },
           },
           activists: {
-            where: { isActive: true },
             select: {
               id: true,
               fullName: true,
+              isActive: true,
             },
           },
           activistCoordinatorAssignments: {
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
             select: {
               neighborhoods: true,
               coordinators: true,
-              activistCoordinatorAssignments: true,
+              activistCoordinators: true,
             },
           },
         },
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
               phone: true,
             },
           },
-          cityRelation: {
+          city: {
             select: {
               id: true,
               name: true,
@@ -127,7 +127,7 @@ export async function GET(request: Request) {
               phone: true,
             },
           },
-          cityRelation: {
+          city: {
             select: {
               id: true,
               name: true,
@@ -172,31 +172,33 @@ export async function GET(request: Request) {
     }, {} as Record<string, { active: number; inactive: number }>);
 
     // Format sites for map display
-    const formattedSites = sites.map((site) => ({
-      id: site.id,
-      name: site.name,
-      address: site.address,
-      cityRelation: site.city,
-      country: site.country,
-      latitude: site.latitude,
-      longitude: site.longitude,
-      phone: site.phone,
-      email: site.email,
-      isActive: site.isActive,
-      cityRelation: site.cityRelation,
-      activists: {
-        active: workerCountsBySite[site.id]?.active || 0,
-        inactive: workerCountsBySite[site.id]?.inactive || 0,
-        total:
-          (workerCountsBySite[site.id]?.active || 0) +
-          (workerCountsBySite[site.id]?.inactive || 0),
-      },
-      activistCoordinatorAssignments: site.activistCoordinatorAssignments.map((sa: any) => ({
-        id: sa.activistCoordinator.id,
-        name: sa.activistCoordinator.user.fullName,
-        email: sa.activistCoordinator.user.email,
-      })),
-    }));
+    const formattedSites = sites.map((site) => {
+      const activeCount = site.activists.filter(a => a.isActive).length;
+      const inactiveCount = site.activists.filter(a => !a.isActive).length;
+
+      return {
+        id: site.id,
+        name: site.name,
+        address: site.address,
+        country: site.country,
+        latitude: site.latitude,
+        longitude: site.longitude,
+        phone: site.phone,
+        email: site.email,
+        isActive: site.isActive,
+        city: site.cityRelation,
+        activists: {
+          active: activeCount,
+          inactive: inactiveCount,
+          total: site.activists.length,
+        },
+        activistCoordinators: site.activistCoordinatorAssignments.map((sa: any) => ({
+          id: sa.activistCoordinator.id,
+          name: sa.activistCoordinator.user.fullName,
+          email: sa.activistCoordinator.user.email,
+        })),
+      };
+    });
 
     // Calculate stats
     const stats = {
@@ -219,10 +221,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       neighborhoods: formattedSites,
-      corporations,
+      cities: corporations,
       areaManagers,
       managers,
-      supervisors,
+      activistCoordinators: supervisors,
       stats,
       user: {
         id: user.id,

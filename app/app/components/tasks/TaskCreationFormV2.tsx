@@ -7,7 +7,6 @@ import {
   CardContent,
   Typography,
   TextField,
-  Button,
   Autocomplete,
   Chip,
   CircularProgress,
@@ -19,6 +18,7 @@ import {
   Skeleton,
   InputAdornment,
 } from '@mui/material';
+import RtlButton from '@/app/components/ui/RtlButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -38,15 +38,17 @@ import EventIcon from '@mui/icons-material/Event';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonIcon from '@mui/icons-material/Person';
 import DescriptionIcon from '@mui/icons-material/Description';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SpamPreventionModalV2 from './SpamPreventionModalV2';
+import SmartAssignmentDialog from './SmartAssignmentDialog';
 
 interface Recipient {
   user_id: string;
   full_name: string;
   email: string;
   role: string;
-  corporation_name?: string;
-  site_names?: string[];
+  city_name?: string;
+  neighborhood_names?: string[];
 }
 
 interface RecipientPreview {
@@ -54,11 +56,11 @@ interface RecipientPreview {
   breakdown: {
     by_role: {
       area_manager: number;
-      corporation_manager: number;
+      city_coordinator: number;
       activistCoordinator: number;
     };
     by_city: Array<{
-      corporation_id: string;
+      city_id: string;
       name: string;
       count: number;
     }>;
@@ -93,6 +95,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
   // Modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [recipientPreview, setRecipientPreview] = useState<RecipientPreview | null>(null);
+  const [showSmartAssignmentDialog, setShowSmartAssignmentDialog] = useState(false);
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -295,12 +298,13 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
 
             {/* Action Buttons */}
             <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
-              <Button
+              <RtlButton
                 size="medium"
                 onClick={() => {
                   toast.dismiss(toastInstance.id);
                   router.push('/he/tasks/inbox');
                 }}
+                endIcon={<InboxIcon fontSize="small" />}
                 sx={{
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',
                   color: '#fff',
@@ -309,8 +313,6 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   px: 2.5,
                   borderRadius: borderRadius.lg,
                   border: '1.5px solid rgba(255,255,255,0.3)',
-                  display: 'flex',
-                  gap: 1,
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.3)',
                     border: '1.5px solid rgba(255,255,255,0.5)',
@@ -318,13 +320,13 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                 }}
               >
                 צפה בתיבת המשימות
-                <InboxIcon fontSize="small" />
-              </Button>
-              <Button
+              </RtlButton>
+              <RtlButton
                 size="medium"
                 onClick={() => {
                   toast.dismiss(toastInstance.id);
                 }}
+                endIcon={<AddIcon fontSize="small" />}
                 sx={{
                   backgroundColor: '#fff',
                   color: colors.success,
@@ -332,8 +334,6 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   fontWeight: 700,
                   px: 3,
                   borderRadius: borderRadius.lg,
-                  display: 'flex',
-                  gap: 1,
                   '&:hover': {
                     backgroundColor: '#f5f5f5',
                     transform: 'translateY(-2px)',
@@ -343,8 +343,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                 }}
               >
                 שלח משימה נוספת
-                <AddIcon fontSize="small" />
-              </Button>
+              </RtlButton>
             </Box>
           </Box>
         ),
@@ -372,6 +371,38 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
   const setQuickDate = (date: Date) => {
     setExecutionDate(date);
     setFormTouched(true);
+  };
+
+  // Handle smart assignment selection
+  const handleSmartAssignmentSelect = async (activistId: string) => {
+    try {
+      // Fetch activist details to add to recipients
+      const response = await fetch(`/api/activists/${activistId}`);
+      if (response.ok) {
+        const activist = await response.json();
+
+        // Convert activist to Recipient format
+        const newRecipient: Recipient = {
+          user_id: activist.id,
+          full_name: activist.fullName,
+          email: activist.email || `activist-${activist.id}@campaign.local`,
+          role: 'ACTIVIST',
+          city_name: activist.neighborhood?.cityRelation?.name,
+          neighborhood_names: [activist.neighborhood?.name],
+        };
+
+        // Add to selected recipients if not already there
+        if (!selectedRecipients.find(r => r.user_id === activistId)) {
+          setSelectedRecipients(prev => [...prev, newRecipient]);
+          toast.success(`נוסף: ${activist.fullName}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching activist details:', err);
+      toast.error('שגיאה בטעינת פרטי הפעיל');
+    } finally {
+      setShowSmartAssignmentDialog(false);
+    }
   };
 
   // Character count with visual feedback
@@ -555,7 +586,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                         setFormTouched(true);
                       }}
                       onInputChange={(_, newInputValue) => handleSearchChange(newInputValue)}
-                      getOptionLabel={(option) => `${option.full_name} - ${option.corporation_name}`}
+                      getOptionLabel={(option) => `${option.full_name} - ${option.city_name}`}
                       loading={loadingRecipients}
                       renderInput={(params) => (
                         <TextField
@@ -609,6 +640,28 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                         },
                       }}
                     />
+                    {/* Smart Assignment Button */}
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                      <RtlButton
+                        variant="outlined"
+                        startIcon={<AutoAwesomeIcon />}
+                        onClick={() => setShowSmartAssignmentDialog(true)}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          borderRadius: borderRadius.lg,
+                          borderColor: colors.primary,
+                          color: colors.primary,
+                          '&:hover': {
+                            borderColor: colors.primary,
+                            backgroundColor: `${colors.primary}10`,
+                          },
+                        }}
+                      >
+                        הצעות חכמות למשימה
+                      </RtlButton>
+                    </Box>
+
                     {selectedRecipients.length > 0 && (
                       <Box
                         sx={{
@@ -641,18 +694,17 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
 
               {/* Quick Date Buttons */}
               <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <Button
+                <RtlButton
                   size="small"
                   variant="outlined"
                   onClick={() => setQuickDate(startOfTomorrow())}
+                  endIcon={<TodayIcon fontSize="small" />}
                   sx={{
                     textTransform: 'none',
                     borderRadius: borderRadius.lg,
                     fontWeight: 600,
                     borderColor: colors.neutral[300],
                     color: colors.neutral[700],
-                    display: 'flex',
-                    gap: 1,
                     '&:hover': {
                       borderColor: colors.primary,
                       backgroundColor: `${colors.primary}10`,
@@ -660,20 +712,18 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   }}
                 >
                   מחר
-                  <TodayIcon fontSize="small" />
-                </Button>
-                <Button
+                </RtlButton>
+                <RtlButton
                   size="small"
                   variant="outlined"
                   onClick={() => setQuickDate(addDays(new Date(), 3))}
+                  endIcon={<DateRangeIcon fontSize="small" />}
                   sx={{
                     textTransform: 'none',
                     borderRadius: borderRadius.lg,
                     fontWeight: 600,
                     borderColor: colors.neutral[300],
                     color: colors.neutral[700],
-                    display: 'flex',
-                    gap: 1,
                     '&:hover': {
                       borderColor: colors.primary,
                       backgroundColor: `${colors.primary}10`,
@@ -681,20 +731,18 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   }}
                 >
                   בעוד 3 ימים
-                  <DateRangeIcon fontSize="small" />
-                </Button>
-                <Button
+                </RtlButton>
+                <RtlButton
                   size="small"
                   variant="outlined"
                   onClick={() => setQuickDate(addWeeks(new Date(), 1))}
+                  endIcon={<DateRangeIcon fontSize="small" />}
                   sx={{
                     textTransform: 'none',
                     borderRadius: borderRadius.lg,
                     fontWeight: 600,
                     borderColor: colors.neutral[300],
                     color: colors.neutral[700],
-                    display: 'flex',
-                    gap: 1,
                     '&:hover': {
                       borderColor: colors.primary,
                       backgroundColor: `${colors.primary}10`,
@@ -702,8 +750,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   }}
                 >
                   בעוד שבוע
-                  <DateRangeIcon fontSize="small" />
-                </Button>
+                </RtlButton>
               </Box>
 
               <DatePicker
@@ -765,11 +812,13 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
 
             {/* Send Button */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-              <Button
+              <RtlButton
                 variant="contained"
                 size="large"
                 onClick={handleSendClick}
-                disabled={submitting || !!taskBodyError || !!dateError}
+                disabled={!!taskBodyError || !!dateError}
+                loading={submitting}
+                endIcon={<SendIcon sx={{ transform: 'rotate(180deg)' }} />}
                 sx={{
                   minWidth: 280,
                   py: 1.8,
@@ -779,8 +828,6 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   borderRadius: borderRadius.lg,
                   boxShadow: shadows.medium,
                   textTransform: 'none',
-                  display: 'flex',
-                  gap: 1.5,
                   '&:hover': {
                     backgroundColor: colors.primary,
                     filter: 'brightness(0.95)',
@@ -794,18 +841,8 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                 }}
                 data-testid="send-task-button"
               >
-                {submitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ color: '#fff' }} />
-                    שולח משימה...
-                  </>
-                ) : (
-                  <>
-                    שלח משימה
-                    <SendIcon sx={{ transform: 'rotate(180deg)' }} />
-                  </>
-                )}
-              </Button>
+                {submitting ? 'שולח משימה...' : 'שלח משימה'}
+              </RtlButton>
             </Box>
 
             {/* Helper text */}
@@ -837,6 +874,16 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
           submitting={submitting}
         />
       )}
+
+      {/* Smart Assignment Dialog */}
+      <SmartAssignmentDialog
+        open={showSmartAssignmentDialog}
+        onClose={() => setShowSmartAssignmentDialog(false)}
+        onSelect={handleSmartAssignmentSelect}
+        location={{ lat: 32.0853, lng: 34.7818 }} // Tel Aviv default
+        neighborhoodId="default" // Will be enhanced with real neighborhood selection
+        isRTL={true}
+      />
     </LocalizationProvider>
   );
 }

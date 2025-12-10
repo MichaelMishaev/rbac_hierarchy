@@ -1,11 +1,12 @@
 'use client';
 
-import { Box, Button, Stack } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import RtlButton from '@/app/components/ui/RtlButton';
 
 export type QuickActionsProps = {
   onCreateCorporation?: () => void;
@@ -29,7 +30,7 @@ export default function QuickActions({
       }}
     >
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <Button
+        <RtlButton
           variant="contained"
           size="large"
           startIcon={<AddBusinessIcon />}
@@ -45,9 +46,9 @@ export default function QuickActions({
           }}
         >
           New Corporation
-        </Button>
+        </RtlButton>
 
-        <Button
+        <RtlButton
           variant="contained"
           size="large"
           startIcon={<PersonAddIcon />}
@@ -63,9 +64,9 @@ export default function QuickActions({
           }}
         >
           Invite User
-        </Button>
+        </RtlButton>
 
-        <Button
+        <RtlButton
           variant="outlined"
           size="large"
           startIcon={<AssessmentIcon />}
@@ -83,7 +84,7 @@ export default function QuickActions({
           }}
         >
           View Reports
-        </Button>
+        </RtlButton>
       </Stack>
     </Box>
   );

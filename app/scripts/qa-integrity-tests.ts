@@ -80,24 +80,24 @@ async function main() {
     };
   });
 
-  // Test 3: Worker.corporationId integrity
-  await runTest('Worker.corporationId Integrity', async () => {
-    const workers = await prisma.worker.findMany({
+  // Test 3: Worker.cityId integrity
+  await runTest('Worker.cityId Integrity', async () => {
+    const workers = await prisma.activist.findMany({
       include: {
-        site: true,
-        corporation: true,
+        neighborhood: true,
+        city: true,
       },
     });
 
     const integrityViolations = workers.filter(
-      (w) => w.corporationId !== w.site.corporationId
+      (w) => w.cityId !== w.neighborhood.cityId
     );
 
     return {
       pass: integrityViolations.length === 0,
       message:
         integrityViolations.length === 0
-          ? `All ${workers.length} workers have matching corporationId`
+          ? `All ${workers.length} workers have matching cityId`
           : `${integrityViolations.length} integrity violations found`,
       details: {
         totalWorkers: workers.length,
@@ -105,46 +105,46 @@ async function main() {
         integrityViolations: integrityViolations.map((w: any) => ({
           workerId: w.id,
           workerName: w.fullName,
-          workerCorpId: w.corporationId,
-          siteCorpId: w.site.corporationId,
+          workerCorpId: w.cityId,
+          siteCorpId: w.neighborhood.cityId,
         })),
       },
     };
   });
 
-  // Test 4: SupervisorSite composite FK integrity
-  await runTest('SupervisorSite Composite FK Integrity', async () => {
-    const assignments = await prisma.supervisorSite.findMany({
+  // Test 4: ActivistCoordinatorNeighborhood composite FK integrity
+  await runTest('ActivistCoordinatorNeighborhood Composite FK Integrity', async () => {
+    const assignments = await prisma.activistCoordinatorNeighborhood.findMany({
       include: {
-        supervisor: {
+        activistCoordinator: {
           include: {
             user: true,
           },
         },
-        site: true,
+        neighborhood: true,
       },
     });
 
     const violations = assignments.filter(
       (a: any) =>
-        a.corporationId !== a.supervisor.corporationId ||
-        a.corporationId !== a.site.corporationId
+        a.cityId !== a.activistCoordinator.cityId ||
+        a.cityId !== a.neighborhood.cityId
     );
 
     return {
       pass: violations.length === 0,
       message:
         violations.length === 0
-          ? `All ${assignments.length} assignments have matching corporationId`
+          ? `All ${assignments.length} assignments have matching cityId`
           : `${violations.length} composite FK violations found`,
       details: {
         totalAssignments: assignments.length,
         violations: violations.length,
         violationDetails: violations.map((a: any) => ({
           assignmentId: a.id,
-          assignmentCorpId: a.corporationId,
-          supervisorCorpId: a.supervisor.corporationId,
-          siteCorpId: a.site.corporationId,
+          assignmentCityId: a.cityId,
+          activistCoordinatorCityId: a.activistCoordinator.cityId,
+          neighborhoodCityId: a.neighborhood.cityId,
         })),
       },
     };
@@ -153,20 +153,20 @@ async function main() {
   // Test 5: Composite unique indexes exist
   await runTest('Composite Unique Indexes', async () => {
     // Try to violate composite unique constraint (should fail)
-    const supervisor = await prisma.supervisor.findFirst();
+    const activistCoordinator = await prisma.activistCoordinator.findFirst();
 
-    if (!supervisor) {
+    if (!activistCoordinator) {
       return {
         pass: false,
-        message: 'No Supervisor found to test',
+        message: 'No ActivistCoordinator found to test',
       };
     }
 
     try {
-      // Try to create duplicate with same userId and corporationId (should fail)
+      // Try to create duplicate with same userId and cityId (should fail)
       await prisma.$queryRaw`
-        SELECT 1 FROM supervisors
-        WHERE (id, corporation_id) = (${supervisor.id}, ${supervisor.corporationId})
+        SELECT 1 FROM activist_coordinators
+        WHERE (id, city_id) = (${activistCoordinator.id}, ${activistCoordinator.cityId})
       `;
 
       return {
@@ -194,10 +194,10 @@ async function main() {
 
   // Test 7: Corporation.settings and metadata
   await runTest('Corporation Fields', async () => {
-    const corp = await prisma.corporation.findFirst();
+    const corp = await prisma.city.findFirst();
 
     if (!corp) {
-      return { pass: false, message: 'No corporation found' };
+      return { pass: false, message: 'No city found' };
     }
 
     const hasSettings = corp.settings !== null;
@@ -218,7 +218,7 @@ async function main() {
 
   // Test 8: Site geo fields
   await runTest('Site Geo Fields', async () => {
-    const site = await prisma.site.findFirst();
+    const site = await prisma.neighborhood.findFirst();
 
     if (!site) {
       return { pass: false, message: 'No site found' };
@@ -239,21 +239,21 @@ async function main() {
   await runTest('Area Manager Hierarchy', async () => {
     const areaManagers = await prisma.areaManager.findMany({
       include: {
-        corporations: true,
+        cities: true,
       },
     });
 
-    const totalCorps = areaManagers.reduce(
-      (sum, am) => sum + am.corporations.length,
+    const totalCities = areaManagers.reduce(
+      (sum, am) => sum + am.cities.length,
       0
     );
 
     return {
       pass: areaManagers.length > 0,
-      message: `${areaManagers.length} area managers managing ${totalCorps} corporations`,
+      message: `${areaManagers.length} area managers managing ${totalCities} cities`,
       details: {
         areaManagerCount: areaManagers.length,
-        corporationsCount: totalCorps,
+        citiesCount: totalCities,
       },
     };
   });

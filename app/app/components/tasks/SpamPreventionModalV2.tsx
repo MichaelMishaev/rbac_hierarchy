@@ -36,11 +36,11 @@ interface RecipientPreview {
   breakdown: {
     by_role: {
       area_manager: number;
-      corporation_manager: number;
+      city_coordinator: number;
       activistCoordinator: number;
     };
     by_city: Array<{
-      corporation_id: string;
+      city_id: string;
       name: string;
       count: number;
     }>;
@@ -80,7 +80,7 @@ export default function SpamPreventionModalV2({
 
   // Calculate visual metrics
   const totalRecipients = recipientPreview.count;
-  const hasMultipleCorporations = recipientPreview.breakdown.by_corporation.length > 1;
+  const hasMultipleCities = recipientPreview.breakdown.by_city.length > 1;
 
   return (
     <Dialog
@@ -307,9 +307,9 @@ export default function SpamPreventionModalV2({
                     }}
                   />
                 )}
-                {recipientPreview.breakdown.by_role.corporation_manager > 0 && (
+                {recipientPreview.breakdown.by_role.city_coordinator > 0 && (
                   <Chip
-                    label={`${recipientPreview.breakdown.by_role.corporation_manager} ${t('managers')}`}
+                    label={`${recipientPreview.breakdown.by_role.city_coordinator} ${t('managers')}`}
                     size="small"
                     sx={{
                       backgroundColor: colors.info,
@@ -318,9 +318,9 @@ export default function SpamPreventionModalV2({
                     }}
                   />
                 )}
-                {recipientPreview.breakdown.by_role.supervisor > 0 && (
+                {recipientPreview.breakdown.by_role.activistCoordinator > 0 && (
                   <Chip
-                    label={`${recipientPreview.breakdown.by_role.supervisor} ${tNav('supervisors')}`}
+                    label={`${recipientPreview.breakdown.by_role.activistCoordinator} ${tNav('activistCoordinators')}`}
                     size="small"
                     sx={{
                       backgroundColor: colors.success,
@@ -350,9 +350,9 @@ export default function SpamPreventionModalV2({
                     <BusinessIcon fontSize="small" />
                     פילוח לפי תאגידים:
                   </Typography>
-                  {recipientPreview.breakdown.by_corporation.map((corp, index) => (
+                  {recipientPreview.breakdown.by_city.map((corp, index) => (
                     <Box
-                      key={corp.corporation_id}
+                      key={corp.city_id}
                       sx={{
                         display: 'flex',
                         justifyContent: 'space-between',

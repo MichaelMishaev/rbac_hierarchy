@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Button,
   Grid,
   IconButton,
   Menu,
@@ -15,6 +14,7 @@ import {
   Avatar,
   Tooltip,
 } from '@mui/material';
+import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -56,8 +56,10 @@ type Corporation = {
     };
   };
   _count?: {
-    managers: number;
+    coordinators: number;
+    activistCoordinators: number;
     neighborhoods: number;
+    invitations: number;
   };
 };
 
@@ -118,8 +120,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
     total: corporations.length,
     active: corporations.filter((c) => c.isActive).length,
     inactive: corporations.filter((c) => !c.isActive).length,
-    totalSites: corporations.reduce((acc, c) => acc + (c._count?.sites || 0), 0),
-    totalManagers: corporations.reduce((acc, c) => acc + (c._count?.managers || 0), 0),
+    others: 0, // Could be used for different categorization in future
   }), [corporations]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, corp: Corporation) => {
@@ -206,10 +207,10 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
       {/* Stats Overview */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {[
-          { label: isRTL ? 'סה"כ תאגידים' : 'Total', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight },
-          { label: isRTL ? 'פעילים' : 'Active', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight },
-          { label: isRTL ? 'לא פעילים' : 'Inactive', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight },
-          { label: isRTL ? 'אתרים' : 'Sites', value: stats.totalSites, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight },
+          { label: t('total'), value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight },
+          { label: t('active'), value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight },
+          { label: t('inactive'), value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight },
+          { label: t('others'), value: stats.others, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight },
         ].map((stat, index) => (
           <Grid item xs={6} sm={3} key={index}>
             <Box
@@ -288,9 +289,9 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
             ),
           }}
         />
-        {/* Only SUPERADMIN can create new corporations */}
-        {userRole === 'SUPERADMIN' && (
-          <Button
+        {/* SUPERADMIN and AREA_MANAGER can create new cities */}
+        {(userRole === 'SUPERADMIN' || userRole === 'AREA_MANAGER') && (
+          <RtlButton
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateModalOpen(true)}
@@ -312,7 +313,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
             }}
           >
             {t('newCorporation')}
-          </Button>
+          </RtlButton>
         )}
       </Box>
 
@@ -366,12 +367,12 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
               ? isRTL
                 ? 'נסה לחפש עם מילות מפתח אחרות'
                 : 'Try searching with different keywords'
-              : userRole === 'SUPERADMIN'
+              : (userRole === 'SUPERADMIN' || userRole === 'AREA_MANAGER')
                 ? t('createFirst')
-                : 'לא הוקצו לך תאגידים עדיין'}
+                : 'לא הוקצו לך ערים עדיין'}
           </Typography>
-          {!searchQuery && userRole === 'SUPERADMIN' && (
-            <Button
+          {!searchQuery && (userRole === 'SUPERADMIN' || userRole === 'AREA_MANAGER') && (
+            <RtlButton
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setCreateModalOpen(true)}
@@ -385,7 +386,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
               }}
             >
               {t('newCorporation')}
-            </Button>
+            </RtlButton>
           )}
         </Box>
       ) : (
@@ -591,7 +592,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                             variant="body2"
                             sx={{ fontWeight: 600, color: colors.pastel.purple }}
                           >
-                            {corp._count?.managers || 0}
+                            {corp._count?.coordinators || 0}
                           </Typography>
                         </Box>
                       </Tooltip>
@@ -614,7 +615,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                             variant="body2"
                             sx={{ fontWeight: 600, color: colors.pastel.blue }}
                           >
-                            {corp._count?.sites || 0}
+                            {corp._count?.neighborhoods || 0}
                           </Typography>
                         </Box>
                       </Tooltip>
@@ -714,6 +715,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
         onSubmit={handleCreateCorporation}
         mode="create"
         areaManagers={areaManagers}
+        userRole={userRole}
       />
 
       {/* Edit Modal */}
@@ -737,6 +739,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
           }}
           mode="edit"
           areaManagers={areaManagers}
+          userRole={userRole}
         />
       )}
 

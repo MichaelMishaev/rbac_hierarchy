@@ -39,7 +39,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     // This test verifies CRITICAL FIX #1: Status changes MUST be blocked on deleted tasks
 
     // 1. Login as City Coordinator and create task
-    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const managerRequest = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await managerRequest.post('/api/tasks', {
       data: {
@@ -61,7 +61,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     await page.waitForTimeout(500);
 
     // 3. Login as Activist Coordinator (recipient)
-    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     // 4. Try to change status to 'read' - SHOULD FAIL
     const updateResponse = await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
@@ -75,7 +75,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
 
     // 6. Get activist coordinator user ID from database
     const supervisorUser = await prisma.user.findUnique({
-      where: { email: testUsers.supervisor.email },
+      where: { email: testUsers.activistCoordinator.email },
     });
 
     // FIX: Verify activist coordinator user exists (seed data check)
@@ -100,7 +100,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
 
   test('should also block acknowledge status on deleted tasks', async ({ page, baseURL }) => {
     // Create and delete task
-    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const managerRequest = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const task = await managerRequest.post('/api/tasks', {
       data: {
@@ -116,7 +116,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     await managerRequest.delete(`/api/tasks/${task_id}`);
 
     // Try to acknowledge
-    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     const acknowledgeResponse = await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'acknowledged' },
@@ -130,7 +130,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
 
   test('should also block archive status on deleted tasks', async ({ page, baseURL }) => {
     // Create and delete task
-    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const managerRequest = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const task = await managerRequest.post('/api/tasks', {
       data: {
@@ -146,7 +146,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     await managerRequest.delete(`/api/tasks/${task_id}`);
 
     // Try to archive
-    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     const archiveResponse = await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
       data: { status: 'archived' },
@@ -161,7 +161,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
 
 test.describe('Deleted Tasks - Sender Deletion', () => {
   test('should allow sender to delete task within 1 hour', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
@@ -206,7 +206,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
 
   test('should reject deletion after 1 hour', async ({ page, baseURL }) => {
     // Note: This test manipulates created_at timestamp
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     // Create task
     const createResponse = await request.post('/api/tasks', {
@@ -238,7 +238,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
   });
 
   test('should reject deletion if any recipient has acknowledged', async ({ page, baseURL }) => {
-    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const managerRequest = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await managerRequest.post('/api/tasks', {
       data: {
@@ -252,7 +252,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
     const { task_id } = await createResponse.json();
 
     // Activist Coordinator acknowledges task
-    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     // First mark as read, then acknowledge (proper flow)
     await supervisorRequest.patch(`/api/tasks/${task_id}/status`, {
@@ -275,7 +275,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
   });
 
   test('should reject deletion by non-sender', async ({ page, baseURL }) => {
-    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const managerRequest = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await managerRequest.post('/api/tasks', {
       data: {
@@ -305,7 +305,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
 test.describe('Deleted Tasks - Inbox Display', () => {
   test('TC-TASK-003: deleted tasks should appear in inbox with is_deleted = true', async ({ page, baseURL }) => {
     // Create and delete task
-    const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const managerRequest = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     const createResponse = await managerRequest.post('/api/tasks', {
       data: {
@@ -324,7 +324,7 @@ test.describe('Deleted Tasks - Inbox Display', () => {
     await page.waitForTimeout(500);
 
     // Activist Coordinator checks inbox
-    const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const supervisorRequest = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     const inboxResponse = await supervisorRequest.get('/api/tasks/inbox');
 
@@ -342,7 +342,7 @@ test.describe('Deleted Tasks - Inbox Display', () => {
   });
 
   test('deleted tasks should be filterable', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.activistCoordinator, baseURL || 'http://localhost:3000');
 
     // Get only deleted tasks
     const deletedResponse = await request.get('/api/tasks/inbox?status=deleted');
@@ -357,11 +357,11 @@ test.describe('Deleted Tasks - Inbox Display', () => {
 
 test.describe('Deleted Tasks - Audit Trail', () => {
   test('should create audit log when task is deleted', async ({ page, baseURL }) => {
-    const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
+    const request = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
 
     // Get city coordinator user ID
     const managerUser = await prisma.user.findUnique({
-      where: { email: testUsers.manager.email },
+      where: { email: testUsers.cityCoordinator.email },
     });
 
     const createResponse = await request.post('/api/tasks', {

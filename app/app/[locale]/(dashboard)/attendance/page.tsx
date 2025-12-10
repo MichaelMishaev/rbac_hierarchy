@@ -6,8 +6,11 @@ import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'נוכחות | מערכת ניהול',
-  description: 'מעקב נוכחות עובדים',
+  description: 'מעקב נוכחות פעילים',
 };
+
+// Enable route caching - revalidate every 30 seconds
+export const revalidate = 30;
 
 export default async function AttendancePage() {
   // Verify authentication

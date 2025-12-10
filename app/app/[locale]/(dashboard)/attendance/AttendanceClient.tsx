@@ -38,7 +38,7 @@ export default function AttendanceClient({ user }: AttendanceClientProps) {
             textAlign: 'right',
           }}
         >
-          נוכחות עובדים
+          נוכחות פעילים
         </Typography>
         <Typography
           variant="body2"

@@ -126,11 +126,11 @@ async function main() {
 
   // Test 2: Join query performance
   const startTime2 = Date.now();
-  await prisma.worker.findMany({
+  await prisma.activist.findMany({
     include: {
-      site: true,
-      corporation: true,
-      supervisor: true,
+      neighborhood: true,
+      city: true,
+      activistCoordinator: true,
     },
     take: 50,
   });
@@ -149,10 +149,10 @@ async function main() {
 
   // Test 3: Composite FK query performance
   const startTime3 = Date.now();
-  await prisma.supervisorSite.findMany({
+  await prisma.activistCoordinatorNeighborhood.findMany({
     include: {
-      supervisor: true,
-      site: true,
+      activistCoordinator: true,
+      neighborhood: true,
     },
     take: 50,
   });

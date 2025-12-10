@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, getUserCorporations } from '@/lib/auth';
+import { unstable_cache } from 'next/cache';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -15,40 +16,40 @@ export type DashboardStats = {
 };
 
 export type SuperAdminStats = {
-  totalCorporations: number;
-  activeCorporations: number;
+  totalCities: number;
+  activeCities: number;
   totalManagers: number;
   totalSupervisors: number;
   totalAreaManagers: number;
-  totalSites: number;
-  activeSites: number;
-  totalWorkers: number;
-  activeWorkers: number;
+  totalNeighborhoods: number;
+  activeNeighborhoods: number;
+  totalActivists: number;
+  activeActivists: number;
   pendingInvitations: number;
-  recentCorporations: any[];
+  recentCities: any[];
 };
 
 export type ManagerStats = {
   cityRelation: any;
   totalManagers: number;
   totalSupervisors: number;
-  totalSites: number;
-  activeSites: number;
-  totalWorkers: number;
-  activeWorkers: number;
+  totalNeighborhoods: number;
+  activeNeighborhoods: number;
+  totalActivists: number;
+  activeActivists: number;
   pendingInvitations: number;
-  recentSites: any[];
-  topSitesByWorkers: any[];
+  recentNeighborhoods: any[];
+  topNeighborhoodsByActivists: any[];
 };
 
 export type SupervisorStats = {
   neighborhood: any;
   neighborhoods: any[]; // All sites assigned to supervisor
-  totalWorkers: number;
-  activeWorkers: number;
-  inactiveWorkers: number;
-  recentWorkers: any[];
-  workersByPosition: any[];
+  totalActivists: number;
+  activeActivists: number;
+  inactiveActivists: number;
+  recentActivists: any[];
+  activistsByPosition: any[];
 };
 
 export type RecentActivity = {
@@ -87,9 +88,9 @@ export async function getDashboardStats(): Promise<{
       recentActivity: [],
     };
 
-    // Get role-specific stats
+    // Get role-specific stats (using CACHED versions for speed)
     if (currentUser.role === 'SUPERADMIN') {
-      stats.superadmin = await getSuperAdminStats();
+      stats.superadmin = await getCachedSuperAdminStats();
     } else if (currentUser.role === 'CITY_COORDINATOR') {
       // Get first city ID for coordinator
       const coordinator = await prisma.cityCoordinator.findFirst({
@@ -97,7 +98,7 @@ export async function getDashboardStats(): Promise<{
         select: { cityId: true },
       });
       if (coordinator) {
-        stats.manager = await getManagerStats(coordinator.cityId);
+        stats.manager = await getCachedManagerStats(coordinator.cityId);
       }
     } else if (currentUser.role === 'AREA_MANAGER') {
       // Get first city ID for area manager
@@ -106,10 +107,10 @@ export async function getDashboardStats(): Promise<{
         include: { cities: { select: { id: true }, take: 1 } },
       });
       if (areaManager && areaManager.cities[0]) {
-        stats.manager = await getManagerStats(areaManager.cities[0].id);
+        stats.manager = await getCachedManagerStats(areaManager.cities[0].id);
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      stats.supervisor = await getSupervisorStats(currentUser.id);
+      stats.supervisor = await getCachedSupervisorStats(currentUser.id);
     }
 
     // Get recent activity
@@ -129,22 +130,65 @@ export async function getDashboardStats(): Promise<{
 }
 
 // ============================================
+// CACHED STATS FUNCTIONS (Performance Optimization)
+// ============================================
+
+/**
+ * Cached version of SuperAdmin stats - revalidates every 30 seconds
+ * This dramatically improves dashboard navigation speed by avoiding 11 database queries
+ */
+const getCachedSuperAdminStats = unstable_cache(
+  async () => getSuperAdminStatsUncached(),
+  ['dashboard-superadmin-stats'],
+  {
+    revalidate: 30, // Cache for 30 seconds
+    tags: ['dashboard', 'superadmin-stats']
+  }
+);
+
+/**
+ * Cached version of Manager stats - revalidates every 30 seconds
+ * Accepts cityId as parameter for cache key
+ */
+const getCachedManagerStats = unstable_cache(
+  async (cityId: string) => getManagerStatsUncached(cityId),
+  ['dashboard-manager-stats'],
+  {
+    revalidate: 30,
+    tags: ['dashboard', 'manager-stats']
+  }
+);
+
+/**
+ * Cached version of Supervisor stats - revalidates every 30 seconds
+ * Accepts userId as parameter for cache key
+ */
+const getCachedSupervisorStats = unstable_cache(
+  async (userId: string) => getSupervisorStatsUncached(userId),
+  ['dashboard-supervisor-stats'],
+  {
+    revalidate: 30,
+    tags: ['dashboard', 'supervisor-stats']
+  }
+);
+
+// ============================================
 // SUPERADMIN STATS
 // ============================================
 
-async function getSuperAdminStats(): Promise<SuperAdminStats> {
+async function getSuperAdminStatsUncached(): Promise<SuperAdminStats> {
   const [
-    totalCorporations,
-    activeCorporations,
+    totalCities,
+    activeCities,
     totalManagers,
     totalSupervisors,
     totalAreaManagers,
-    totalSites,
-    activeSites,
-    totalWorkers,
-    activeWorkers,
+    totalNeighborhoods,
+    activeNeighborhoods,
+    totalActivists,
+    activeActivists,
     pendingInvitations,
-    recentCorporations,
+    recentCities,
   ] = await Promise.all([
     prisma.city.count(),
     prisma.city.count({ where: { isActive: true } }),
@@ -171,17 +215,17 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
   ]);
 
   return {
-    totalCorporations,
-    activeCorporations,
+    totalCities,
+    activeCities,
     totalManagers,
     totalSupervisors,
     totalAreaManagers,
-    totalSites,
-    activeSites,
-    totalWorkers,
-    activeWorkers,
+    totalNeighborhoods,
+    activeNeighborhoods,
+    totalActivists,
+    activeActivists,
     pendingInvitations,
-    recentCorporations,
+    recentCities,
   };
 }
 
@@ -189,18 +233,18 @@ async function getSuperAdminStats(): Promise<SuperAdminStats> {
 // MANAGER STATS
 // ============================================
 
-async function getManagerStats(cityId: string): Promise<ManagerStats> {
+async function getManagerStatsUncached(cityId: string): Promise<ManagerStats> {
   const [
     corporation,
     totalManagers,
     totalSupervisors,
-    totalSites,
-    activeSites,
-    totalWorkers,
-    activeWorkers,
+    totalNeighborhoods,
+    activeNeighborhoods,
+    totalActivists,
+    activeActivists,
     pendingInvitations,
-    recentSites,
-    topSitesByWorkers,
+    recentNeighborhoods,
+    topNeighborhoodsByActivists,
   ] = await Promise.all([
     prisma.city.findUnique({
       where: { id: cityId },
@@ -294,13 +338,13 @@ async function getManagerStats(cityId: string): Promise<ManagerStats> {
     cityRelation: corporation,
     totalManagers,
     totalSupervisors,
-    totalSites,
-    activeSites,
-    totalWorkers,
-    activeWorkers,
+    totalNeighborhoods,
+    activeNeighborhoods,
+    totalActivists,
+    activeActivists,
     pendingInvitations,
-    recentSites,
-    topSitesByWorkers,
+    recentNeighborhoods,
+    topNeighborhoodsByActivists,
   };
 }
 
@@ -308,7 +352,7 @@ async function getManagerStats(cityId: string): Promise<ManagerStats> {
 // SUPERVISOR STATS
 // ============================================
 
-async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
+async function getSupervisorStatsUncached(userId: string): Promise<SupervisorStats> {
   // Get supervisor's assigned sites (using legacyActivistCoordinatorUserId for User.id)
   const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
     where: { legacyActivistCoordinatorUserId: userId },
@@ -322,22 +366,22 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
     return {
       neighborhood: null,
       neighborhoods: [],
-      totalWorkers: 0,
-      activeWorkers: 0,
-      inactiveWorkers: 0,
-      recentWorkers: [],
-      workersByPosition: [],
+      totalActivists: 0,
+      activeActivists: 0,
+      inactiveActivists: 0,
+      recentActivists: [],
+      activistsByPosition: [],
     };
   }
 
   // Get stats across all assigned sites
   const [
     sites,
-    totalWorkers,
-    activeWorkers,
-    inactiveWorkers,
-    recentWorkers,
-    workersByPosition,
+    totalActivists,
+    activeActivists,
+    inactiveActivists,
+    recentActivists,
+    activistsByPosition,
   ] = await Promise.all([
     prisma.neighborhood.findMany({
       where: { id: { in: siteIds } },
@@ -406,12 +450,12 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
 
   return {
     neighborhood: sites.length > 0 ? sites[0] : null, // Return first site for backwards compatibility
-    sites, // Also include all sites
-    totalWorkers,
-    activeWorkers,
-    inactiveWorkers,
-    recentWorkers,
-    workersByPosition: workersByPosition.map((item) => ({
+    neighborhoods: sites, // Also include all sites
+    totalActivists,
+    activeActivists,
+    inactiveActivists,
+    recentActivists,
+    activistsByPosition: activistsByPosition.map((item) => ({
       position: item.position || 'Unspecified',
       count: item._count.position,
     })),

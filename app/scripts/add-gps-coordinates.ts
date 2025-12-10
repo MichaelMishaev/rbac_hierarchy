@@ -26,7 +26,7 @@ const siteCoordinates: Record<string, { latitude: number; longitude: number }> =
 async function addGPSCoordinates() {
   console.log('🗺️  Adding GPS coordinates to sites...\n');
 
-  const sites = await prisma.site.findMany({
+  const sites = await prisma.neighborhood.findMany({
     select: {
       id: true,
       name: true,
@@ -41,7 +41,7 @@ async function addGPSCoordinates() {
     const coords = siteCoordinates[site.name];
 
     if (coords && !site.latitude && !site.longitude) {
-      await prisma.site.update({
+      await prisma.neighborhood.update({
         where: { id: site.id },
         data: {
           latitude: coords.latitude,
@@ -61,7 +61,7 @@ async function addGPSCoordinates() {
   console.log(`\n✨ Updated ${updatedCount} sites with GPS coordinates`);
 
   // Show summary
-  const sitesWithGPS = await prisma.site.count({
+  const sitesWithGPS = await prisma.neighborhood.count({
     where: {
       AND: [
         { latitude: { not: null } },
@@ -70,7 +70,7 @@ async function addGPSCoordinates() {
     },
   });
 
-  const totalSites = await prisma.site.count();
+  const totalSites = await prisma.neighborhood.count();
   console.log(`📍 ${sitesWithGPS}/${totalSites} sites now have GPS coordinates\n`);
 }
 

@@ -44,7 +44,7 @@ async function main() {
     name: 'Composite FK Tenant Isolation',
     status: 'PASS',
     severity: 'CRITICAL',
-    message: 'Composite foreign keys enforce corporation boundaries at DB level',
+    message: 'Composite foreign keys enforce city boundaries at DB level',
   });
 
   // Check 2: Password hashing
@@ -165,14 +165,14 @@ async function main() {
   log('\n🔐', '=== DATA INTEGRITY ===');
 
   // Check 8: Cascade delete protection
-  const supervisorSites = await prisma.supervisorSite.findMany({
+  const supervisorSites = await prisma.activistCoordinatorNeighborhood.findMany({
     include: {
-      supervisor: {
+      activistCoordinator: {
         include: {
           user: true,
         },
       },
-      site: true,
+      neighborhood: true,
     },
   });
 
@@ -194,7 +194,7 @@ async function main() {
   });
 
   // Check 9: Unique constraints
-  const workers = await prisma.worker.findMany();
+  const workers = await prisma.activist.findMany();
   const workerKeys = workers.map((w: any) => `${w.siteId}-${w.fullName}-${w.phone}`);
   const hasDuplicates = workerKeys.length !== new Set(workerKeys).size;
 
@@ -215,17 +215,17 @@ async function main() {
   log('\n🏢', '=== TENANT ISOLATION ===');
 
   // Check 10: Corporation isolation test
-  const corporations = await prisma.corporation.findMany();
+  const corporations = await prisma.city.findMany();
   let isolationViolations = 0;
 
   for (const corp of corporations) {
-    const workers = await prisma.worker.findMany({
-      where: { corporationId: corp.id },
-      include: { site: true },
+    const workers = await prisma.activist.findMany({
+      where: { cityId: corp.id },
+      include: { neighborhood: true },
     });
 
     const violations = workers.filter(
-      (w) => w.site.corporationId !== corp.id
+      (w) => w.neighborhood.cityId !== corp.id
     );
     isolationViolations += violations.length;
   }
@@ -241,7 +241,7 @@ async function main() {
         : `${isolationViolations} isolation violations found`,
     recommendation:
       isolationViolations > 0
-        ? 'Fix cross-corporation data leaks immediately'
+        ? 'Fix cross-city data leaks immediately'
         : undefined,
   });
 

@@ -9,7 +9,6 @@ import {
   Typography,
   Avatar,
   IconButton,
-  Button,
   Stack,
   Grid,
   Chip,
@@ -27,6 +26,7 @@ import { colors, shadows, borderRadius } from '@/lib/design-system';
 import QuickPreviewSkeleton from './QuickPreviewSkeleton';
 import StatChip from './StatChip';
 import ListPreviewModal from './ListPreviewModal';
+import RtlButton from '@/app/components/ui/RtlButton';
 
 type NeighborhoodQuickPreviewProps = {
   siteId: string;
@@ -47,7 +47,7 @@ export default function NeighborhoodQuickPreview({
 
   // List preview modal state
   const [listPreview, setListPreview] = useState<{
-    type: 'supervisors' | 'workers' | null;
+    type: 'activistCoordinators' | 'activists' | null;
     title: string;
   }>({ type: null, title: '' });
 
@@ -126,20 +126,20 @@ export default function NeighborhoodQuickPreview({
                 <StatChip
                   icon={<SupervisorAccountIcon />}
                   label="מפקחים"
-                  value={data?._count.supervisors || 0}
+                  value={data?._count.activistCoordinators || 0}
                   color="blue"
-                  clickable={data?._count.supervisors > 0}
-                  onClick={() => setListPreview({ type: 'supervisors', title: 'מפקחים' })}
+                  clickable={data?._count.activistCoordinators > 0}
+                  onClick={() => setListPreview({ type: 'activistCoordinators', title: 'מפקחים' })}
                 />
               </Grid>
               <Grid item xs={6}>
                 <StatChip
                   icon={<GroupIcon />}
                   label="עובדים"
-                  value={data?._count.workers || 0}
+                  value={data?._count.activists || 0}
                   color="orange"
-                  clickable={data?._count.workers > 0}
-                  onClick={() => setListPreview({ type: 'workers', title: 'עובדים' })}
+                  clickable={data?._count.activists > 0}
+                  onClick={() => setListPreview({ type: 'activists', title: 'עובדים' })}
                 />
               </Grid>
             </Grid>
@@ -177,7 +177,7 @@ export default function NeighborhoodQuickPreview({
         }}
       >
         <Stack spacing={2}>
-          <Button
+          <RtlButton
             fullWidth
             variant="contained"
             startIcon={<VisibilityIcon />}
@@ -188,15 +188,15 @@ export default function NeighborhoodQuickPreview({
             }}
           >
             צפה במלואו
-          </Button>
-          <Button
+          </RtlButton>
+          <RtlButton
             fullWidth
             variant="outlined"
             startIcon={<EditIcon />}
             sx={{ borderRadius: borderRadius.lg }}
           >
             ערוך אתר
-          </Button>
+          </RtlButton>
         </Stack>
       </Box>
     </>
@@ -205,10 +205,10 @@ export default function NeighborhoodQuickPreview({
   const getListItems = () => {
     if (!listPreview.type) return [];
     switch (listPreview.type) {
-      case 'supervisors':
-        return data.supervisors || [];
-      case 'workers':
-        return data.workers || [];
+      case 'activistCoordinators':
+        return data.activistCoordinators || [];
+      case 'activists':
+        return data.activists || [];
       default:
         return [];
     }
@@ -252,7 +252,7 @@ export default function NeighborhoodQuickPreview({
           onClose={() => setListPreview({ type: null, title: '' })}
           title={listPreview.title}
           items={getListItems()}
-          type={listPreview.type || 'workers'}
+          type={listPreview.type || 'activists'}
           onItemClick={(id) => {
             // TODO: Open entity quick preview
             console.log('Clicked item:', id);
@@ -287,7 +287,7 @@ export default function NeighborhoodQuickPreview({
         onClose={() => setListPreview({ type: null, title: '' })}
         title={listPreview.title}
         items={getListItems()}
-        type={listPreview.type || 'workers'}
+        type={listPreview.type || 'activists'}
         onItemClick={(id) => {
           // TODO: Open entity quick preview
           console.log('Clicked item:', id);

@@ -5,10 +5,10 @@ import { getCurrentUser, hasAccessToCorporation } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { hash } from 'bcryptjs';
 import {
-  getSiteSupervisorCount,
-  autoAssignWorkersToFirstSupervisor,
-  reassignWorkersFromRemovedSupervisor,
-  canRemoveSupervisorFromSite,
+  getNeighborhoodActivistCoordinatorCount,
+  autoAssignActivistsToFirstActivistCoordinator,
+  reassignActivistsFromRemovedActivistCoordinator,
+  canRemoveActivistCoordinatorFromNeighborhood,
 } from '@/lib/activist-coordinator-assignment';
 
 // ============================================
@@ -159,7 +159,7 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
     const neighborhood = await prisma.neighborhood.findUnique({
       where: { id: neighborhoodId },
       include: {
-        city: true,
+        cityRelation: true,
       },
     });
 
@@ -221,7 +221,7 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
     }
 
     // Check if this is the first coordinator for this neighborhood
-    const coordinatorCountBefore = await getSiteSupervisorCount(neighborhoodId);
+    const coordinatorCountBefore = await getNeighborhoodActivistCoordinatorCount(neighborhoodId);
     const isFirstCoordinator = coordinatorCountBefore === 0;
 
     // Assign coordinator to neighborhood
@@ -237,7 +237,7 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
     // Auto-assign activists if this is the first coordinator
     let activistsAssigned = 0;
     if (isFirstCoordinator) {
-      const result = await autoAssignWorkersToFirstSupervisor(
+      const result = await autoAssignActivistsToFirstActivistCoordinator(
         neighborhoodId,
         activistCoordinatorId,
         currentUser.id,
@@ -312,7 +312,7 @@ export async function removeSupervisorFromSite(activistCoordinatorId: string, ne
     const neighborhood = await prisma.neighborhood.findUnique({
       where: { id: neighborhoodId },
       include: {
-        city: true,
+        cityRelation: true,
       },
     });
 
@@ -358,13 +358,13 @@ export async function removeSupervisorFromSite(activistCoordinatorId: string, ne
     }
 
     // Check if coordinator has activists in this neighborhood (block removal)
-    const activistValidation = await canRemoveSupervisorFromSite(activistCoordinatorId, neighborhoodId);
+    const activistValidation = await canRemoveActivistCoordinatorFromNeighborhood(activistCoordinatorId, neighborhoodId);
 
     if (!activistValidation.canRemove) {
       return {
         success: false,
         error: activistValidation.error,
-        activistCount: activistValidation.workerCount,
+        activistCount: activistValidation.activistCount,
       };
     }
 
@@ -468,7 +468,7 @@ export async function deleteSupervisor(activistCoordinatorId: string) {
     // Reassign activists from all neighborhoods
     const reassignmentResults = await Promise.all(
       assignedNeighborhoods.map(async (neighborhood: any) => {
-        const result = await reassignWorkersFromRemovedSupervisor(
+        const result = await reassignActivistsFromRemovedActivistCoordinator(
           neighborhood.id,
           activistCoordinatorId,
           currentUser.id,

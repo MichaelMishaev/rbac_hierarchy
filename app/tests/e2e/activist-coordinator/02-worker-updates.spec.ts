@@ -113,7 +113,7 @@ test.describe('Worker Updates - Neighborhood Change & Activist Coordinator Valid
       data: {
         activistCoordinatorId: testData.activistCoordinator1.id,
         neighborhoodId: testData.neighborhoodWithMultipleActivistCoordinators.id,
-        cityId: testData.corporation.id,
+        cityId: testData.city.id,
         legacySupervisorUserId: testData.activistCoordinator1User.id,
       },
     });

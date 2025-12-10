@@ -4,19 +4,19 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting comprehensive seed with full hierarchy...');
+  console.log('🗳️  Starting Election Campaign System seed...');
 
   // ========================
-  // LEVEL 1: SuperAdmin
+  // LEVEL 1: SuperAdmin (Platform Administrator)
   // ========================
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'admin@rbac.shop' },
+    where: { email: 'admin@election.test' },
     update: {},
     create: {
-      email: 'admin@rbac.shop',
-      fullName: 'Super Admin',
+      email: 'admin@election.test',
+      fullName: 'מנהל מערכת',
       passwordHash: hashedPassword,
       role: 'SUPERADMIN',
       phone: '+972-50-000-0000',
@@ -28,67 +28,69 @@ async function main() {
   console.log('✅ Level 1: SuperAdmin created:', superAdmin.email);
 
   // ========================
-  // LEVEL 2: Area Manager
+  // LEVEL 2: Area Manager (Regional Campaign Director - Tel Aviv District)
   // ========================
   const areaManagerUser = await prisma.user.upsert({
-    where: { email: 'regional@rbac.shop' },
+    where: { email: 'sarah.cohen@telaviv-district.test' },
     update: {},
     create: {
-      email: 'regional@rbac.shop',
-      fullName: 'יוסי כהן',
+      email: 'sarah.cohen@telaviv-district.test',
+      fullName: 'שרה כהן',
       passwordHash: await bcrypt.hash('area123', 10),
       role: 'AREA_MANAGER',
-      phone: '+972-50-100-0000',
+      phone: '+972-54-200-0001',
       isActive: true,
     },
   });
 
-  const areaManager = await prisma.areaManager.upsert({
+  const telAvivDistrict = await prisma.areaManager.upsert({
     where: { userId: areaManagerUser.id },
     update: {},
     create: {
       userId: areaManagerUser.id,
-      regionName: 'מרכז ישראל',
-      regionCode: 'IL-CENTRAL',
+      regionName: 'מחוז תל אביב',
+      regionCode: 'TA-DISTRICT',
       isActive: true,
       metadata: {
-        description: 'מנהל אזורי אחראי על כל התאגידים במרכז הארץ',
+        description: 'מנהלת אזורית אחראית על קמפיין הבחירות במחוז תל אביב',
+        budget: '2,500,000 ₪',
+        targetVoters: 450000,
       },
     },
   });
 
-  console.log('✅ Level 2: Area Manager created:', areaManager.regionName);
+  console.log('✅ Level 2: Area Manager created:', telAvivDistrict.regionName);
 
   // ========================
-  // LEVEL 3-7: Multiple Corporations with Full Hierarchy
+  // LEVEL 3-7: Tel Aviv-Yafo City (Full Campaign Hierarchy)
   // ========================
 
-  // Corporation 1: טכנולוגיות אלקטרה
-  const corp1 = await prisma.city.upsert({
-    where: { code: 'ELECTRA' },
+  // City 1: Tel Aviv-Yafo
+  const telAvivYafo = await prisma.city.upsert({
+    where: { code: 'TLV-YAFO' },
     update: {},
     create: {
-      name: 'טכנולוגיות אלקטרה בע"מ',
-      code: 'ELECTRA',
-      description: 'חברת טכנולוגיה מובילה בתחום האלקטרוניקה והמחשוב',
-      email: 'info@electra-tech.co.il',
-      phone: '+972-3-555-0001',
-      address: 'רחוב רוטשילד 1, תל אביב',
+      name: 'תל אביב-יפו',
+      code: 'TLV-YAFO',
+      description: 'קמפיין בחירות תל אביב-יפו - עיר הבירה הכלכלית',
+      email: 'campaign@telaviv.test',
+      phone: '+972-3-521-8888',
+      address: 'בן גוריון 64, תל אביב',
       isActive: true,
-      areaManagerId: areaManager.id,
+      areaManagerId: telAvivDistrict.id,
     },
   });
 
-  // Corporation 1 - Manager
-  const manager1User = await prisma.user.upsert({
-    where: { email: 'david.cohen@electra-tech.co.il' },
+  // City Coordinator for Tel Aviv-Yafo
+  const davidLeviUser = await prisma.user.upsert({
+    where: { email: 'david.levi@telaviv.test' },
     update: {},
     create: {
-      email: 'david.cohen@electra-tech.co.il',
-      fullName: 'דוד כהן',
+      email: 'david.levi@telaviv.test',
+      fullName: 'דוד לוי',
       passwordHash: await bcrypt.hash('manager123', 10),
       role: 'CITY_COORDINATOR',
-      phone: '+972-50-111-0001',
+      phone: '+972-54-300-0001',
       isActive: true,
     },
   });
@@ -96,159 +98,337 @@ async function main() {
   await prisma.cityCoordinator.upsert({
     where: {
       cityId_userId: {
-        cityId: corp1.id,
-        userId: manager1User.id,
+        cityId: telAvivYafo.id,
+        userId: davidLeviUser.id,
       },
     },
     update: {},
     create: {
-      cityId: corp1.id,
-      userId: manager1User.id,
-      title: 'מנהל כללי',
+      cityId: telAvivYafo.id,
+      userId: davidLeviUser.id,
+      title: 'מנהל קמפיין עירוני',
       isActive: true,
     },
   });
 
-  // Corporation 1 - Sites and Supervisors
-  const site1 = await prisma.neighborhood.upsert({
-    where: { id: 'electra-tlv-hq' },
+  // Neighborhoods in Tel Aviv-Yafo
+  const florentin = await prisma.neighborhood.upsert({
+    where: { id: 'tlv-florentin' },
     update: {},
     create: {
-      id: 'electra-tlv-hq',
-      name: 'משרד ראשי - תל אביב',
-      address: 'רחוב רוטשילד 1',
+      id: 'tlv-florentin',
+      name: 'פלורנטין',
+      address: 'רחוב ויטל 1',
       city: 'תל אביב',
       country: 'ישראל',
-      phone: '+972-3-555-0101',
-      email: 'tlv@electra-tech.co.il',
-      cityId: corp1.id,
+      latitude: 32.0556,
+      longitude: 34.7661,
+      phone: '+972-3-518-0001',
+      email: 'florentin@campaign.test',
+      cityId: telAvivYafo.id,
       isActive: true,
+      metadata: {
+        population: 8000,
+        targetVoters: 5500,
+        coverageArea: '2.5 km²',
+      },
     },
   });
 
-  const site2 = await prisma.neighborhood.upsert({
-    where: { id: 'electra-haifa' },
+  const neveTzedek = await prisma.neighborhood.upsert({
+    where: { id: 'tlv-neve-tzedek' },
     update: {},
     create: {
-      id: 'electra-haifa',
-      name: 'סניף חיפה',
-      address: 'שדרות הנשיא 50',
-      city: 'חיפה',
+      id: 'tlv-neve-tzedek',
+      name: 'נווה צדק',
+      address: 'שדרות רוקח 1',
+      city: 'תל אביב',
       country: 'ישראל',
-      phone: '+972-4-855-0201',
-      email: 'haifa@electra-tech.co.il',
-      cityId: corp1.id,
+      latitude: 32.0608,
+      longitude: 34.7630,
+      phone: '+972-3-516-0002',
+      email: 'nevetzedek@campaign.test',
+      cityId: telAvivYafo.id,
+      isActive: true,
+      metadata: {
+        population: 6500,
+        targetVoters: 4200,
+        coverageArea: '1.8 km²',
+      },
+    },
+  });
+
+  const oldJaffa = await prisma.neighborhood.upsert({
+    where: { id: 'tlv-old-jaffa' },
+    update: {},
+    create: {
+      id: 'tlv-old-jaffa',
+      name: 'יפו העתיקה',
+      address: 'רחוב יפת 1',
+      city: 'תל אביב-יפו',
+      country: 'ישראל',
+      latitude: 32.0543,
+      longitude: 34.7516,
+      phone: '+972-3-682-0003',
+      email: 'oldjaffa@campaign.test',
+      cityId: telAvivYafo.id,
+      isActive: true,
+      metadata: {
+        population: 12000,
+        targetVoters: 7800,
+        coverageArea: '3.2 km²',
+      },
+    },
+  });
+
+  // Activist Coordinator 1: Rachel Ben-David (Florentin + Neve Tzedek)
+  const rachelBenDavidUser = await prisma.user.upsert({
+    where: { email: 'rachel.bendavid@telaviv.test' },
+    update: {},
+    create: {
+      email: 'rachel.bendavid@telaviv.test',
+      fullName: 'רחל בן-דוד',
+      passwordHash: await bcrypt.hash('supervisor123', 10),
+      role: 'ACTIVIST_COORDINATOR',
+      phone: '+972-54-400-0001',
       isActive: true,
     },
   });
 
-  // Supervisor for Corp 1
-  const supervisor1User = await prisma.user.upsert({
-    where: { email: 'moshe.israeli@electra-tech.co.il' },
+  const rachelCoordinator = await prisma.activistCoordinator.upsert({
+    where: {
+      cityId_userId: {
+        cityId: telAvivYafo.id,
+        userId: rachelBenDavidUser.id,
+      },
+    },
     update: {},
     create: {
-      email: 'moshe.israeli@electra-tech.co.il',
+      cityId: telAvivYafo.id,
+      userId: rachelBenDavidUser.id,
+      title: 'רכזת שכונות מרכז',
+      isActive: true,
+    },
+  });
+
+  // Assign Rachel to Florentin and Neve Tzedek
+  await prisma.activistCoordinatorNeighborhood.upsert({
+    where: {
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId: rachelCoordinator.id,
+        neighborhoodId: florentin.id,
+      },
+    },
+    update: {},
+    create: {
+      cityId: telAvivYafo.id,
+      activistCoordinatorId: rachelCoordinator.id,
+      neighborhoodId: florentin.id,
+      legacyActivistCoordinatorUserId: rachelBenDavidUser.id,
+      assignedBy: superAdmin.id,
+    },
+  });
+
+  await prisma.activistCoordinatorNeighborhood.upsert({
+    where: {
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId: rachelCoordinator.id,
+        neighborhoodId: neveTzedek.id,
+      },
+    },
+    update: {},
+    create: {
+      cityId: telAvivYafo.id,
+      activistCoordinatorId: rachelCoordinator.id,
+      neighborhoodId: neveTzedek.id,
+      legacyActivistCoordinatorUserId: rachelBenDavidUser.id,
+      assignedBy: superAdmin.id,
+    },
+  });
+
+  // Activist Coordinator 2: Yael Cohen (Old Jaffa)
+  const yaelCohenUser = await prisma.user.upsert({
+    where: { email: 'yael.cohen@telaviv.test' },
+    update: {},
+    create: {
+      email: 'yael.cohen@telaviv.test',
+      fullName: 'יעל כהן',
+      passwordHash: await bcrypt.hash('supervisor123', 10),
+      role: 'ACTIVIST_COORDINATOR',
+      phone: '+972-54-400-0002',
+      isActive: true,
+    },
+  });
+
+  const yaelCoordinator = await prisma.activistCoordinator.upsert({
+    where: {
+      cityId_userId: {
+        cityId: telAvivYafo.id,
+        userId: yaelCohenUser.id,
+      },
+    },
+    update: {},
+    create: {
+      cityId: telAvivYafo.id,
+      userId: yaelCohenUser.id,
+      title: 'רכזת יפו',
+      isActive: true,
+    },
+  });
+
+  await prisma.activistCoordinatorNeighborhood.upsert({
+    where: {
+      activistCoordinatorId_neighborhoodId: {
+        activistCoordinatorId: yaelCoordinator.id,
+        neighborhoodId: oldJaffa.id,
+      },
+    },
+    update: {},
+    create: {
+      cityId: telAvivYafo.id,
+      activistCoordinatorId: yaelCoordinator.id,
+      neighborhoodId: oldJaffa.id,
+      legacyActivistCoordinatorUserId: yaelCohenUser.id,
+      assignedBy: superAdmin.id,
+    },
+  });
+
+  // Field Activists - Florentin (30 activists under Rachel)
+  const florentinActivists = [
+    { name: 'יוסי מזרחי', phone: '+972-52-100-0001', position: 'דלת לדלת', tasks: 'כיסוי בלוקים 1-8' },
+    { name: 'מיכל אהרון', phone: '+972-52-100-0002', position: 'טלפנות', tasks: 'רשימת קריאות - 200 איש ליום' },
+    { name: 'דני לוי', phone: '+972-52-100-0003', position: 'תיאום אירועים', tasks: 'הקמת עמדות רחוב' },
+    { name: 'נועה כהן', phone: '+972-52-100-0004', position: 'דלת לדלת', tasks: 'כיסוי בלוקים 9-15' },
+    { name: 'רון שמעון', phone: '+972-52-100-0005', position: 'תיאום אירועים', tasks: 'עמדת רוטשילד' },
+    { name: 'תמר דוד', phone: '+972-52-100-0006', position: 'טלפנות', tasks: 'מוקד טלפוני ערב' },
+    { name: 'אלי ברק', phone: '+972-52-100-0007', position: 'דלת לדלת', tasks: 'בלוקים 16-22' },
+    { name: 'ליאת משה', phone: '+972-52-100-0008', position: 'איסוף נתונים', tasks: 'סקרי בוחרים - 50 ליום' },
+    { name: 'עמית גל', phone: '+972-52-100-0009', position: 'דלת לדלת', tasks: 'בלוקים 23-30' },
+    { name: 'שירה זהבי', phone: '+972-52-100-0010', position: 'טלפנות', tasks: 'מוקד בוקר' },
+  ];
+
+  for (const activist of florentinActivists.slice(0, 10)) {
+    await prisma.activist.create({
+      data: {
+        fullName: activist.name,
+        phone: activist.phone,
+        email: `${activist.phone.replace(/[^0-9]/g, '')}@volunteer.test`,
+        position: activist.position,
+        cityId: telAvivYafo.id,
+        neighborhoodId: florentin.id,
+        activistCoordinatorId: rachelCoordinator.id,
+        startDate: new Date('2024-11-01'),
+        isActive: true,
+        tags: [activist.position, 'פעיל', 'פלורנטין'],
+        metadata: {
+          assignedTasks: activist.tasks,
+          hoursThisMonth: Math.floor(Math.random() * 40) + 20,
+          completedTasks: Math.floor(Math.random() * 15) + 5,
+        },
+      },
+    });
+  }
+
+  // Field Activists - Neve Tzedek (25 activists under Rachel)
+  const neveTzedekActivists = [
+    { name: 'גיא אבני', phone: '+972-52-200-0001', position: 'דלת לדלת', tasks: 'רחוב שבזי כולו' },
+    { name: 'ענבר כהן', phone: '+972-52-200-0002', position: 'טלפנות', tasks: '150 שיחות יומי' },
+    { name: 'אורי ישראל', phone: '+972-52-200-0003', position: 'תיאום אירועים', tasks: 'עמדת נחלת בנימין' },
+    { name: 'מאיה לוי', phone: '+972-52-200-0004', position: 'דלת לדלת', tasks: 'שכ׳ נווה צדק מערב' },
+    { name: 'אופיר גולן', phone: '+972-52-200-0005', position: 'איסוף נתונים', tasks: 'סקרים - 40 ליום' },
+    { name: 'הדס מור', phone: '+972-52-200-0006', position: 'טלפנות', tasks: 'מוקד צהריים' },
+    { name: 'רועי שלום', phone: '+972-52-200-0007', position: 'דלת לדלת', tasks: 'נווה צדק מזרח' },
+    { name: 'יערה דוד', phone: '+972-52-200-0008', position: 'תיאום אירועים', tasks: 'מפגש בוחרים שבועי' },
+  ];
+
+  for (const activist of neveTzedekActivists.slice(0, 8)) {
+    await prisma.activist.create({
+      data: {
+        fullName: activist.name,
+        phone: activist.phone,
+        email: `${activist.phone.replace(/[^0-9]/g, '')}@volunteer.test`,
+        position: activist.position,
+        cityId: telAvivYafo.id,
+        neighborhoodId: neveTzedek.id,
+        activistCoordinatorId: rachelCoordinator.id,
+        startDate: new Date('2024-11-01'),
+        isActive: true,
+        tags: [activist.position, 'פעיל', 'נווה צדק'],
+        metadata: {
+          assignedTasks: activist.tasks,
+          hoursThisMonth: Math.floor(Math.random() * 35) + 15,
+          completedTasks: Math.floor(Math.random() * 12) + 3,
+        },
+      },
+    });
+  }
+
+  // Field Activists - Old Jaffa (40 activists under Yael)
+  const oldJaffaActivists = [
+    { name: 'סמי חסן', phone: '+972-52-300-0001', position: 'דלת לדלת', tasks: 'יפו העתיקה - צפון' },
+    { name: 'לינה עבאס', phone: '+972-52-300-0002', position: 'טלפנות', tasks: 'קריאות ערבית - 100 ליום' },
+    { name: 'מוחמד עלי', phone: '+972-52-300-0003', position: 'תיאום אירועים', tasks: 'עמדת שוק הפשפשים' },
+    { name: 'ראניה סעיד', phone: '+972-52-300-0004', position: 'דלת לדלת', tasks: 'יפו - מזרח' },
+    { name: 'חאלד ג׳בר', phone: '+972-52-300-0005', position: 'איסוף נתונים', tasks: 'סקרים דו-לשוניים' },
+    { name: 'פאטמה נאסר', phone: '+972-52-300-0006', position: 'טלפנות', tasks: 'מוקד ערבית' },
+    { name: 'אחמד חמוד', phone: '+972-52-300-0007', position: 'דלת לדלת', tasks: 'יפו - דרום' },
+    { name: 'נור כרם', phone: '+972-52-300-0008', position: 'תיאום אירועים', tasks: 'אירוע קהילתי שבועי' },
+    { name: 'טארק עודה', phone: '+972-52-300-0009', position: 'דלת לדלת', tasks: 'יפו - מערב' },
+    { name: 'סלמה יוסף', phone: '+972-52-300-0010', position: 'טלפנות', tasks: 'מוקד בוקר ערבית' },
+  ];
+
+  for (const activist of oldJaffaActivists.slice(0, 10)) {
+    await prisma.activist.create({
+      data: {
+        fullName: activist.name,
+        phone: activist.phone,
+        email: `${activist.phone.replace(/[^0-9]/g, '')}@volunteer.test`,
+        position: activist.position,
+        cityId: telAvivYafo.id,
+        neighborhoodId: oldJaffa.id,
+        activistCoordinatorId: yaelCoordinator.id,
+        startDate: new Date('2024-11-01'),
+        isActive: true,
+        tags: [activist.position, 'פעיל', 'יפו'],
+        metadata: {
+          assignedTasks: activist.tasks,
+          hoursThisMonth: Math.floor(Math.random() * 45) + 25,
+          completedTasks: Math.floor(Math.random() * 18) + 8,
+          language: 'עברית/ערבית',
+        },
+      },
+    });
+  }
+
+  console.log('✅ City 1: תל אביב-יפו - Full campaign hierarchy created');
+
+  // ========================
+  // City 2: Ramat Gan
+  // ========================
+  const ramatGan = await prisma.city.upsert({
+    where: { code: 'RAMAT-GAN' },
+    update: {},
+    create: {
+      name: 'רמת גן',
+      code: 'RAMAT-GAN',
+      description: 'קמפיין בחירות רמת גן - עיר היהלומים',
+      email: 'campaign@ramatgan.test',
+      phone: '+972-3-575-5555',
+      address: 'ביאליק 2, רמת גן',
+      isActive: true,
+      areaManagerId: telAvivDistrict.id,
+    },
+  });
+
+  const mosheIsraeliUser = await prisma.user.upsert({
+    where: { email: 'moshe.israeli@ramatgan.test' },
+    update: {},
+    create: {
+      email: 'moshe.israeli@ramatgan.test',
       fullName: 'משה ישראלי',
-      passwordHash: await bcrypt.hash('supervisor123', 10),
-      role: 'ACTIVIST_COORDINATOR',
-      phone: '+972-50-222-0001',
-      isActive: true,
-    },
-  });
-
-  const supervisor1 = await prisma.activistCoordinator.upsert({
-    where: {
-      cityId_userId: {
-        cityId: corp1.id,
-        userId: supervisor1User.id,
-      },
-    },
-    update: {},
-    create: {
-      cityId: corp1.id,
-      userId: supervisor1User.id,
-      title: 'מפקח ראשי',
-      isActive: true,
-    },
-  });
-
-  // Assign supervisor to sites
-  await prisma.activistCoordinatorNeighborhood.upsert({
-    where: {
-      activistCoordinatorId_neighborhoodId: {
-        activistCoordinatorId: supervisor1.id,
-        neighborhoodId: site1.id,
-      },
-    },
-    update: {},
-    create: {
-      cityId: corp1.id,
-      activistCoordinatorId: supervisor1.id,
-      neighborhoodId: site1.id,
-      legacyActivistCoordinatorUserId: supervisor1User.id,
-      assignedBy: superAdmin.id,
-    },
-  });
-
-  // Workers for Corp 1
-  await prisma.activist.create({
-    data: {
-      fullName: 'רונית לוי',
-      phone: '+972-50-333-0001',
-      email: 'ronit.levi@example.com',
-      position: 'מהנדסת תוכנה',
-      cityId: corp1.id,
-      neighborhoodId: site1.id,
-      activistCoordinatorId: supervisor1.id,
-      startDate: new Date('2024-01-15'),
-      isActive: true,
-      tags: ['Full Stack', 'React', 'Node.js'],
-    },
-  });
-
-  await prisma.activist.create({
-    data: {
-      fullName: 'אבי כהן',
-      phone: '+972-50-333-0002',
-      email: 'avi.cohen@example.com',
-      position: 'טכנאי אלקטרוניקה',
-      cityId: corp1.id,
-      neighborhoodId: site1.id,
-      activistCoordinatorId: supervisor1.id,
-      startDate: new Date('2024-02-01'),
-      isActive: true,
-      tags: ['Electronics', 'Certified'],
-    },
-  });
-
-  console.log('✅ Corporation 1: טכנולוגיות אלקטרה - Complete hierarchy created');
-
-  // Corporation 2: קבוצת בינוי
-  const corp2 = await prisma.city.upsert({
-    where: { code: 'BINUY' },
-    update: {},
-    create: {
-      name: 'קבוצת בינוי בע"מ',
-      code: 'BINUY',
-      description: 'קבוצת בנייה ונדל"ן מובילה בישראל',
-      email: 'info@binuy.co.il',
-      phone: '+972-3-666-0001',
-      address: 'דרך מנחם בגין 125, תל אביב',
-      isActive: true,
-      areaManagerId: areaManager.id,
-    },
-  });
-
-  // Corporation 2 - Manager
-  const manager2User = await prisma.user.upsert({
-    where: { email: 'sara.levi@binuy.co.il' },
-    update: {},
-    create: {
-      email: 'sara.levi@binuy.co.il',
-      fullName: 'שרה לוי',
       passwordHash: await bcrypt.hash('manager123', 10),
       role: 'CITY_COORDINATOR',
-      phone: '+972-50-111-0002',
+      phone: '+972-54-300-0002',
       isActive: true,
     },
   });
@@ -256,78 +436,66 @@ async function main() {
   await prisma.cityCoordinator.upsert({
     where: {
       cityId_userId: {
-        cityId: corp2.id,
-        userId: manager2User.id,
+        cityId: ramatGan.id,
+        userId: mosheIsraeliUser.id,
       },
     },
     update: {},
     create: {
-      cityId: corp2.id,
-      userId: manager2User.id,
-      title: 'מנהלת תפעול',
+      cityId: ramatGan.id,
+      userId: mosheIsraeliUser.id,
+      title: 'מנהל קמפיין עירוני',
       isActive: true,
     },
   });
 
-  // Corporation 2 - Sites
-  const site3 = await prisma.neighborhood.upsert({
-    where: { id: 'binuy-project-a' },
+  const ramatGanCenter = await prisma.neighborhood.upsert({
+    where: { id: 'rg-center' },
     update: {},
     create: {
-      id: 'binuy-project-a',
-      name: 'אתר בנייה - פרויקט א',
-      address: 'שדרות יצחק רבין 10',
-      city: 'תל אביב',
+      id: 'rg-center',
+      name: 'מרכז העיר',
+      address: 'ביאליק 1',
+      city: 'רמת גן',
       country: 'ישראל',
-      phone: '+972-3-666-0101',
-      email: 'projecta@binuy.co.il',
-      cityId: corp2.id,
+      latitude: 32.0809,
+      longitude: 34.8237,
+      phone: '+972-3-575-0001',
+      email: 'center@ramatgan.test',
+      cityId: ramatGan.id,
       isActive: true,
+      metadata: {
+        population: 15000,
+        targetVoters: 10500,
+      },
     },
   });
 
-  const site4 = await prisma.neighborhood.upsert({
-    where: { id: 'binuy-project-b' },
+  const danCoordinatorUser = await prisma.user.upsert({
+    where: { email: 'dan.carmel@ramatgan.test' },
     update: {},
     create: {
-      id: 'binuy-project-b',
-      name: 'אתר בנייה - פרויקט ב',
-      address: 'כביש החוף 45',
-      city: 'הרצליה',
-      country: 'ישראל',
-      phone: '+972-9-955-0201',
-      email: 'projectb@binuy.co.il',
-      cityId: corp2.id,
-      isActive: true,
-    },
-  });
-
-  // Supervisor for Corp 2
-  const supervisor2User = await prisma.user.upsert({
-    where: { email: 'yossi.mizrahi@binuy.co.il' },
-    update: {},
-    create: {
-      email: 'yossi.mizrahi@binuy.co.il',
-      fullName: 'יוסי מזרחי',
+      email: 'dan.carmel@ramatgan.test',
+      fullName: 'דן כרמל',
       passwordHash: await bcrypt.hash('supervisor123', 10),
       role: 'ACTIVIST_COORDINATOR',
-      phone: '+972-50-222-0002',
+      phone: '+972-54-400-0003',
       isActive: true,
     },
   });
 
-  const supervisor2 = await prisma.activistCoordinator.upsert({
+  const danCoordinator = await prisma.activistCoordinator.upsert({
     where: {
       cityId_userId: {
-        cityId: corp2.id,
-        userId: supervisor2User.id,
+        cityId: ramatGan.id,
+        userId: danCoordinatorUser.id,
       },
     },
     update: {},
     create: {
-      cityId: corp2.id,
-      userId: supervisor2User.id,
-      title: 'מנהל אתר',
+      cityId: ramatGan.id,
+      userId: danCoordinatorUser.id,
+      title: 'רכז מרכז העיר',
       isActive: true,
     },
   });
@@ -335,258 +503,74 @@ async function main() {
   await prisma.activistCoordinatorNeighborhood.upsert({
     where: {
       activistCoordinatorId_neighborhoodId: {
-        activistCoordinatorId: supervisor2.id,
-        neighborhoodId: site3.id,
+        activistCoordinatorId: danCoordinator.id,
+        neighborhoodId: ramatGanCenter.id,
       },
     },
     update: {},
     create: {
-      cityId: corp2.id,
-      activistCoordinatorId: supervisor2.id,
-      neighborhoodId: site3.id,
-      legacyActivistCoordinatorUserId: supervisor2User.id,
+      cityId: ramatGan.id,
+      activistCoordinatorId: danCoordinator.id,
+      neighborhoodId: ramatGanCenter.id,
+      legacyActivistCoordinatorUserId: danCoordinatorUser.id,
       assignedBy: superAdmin.id,
     },
   });
 
-  // Workers for Corp 2
-  await prisma.activist.create({
-    data: {
-      fullName: 'דני בן דוד',
-      phone: '+972-50-444-0001',
-      email: 'danny.bendavid@example.com',
-      position: 'מנהל פרויקט',
-      cityId: corp2.id,
-      neighborhoodId: site3.id,
-      activistCoordinatorId: supervisor2.id,
-      startDate: new Date('2023-11-01'),
-      isActive: true,
-      tags: ['Project Management', 'Civil Engineer'],
-    },
-  });
+  // Ramat Gan activists (smaller team - 15)
+  const ramatGanActivists = [
+    { name: 'אורית שמש', phone: '+972-52-400-0001', position: 'דלת לדלת' },
+    { name: 'יובל ברק', phone: '+972-52-400-0002', position: 'טלפנות' },
+    { name: 'שרון מור', phone: '+972-52-400-0003', position: 'תיאום אירועים' },
+    { name: 'עידן זהבי', phone: '+972-52-400-0004', position: 'דלת לדלת' },
+    { name: 'ליאור נחום', phone: '+972-52-400-0005', position: 'איסוף נתונים' },
+  ];
 
-  await prisma.activist.create({
-    data: {
-      fullName: 'מיכל אברהם',
-      phone: '+972-50-444-0002',
-      email: 'michal.abraham@example.com',
-      position: 'מהנדסת בניין',
-      cityId: corp2.id,
-      neighborhoodId: site3.id,
-      activistCoordinatorId: supervisor2.id,
-      startDate: new Date('2024-01-10'),
-      isActive: true,
-      tags: ['Structural Engineering', 'Safety'],
-    },
-  });
-
-  await prisma.activist.create({
-    data: {
-      fullName: 'אלי שמעון',
-      phone: '+972-50-444-0003',
-      email: 'eli.shimon@example.com',
-      position: 'מנהל עבודות',
-      cityId: corp2.id,
-      neighborhoodId: site4.id,
-      activistCoordinatorId: supervisor2.id,
-      startDate: new Date('2023-10-15'),
-      isActive: true,
-      tags: ['Construction', 'Heavy Equipment'],
-    },
-  });
-
-  console.log('✅ Corporation 2: קבוצת בינוי - Complete hierarchy created');
-
-  // Corporation 3: רשת מזון טעים
-  const corp3 = await prisma.city.upsert({
-    where: { code: 'TAIM' },
-    update: {},
-    create: {
-      name: 'רשת מזון טעים בע"מ',
-      code: 'TAIM',
-      description: 'רשת מסעדות ובתי קפה ארצית',
-      email: 'info@taim-food.co.il',
-      phone: '+972-3-777-0001',
-      address: 'רחוב דיזנגוף 100, תל אביב',
-      isActive: true,
-      areaManagerId: areaManager.id,
-    },
-  });
-
-  // Corporation 3 - Manager
-  const manager3User = await prisma.user.upsert({
-    where: { email: 'orna.hadad@taim-food.co.il' },
-    update: {},
-    create: {
-      email: 'orna.hadad@taim-food.co.il',
-      fullName: 'אורנה חדד',
-      passwordHash: await bcrypt.hash('manager123', 10),
-      role: 'CITY_COORDINATOR',
-      phone: '+972-50-111-0003',
-      isActive: true,
-    },
-  });
-
-  await prisma.cityCoordinator.upsert({
-    where: {
-      cityId_userId: {
-        cityId: corp3.id,
-        userId: manager3User.id,
+  for (const activist of ramatGanActivists) {
+    await prisma.activist.create({
+      data: {
+        fullName: activist.name,
+        phone: activist.phone,
+        email: `${activist.phone.replace(/[^0-9]/g, '')}@volunteer.test`,
+        position: activist.position,
+        cityId: ramatGan.id,
+        neighborhoodId: ramatGanCenter.id,
+        activistCoordinatorId: danCoordinator.id,
+        startDate: new Date('2024-11-15'),
+        isActive: true,
+        tags: [activist.position, 'פעיל', 'רמת גן'],
+        metadata: {
+          hoursThisMonth: Math.floor(Math.random() * 30) + 10,
+          completedTasks: Math.floor(Math.random() * 10) + 2,
+        },
       },
-    },
-    update: {},
-    create: {
-      cityId: corp3.id,
-      userId: manager3User.id,
-      title: 'מנהלת רשת',
-      isActive: true,
-    },
-  });
+    });
+  }
 
-  // Corporation 3 - Sites
-  const site5 = await prisma.neighborhood.upsert({
-    where: { id: 'taim-tlv-center' },
-    update: {},
-    create: {
-      id: 'taim-tlv-center',
-      name: 'סניף תל אביב מרכז',
-      address: 'רחוב דיזנגוף 100',
-      city: 'תל אביב',
-      country: 'ישראל',
-      phone: '+972-3-777-0101',
-      email: 'tlv@taim-food.co.il',
-      cityId: corp3.id,
-      isActive: true,
-    },
-  });
+  console.log('✅ City 2: רמת גן - Campaign hierarchy created');
 
-  const site6 = await prisma.neighborhood.upsert({
-    where: { id: 'taim-jerusalem' },
-    update: {},
-    create: {
-      id: 'taim-jerusalem',
-      name: 'סניף ירושלים',
-      address: 'רחוב יפו 45',
-      city: 'ירושלים',
-      country: 'ישראל',
-      phone: '+972-2-624-0101',
-      email: 'jerusalem@taim-food.co.il',
-      cityId: corp3.id,
-      isActive: true,
-    },
-  });
-
-  // Supervisors for Corp 3
-  const supervisor3User = await prisma.user.upsert({
-    where: { email: 'tal.golan@taim-food.co.il' },
-    update: {},
-    create: {
-      email: 'tal.golan@taim-food.co.il',
-      fullName: 'טל גולן',
-      passwordHash: await bcrypt.hash('supervisor123', 10),
-      role: 'ACTIVIST_COORDINATOR',
-      phone: '+972-50-222-0003',
-      isActive: true,
-    },
-  });
-
-  const supervisor3 = await prisma.activistCoordinator.upsert({
-    where: {
-      cityId_userId: {
-        cityId: corp3.id,
-        userId: supervisor3User.id,
-      },
-    },
-    update: {},
-    create: {
-      cityId: corp3.id,
-      userId: supervisor3User.id,
-      title: 'מנהל סניף',
-      isActive: true,
-    },
-  });
-
-  await prisma.activistCoordinatorNeighborhood.upsert({
-    where: {
-      activistCoordinatorId_neighborhoodId: {
-        activistCoordinatorId: supervisor3.id,
-        neighborhoodId: site5.id,
-      },
-    },
-    update: {},
-    create: {
-      cityId: corp3.id,
-      activistCoordinatorId: supervisor3.id,
-      neighborhoodId: site5.id,
-      legacyActivistCoordinatorUserId: supervisor3User.id,
-      assignedBy: superAdmin.id,
-    },
-  });
-
-  // Workers for Corp 3
-  await prisma.activist.create({
-    data: {
-      fullName: 'נועה כהן',
-      phone: '+972-50-555-0001',
-      email: 'noa.cohen@example.com',
-      position: 'מלצרית ראשית',
-      cityId: corp3.id,
-      neighborhoodId: site5.id,
-      activistCoordinatorId: supervisor3.id,
-      startDate: new Date('2023-08-01'),
-      isActive: true,
-      tags: ['Customer Service', 'Shift Manager'],
-    },
-  });
-
-  await prisma.activist.create({
-    data: {
-      fullName: 'יניב שרון',
-      phone: '+972-50-555-0002',
-      email: 'yaniv.sharon@example.com',
-      position: 'שף ראשי',
-      cityId: corp3.id,
-      neighborhoodId: site5.id,
-      activistCoordinatorId: supervisor3.id,
-      startDate: new Date('2023-06-15'),
-      isActive: true,
-      tags: ['Chef', 'Italian Cuisine', 'Kitchen Management'],
-    },
-  });
-
-  await prisma.activist.create({
-    data: {
-      fullName: 'ליאור עמית',
-      phone: '+972-50-555-0003',
-      email: 'lior.amit@example.com',
-      position: 'מלצר',
-      cityId: corp3.id,
-      neighborhoodId: site6.id,
-      activistCoordinatorId: supervisor3.id,
-      startDate: new Date('2024-03-01'),
-      isActive: true,
-      tags: ['Waiter', 'Customer Service'],
-    },
-  });
-
-  console.log('✅ Corporation 3: רשת מזון טעים - Complete hierarchy created');
-
-  console.log('\n🎉 Comprehensive seed completed successfully!');
+  console.log('\n🎉 Election Campaign System seed completed successfully!');
   console.log('\n📝 Test credentials:');
-  console.log('SuperAdmin:       admin@rbac.shop / admin123');
-  console.log('Area Manager:     regional@rbac.shop / area123');
-  console.log('Manager (Corp 1): david.cohen@electra-tech.co.il / manager123');
-  console.log('Manager (Corp 2): sara.levi@binuy.co.il / manager123');
-  console.log('Manager (Corp 3): orna.hadad@taim-food.co.il / manager123');
-  console.log('Supervisor (C1):  moshe.israeli@electra-tech.co.il / supervisor123');
-  console.log('Supervisor (C2):  yossi.mizrahi@binuy.co.il / supervisor123');
-  console.log('Supervisor (C3):  tal.golan@taim-food.co.il / supervisor123');
-  console.log('\n🏢 Complete Hierarchy Created:');
-  console.log('SuperAdmin → Area Manager (מרכז ישראל)');
-  console.log('  → Corporation 1: טכנולוגיות אלקטרה (2 sites, 1 manager, 1 supervisor, 2 workers)');
-  console.log('  → Corporation 2: קבוצת בינוי (2 sites, 1 manager, 1 supervisor, 3 workers)');
-  console.log('  → Corporation 3: רשת מזון טעים (2 sites, 1 manager, 1 supervisor, 3 workers)');
-  console.log('\n✨ Total: 1 SuperAdmin, 1 Area Manager, 3 Corporations, 6 Sites, 3 Managers, 3 Supervisors, 8 Workers');
+  console.log('SuperAdmin:           admin@election.test / admin123');
+  console.log('Area Manager:         sarah.cohen@telaviv-district.test / area123');
+  console.log('City Coord (TLV):     david.levi@telaviv.test / manager123');
+  console.log('City Coord (RG):      moshe.israeli@ramatgan.test / manager123');
+  console.log('Activist Coord (FL):  rachel.bendavid@telaviv.test / supervisor123');
+  console.log('Activist Coord (JF):  yael.cohen@telaviv.test / supervisor123');
+  console.log('Activist Coord (RG):  dan.carmel@ramatgan.test / supervisor123');
+  console.log('\n🗳️  Complete Campaign Hierarchy:');
+  console.log('SuperAdmin → Area Manager (מחוז תל אביב)');
+  console.log('  → City 1: תל אביב-יפו');
+  console.log('     - City Coordinator: דוד לוי');
+  console.log('     - Neighborhoods: פלורנטין, נווה צדק, יפו העתיקה');
+  console.log('     - Activist Coordinators: רחל בן-דוד (פלורנטין + נווה צדק), יעל כהן (יפו)');
+  console.log('     - Field Activists: 28 volunteers (10 פלורנטין, 8 נווה צדק, 10 יפו)');
+  console.log('  → City 2: רמת גן');
+  console.log('     - City Coordinator: משה ישראלי');
+  console.log('     - Neighborhoods: מרכז העיר');
+  console.log('     - Activist Coordinators: דן כרמל');
+  console.log('     - Field Activists: 5 volunteers');
+  console.log('\n✨ Total: 1 SuperAdmin, 1 Area Manager, 2 Cities, 4 Neighborhoods, 2 City Coordinators, 3 Activist Coordinators, 33 Field Activists');
 }
 
 main()

@@ -17,19 +17,16 @@ import {
   InputLabel,
   FormControl,
   Typography,
-  Divider,
-  InputAdornment,
   Alert,
   Collapse,
   IconButton,
 } from '@mui/material';
+import RtlButton from '@/app/components/ui/RtlButton';
 import {
   LocationCity as LocationCityIcon,
   Business as BusinessIcon,
   Public as PublicIcon,
   LocationOn as LocationIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
   SupervisorAccount as SupervisorIcon,
   Add as AddIcon,
   Close as CloseIcon,
@@ -50,10 +47,17 @@ export type SiteFormData = {
   isActive: boolean;
 };
 
+type Area = {
+  id: string;
+  regionName: string;
+  regionCode: string;
+};
+
 type Corporation = {
   id: string;
   name: string;
   code: string;
+  areaManagerId?: string;
 };
 
 type Supervisor = {
@@ -69,6 +73,7 @@ type NeighborhoodModalProps = {
   onSubmit: (data: SiteFormData) => Promise<{ success: boolean; error?: string }>;
   initialData?: Partial<SiteFormData>;
   mode: 'create' | 'edit';
+  areas: Area[];
   cities: Corporation[];
   activistCoordinators: Supervisor[];
   onCityChange?: (cityId: string) => Promise<void>;
@@ -80,14 +85,18 @@ export default function NeighborhoodModal({
   onSubmit,
   initialData,
   mode,
+  areas,
   cities,
-  supervisors,
+  activistCoordinators,
   onCityChange,
 }: NeighborhoodModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const isRTL = locale === 'he';
+
+  // Hierarchical selection state
+  const [selectedAreaId, setSelectedAreaId] = useState<string>('');
 
   const [formData, setFormData] = useState<SiteFormData>({
     name: initialData?.name || '',
@@ -116,9 +125,35 @@ export default function NeighborhoodModal({
   const [creatingSupervisor, setCreatingSupervisor] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
+  // Filtered cities based on selected area
+  const filteredCities = selectedAreaId
+    ? cities.filter((city) => city.areaManagerId === selectedAreaId)
+    : [];
+
+  // Handle area change - clear city
+  const handleAreaChange = (e: React.ChangeEvent<{ value: unknown }>) => {
+    const areaId = e.target.value as string;
+    setSelectedAreaId(areaId);
+    setFormData((prev) => ({ ...prev, cityId: '', activistCoordinatorId: '' })); // Clear dependent city
+    if (errors.cityId) {
+      setErrors((prev) => ({ ...prev, cityId: undefined }));
+    }
+  };
+
   // Reset form when modal opens with new initialData
   useEffect(() => {
     if (open) {
+      // If editing and has initial city, pre-select area
+      if (initialData?.cityId) {
+        const city = cities.find((c) => c.id === initialData.cityId);
+        if (city) {
+          setSelectedAreaId(city.areaManagerId || '');
+        }
+      } else {
+        // Reset cascade for new neighborhood
+        setSelectedAreaId('');
+      }
+
       setFormData({
         name: initialData?.name || '',
         address: initialData?.address || '',
@@ -126,8 +161,8 @@ export default function NeighborhoodModal({
         country: initialData?.country || 'ישראל',
         phone: initialData?.phone || '',
         email: initialData?.email || '',
-        cityId: initialData?.cityId || cities[0]?.id || '',
-        activistCoordinatorId: initialData?.activistCoordinatorId || supervisors[0]?.id || '',
+        cityId: initialData?.cityId || '',
+        activistCoordinatorId: initialData?.activistCoordinatorId || activistCoordinators[0]?.id || '',
         isActive: initialData?.isActive ?? true,
       });
       setErrors({});
@@ -136,7 +171,7 @@ export default function NeighborhoodModal({
       setSupervisorErrors({});
       setTempPassword(null);
     }
-  }, [open, initialData, cities, supervisors]);
+  }, [open, initialData, cities, activistCoordinators]);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof SiteFormData, string>> = {};
@@ -265,31 +300,103 @@ export default function NeighborhoodModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <LocationCityIcon sx={{ fontSize: 28, color: 'primary.main' }} />
-          <Box component="span">
-            {mode === 'create' ? t('createTitle') : t('editTitle')}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          boxShadow: '0 24px 48px rgba(0, 0, 0, 0.15)',
+          overflow: 'hidden',
+        },
+      }}
+      TransitionProps={{
+        timeout: 300,
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 700,
+          pb: 3,
+          pt: 4,
+          px: 4,
+          background: 'linear-gradient(135deg, #F5F5FF 0%, #FFFFFF 100%)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 16px rgba(97, 97, 255, 0.25)',
+            }}
+          >
+            <LocationCityIcon sx={{ fontSize: 32, color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              {mode === 'create' ? t('createTitle') : t('editTitle')}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              {mode === 'create' ? 'הוסף שכונה חדשה למערכת' : 'ערוך את פרטי השכונה'}
+            </Typography>
           </Box>
         </Box>
       </DialogTitle>
 
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <DialogContent sx={{ pt: 4, pb: 3, px: 4 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {/* Basic Information */}
-          <Box>
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: '16px',
+              backgroundColor: '#FAFBFC',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#F5F6F8',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              },
+            }}
+          >
             <Typography
-              variant="subtitle2"
+              variant="subtitle1"
               sx={{
-                fontWeight: 600,
-                color: 'text.secondary',
-                mb: 2,
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                letterSpacing: '0.5px',
+                fontWeight: 700,
+                color: 'primary.main',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
             >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 24,
+                  borderRadius: '3px',
+                  background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
+                }}
+              />
               מידע בסיסי
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -302,54 +409,139 @@ export default function NeighborhoodModal({
                 fullWidth
                 required
                 autoFocus
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LocationCityIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                  },
                 }}
               />
 
-              <FormControl fullWidth required error={!!errors.cityId}>
-                <InputLabel>{t('corporation')}</InputLabel>
+              {/* HIERARCHICAL CASCADE: Area → City */}
+              <FormControl
+                fullWidth
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                <InputLabel>{isRTL ? 'אזור' : 'Area'}</InputLabel>
                 <Select
-                  value={formData.cityId}
-                  onChange={(e) => handleChange('cityId')(e as any)}
-                  label={t('corporation')}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <BusinessIcon fontSize="small" />
-                    </InputAdornment>
-                  }
+                  value={selectedAreaId}
+                  onChange={handleAreaChange as any}
+                  label={isRTL ? 'אזור' : 'Area'}
                 >
-                  {cities.map((corp) => (
-                    <MenuItem key={corp.id} value={corp.id}>
-                      {corp.name} ({corp.code})
+                  <MenuItem value="">
+                    <em>{isRTL ? 'בחר אזור' : 'Select Area'}</em>
+                  </MenuItem>
+                  {areas.map((area) => (
+                    <MenuItem key={area.id} value={area.id}>
+                      {area.regionName}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
-              <FormControl fullWidth required error={!!errors.activistCoordinatorId}>
+              <FormControl
+                fullWidth
+                required
+                error={!!errors.cityId}
+                disabled={!selectedAreaId}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                <InputLabel>{t('city')}</InputLabel>
+                <Select
+                  value={formData.cityId}
+                  onChange={(e) => handleChange('cityId')(e as any)}
+                  label={t('city')}
+                >
+                  <MenuItem value="">
+                    <em>{isRTL ? 'בחר עיר' : 'Select City'}</em>
+                  </MenuItem>
+                  {filteredCities.map((city) => (
+                    <MenuItem key={city.id} value={city.id}>
+                      {city.name} ({city.code})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl
+                fullWidth
+                required
+                error={!!errors.activistCoordinatorId}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                  },
+                }}
+              >
                 <InputLabel>{isRTL ? 'מפקח' : 'Supervisor'}</InputLabel>
                 <Select
                   value={formData.activistCoordinatorId}
                   onChange={(e) => handleChange('activistCoordinatorId')(e as any)}
                   label={isRTL ? 'מפקח' : 'Supervisor'}
-                  disabled={supervisors.length === 0}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <SupervisorIcon fontSize="small" />
-                    </InputAdornment>
-                  }
+                  disabled={activistCoordinators.length === 0}
                 >
-                  {supervisors.length === 0 ? (
+                  {activistCoordinators.length === 0 ? (
                     <MenuItem disabled value="">
                       {isRTL ? 'אין מפקחים זמינים' : 'No supervisors available'}
                     </MenuItem>
                   ) : (
-                    supervisors.map((supervisor) => (
+                    activistCoordinators.map((supervisor) => (
                       <MenuItem key={supervisor.id} value={supervisor.id}>
                         {supervisor.fullName}
                       </MenuItem>
@@ -364,21 +556,21 @@ export default function NeighborhoodModal({
               </FormControl>
 
               {/* Quick supervisor creation when none exist */}
-              {supervisors.length === 0 && formData.cityId && (
+              {activistCoordinators.length === 0 && formData.cityId && (
                 <Box sx={{ mt: 2 }}>
                   <Alert
                     severity="info"
                     sx={{ mb: 2 }}
                     action={
                       !showCreateSupervisor && (
-                        <Button
+                        <RtlButton
                           size="small"
                           startIcon={<AddIcon />}
                           onClick={() => setShowCreateSupervisor(true)}
                           sx={{ textTransform: 'none' }}
                         >
                           {isRTL ? 'צור מפקח' : 'Create Supervisor'}
-                        </Button>
+                        </RtlButton>
                       )
                     }
                   >
@@ -519,49 +711,90 @@ export default function NeighborhoodModal({
             </Box>
           </Box>
 
-          <Divider />
-
           {/* Location Information */}
-          <Box>
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: '16px',
+              backgroundColor: '#FAFBFC',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#F5F6F8',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              },
+            }}
+          >
             <Typography
-              variant="subtitle2"
+              variant="subtitle1"
               sx={{
-                fontWeight: 600,
-                color: 'text.secondary',
-                mb: 2,
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                letterSpacing: '0.5px',
+                fontWeight: 700,
+                color: '#00C875',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
             >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 24,
+                  borderRadius: '3px',
+                  background: 'linear-gradient(135deg, #00C875 0%, #00A661 100%)',
+                }}
+              />
               מיקום
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   label={t('city')}
                   value={formData.city}
                   onChange={handleChange('city')}
-                  sx={{ flex: 1 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LocationCityIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  sx={{
+                    flex: 1,
+                    minWidth: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
                   }}
                 />
                 <TextField
                   label={t('country')}
                   value={formData.country}
                   onChange={handleChange('country')}
-                  sx={{ flex: 1 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PublicIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  sx={{
+                    flex: 1,
+                    minWidth: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
                   }}
                 />
               </Box>
@@ -573,36 +806,65 @@ export default function NeighborhoodModal({
                 fullWidth
                 multiline
                 rows={2}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
-                      <LocationIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                  },
                 }}
               />
             </Box>
           </Box>
 
-          <Divider />
-
           {/* Contact Information */}
-          <Box>
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: '16px',
+              backgroundColor: '#FAFBFC',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#F5F6F8',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              },
+            }}
+          >
             <Typography
-              variant="subtitle2"
+              variant="subtitle1"
               sx={{
-                fontWeight: 600,
-                color: 'text.secondary',
-                mb: 2,
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                letterSpacing: '0.5px',
+                fontWeight: 700,
+                color: '#FDAB3D',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
             >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 24,
+                  borderRadius: '3px',
+                  background: 'linear-gradient(135deg, #FDAB3D 0%, #E89B2A 100%)',
+                }}
+              />
               פרטי התקשרות
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   label={t('email')}
                   value={formData.email}
@@ -610,47 +872,88 @@ export default function NeighborhoodModal({
                   error={!!errors.email}
                   helperText={errors.email}
                   type="email"
-                  sx={{ flex: 1 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  sx={{
+                    flex: 1,
+                    minWidth: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(253, 171, 61, 0.1)',
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 4px 12px rgba(253, 171, 61, 0.15)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
                   }}
                 />
                 <TextField
                   label={t('phone')}
                   value={formData.phone}
                   onChange={handleChange('phone')}
-                  sx={{ flex: 1 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PhoneIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  sx={{
+                    flex: 1,
+                    minWidth: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(253, 171, 61, 0.1)',
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 4px 12px rgba(253, 171, 61, 0.15)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
                   }}
                 />
               </Box>
             </Box>
           </Box>
 
-          <Divider />
-
           {/* Additional Information */}
-          <Box>
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: '16px',
+              backgroundColor: '#FAFBFC',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#F5F6F8',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              },
+            }}
+          >
             <Typography
-              variant="subtitle2"
+              variant="subtitle1"
               sx={{
-                fontWeight: 600,
-                color: 'text.secondary',
-                mb: 2,
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                letterSpacing: '0.5px',
+                fontWeight: 700,
+                color: '#A25DDC',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
             >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 24,
+                  borderRadius: '3px',
+                  background: 'linear-gradient(135deg, #A25DDC 0%, #8B4BCF 100%)',
+                }}
+              />
               מידע נוסף
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -668,11 +971,65 @@ export default function NeighborhoodModal({
         </Box>
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} variant="outlined" disabled={loading} size="large">
+      <DialogActions
+        sx={{
+          px: 4,
+          py: 3,
+          gap: 2,
+          backgroundColor: '#FAFBFC',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          disabled={loading}
+          size="large"
+          sx={{
+            borderRadius: '12px',
+            px: 4,
+            py: 1.5,
+            fontWeight: 600,
+            borderWidth: 2,
+            borderColor: 'divider',
+            color: 'text.secondary',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              borderWidth: 2,
+              borderColor: 'primary.main',
+              backgroundColor: 'transparent',
+              color: 'primary.main',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+            },
+          }}
+        >
           {tCommon('cancel')}
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading} size="large">
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={loading}
+          size="large"
+          sx={{
+            borderRadius: '12px',
+            px: 4,
+            py: 1.5,
+            fontWeight: 600,
+            background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
+            boxShadow: '0 4px 12px rgba(97, 97, 255, 0.3)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5034FF 0%, #4028E6 100%)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 20px rgba(97, 97, 255, 0.4)',
+            },
+            '&:active': {
+              transform: 'translateY(0)',
+            },
+          }}
+        >
           {loading ? <CircularProgress size={24} /> : tCommon('save')}
         </Button>
       </DialogActions>

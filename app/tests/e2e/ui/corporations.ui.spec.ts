@@ -15,21 +15,21 @@ import {
 } from './helpers/ui-test-helpers';
 
 /**
- * Corporations Page UI Tests
- * Tests the actual UI rendering of the corporations management screen
+ * cities Page UI Tests
+ * Tests the actual UI rendering of the cities management screen
  */
 
-test.describe('Corporations UI - SuperAdmin', () => {
+test.describe('cities UI - SuperAdmin', () => {
   test.beforeEach(async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
-    // Navigate to corporations page
-    await page.click('text=תאגידים');
+    // Navigate to cities page
+    await page.click('text=ערים');
     await page.waitForURL(/.*\/cities/);
   });
 
-  test('should render corporations page with RTL and Hebrew', async ({ page }) => {
+  test('should render cities page with RTL and Hebrew', async ({ page }) => {
     await waitForDataLoad(page);
 
     // Verify RTL layout
@@ -37,12 +37,12 @@ test.describe('Corporations UI - SuperAdmin', () => {
     await verifyHebrewLocale(page);
 
     // Verify page title
-    await verifyPageTitle(page, 'תאגידים');
+    await verifyPageTitle(page, 'ערים');
 
-    console.log('✅ Corporations page renders with RTL and Hebrew');
+    console.log('✅ cities page renders with RTL and Hebrew');
   });
 
-  test('should display corporations grid with data', async ({ page }) => {
+  test('should display cities grid with data', async ({ page }) => {
     await waitForDataLoad(page);
 
     // Verify Grid/Card layout exists and has data
@@ -58,14 +58,14 @@ test.describe('Corporations UI - SuperAdmin', () => {
 
     expect(hasCorporations).toBeTruthy();
 
-    console.log('✅ Corporations grid displays data');
+    console.log('✅ cities grid displays data');
   });
 
-  test('should display "Create Corporation" button', async ({ page }) => {
+  test('should display "Create city" button', async ({ page }) => {
     await waitForDataLoad(page);
 
     // SuperAdmin should see create button
-    await verifyActionButton(page, 'תאגיד חדש');
+    await verifyActionButton(page, 'עיר חדש');
 
     console.log('✅ Create City button is visible');
   });
@@ -74,10 +74,10 @@ test.describe('Corporations UI - SuperAdmin', () => {
     await waitForDataLoad(page);
 
     // Click create button
-    await clickActionButton(page, 'תאגיד חדש');
+    await clickActionButton(page, 'עיר חדש');
 
     // Verify modal opens
-    await verifyModalOpen(page, 'תאגיד חדש');
+    await verifyModalOpen(page, 'עיר חדש');
 
     console.log('✅ Create City modal opens');
   });
@@ -85,7 +85,7 @@ test.describe('Corporations UI - SuperAdmin', () => {
   test('should display city details in cards', async ({ page }) => {
     await waitForDataLoad(page);
 
-    // Verify Grid/Card layout is visible (there are 2 grids: stats + corporations)
+    // Verify Grid/Card layout is visible (there are 2 grids: stats + cities)
     const gridContainer = page.locator('[class*="MuiGrid-container"]').first();
     await expect(gridContainer).toBeVisible();
 
@@ -103,9 +103,9 @@ test.describe('Corporations UI - SuperAdmin', () => {
 
     // Verify page still renders on mobile
     const pageContent = await page.textContent('body');
-    expect(pageContent).toContain('תאגידים');
+    expect(pageContent).toContain('ערים');
 
-    console.log('✅ Corporations page is responsive on mobile');
+    console.log('✅ cities page is responsive on mobile');
   });
 
   test('should display search/filter functionality', async ({ page }) => {
@@ -118,12 +118,12 @@ test.describe('Corporations UI - SuperAdmin', () => {
     console.log('✅ Search functionality is available');
   });
 
-  test('should display all 3 corporations from seed data', async ({ page }) => {
+  test('should display all 3 cities from seed data', async ({ page }) => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
 
-    // All 3 corporations should be visible
+    // All 3 cities should be visible
     // Corp1: טכנולוגיות אלקטרה
     // Corp2: קבוצת בינוי
     // Corp3: רשת מזון טעים
@@ -134,30 +134,30 @@ test.describe('Corporations UI - SuperAdmin', () => {
 
     expect(corp1 || corp2 || corp3).toBeTruthy();
 
-    console.log('✅ All corporations from seed data are displayed');
+    console.log('✅ All cities from seed data are displayed');
   });
 });
 
-test.describe('Corporations UI - City Coordinator (Should Not Access)', () => {
-  test('should NOT display corporations in navigation', async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+test.describe('cities UI - City Coordinator (Should Not Access)', () => {
+  test('should NOT display cities in navigation', async ({ page }) => {
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     const nav = page.locator('nav');
-    const corporationsLink = nav.locator('text=תאגידים');
+    const corporationsLink = nav.locator('text=ערים');
 
-    // City Coordinator should NOT see corporations link
+    // City Coordinator should NOT see cities link
     await expect(corporationsLink).not.toBeVisible();
 
-    console.log('✅ City Coordinator cannot see corporations in navigation');
+    console.log('✅ City Coordinator cannot see cities in navigation');
   });
 
-  test('should redirect or show 403 when accessing corporations URL directly', async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+  test('should redirect or show 403 when accessing cities URL directly', async ({ page }) => {
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
-    // Try to access corporations page directly
-    await page.goto('/he/corporations');
+    // Try to access cities page directly
+    await page.goto('/he/cities');
 
     // Should either redirect to dashboard or show 403/404
     const url = page.url();
@@ -171,57 +171,57 @@ test.describe('Corporations UI - City Coordinator (Should Not Access)', () => {
 
     expect(isBlocked).toBeTruthy();
 
-    console.log('✅ City Coordinator blocked from direct access to corporations');
+    console.log('✅ City Coordinator blocked from direct access to cities');
   });
 });
 
-test.describe('Corporations UI - Area Manager', () => {
-  test.skip('should see corporations they manage', async ({ page }) => {
-    // SKIPPED: Area City Coordinator navigation to corporations may not be implemented yet
+test.describe('cities UI - Area Manager', () => {
+  test.skip('should see cities they manage', async ({ page }) => {
+    // SKIPPED: Area City Coordinator navigation to cities may not be implemented yet
     // See analysis: docs/mdFiles/ui-tests-analysis.md - Category 4
     await loginAs(page, testUsers.areaManager);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
-    // Area City Coordinator should see corporations in navigation
+    // Area City Coordinator should see cities in navigation
     const nav = page.locator('nav');
-    const corporationsLink = nav.locator('text=תאגידים');
+    const corporationsLink = nav.locator('text=ערים');
 
     await expect(corporationsLink).toBeVisible();
 
-    // Navigate to corporations
+    // Navigate to cities
     await corporationsLink.click();
     await page.waitForURL(/.*\/cities/);
     await waitForDataLoad(page);
 
-    // Should see corporations they manage
+    // Should see cities they manage
     await verifyDataDisplayed(page, 1);
 
-    console.log('✅ Area City Coordinator sees corporations they manage');
+    console.log('✅ Area City Coordinator sees cities they manage');
   });
 
-  test.skip('should NOT see "Create Corporation" button', async ({ page }) => {
-    // SKIPPED: Area City Coordinator navigation to corporations may not be implemented yet
+  test.skip('should NOT see "Create city" button', async ({ page }) => {
+    // SKIPPED: Area City Coordinator navigation to cities may not be implemented yet
     // See analysis: docs/mdFiles/ui-tests-analysis.md - Category 4
     await loginAs(page, testUsers.areaManager);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
-    await page.click('text=תאגידים');
+    await page.click('text=ערים');
     await page.waitForURL(/.*\/cities/);
     await waitForDataLoad(page);
 
     // Area City Coordinator should NOT see create button (SuperAdmin only)
-    const createButton = page.locator('button:has-text("תאגיד חדש")');
+    const createButton = page.locator('button:has-text("עיר חדש")');
     await expect(createButton).not.toBeVisible();
 
-    console.log('✅ Area City Coordinator cannot create corporations');
+    console.log('✅ Area City Coordinator cannot create cities');
   });
 });
 
-test.describe('Corporations UI - Card Interactions', () => {
+test.describe('cities UI - Card Interactions', () => {
   test.beforeEach(async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=תאגידים');
+    await page.click('text=ערים');
     await page.waitForURL(/.*\/cities/);
     await waitForDataLoad(page);
   });
@@ -236,7 +236,7 @@ test.describe('Corporations UI - Card Interactions', () => {
     console.log('✅ Action buttons displayed in cards');
   });
 
-  test('should display data with seed corporations', async ({ page }) => {
+  test('should display data with seed cities', async ({ page }) => {
     // Verify that with seed data, cards are displayed (not empty state)
     const cards = await page.locator('[class*="MuiGrid-item"]:has([class*="MuiAvatar"])').count();
     expect(cards).toBeGreaterThan(0);
@@ -245,11 +245,11 @@ test.describe('Corporations UI - Card Interactions', () => {
   });
 });
 
-test.describe('Corporations UI - Loading States', () => {
+test.describe('cities UI - Loading States', () => {
   test('should show loading state initially', async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=תאגידים');
+    await page.click('text=ערים');
     await page.waitForURL(/.*\/cities/);
 
     // Check for loading indicators (skeletons or spinners)
@@ -257,7 +257,7 @@ test.describe('Corporations UI - Loading States', () => {
 
     // After loading, page should have content
     const pageContent = await page.textContent('body');
-    expect(pageContent).toContain('תאגידים');
+    expect(pageContent).toContain('ערים');
 
     console.log('✅ Loading states work correctly');
   });

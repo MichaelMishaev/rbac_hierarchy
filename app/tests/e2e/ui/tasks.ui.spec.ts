@@ -67,19 +67,19 @@ test.describe('Tasks Inbox UI - SuperAdmin', () => {
 
 test.describe('Tasks Inbox UI - Manager', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=משימות');
     await page.waitForURL(/.*\/tasks/);
   });
 
-  test('should see tasks relevant to their corporation', async ({ page }) => {
+  test('should see tasks relevant to their city', async ({ page }) => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ City Coordinator sees corporation-scoped tasks');
+    console.log('✅ City Coordinator sees city-scoped tasks');
   });
 
   test('should display "Create Task" button', async ({ page }) => {
@@ -92,9 +92,9 @@ test.describe('Tasks Inbox UI - Manager', () => {
   });
 });
 
-test.describe('Tasks Inbox UI - Supervisor', () => {
+test.describe('Tasks Inbox UI - activist coordinator', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.supervisor);
+    await loginAs(page, testUsers.activistCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=משימות');
     await page.waitForURL(/.*\/tasks/);
@@ -208,7 +208,7 @@ test.describe('Create Task UI - Form Rendering', () => {
 
 test.describe('Create Task UI - Form Validation', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.goto('/he/tasks/new');
     await page.waitForURL(/.*\/tasks\/new/);
@@ -286,7 +286,7 @@ test.describe('Create Task UI - Form Validation', () => {
 
 test.describe('Create Task UI - Selected Recipients', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.goto('/he/tasks/new');
     await page.waitForURL(/.*\/tasks\/new/);

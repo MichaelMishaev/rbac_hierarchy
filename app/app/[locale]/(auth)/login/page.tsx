@@ -255,9 +255,9 @@ export default function LoginPage() {
 
         {/* Demo Account Pills - Monday style */}
         <Stack spacing={2}>
-          {/* SuperAdmin */}
+          {/* SuperAdmin - Platform Administrator */}
           <Box
-            onClick={() => quickLogin('admin@rbac.shop', 'admin123', 'מנהל מערכת')}
+            onClick={() => quickLogin('admin@election.test', 'admin123', 'מנהל מערכת')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -288,15 +288,15 @@ export default function LoginPage() {
                   מנהל מערכת ראשי
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
-                  admin@rbac.shop
+                  admin@election.test
                 </Typography>
               </Box>
             </Stack>
           </Box>
 
-          {/* Area Manager */}
+          {/* Area Manager - Regional Campaign Director */}
           <Box
-            onClick={() => quickLogin('regional@rbac.shop', 'area123', 'מנהל אזורי')}
+            onClick={() => quickLogin('sarah.cohen@telaviv-district.test', 'area123', 'מנהלת אזור')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -324,18 +324,18 @@ export default function LoginPage() {
               </Avatar>
               <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                  מנהל אזורי - יוסי כהן
+                  מנהלת אזור - שרה כהן
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
-                  regional@rbac.shop
+                  sarah.cohen@telaviv-district.test
                 </Typography>
               </Box>
             </Stack>
           </Box>
 
-          {/* Manager - Electra Tech */}
+          {/* City Coordinator - City Campaign Manager */}
           <Box
-            onClick={() => quickLogin('david.cohen@electra-tech.co.il', 'manager123', 'מנהל')}
+            onClick={() => quickLogin('david.levi@telaviv.test', 'manager123', 'רכז עיר')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -359,23 +359,23 @@ export default function LoginPage() {
                   fontWeight: 700,
                 }}
               >
-                M
+                CC
               </Avatar>
               <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                  מנהל - טכנולוגיות אלקטרה
+                  רכז עיר - דוד לוי (תל אביב)
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
-                  david.cohen@electra-tech.co.il
+                  david.levi@telaviv.test
                 </Typography>
               </Box>
             </Stack>
           </Box>
 
-          {/* Supervisor */}
+          {/* Activist Coordinator - Neighborhood Organizer */}
           <Box
             onClick={() =>
-              quickLogin('moshe.israeli@electra-tech.co.il', 'supervisor123', 'מפקח')
+              quickLogin('rachel.bendavid@telaviv.test', 'supervisor123', 'רכזת פעילים')
             }
             sx={{
               p: 2,
@@ -400,14 +400,14 @@ export default function LoginPage() {
                   fontWeight: 700,
                 }}
               >
-                S
+                AC
               </Avatar>
               <Box sx={{ flex: 1, direction: 'rtl', textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[800] }}>
-                  מפקח - משה ישראלי
+                  רכזת פעילים - רחל בן-דוד
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ direction: 'ltr' }}>
-                  moshe.israeli@electra-tech.co.il
+                  rachel.bendavid@telaviv.test
                 </Typography>
               </Box>
             </Stack>

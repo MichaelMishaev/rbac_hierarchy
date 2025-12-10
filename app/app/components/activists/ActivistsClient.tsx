@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Button,
   Grid,
   IconButton,
   Menu,
@@ -42,12 +41,17 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableRowsIcon from '@mui/icons-material/TableRows';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ActivistModal, { WorkerFormData } from '@/app/components/modals/ActivistModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
+import ActivistCardSwipeable from './ActivistCardSwipeable';
+import SmartAssignmentDialog from '@/app/components/tasks/SmartAssignmentDialog';
+import RtlButton from '@/app/components/ui/RtlButton';
+import toast from 'react-hot-toast';
 import {
-  createActivist,
-  updateActivist,
-  deleteActivist,
+  createWorker,
+  updateWorker,
+  deleteWorker,
 } from '@/app/actions/activists';
 
 type Site = {
@@ -85,20 +89,37 @@ type Worker = {
   supervisor?: Supervisor | null;
 };
 
+type Area = {
+  id: string;
+  regionName: string;
+  regionCode: string;
+};
+
+type City = {
+  id: string;
+  name: string;
+  code: string;
+  areaManagerId: string;
+};
+
 type ActivistsClientProps = {
   activists: Worker[];
   neighborhoods: Site[];
   activistCoordinators: Supervisor[];
+  areas: Area[];
+  cities: City[];
   currentUserId: string;
-  defaultSupervisorId?: string;
+  defaultActivistCoordinatorId?: string;
 };
 
 export default function ActivistsClient({
   activists: initialWorkers,
-  sites,
-  supervisors,
+  neighborhoods: sites,
+  activistCoordinators: supervisors,
+  areas,
+  cities,
   currentUserId,
-  defaultSupervisorId,
+  defaultActivistCoordinatorId: defaultSupervisorId,
 }: ActivistsClientProps) {
   const t = useTranslations('workers');
   const tCommon = useTranslations('common');
@@ -118,9 +139,13 @@ export default function ActivistsClient({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [smartAssignmentOpen, setSmartAssignmentOpen] = useState(false);
 
   // Transform supervisors to match ActivistModal expected format
   const transformedSupervisors = useMemo(() => {
+    if (!supervisors || supervisors.length === 0) {
+      return [];
+    }
     return supervisors.map(supervisor => ({
       id: supervisor.id,
       name: supervisor.user.fullName,
@@ -168,7 +193,7 @@ export default function ActivistsClient({
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, activist: Worker) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
-    setSelectedWorker(worker);
+    setSelectedWorker(activist);
   };
 
   const handleMenuClose = () => {
@@ -176,15 +201,15 @@ export default function ActivistsClient({
   };
 
   const handleCreateWorker = async (data: WorkerFormData): Promise<{ success: boolean; error?: string }> => {
-    const result = await createActivist({
+    const result = await createWorker({
       fullName: data.name,
       phone: data.phone || undefined,
       email: data.email || undefined,
       position: data.position || undefined,
       notes: data.notes || undefined,
       tags: data.tags,
-      neighborhoodId: data.neighborhoodId,
-      activistCoordinatorId: data.activistCoordinatorId,
+      neighborhoodId: data.siteId,
+      activistCoordinatorId: data.supervisorId,
       isActive: data.isActive,
       startDate: data.startDate ? new Date(data.startDate) : undefined,
     });
@@ -210,18 +235,39 @@ export default function ActivistsClient({
     handleMenuClose();
   };
 
+  const handleQuickCheckIn = async (activistId: string) => {
+    try {
+      // TODO: Implement check-in functionality
+      // This would call an API endpoint to create an attendance record
+      console.log('Quick check-in for activist:', activistId);
+      // For now, just show a toast
+      // toast.success(isRTL ? 'נוכחות נרשמה בהצלחה' : 'Attendance recorded successfully');
+    } catch (error) {
+      console.error('Failed to check in:', error);
+      // toast.error(isRTL ? 'שגיאה בעדכון נוכחות' : 'Failed to record attendance');
+    }
+  };
+
+  const handleQuickEdit = (activistId: string) => {
+    const activist = workers.find(w => w.id === activistId);
+    if (activist) {
+      setSelectedWorker(activist);
+      setEditModalOpen(true);
+    }
+  };
+
   const handleEditWorker = async (data: WorkerFormData): Promise<{ success: boolean; error?: string }> => {
     if (!selectedWorker) return { success: false, error: 'No worker selected' };
 
-    const result = await updateActivist(selectedWorker.id, {
+    const result = await updateWorker(selectedWorker.id, {
       fullName: data.name,
       phone: data.phone || undefined,
       email: data.email || undefined,
       position: data.position || undefined,
       notes: data.notes || undefined,
       tags: data.tags,
-      neighborhoodId: data.neighborhoodId,
-      activistCoordinatorId: data.activistCoordinatorId,
+      neighborhoodId: data.siteId,
+      activistCoordinatorId: data.supervisorId,
       isActive: data.isActive,
     });
     if (result.success && result.activist) {
@@ -252,7 +298,7 @@ export default function ActivistsClient({
   const handleDeleteWorker = async () => {
     if (!selectedWorker) return;
 
-    const result = await deleteActivist(selectedWorker.id);
+    const result = await deleteWorker(selectedWorker.id);
     if (result.success) {
       setWorkers((prev) => prev.filter((worker) => worker.id !== selectedWorker.id));
       setDeleteModalOpen(false);
@@ -515,7 +561,65 @@ export default function ActivistsClient({
             </IconButton>
           </Box>
 
-          <Button
+          {/* Smart Assignment Button (Phase 3 UI/UX Update) */}
+          <Tooltip
+            title={t('smartAssignmentTooltip')}
+            arrow
+            placement={isRTL ? 'bottom-end' : 'bottom-start'}
+            sx={{
+              '& .MuiTooltip-tooltip': {
+                backgroundColor: colors.neutral[800],
+                color: colors.neutral[0],
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                padding: '12px 16px',
+                borderRadius: borderRadius.lg,
+                boxShadow: shadows.large,
+                maxWidth: 300,
+              },
+              '& .MuiTooltip-arrow': {
+                color: colors.neutral[800],
+              },
+            }}
+          >
+            <span>
+              <RtlButton
+                variant="outlined"
+                startIcon={<TrendingUpIcon />}
+                onClick={() => setSmartAssignmentOpen(true)}
+                disabled={sites.length === 0}
+                sx={{
+                  borderColor: colors.status.orange,
+                  color: colors.status.orange,
+                  px: 2.5,
+                  py: 1.75,
+                  fontSize: '16px',
+                  borderRadius: borderRadius['2xl'],
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderWidth: 2,
+                  transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    borderColor: colors.status.orange,
+                    backgroundColor: `${colors.status.orange}15`,
+                    borderWidth: 2,
+                    transform: 'translateY(-2px)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0)',
+                  },
+                  '&.Mui-disabled': {
+                    borderColor: colors.neutral[300],
+                    color: colors.neutral[400],
+                  },
+                }}
+              >
+                {isRTL ? 'שיבוץ חכם' : 'Smart Assignment'}
+              </RtlButton>
+            </span>
+          </Tooltip>
+
+          <RtlButton
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateModalOpen(true)}
@@ -541,7 +645,7 @@ export default function ActivistsClient({
             }}
           >
             {t('newWorker')}
-          </Button>
+          </RtlButton>
         </Box>
       </Box>
 
@@ -602,7 +706,7 @@ export default function ActivistsClient({
                 : 'Add your first worker to get started'}
           </Typography>
           {!searchQuery && filterSite === 'all' && filterStatus === 'all' && (
-            <Button
+            <RtlButton
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setCreateModalOpen(true)}
@@ -616,219 +720,29 @@ export default function ActivistsClient({
               }}
             >
               {t('newWorker')}
-            </Button>
+            </RtlButton>
           )}
         </Box>
       ) : viewMode === 'grid' ? (
         <Grid container spacing={3}>
           {filteredWorkers.map((worker) => {
-            const avatarColor = getAvatarColor(worker.fullName);
+            // Transform worker data for swipeable card component
+            const activistData = {
+              id: worker.id,
+              fullName: worker.fullName,
+              phone: worker.phone,
+              neighborhood: worker.site ? { name: worker.site.name } : undefined,
+              position: worker.position,
+              tags: worker.tags,
+            };
+
             return (
-              <Grid item xs={12} sm={6} lg={4} xl={3} key={worker.id}>
-                <Box
-                  sx={{
-                    p: 0,
-                    background: colors.neutral[0],
-                    borderRadius: borderRadius['2xl'], // 20px - style guide standard
-                    boxShadow: shadows.neomorph, // Neo-morphic shadow
-                    border: `1px solid ${colors.neutral[200]}`,
-                    overflow: 'hidden',
-                    transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      transform: 'translateY(-2px)', // -2px per style guide
-                      boxShadow: shadows.glowBlue, // Colored glow on hover
-                      borderColor: colors.primary.main,
-                    },
-                  }}
-                >
-                  {/* Card Header with gradient */}
-                  <Box
-                    sx={{
-                      p: 3,
-                      pb: 4,
-                      background: `linear-gradient(135deg, ${avatarColor.bg} 0%, ${colors.neutral[50]} 100%)`,
-                      position: 'relative',
-                    }}
-                  >
-                    {/* Menu Button */}
-                    <IconButton
-                      onClick={(e) => handleMenuOpen(e, worker)}
-                      sx={{
-                        position: 'absolute',
-                        top: 12,
-                        [isRTL ? 'left' : 'right']: 12,
-                        backgroundColor: colors.neutral[0],
-                        boxShadow: shadows.soft,
-                        '&:hover': {
-                          backgroundColor: colors.neutral[100],
-                        },
-                      }}
-                      size="small"
-                    >
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
-
-                    {/* Avatar and Name */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar
-                        src={worker.avatarUrl || undefined}
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          backgroundColor: avatarColor.bg,
-                          color: avatarColor.text,
-                          fontWeight: 700,
-                          fontSize: '1.25rem',
-                          border: `3px solid ${colors.neutral[0]}`,
-                          boxShadow: shadows.medium,
-                        }}
-                      >
-                        {!worker.avatarUrl && getInitials(worker.fullName)}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0, pr: isRTL ? 0 : 5, pl: isRTL ? 5 : 0 }}>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 700,
-                            color: colors.neutral[800],
-                            mb: 0.5,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {worker.fullName}
-                        </Typography>
-                        {worker.position && (
-                          <Chip
-                            icon={<WorkIcon sx={{ fontSize: 14 }} />}
-                            label={worker.position}
-                            size="small"
-                            sx={{
-                              backgroundColor: colors.neutral[0],
-                              color: colors.neutral[600],
-                              fontWeight: 500,
-                              fontSize: '0.75rem',
-                              height: 24,
-                              '& .MuiChip-icon': {
-                                color: colors.neutral[500],
-                              },
-                            }}
-                          />
-                        )}
-                      </Box>
-                    </Box>
-                  </Box>
-
-                  {/* Card Body */}
-                  <Box sx={{ p: 3, pt: 2 }}>
-                    {/* Contact Info */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
-                      {worker.site && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <LocationOnIcon sx={{ fontSize: 18, color: colors.neutral[400] }} />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.neutral[600],
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {worker.site.name}
-                          </Typography>
-                        </Box>
-                      )}
-                      {worker.phone && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <PhoneIcon sx={{ fontSize: 18, color: colors.neutral[400] }} />
-                          <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
-                            {worker.phone}
-                          </Typography>
-                        </Box>
-                      )}
-                      {worker.email && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <EmailIcon sx={{ fontSize: 18, color: colors.neutral[400] }} />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.neutral[600],
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {worker.email}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-
-                    {/* Tags */}
-                    {worker.tags && worker.tags.length > 0 && (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-                        {worker.tags.slice(0, 3).map((tag, index) => (
-                          <Chip
-                            key={index}
-                            label={tag}
-                            size="small"
-                            sx={{
-                              backgroundColor: colors.pastel.purpleLight,
-                              color: colors.pastel.purple,
-                              fontWeight: 500,
-                              fontSize: '0.7rem',
-                              height: 22,
-                            }}
-                          />
-                        ))}
-                        {worker.tags.length > 3 && (
-                          <Chip
-                            label={`+${worker.tags.length - 3}`}
-                            size="small"
-                            sx={{
-                              backgroundColor: colors.neutral[100],
-                              color: colors.neutral[600],
-                              fontWeight: 500,
-                              fontSize: '0.7rem',
-                              height: 22,
-                            }}
-                          />
-                        )}
-                      </Box>
-                    )}
-                  </Box>
-
-                  {/* Card Footer - Status */}
-                  <Box
-                    sx={{
-                      px: 3,
-                      py: 2,
-                      backgroundColor: worker.isActive ? colors.pastel.greenLight : colors.pastel.redLight,
-                      borderTop: `1px solid ${worker.isActive ? colors.pastel.green : colors.pastel.red}30`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    {worker.isActive ? (
-                      <CheckCircleIcon sx={{ fontSize: 18, color: colors.pastel.green }} />
-                    ) : (
-                      <CancelIcon sx={{ fontSize: 18, color: colors.pastel.red }} />
-                    )}
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 600,
-                        color: worker.isActive ? colors.pastel.green : colors.pastel.red,
-                      }}
-                    >
-                      {worker.isActive ? tCommon('active') : tCommon('inactive')}
-                    </Typography>
-                  </Box>
-                </Box>
+              <Grid item xs={12} sm={6} lg={4} key={worker.id}>
+                <ActivistCardSwipeable
+                  activist={activistData}
+                  onCheckIn={handleQuickCheckIn}
+                  onEdit={handleQuickEdit}
+                />
               </Grid>
             );
           })}
@@ -1017,8 +931,10 @@ export default function ActivistsClient({
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateWorker}
         mode="create"
-        sites={sites}
-        supervisors={transformedSupervisors}
+        areas={areas}
+        cities={cities}
+        neighborhoods={sites}
+        activistCoordinators={transformedSupervisors}
         defaultSupervisorId={defaultSupervisorId}
       />
 
@@ -1038,16 +954,18 @@ export default function ActivistsClient({
             position: selectedWorker.position || '',
             notes: selectedWorker.notes || '',
             tags: selectedWorker.tags || [],
-            neighborhoodId: selectedWorker.neighborhoodId,
-            activistCoordinatorId: selectedWorker.activistCoordinatorId || undefined,
+            siteId: selectedWorker.neighborhoodId,
+            supervisorId: selectedWorker.activistCoordinatorId || '',
             isActive: selectedWorker.isActive,
             startDate: selectedWorker.startDate
               ? new Date(selectedWorker.startDate).toISOString().split('T')[0]
               : undefined,
           }}
           mode="edit"
-          sites={sites}
-          supervisors={transformedSupervisors}
+          areas={areas}
+          cities={cities}
+          neighborhoods={sites}
+          activistCoordinators={transformedSupervisors}
         />
       )}
 
@@ -1065,6 +983,33 @@ export default function ActivistsClient({
             ? 'האם אתה בטוח שברצונך למחוק את העובד הזה?'
             : 'Are you sure you want to delete this worker?'}
           itemName={selectedWorker.fullName}
+        />
+      )}
+
+      {/* Smart Assignment Dialog (Phase 3 UI/UX Update) */}
+      {sites.length > 0 && (
+        <SmartAssignmentDialog
+          open={smartAssignmentOpen}
+          onClose={() => setSmartAssignmentOpen(false)}
+          onSelect={(activistId: string) => {
+            // Find the selected activist
+            const activist = workers.find(w => w.id === activistId);
+            toast.success(
+              isRTL
+                ? `נבחר: ${activist?.fullName || 'פעיל'} - התכונה המלאה תושק בקרוב!`
+                : `Selected: ${activist?.fullName || 'Activist'} - Full feature coming soon!`,
+              {
+                duration: 4000,
+                icon: '🎯',
+              }
+            );
+          }}
+          location={{
+            lat: 32.0853, // Tel Aviv center (mock location)
+            lng: 34.7818,
+          }}
+          neighborhoodId={sites[0]?.id || ''}
+          isRTL={isRTL}
         />
       )}
     </Box>

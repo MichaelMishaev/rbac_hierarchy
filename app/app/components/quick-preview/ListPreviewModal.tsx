@@ -52,7 +52,7 @@ type ListPreviewModalProps = {
   onClose: () => void;
   title: string;
   items: ListItem[];
-  type: 'sites' | 'workers' | 'managers' | 'supervisors';
+  type: 'neighborhoods' | 'activists' | 'managers' | 'activistCoordinators';
   onItemClick?: (id: string) => void;
 };
 
@@ -69,13 +69,13 @@ export default function ListPreviewModal({
 
   const getIconForType = (type: string) => {
     switch (type) {
-      case 'sites':
+      case 'neighborhoods':
         return <LocationOnIcon sx={{ color: colors.pastel.green }} />;
-      case 'workers':
+      case 'activists':
         return <GroupIcon sx={{ color: colors.pastel.orange }} />;
       case 'managers':
         return <PeopleIcon sx={{ color: colors.pastel.purple }} />;
-      case 'supervisors':
+      case 'activistCoordinators':
         return <SupervisorAccountIcon sx={{ color: colors.pastel.blue }} />;
       default:
         return <GroupIcon />;
@@ -84,13 +84,13 @@ export default function ListPreviewModal({
 
   const getColorForType = (type: string) => {
     switch (type) {
-      case 'sites':
+      case 'neighborhoods':
         return colors.pastel.green;
-      case 'workers':
+      case 'activists':
         return colors.pastel.orange;
       case 'managers':
         return colors.pastel.purple;
-      case 'supervisors':
+      case 'activistCoordinators':
         return colors.pastel.blue;
       default:
         return colors.neutral[500];

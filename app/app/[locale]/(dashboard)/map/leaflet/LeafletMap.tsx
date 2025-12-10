@@ -14,7 +14,6 @@ interface Site {
   id: string;
   name: string;
   address: string | null;
-  city: string | null;
   latitude: number;
   longitude: number;
   city: {
@@ -40,7 +39,7 @@ interface LeafletMapProps {
   selectedSiteId?: string | null;
 }
 
-export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: LeafletMapProps) {
+export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId }: LeafletMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markersLayer = useRef<L.MarkerClusterGroup | null>(null);
@@ -95,7 +94,7 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
   useEffect(() => {
     if (!map.current || !selectedSiteId) return;
 
-    const site = sites.find((s) => s.id === selectedSiteId);
+    const site = neighborhoods.find((s) => s.id === selectedSiteId);
     if (!site || !site.latitude || !site.longitude) return;
 
     // Focus on the site
@@ -112,7 +111,7 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
     if (marker) {
       marker.openPopup();
     }
-  }, [selectedSiteId, sites]);
+  }, [selectedSiteId, neighborhoods]);
 
   // State to track hover tooltip
   const [hoveredSite, setHoveredSite] = useState<Site | null>(null);
@@ -136,17 +135,17 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
       colors.pastel.blue,
     ];
 
-    sites.forEach((site) => {
+    neighborhoods.forEach((site) => {
       if (!site.latitude || !site.longitude) return;
 
-      // Assign color to corporation
-      if (!corpColors[site.corporation.id]) {
+      // Assign color to city
+      if (!corpColors[site.city.id]) {
         const colorIndex = Object.keys(corpColors).length % colorPalette.length;
-        corpColors[site.corporation.id] = colorPalette[colorIndex];
+        corpColors[site.city.id] = colorPalette[colorIndex];
       }
 
       // Create custom icon
-      const markerColor = corpColors[site.corporation.id];
+      const markerColor = corpColors[site.city.id];
       const customIcon = L.divIcon({
         className: 'custom-leaflet-marker',
         html: `
@@ -203,13 +202,13 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
             font-size: 12px;
             display: inline-block;
           ">
-            ${site.corporation.name}
+            ${site.city.name}
           </p>
           <p style="margin: 4px 0; font-size: 13px; color: #555;">
-            📍 ${site.address || 'אין כתובת'}${site.city ? `, ${site.city}` : ''}
+            📍 ${site.address || 'אין כתובת'}
           </p>
           <p style="margin: 4px 0; font-size: 13px; color: #555;">
-            👥 ${site.workers.active} עובדים פעילים
+            👥 ${site.activists.active} פעילים פעילים
           </p>
         </div>
       `;
@@ -251,17 +250,17 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
       markersLayer.current?.addLayer(marker);
     });
 
-    // Store corporation colors for legend
+    // Store city colors for legend
     (window as any).__corpColors = corpColors;
 
     // Fit bounds to show all markers
-    if (sites.length > 0 && markersLayer.current.getBounds().isValid()) {
+    if (neighborhoods.length > 0 && markersLayer.current.getBounds().isValid()) {
       map.current.fitBounds(markersLayer.current.getBounds(), {
         padding: [50, 50],
         maxZoom: 12,
       });
     }
-  }, [sites]);
+  }, [neighborhoods]);
 
   // Get unique corporations with their colors for legend
   const corporationsWithColors = React.useMemo(() => {
@@ -275,19 +274,19 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
       colors.pastel.blue,
     ];
 
-    sites.forEach((site) => {
-      if (!corpMap.has(site.corporation.id)) {
+    neighborhoods.forEach((site) => {
+      if (!corpMap.has(site.city.id)) {
         const colorIndex = corpMap.size % colorPalette.length;
-        corpMap.set(site.corporation.id, {
-          id: site.corporation.id,
-          name: site.corporation.name,
+        corpMap.set(site.city.id, {
+          id: site.city.id,
+          name: site.city.name,
           color: colorPalette[colorIndex],
         });
       }
     });
 
     return Array.from(corpMap.values());
-  }, [sites]);
+  }, [neighborhoods]);
 
   return (
     <Box sx={{ width: '100%', height: '100%', position: 'relative', margin: 0, padding: 0 }}>
@@ -320,7 +319,7 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
                 {selectedSite.name}
               </Typography>
               <Chip
-                label={selectedSite.corporation.name}
+                label={selectedSite.city.name}
                 size="small"
                 sx={{ 
                   background: colors.pastel.blue, 
@@ -340,7 +339,6 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
             <LocationOn sx={{ color: colors.neutral[600], fontSize: 20 }} />
             <Typography variant="body2" color={colors.neutral[700]}>
               {selectedSite.address || 'אין כתובת'}
-              {selectedSite.city && `, ${selectedSite.city}`}
             </Typography>
           </Box>
 
@@ -356,29 +354,29 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
             <Box display="flex" alignItems="center" gap={1} mb={1}>
               <Person sx={{ color: colors.neutral[700] }} />
               <Typography variant="subtitle2" fontWeight={600}>
-                עובדים באתר
+                פעילים באתר
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight={700}>
-              {selectedSite.workers.active}
+              {selectedSite.activists.active}
             </Typography>
             <Typography variant="caption" color={colors.neutral[600]}>
-              {selectedSite.workers.total} סה&quot;כ ({selectedSite.workers.inactive} לא פעילים)
+              {selectedSite.activists.total} סה&quot;כ ({selectedSite.activists.inactive} לא פעילים)
             </Typography>
           </Box>
 
           {/* Supervisors */}
-          {selectedSite.supervisors.length > 0 && (
+          {selectedSite.activistCoordinators.length > 0 && (
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <SupervisorAccount sx={{ color: colors.neutral[700] }} />
                 <Typography variant="subtitle2" fontWeight={600}>
-                  מפקחים
+                  רכזי פעילים
                 </Typography>
               </Box>
-              {selectedSite.supervisors.map((supervisor) => (
+              {selectedSite.activistCoordinators.map((activistCoordinator) => (
                 <Box
-                  key={supervisor.id}
+                  key={activistCoordinator.id}
                   sx={{
                     p: 1.5,
                     background: colors.neutral[50],
@@ -387,10 +385,10 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
                   }}
                 >
                   <Typography variant="body2" fontWeight={600}>
-                    {supervisor.name}
+                    {activistCoordinator.name}
                   </Typography>
                   <Typography variant="caption" color={colors.neutral[600]}>
-                    {supervisor.email}
+                    {activistCoordinator.email}
                   </Typography>
                 </Box>
               ))}
@@ -429,7 +427,7 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
             {hoveredSite.name}
           </Typography>
           <Chip
-            label={hoveredSite.corporation.name}
+            label={hoveredSite.city.name}
             size="small"
             sx={{
               background: colors.pastel.blue,
@@ -443,14 +441,13 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
           <Box display="flex" flexDirection="column" gap={0.5}>
             <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
               📍 {hoveredSite.address || 'אין כתובת'}
-              {hoveredSite.city && `, ${hoveredSite.city}`}
             </Typography>
             <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
-              👥 {hoveredSite.workers.active} עובדים פעילים
+              👥 {hoveredSite.activists.active} פעילים פעילים
             </Typography>
-            {hoveredSite.supervisors.length > 0 && (
+            {hoveredSite.activistCoordinators.length > 0 && (
               <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
-                👨‍💼 {hoveredSite.supervisors.length} מפקחים
+                👨‍💼 {hoveredSite.activistCoordinators.length} רכזי פעילים
               </Typography>
             )}
           </Box>
@@ -528,12 +525,12 @@ export default function LeafletMap({ sites, onSiteSelect, selectedSiteId }: Leaf
               mb: 1,
             }}
           >
-            תאגידים ({corporationsWithColors.length})
+            ערים ({corporationsWithColors.length})
           </Typography>
           {corporationsWithColors.map((corp) => (
             <Tooltip
               key={corp.id}
-              title={`${sites.filter((s) => s.corporation.id === corp.id).length} אתרים`}
+              title={`${neighborhoods.filter((s) => s.city.id === corp.id).length} שכונות`}
               placement="left"
               arrow
             >

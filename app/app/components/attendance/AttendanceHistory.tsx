@@ -13,7 +13,6 @@ import {
   TableRow,
   TablePagination,
   TextField,
-  Button,
   Grid,
   MenuItem,
   Select,
@@ -28,8 +27,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Button,
 } from '@mui/material';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
+import RtlButton from '@/app/components/ui/RtlButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -65,8 +66,8 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
   // Filters
   const [startDate, setStartDate] = useState<Date | null>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date | null>(new Date());
-  const [selectedSite, setSelectedSite] = useState<string>('all');
-  const [selectedWorker, setSelectedWorker] = useState<string>('all');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
+  const [selectedActivist, setSelectedActivist] = useState<string>('all');
 
   // Quick filters
   const [quickFilter, setQuickFilter] = useState<string>('thisMonth');
@@ -86,8 +87,8 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
       const result = await getAttendanceHistory({
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
-        neighborhoodId: selectedSite === 'all' ? undefined : selectedSite,
-        activistId: selectedWorker === 'all' ? undefined : selectedWorker,
+        neighborhoodId: selectedNeighborhood === 'all' ? undefined : selectedNeighborhood,
+        activistId: selectedActivist === 'all' ? undefined : selectedActivist,
         page: 0, // Always fetch from page 0, we'll handle pagination client-side
         limit: 1000, // Fetch large batch for client-side pagination
       });
@@ -104,7 +105,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
   // Initial fetch
   useEffect(() => {
     fetchHistory();
-  }, [startDate, endDate, selectedSite, selectedWorker]);
+  }, [startDate, endDate, selectedNeighborhood, selectedActivist]);
 
   // Quick filter presets
   const handleQuickFilter = (filter: string) => {
@@ -134,25 +135,25 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
     }
   };
 
-  // Get unique sites and workers for filters
-  const { sites, workers } = useMemo(() => {
+  // Get unique neighborhoods and activists for filters
+  const { neighborhoods, activists } = useMemo(() => {
     if (!data?.records) return { neighborhoods: [], activists: [] };
 
-    const siteMap = new Map();
-    const workerMap = new Map();
+    const neighborhoodMap = new Map();
+    const activistMap = new Map();
 
     data.records.forEach((record: any) => {
-      if (record.site && !siteMap.has(record.site.id)) {
-        siteMap.set(record.site.id, record.site);
+      if (record.neighborhood && !neighborhoodMap.has(record.neighborhood.id)) {
+        neighborhoodMap.set(record.neighborhood.id, record.neighborhood);
       }
-      if (record.worker && !workerMap.has(record.worker.id)) {
-        workerMap.set(record.worker.id, record.worker);
+      if (record.activist && !activistMap.has(record.activist.id)) {
+        activistMap.set(record.activist.id, record.activist);
       }
     });
 
     return {
-      neighborhoods: Array.from(siteMap.values()),
-      activists: Array.from(workerMap.values()),
+      neighborhoods: Array.from(neighborhoodMap.values()),
+      activists: Array.from(activistMap.values()),
     };
   }, [data]);
 
@@ -176,10 +177,10 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
     // Prepare data for Excel
     const exportData = data.records.map((record: any) => ({
       תאריך: format(new Date(record.date), 'dd/MM/yyyy'),
-      עובד: record.worker?.fullName || '',
-      טלפון: record.worker?.phone || '',
-      תפקיד: record.worker?.position || '',
-      אתר: record.site?.name || '',
+      פעיל: record.activist?.fullName || '',
+      טלפון: record.activist?.phone || '',
+      תפקיד: record.activist?.position || '',
+      שכונה: record.neighborhood?.name || '',
       סטטוס: record.status === 'PRESENT' ? 'נוכח' : 'לא נוכח',
       'שעת נוכחות': record.checkedInAt
         ? format(new Date(record.checkedInAt), 'HH:mm')
@@ -194,10 +195,10 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
     // Set column widths
     ws['!cols'] = [
       { wch: 12 }, // תאריך
-      { wch: 20 }, // עובד
+      { wch: 20 }, // פעיל
       { wch: 15 }, // טלפון
       { wch: 15 }, // תפקיד
-      { wch: 20 }, // אתר
+      { wch: 20 }, // שכונה
       { wch: 10 }, // סטטוס
       { wch: 12 }, // שעת נוכחות
       { wch: 20 }, // נבדק על ידי
@@ -244,11 +245,11 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
             checkedInAt: beforeData.checkedInAt,
             notes: afterData.reason || '', // Cancellation reason
             activist: {
-              fullName: beforeData.workerName || 'לא ידוע',
-              phone: beforeData.workerPhone || '',
+              fullName: beforeData.activistName || 'לא ידוע',
+              phone: beforeData.activistPhone || '',
             },
             neighborhood: {
-              name: beforeData.siteName || '-',
+              name: beforeData.neighborhoodName || '-',
             },
             checkedInBy: {
               fullName: '-',
@@ -408,8 +409,8 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
               />
             </Grid>
 
-            {/* Site Filter */}
-            {sites.length > 0 && (
+            {/* Neighborhood Filter */}
+            {neighborhoods.length > 0 && (
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl
                   fullWidth
@@ -419,17 +420,17 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                     },
                   }}
                 >
-                  <InputLabel>אתר</InputLabel>
+                  <InputLabel>שכונה</InputLabel>
                   <Select
-                    value={selectedSite}
-                    onChange={(e) => setSelectedSite(e.target.value)}
-                    label="אתר"
+                    value={selectedNeighborhood}
+                    onChange={(e) => setSelectedNeighborhood(e.target.value)}
+                    label="שכונה"
                     sx={{ direction: 'rtl' }}
                   >
-                    <MenuItem value="all">כל האתרים</MenuItem>
-                    {sites.map((neighborhood: any) => (
-                      <MenuItem key={site.id} value={site.id}>
-                        {site.name}
+                    <MenuItem value="all">כל השכונות</MenuItem>
+                    {neighborhoods.map((neighborhood: any) => (
+                      <MenuItem key={neighborhood.id} value={neighborhood.id}>
+                        {neighborhood.name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -437,8 +438,8 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
               </Grid>
             )}
 
-            {/* Worker Filter */}
-            {workers.length > 0 && (
+            {/* Activist Filter */}
+            {activists.length > 0 && (
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl
                   fullWidth
@@ -448,17 +449,17 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                     },
                   }}
                 >
-                  <InputLabel>עובד</InputLabel>
+                  <InputLabel>פעיל</InputLabel>
                   <Select
-                    value={selectedWorker}
-                    onChange={(e) => setSelectedWorker(e.target.value)}
-                    label="עובד"
+                    value={selectedActivist}
+                    onChange={(e) => setSelectedActivist(e.target.value)}
+                    label="פעיל"
                     sx={{ direction: 'rtl' }}
                   >
-                    <MenuItem value="all">כל העובדים</MenuItem>
-                    {workers.map((activist: any) => (
-                      <MenuItem key={worker.id} value={worker.id}>
-                        {worker.fullName}
+                    <MenuItem value="all">כל הפעילים</MenuItem>
+                    {activists.map((activist: any) => (
+                      <MenuItem key={activist.id} value={activist.id}>
+                        {activist.fullName}
                       </MenuItem>
                     ))}
                   </Select>
@@ -469,7 +470,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
 
           {/* Export Button */}
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-start' }}>
-            <Button
+            <RtlButton
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={handleExport}
@@ -483,7 +484,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
               }}
             >
               ייצוא לאקסל ({totalRecords} רשומות)
-            </Button>
+            </RtlButton>
           </Box>
         </Paper>
 
@@ -535,7 +536,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                     textAlign: 'right',
                   }}
                 >
-                  עובד
+                  פעיל
                 </TableCell>
                 <TableCell
                   sx={{
@@ -544,7 +545,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                     textAlign: 'right',
                   }}
                 >
-                  אתר
+                  שכונה
                 </TableCell>
                 <TableCell
                   sx={{
@@ -609,19 +610,19 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                         variant="body2"
                         sx={{ fontWeight: 600, color: colors.neutral[900] }}
                       >
-                        {record.worker?.fullName}
+                        {record.activist?.fullName}
                       </Typography>
-                      {record.worker?.phone && (
+                      {record.activist?.phone && (
                         <Typography
                           variant="caption"
                           sx={{ color: colors.neutral[500], direction: 'ltr' }}
                         >
-                          {record.worker.phone}
+                          {record.activist.phone}
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell sx={{ textAlign: 'right' }}>
-                      {record.site?.name}
+                      {record.neighborhood?.name}
                     </TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>
                       <Chip
@@ -769,23 +770,23 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
           <DialogContent>
             {selectedRecord && (
               <Box sx={{ direction: 'rtl' }}>
-                {/* Worker Info */}
+                {/* Activist Info */}
                 <Box sx={{ mb: 3 }}>
                   <Typography
                     variant="caption"
                     sx={{ color: colors.neutral[600], display: 'block', mb: 0.5 }}
                   >
-                    עובד
+                    פעיל
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {selectedRecord.worker?.fullName}
+                    {selectedRecord.activist?.fullName}
                   </Typography>
-                  {selectedRecord.worker?.phone && (
+                  {selectedRecord.activist?.phone && (
                     <Typography
                       variant="body2"
                       sx={{ color: colors.neutral[600], direction: 'ltr', textAlign: 'right' }}
                     >
-                      {selectedRecord.worker.phone}
+                      {selectedRecord.activist.phone}
                     </Typography>
                   )}
                 </Box>
@@ -813,16 +814,16 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                   )}
                 </Box>
 
-                {/* Site */}
+                {/* Neighborhood */}
                 <Box sx={{ mb: 3 }}>
                   <Typography
                     variant="caption"
                     sx={{ color: colors.neutral[600], display: 'block', mb: 0.5 }}
                   >
-                    אתר
+                    שכונה
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {selectedRecord.site?.name}
+                    {selectedRecord.neighborhood?.name}
                   </Typography>
                 </Box>
 

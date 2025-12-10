@@ -1,6 +1,6 @@
 /**
  * Attendance System Utilities
- * Handles time window validation and timezone logic for worker check-ins
+ * Handles time window validation and timezone logic for activist check-ins
  */
 
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';

@@ -1,9 +1,12 @@
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { listUsers } from '@/app/actions/users';
-import { listCorporations } from '@/app/actions/cities';
+import { listCities } from '@/app/actions/cities';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import UsersClient from '@/app/components/users/UsersClient';
+
+// Enable route caching - revalidate every 30 seconds
+export const revalidate = 30;
 
 export default async function UsersPage() {
   const session = await auth();
@@ -12,10 +15,10 @@ export default async function UsersPage() {
     redirect('/login');
   }
 
-  // Fetch users, corporations, and sites
-  const [usersResult, corporationsResult, sitesResult] = await Promise.all([
+  // Fetch users, cities, and neighborhoods
+  const [usersResult, citiesResult, neighborhoodsResult] = await Promise.all([
     listUsers(),
-    listCorporations(),
+    listCities(),
     listNeighborhoods(),
   ]);
 
@@ -30,9 +33,9 @@ export default async function UsersPage() {
   return (
     <UsersClient
       users={usersResult.users}
-      corporations={corporationsResult.success ? corporationsResult.corporations : []}
-      sites={sitesResult.success ? sitesResult.sites : []}
-      currentUserRole={session.user.role as 'SUPERADMIN' | 'MANAGER' | 'SUPERVISOR'}
+      cities={citiesResult.success ? citiesResult.cities : []}
+      neighborhoods={neighborhoodsResult.success ? neighborhoodsResult.neighborhoods : []}
+      currentUserRole={session.user.role as 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR'}
     />
   );
 }

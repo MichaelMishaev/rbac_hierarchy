@@ -1,0 +1,1 @@
+- all bugs must be loged the bug by it self and the final solution to '/Users/michaelmishayev/Desktop/Projects/corporations/docs/localDev/bugs.md'

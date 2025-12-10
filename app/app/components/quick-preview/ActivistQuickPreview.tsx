@@ -9,7 +9,6 @@ import {
   Typography,
   Avatar,
   IconButton,
-  Button,
   Stack,
   Chip,
   useMediaQuery,
@@ -23,6 +22,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import QuickPreviewSkeleton from './QuickPreviewSkeleton';
+import RtlButton from '@/app/components/ui/RtlButton';
 
 type ActivistQuickPreviewProps = {
   workerId: string;
@@ -165,11 +165,11 @@ export default function ActivistQuickPreview({
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
                   <LocationOnIcon sx={{ color: colors.pastel.green, fontSize: 18 }} />
                   <Typography variant="subtitle2" fontWeight={600}>
-                    {data?.site.name}
+                    {data?.neighborhood.name}
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  {data?.site.address}
+                  {data?.neighborhood.address}
                 </Typography>
               </Box>
             </Box>
@@ -208,14 +208,14 @@ export default function ActivistQuickPreview({
           mt: 'auto',
         }}
       >
-        <Button
+        <RtlButton
           fullWidth
           variant="outlined"
           startIcon={<EditIcon />}
           sx={{ borderRadius: borderRadius.lg }}
         >
           ערוך עובד
-        </Button>
+        </RtlButton>
       </Box>
     </>
   );

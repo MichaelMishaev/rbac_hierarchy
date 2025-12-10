@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>אתה לא מחובר - מערכת ניהול קמפיין</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      background: linear-gradient(135deg, #F5F5FF 0%, #E8E8FF 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      direction: rtl;
+    }
+
+    .offline-container {
+      text-align: center;
+      max-width: 500px;
+      background: white;
+      padding: 60px 40px;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(97, 97, 255, 0.15);
+    }
+
+    .offline-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+      background: linear-gradient(135deg, #6161FF 0%, #5034FF 100%);
+      border-radius: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .offline-icon svg {
+      width: 60px;
+      height: 60px;
+      fill: white;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #181B34;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #676879;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .retry-button {
+      background: linear-gradient(135deg, #6161FF 0%, #5034FF 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(97, 97, 255, 0.3);
+    }
+
+    .retry-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(97, 97, 255, 0.4);
+    }
+
+    .retry-button:active {
+      transform: translateY(0);
+    }
+
+    .offline-tips {
+      margin-top: 40px;
+      text-align: right;
+      background: #F6F7FB;
+      padding: 24px;
+      border-radius: 16px;
+    }
+
+    .offline-tips h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #323338;
+      margin-bottom: 12px;
+    }
+
+    .offline-tips ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .offline-tips li {
+      font-size: 14px;
+      color: #676879;
+      padding: 8px 0;
+      border-bottom: 1px solid #E6E9EF;
+    }
+
+    .offline-tips li:last-child {
+      border-bottom: none;
+    }
+
+    .offline-tips li:before {
+      content: "•";
+      color: #6161FF;
+      font-weight: bold;
+      display: inline-block;
+      width: 20px;
+      margin-left: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .offline-container {
+        padding: 40px 24px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .offline-icon {
+        width: 100px;
+        height: 100px;
+      }
+
+      .offline-icon svg {
+        width: 50px;
+        height: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <div class="offline-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4c-1.48 0-2.85.43-4.01 1.17l1.46 1.46C10.21 6.23 11.08 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3 0 1.13-.64 2.11-1.56 2.62l1.45 1.45C23.16 18.16 24 16.68 24 15c0-2.64-2.05-4.78-4.65-4.96zM3 5.27l2.75 2.74C2.56 8.15 0 10.77 0 14c0 3.31 2.69 6 6 6h11.73l2 2L21 20.73 4.27 4 3 5.27zM7.73 10l8 8H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h1.73z"/>
+      </svg>
+    </div>
+
+    <h1>אתה במצב לא מקוון</h1>
+    <p>
+      נראה שאין לך חיבור לאינטרנט כרגע. אל דאגה - המערכת תמשיך לעבוד במצב מוגבל.
+      <br><br>
+      ברגע שהחיבור יחזור, כל השינויים שביצעת יסונכרנו אוטומטית.
+    </p>
+
+    <button class="retry-button" onclick="window.location.reload()">
+      נסה שוב
+    </button>
+
+    <div class="offline-tips">
+      <h2>טיפים למצב לא מקוון:</h2>
+      <ul>
+        <li>בדוק את חיבור ה-WiFi או הסלולר שלך</li>
+        <li>נסה להעביר את המכשיר למצב טיסה ואז לבטל אותו</li>
+        <li>אפשר לך להמשיך לעבוד - השינויים יישמרו מקומית</li>
+        <li>כשהחיבור יחזור, המידע יסונכרן אוטומטית</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Auto-retry when back online
+    window.addEventListener('online', () => {
+      console.log('Back online! Reloading...');
+      window.location.reload();
+    });
+
+    // Check connection every 5 seconds
+    setInterval(() => {
+      if (navigator.onLine) {
+        console.log('Connection detected! Reloading...');
+        window.location.reload();
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

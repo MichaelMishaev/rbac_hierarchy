@@ -81,13 +81,13 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     exitFullscreen: 'צא ממסך מלא',
     noData: 'אין נתוני ארגון זמינים',
     superadmin: 'מנהל על',
-    city: 'תאגיד',
-    neighborhood: 'אתר',
+    city: 'עיר',
+    neighborhood: 'שכונה',
     department: 'מחלקה',
     team: 'צוות',
-    cities: 'תאגידים',
-    neighborhoods: 'אתרים',
-    activists: 'עובדים',
+    cities: 'ערים',
+    neighborhoods: 'שכונות',
+    activists: 'פעילים',
     managers: 'מנהלים',
     activistCoordinators: 'מפקחים',
     searchPlaceholder: 'חפש צומת בעץ...',
@@ -335,29 +335,37 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Get node color based on type
+  // Get node color based on type - Election Campaign Color Scheme
   const getNodeColor = (type: string) => {
     switch (type) {
       case 'superadmin':
-        return colors.pastel.purple;
+        return '#7C3AED'; // Deep Purple - Platform Administrator
       case 'areamanager':
-        return colors.pastel.blueLight;
+        return '#2563EB'; // Royal Blue - Regional Campaign Director
       case 'corporation':
-        return colors.pastel.blue;
+      case 'city':
+        return '#0EA5E9'; // Sky Blue - City Campaign
+      case 'coordinators-group':
+        return '#059669'; // Emerald - City Coordinators Group
       case 'managers-group':
-        return colors.pastel.greenLight;
+        return '#059669'; // Emerald - Manager groups (legacy)
       case 'manager':
-        return colors.pastel.green;
+      case 'coordinator':
+        return '#10B981'; // Green - City Campaign Manager
       case 'supervisors-group':
-        return colors.pastel.yellowLight;
+      case 'activist-coordinators-group':
+        return '#F59E0B'; // Amber - Activist Coordinators Group
       case 'supervisor':
-        return colors.pastel.yellow;
+      case 'activistCoordinator':
+        return '#F97316'; // Orange - Neighborhood Organizer
       case 'site':
-        return colors.pastel.orange;
+      case 'neighborhood':
+        return '#EC4899'; // Pink - Campaign District/Neighborhood
       case 'worker':
-        return colors.pastel.pink;
+      case 'activist':
+        return '#8B5CF6'; // Violet - Field Volunteer
       default:
-        return colors.neutral[300];
+        return colors.neutral[400];
     }
   };
 
@@ -385,33 +393,43 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     }
   };
 
-  // Get translated node type
+  // Get translated node type - Election Campaign Terminology
   const getNodeTypeLabel = useCallback((type: string) => {
     const typeLabels: Record<string, string> = {
-      superadmin: 'מנהל על',
-      areamanager: 'מנהל אזורי',
-      city: 'תאגיד',
-      'managers-group': 'קבוצת מנהלים',
-      manager: 'מנהל',
-      'supervisors-group': 'קבוצת מפקחים',
-      activistCoordinator: 'מפקח',
-      neighborhood: 'אתר',
-      activist: 'עובד',
+      superadmin: 'מנהל מערכת',
+      areamanager: 'מנהל אזור',
+      city: 'עיר',
+      'coordinators-group': 'רכזי עיר',
+      'managers-group': 'רכזי עיר', // Legacy support
+      manager: 'רכז עיר',
+      coordinator: 'רכז עיר',
+      'supervisors-group': 'רכזי פעילים',
+      'activist-coordinators-group': 'רכזי פעילים',
+      activistCoordinator: 'רכז פעילים',
+      supervisor: 'רכז פעילים', // Legacy support
+      neighborhood: 'שכונה',
+      site: 'שכונה', // Legacy support
+      activist: 'פעיל',
+      worker: 'פעיל', // Legacy support
     };
     return typeLabels[type] || type;
   }, []);
 
-  // Get translated stat key
+  // Get translated stat key - Election Campaign Stats
   const getStatLabel = useCallback((key: string) => {
     const statLabels: Record<string, string> = {
-      cities: labels.corporations,
-      neighborhoods: labels.sites,
-      activists: labels.workers,
-      managers: labels.managers,
-      activistCoordinators: labels.supervisors,
+      cities: 'ערים',
+      areaManagers: 'מנהלי אזור',
+      neighborhoods: 'שכונות',
+      activists: 'פעילים',
+      managers: 'רכזי עיר', // Legacy support
+      coordinators: 'רכזי עיר',
+      activistCoordinators: 'רכזי פעילים',
+      supervisors: 'רכזי פעילים', // Legacy support
+      orphanActivists: 'פעילים לא משויכים',
     };
     return statLabels[key] || key;
-  }, [labels]);
+  }, []);
 
   // Build node path from nodeDatum
   const buildNodePath = useCallback((nodeDatum: any): string => {
@@ -449,17 +467,19 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                 minHeight: '180px',
                 padding: '12px',
                 borderRadius: '12px',
-                background: hasError ? colors.pastel.redLight : nodeColor,
+                background: hasError
+                  ? 'linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)'
+                  : `linear-gradient(135deg, ${nodeColor} 0%, ${nodeColor}dd 100%)`,
                 boxShadow: isMatched
-                  ? '0 0 20px 4px rgba(255, 215, 0, 0.8), 0 4px 12px rgba(0,0,0,0.15)'
+                  ? '0 0 20px 4px rgba(255, 215, 0, 0.8), 0 6px 20px rgba(0,0,0,0.3)'
                   : hasError
-                  ? '0 0 15px 3px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(0,0,0,0.15)'
-                  : '0 4px 12px rgba(0,0,0,0.15)',
+                  ? '0 0 15px 3px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(0,0,0,0.2)'
+                  : '0 4px 16px rgba(0,0,0,0.25)',
                 border: isMatched
                   ? '3px solid #FFD700'
                   : hasError
                   ? `3px solid ${colors.error}`
-                  : `2px solid ${nodeColor}`,
+                  : `2px solid rgba(255,255,255,0.3)`,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px',
@@ -470,18 +490,18 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
               }}
               onMouseEnter={(e) => {
                 if (!isMatched) {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
                   e.currentTarget.style.boxShadow = hasError
-                    ? '0 0 20px 5px rgba(239, 68, 68, 0.7), 0 6px 16px rgba(0,0,0,0.2)'
-                    : '0 6px 16px rgba(0,0,0,0.2)';
+                    ? '0 0 20px 5px rgba(239, 68, 68, 0.7), 0 8px 24px rgba(0,0,0,0.3)'
+                    : '0 8px 24px rgba(0,0,0,0.35)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isMatched) {
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
                   e.currentTarget.style.boxShadow = hasError
-                    ? '0 0 15px 3px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(0,0,0,0.15)'
-                    : '0 4px 12px rgba(0,0,0,0.15)';
+                    ? '0 0 15px 3px rgba(239, 68, 68, 0.5), 0 4px 12px rgba(0,0,0,0.2)'
+                    : '0 4px 16px rgba(0,0,0,0.25)';
                 }
               }}
               title={hasError ? errorMessage : undefined}
@@ -500,11 +520,12 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                     width: '32px',
                     height: '32px',
                     borderRadius: '50%',
-                    background: hasError ? colors.error : 'rgba(255,255,255,0.9)',
+                    background: hasError ? colors.error : 'rgba(255,255,255,0.95)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: hasError ? '#fff' : nodeColor,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                   }}
                 >
                   {hasError ? '⚠️' : getNodeIcon(nodeType)}
@@ -514,11 +535,12 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                     style={{
                       marginInlineStart: 'auto',
                       fontSize: '12px',
-                      background: hasError ? colors.error : 'rgba(255,255,255,0.7)',
-                      color: hasError ? '#fff' : 'inherit',
+                      background: hasError ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)',
+                      color: '#ffffff',
                       padding: '2px 8px',
                       borderRadius: '12px',
-                      fontWeight: 600,
+                      fontWeight: 700,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                     }}
                   >
                     {nodeDatum.children.length}
@@ -531,11 +553,12 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                 style={{
                   fontSize: '14px',
                   fontWeight: 700,
-                  color: colors.neutral[900],
+                  color: '#ffffff',
                   lineHeight: '1.2',
                   maxHeight: '2.4em',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.3)',
                 }}
               >
                 {nodeDatum.name}
@@ -546,8 +569,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                 style={{
                   fontSize: '10px',
                   fontWeight: 600,
-                  color: 'rgba(0,0,0,0.6)',
-                  background: 'rgba(255,255,255,0.5)',
+                  color: '#ffffff',
+                  background: 'rgba(0,0,0,0.2)',
                   padding: '2px 8px',
                   borderRadius: '4px',
                   alignSelf: 'flex-end', // RTL alignment
@@ -572,12 +595,14 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                       <div
                         key={key}
                         style={{
-                          background: 'rgba(255,255,255,0.6)',
+                          background: 'rgba(255,255,255,0.9)',
                           padding: '3px 8px',
                           borderRadius: '4px',
                           display: 'flex',
                           justifyContent: 'space-between',
                           fontWeight: 500,
+                          color: nodeColor,
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                         }}
                       >
                         <span>{getStatLabel(key)}:</span>
@@ -702,6 +727,66 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
             {labels.matchesFound} {matchedNodePaths.length} {labels.matches}
           </Typography>
         )}
+      </Box>
+
+      {/* Campaign Hierarchy Legend */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 2,
+          background: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
+          borderRadius: borderRadius.lg,
+          border: `1px solid ${colors.neutral[200]}`,
+          direction: 'rtl',
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: colors.neutral[800] }}>
+          מקרא היררכיית הקמפיין:
+        </Typography>
+        <Box display="flex" flexWrap="wrap" gap={1.5}>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#7C3AED' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              מנהל מערכת
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#2563EB' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              מנהל אזור
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#0EA5E9' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              עיר
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#10B981' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              רכז עיר
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#F97316' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              רכז פעילים
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#EC4899' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              שכונה
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#8B5CF6' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              פעיל שטח
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
       {/* Control Buttons with current zoom level display */}
@@ -864,9 +949,17 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       {/* Custom link styling */}
       <style jsx global>{`
         .custom-link {
-          stroke: ${colors.neutral[400]} !important;
-          stroke-width: 2px !important;
+          stroke: #94A3B8 !important;
+          stroke-width: 3px !important;
           fill: none !important;
+          opacity: 0.6;
+          transition: all 0.3s ease;
+        }
+
+        .custom-link:hover {
+          stroke: #64748B !important;
+          stroke-width: 4px !important;
+          opacity: 1;
         }
 
         .rd3t-tree-container {

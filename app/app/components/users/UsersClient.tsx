@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   Box,
   Typography,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -25,6 +24,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import RtlButton from '@/app/components/ui/RtlButton';
 import UserModal from './UserModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 import { deleteUser } from '@/app/actions/users';
@@ -60,13 +60,13 @@ type User = {
   }[];
 };
 
-type Corporation = {
+type City = {
   id: string;
   name: string;
   code: string;
 };
 
-type Site = {
+type Neighborhood = {
   id: string;
   name: string;
   cityId: string;
@@ -74,12 +74,12 @@ type Site = {
 
 type UsersClientProps = {
   users: User[];
-  cities: Corporation[];
-  neighborhoods: Site[];
-  currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
+  cities: City[];
+  neighborhoods: Neighborhood[];
+  currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
 };
 
-export default function UsersClient({ users, corporations, sites, currentUserRole }: UsersClientProps) {
+export default function UsersClient({ users, cities, neighborhoods, currentUserRole }: UsersClientProps) {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -134,8 +134,8 @@ export default function UsersClient({ users, corporations, sites, currentUserRol
   };
 
   // Get current user corporation ID for filtering
-  // TODO: Derive from role tables (managerOf, supervisorOf, etc.)
-  const currentUserCorporationId: string | null = null;
+  // TODO: Derive from role tables (cityCoordinatorOf, activistCoordinatorOf, etc.)
+  const currentUserCityId: string | null = null;
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -143,9 +143,9 @@ export default function UsersClient({ users, corporations, sites, currentUserRol
         return colors.status.purple;
       case 'AREA_MANAGER':
         return colors.status.purple;
-      case 'MANAGER':
+      case 'CITY_COORDINATOR':
         return colors.status.blue;
-      case 'SUPERVISOR':
+      case 'ACTIVIST_COORDINATOR':
         return colors.status.green;
       default:
         return colors.neutral[500];
@@ -166,12 +166,12 @@ export default function UsersClient({ users, corporations, sites, currentUserRol
       return user.areaManager.regionName || 'כל התאגידים';
     }
 
-    if (user.role === 'MANAGER' && user.managerOf && user.managerOf.length > 0) {
-      return user.managerOf.map(m => m.corporation.name).join(', ');
+    if (user.role === 'CITY_COORDINATOR' && user.cityCoordinatorOf && user.cityCoordinatorOf.length > 0) {
+      return user.cityCoordinatorOf.map(m => m.city.name).join(', ');
     }
 
-    if (user.role === 'SUPERVISOR' && user.supervisorOf && user.supervisorOf.length > 0) {
-      return user.supervisorOf.map(s => s.corporation.name).join(', ');
+    if (user.role === 'ACTIVIST_COORDINATOR' && user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
+      return user.activistCoordinatorOf.map(s => s.city.name).join(', ');
     }
 
     return '-';
@@ -203,8 +203,8 @@ export default function UsersClient({ users, corporations, sites, currentUserRol
         </Box>
 
         {/* Add User Button */}
-        {currentUserRole !== 'SUPERVISOR' && (
-          <Button
+        {currentUserRole !== 'ACTIVIST_COORDINATOR' && (
+          <RtlButton
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleCreateUser}
@@ -222,7 +222,7 @@ export default function UsersClient({ users, corporations, sites, currentUserRol
             }}
           >
             {t('newUser')}
-          </Button>
+          </RtlButton>
         )}
       </Box>
 
@@ -398,10 +398,10 @@ export default function UsersClient({ users, corporations, sites, currentUserRol
         onClose={() => setUserModalOpen(false)}
         onSuccess={handleUserModalSuccess}
         user={editingUser}
-        corporations={corporations}
-        sites={sites}
+        cities={cities}
+        neighborhoods={neighborhoods}
         currentUserRole={currentUserRole}
-        currentUserCorporationId={currentUserCorporationId}
+        currentUserCityId={currentUserCityId}
       />
 
       {/* Delete Confirmation Modal */}

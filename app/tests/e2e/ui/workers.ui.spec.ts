@@ -10,53 +10,53 @@ import {
 } from './helpers/ui-test-helpers';
 
 /**
- * Workers Page UI Tests
+ * activists Page UI Tests
  */
 
-test.describe('Workers UI - SuperAdmin', () => {
+test.describe('activists UI - SuperAdmin', () => {
   test.beforeEach(async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=עובדים');
+    await page.click('text=פעילים');
     await page.waitForURL(/.*\/activists/);
   });
 
-  test('should render workers page with RTL and Hebrew', async ({ page }) => {
+  test('should render activists page with RTL and Hebrew', async ({ page }) => {
     await waitForDataLoad(page);
 
     await verifyRTL(page);
     await verifyHebrewLocale(page);
-    await verifyPageTitle(page, 'עובדים');
+    await verifyPageTitle(page, 'פעילים');
 
-    console.log('✅ Workers page renders with RTL and Hebrew');
+    console.log('✅ activists page renders with RTL and Hebrew');
   });
 
-  test('should display workers data', async ({ page }) => {
+  test('should display activists data', async ({ page }) => {
     await waitForDataLoad(page);
 
     await verifyDataDisplayed(page, 1);
 
-    console.log('✅ Workers data displayed');
+    console.log('✅ activists data displayed');
   });
 
-  test('should display "Create Worker" button', async ({ page }) => {
+  test('should display "Create activist" button', async ({ page }) => {
     await waitForDataLoad(page);
 
-    const createButton = page.locator('button').filter({ hasText: /עובד חדש|הוסף עובד/ });
+    const createButton = page.locator('button').filter({ hasText: /פעיל חדש|הוסף עובד/ });
     await expect(createButton.first()).toBeVisible();
 
     console.log('✅ Create Activist button is visible');
   });
 
-  test('should display workers from all corporations', async ({ page }) => {
+  test('should display activists from all cities', async ({ page }) => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
 
-    // SuperAdmin should see workers from all corporations
+    // SuperAdmin should see activists from all cities
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ SuperAdmin sees workers from all corporations');
+    console.log('✅ SuperAdmin sees activists from all cities');
   });
 
   test('should be responsive on mobile', async ({ page }) => {
@@ -64,81 +64,81 @@ test.describe('Workers UI - SuperAdmin', () => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
-    expect(pageContent).toContain('עובדים');
+    expect(pageContent).toContain('פעילים');
 
-    console.log('✅ Workers page is responsive on mobile');
+    console.log('✅ activists page is responsive on mobile');
   });
 });
 
-test.describe('Workers UI - Manager', () => {
+test.describe('activists UI - Manager', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.manager);
+    await loginAs(page, testUsers.cityCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=עובדים');
+    await page.click('text=פעילים');
     await page.waitForURL(/.*\/activists/);
   });
 
-  test('should see only workers from their corporation', async ({ page }) => {
+  test('should see only activists from their city', async ({ page }) => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
 
-    // Should see Corp1 workers only
-    // Should NOT see workers from Corp2/Corp3
-    expect(!pageContent?.includes('דני אברהם')).toBeTruthy(); // Corp2 worker
-    expect(!pageContent?.includes('יאיר כהן')).toBeTruthy(); // Corp3 worker
+    // Should see Corp1 activists only
+    // Should NOT see activists from Corp2/Corp3
+    expect(!pageContent?.includes('דני אברהם')).toBeTruthy(); // Corp2 activist
+    expect(!pageContent?.includes('יאיר כהן')).toBeTruthy(); // Corp3 activist
 
-    console.log('✅ City Coordinator sees only their city workers');
+    console.log('✅ City Coordinator sees only their city activists');
   });
 
-  test('should display "Create Worker" button', async ({ page }) => {
+  test('should display "Create activist" button', async ({ page }) => {
     await waitForDataLoad(page);
 
-    const createButton = page.locator('button').filter({ hasText: /עובד חדש|הוסף עובד/ });
+    const createButton = page.locator('button').filter({ hasText: /פעיל חדש|הוסף עובד/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ City Coordinator can create workers');
+    console.log('✅ City Coordinator can create activists');
   });
 });
 
-test.describe('Workers UI - Supervisor', () => {
+test.describe('activists UI - activist coordinator', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, testUsers.supervisor);
+    await loginAs(page, testUsers.activistCoordinator);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=עובדים');
+    await page.click('text=פעילים');
     await page.waitForURL(/.*\/activists/);
   });
 
-  test('should see only workers from assigned sites', async ({ page }) => {
+  test('should see only activists from assigned neighborhoods', async ({ page }) => {
     await waitForDataLoad(page);
 
     const pageContent = await page.textContent('body');
 
-    // Should see workers from assigned neighborhood only
+    // Should see activists from assigned neighborhood only
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Activist Coordinator sees only workers from assigned sites');
+    console.log('✅ Activist Coordinator sees only activists from assigned neighborhoods');
   });
 
-  test('should display "Create Worker" button', async ({ page }) => {
+  test('should display "Create activist" button', async ({ page }) => {
     await waitForDataLoad(page);
 
-    const createButton = page.locator('button').filter({ hasText: /עובד חדש|הוסף עובד/ });
+    const createButton = page.locator('button').filter({ hasText: /פעיל חדש|הוסף עובד/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Activist Coordinator can create workers');
+    console.log('✅ Activist Coordinator can create activists');
   });
 });
 
-test.describe('Workers UI - Data Display', () => {
+test.describe('activists UI - Data Display', () => {
   test('should display activist information', async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=עובדים');
+    await page.click('text=פעילים');
     await page.waitForURL(/.*\/activists/);
     await waitForDataLoad(page);
 
-    // Verify workers are displayed (either in table or grid/card layout)
+    // Verify activists are displayed (either in table or grid/card layout)
     await verifyDataDisplayed(page, 1);
 
     const pageContent = await page.textContent('body');
@@ -150,11 +150,11 @@ test.describe('Workers UI - Data Display', () => {
   });
 });
 
-test.describe('Workers UI - Search and Filter', () => {
+test.describe('activists UI - Search and Filter', () => {
   test('should display search functionality', async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
-    await page.click('text=עובדים');
+    await page.click('text=פעילים');
     await page.waitForURL(/.*\/activists/);
     await waitForDataLoad(page);
 

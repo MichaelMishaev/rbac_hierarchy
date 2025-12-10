@@ -24,6 +24,7 @@ import {
   CircularProgress,
   Skeleton,
 } from '@mui/material';
+import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations } from 'next-intl';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
 
@@ -653,7 +654,7 @@ export default function TaskInbox() {
               {!isSentView && !isDeleted && (
                 <Stack direction="row" spacing={1} sx={{ mt: 2, direction: 'rtl' }}>
                   {task.status === 'unread' && (
-                    <Button
+                    <RtlButton
                       variant="outlined"
                       size="small"
                       onClick={() => handleStatusChange(task.task_id, 'read')}
@@ -666,17 +667,13 @@ export default function TaskInbox() {
                           borderColor: colors.primary,
                           backgroundColor: colors.primary + '10',
                         },
-                        '& .MuiButton-endIcon': {
-                          marginLeft: 0,
-                          marginRight: '8px',
-                        },
                       }}
                     >
                       {t('markAsRead')}
-                    </Button>
+                    </RtlButton>
                   )}
                   {task.status === 'read' && (
-                    <Button
+                    <RtlButton
                       variant="contained"
                       size="small"
                       onClick={() => handleStatusChange(task.task_id, 'acknowledged')}
@@ -685,14 +682,10 @@ export default function TaskInbox() {
                         backgroundColor: colors.success,
                         direction: 'rtl',
                         '&:hover': { backgroundColor: colors.success, filter: 'brightness(0.9)' },
-                        '& .MuiButton-endIcon': {
-                          marginLeft: 0,
-                          marginRight: '8px',
-                        },
                       }}
                     >
                       {t('acknowledge')}
-                    </Button>
+                    </RtlButton>
                   )}
                 </Stack>
               )}
@@ -927,17 +920,17 @@ export default function TaskInbox() {
                       color="primary"
                       size="small"
                     />
-                    <Button
+                    <RtlButton
                       variant="outlined"
                       size="small"
                       onClick={(e) => setBulkMenuAnchor(e.currentTarget)}
                       startIcon={<DoneAllIcon />}
                     >
                       פעולות
-                    </Button>
+                    </RtlButton>
                   </>
                 )}
-                <Button
+                <RtlButton
                   variant="text"
                   size="small"
                   onClick={handleBulkArchive}
@@ -945,7 +938,7 @@ export default function TaskInbox() {
                   sx={{ color: colors.neutral[600] }}
                 >
                   נקה הכל
-                </Button>
+                </RtlButton>
               </Box>
             </Box>
           )}

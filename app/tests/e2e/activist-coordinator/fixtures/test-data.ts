@@ -49,8 +49,8 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
   // Create manager
   const cityCoordinator = await prisma.cityCoordinator.create({
     data: {
-      userId: managerUser.id,
-      cityId: corporation.id,
+      userId: cityCoordinatorUser.id,
+      cityId: city.id,
       title: 'Test City Coordinator',
       isActive: true,
     },
@@ -90,8 +90,8 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
   // Create supervisors
   const activistCoordinator1 = await prisma.activistCoordinator.create({
     data: {
-      userId: supervisor1User.id,
-      cityId: corporation.id,
+      userId: activistCoordinator1User.id,
+      cityId: city.id,
       title: 'Supervisor 1',
       isActive: true,
     },
@@ -99,8 +99,8 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
 
   const activistCoordinator2 = await prisma.activistCoordinator.create({
     data: {
-      userId: supervisor2User.id,
-      cityId: corporation.id,
+      userId: activistCoordinator2User.id,
+      cityId: city.id,
       title: 'Supervisor 2',
       isActive: true,
     },
@@ -108,8 +108,8 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
 
   const activistCoordinator3 = await prisma.activistCoordinator.create({
     data: {
-      userId: supervisor3User.id,
-      cityId: corporation.id,
+      userId: activistCoordinator3User.id,
+      cityId: city.id,
       title: 'Supervisor 3',
       isActive: true,
     },
@@ -119,7 +119,7 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
   const neighborhoodWithNoActivistCoordinators = await prisma.neighborhood.create({
     data: {
       name: 'Site A - No Supervisors',
-      cityId: corporation.id,
+      cityId: city.id,
       address: 'Address A',
       city: 'City A',
       isActive: true,
@@ -130,7 +130,7 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
   const neighborhoodWithOneActivistCoordinator = await prisma.neighborhood.create({
     data: {
       name: 'Site B - One Supervisor',
-      cityId: corporation.id,
+      cityId: city.id,
       address: 'Address B',
       city: 'City B',
       isActive: true,
@@ -141,8 +141,8 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
     data: {
       activistCoordinatorId: supervisor1.id,
       neighborhoodId: siteWithOneSupervisor.id,
-      cityId: corporation.id,
-      legacySupervisorUserId: supervisor1User.id,
+      cityId: city.id,
+      legacySupervisorUserId: activistCoordinator1User.id,
     },
   });
 
@@ -150,7 +150,7 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
   const neighborhoodWithMultipleActivistCoordinators = await prisma.neighborhood.create({
     data: {
       name: 'Site C - Multiple Supervisors',
-      cityId: corporation.id,
+      cityId: city.id,
       address: 'Address C',
       city: 'City C',
       isActive: true,
@@ -162,14 +162,14 @@ export async function setupActivistCoordinatorTestData(): Promise<TestScenarioDa
       {
         activistCoordinatorId: supervisor2.id,
         neighborhoodId: siteWithMultipleSupervisors.id,
-        cityId: corporation.id,
-        legacySupervisorUserId: supervisor2User.id,
+        cityId: city.id,
+        legacySupervisorUserId: activistCoordinator2User.id,
       },
       {
         activistCoordinatorId: supervisor3.id,
         neighborhoodId: siteWithMultipleSupervisors.id,
-        cityId: corporation.id,
-        legacySupervisorUserId: supervisor3User.id,
+        cityId: city.id,
+        legacySupervisorUserId: activistCoordinator3User.id,
       },
     ],
   });
