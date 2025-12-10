@@ -16,24 +16,24 @@ export async function getCurrentUser() {
     include: {
       areaManager: {
         include: {
-          corporations: true,
+          cities: true,
         },
       },
-      managerOf: {
+      coordinatorOf: {
         include: {
-          corporation: true,
+          city: true,
         },
       },
-      supervisorOf: {
+      activistCoordinatorOf: {
         include: {
-          corporation: true,
+          city: true,
         },
       },
       activistCoordinatorNeighborhoods: {
         include: {
-          site: {
+          neighborhood: {
             include: {
-              corporation: true,
+              cityRelation: true,
             },
           },
         },
@@ -88,18 +88,18 @@ export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUs
   }
 
   if (user.role === 'AREA_MANAGER' && user.areaManager) {
-    return user.areaManager.corporations.map(c => c.id);
+    return user.areaManager.cities.map(c => c.id);
   }
 
   if (user.role === 'CITY_COORDINATOR') {
-    return user.managerOf.map(m => m.corporationId);
+    return user.coordinatorOf.map(m => m.cityId);
   }
 
   if (user.role === 'ACTIVIST_COORDINATOR') {
-    // Get unique corporation IDs from supervisorOf and activistCoordinatorNeighborhoods
-    const corpsFromRole = user.supervisorOf.map(s => s.corporationId);
-    const corpsFromSites = user.activistCoordinatorNeighborhoods.map(ss => ss.site.corporation.id);
-    return [...new Set([...corpsFromRole, ...corpsFromSites])];
+    // Get unique city IDs from activistCoordinatorOf and activistCoordinatorNeighborhoods
+    const citiesFromRole = user.activistCoordinatorOf.map(s => s.cityId);
+    const citiesFromNeighborhoods = user.activistCoordinatorNeighborhoods.map(ss => ss.neighborhood.cityRelation.id);
+    return [...new Set([...citiesFromRole, ...citiesFromNeighborhoods])];
   }
 
   return [];
@@ -110,5 +110,5 @@ export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUs
  */
 export function hasAccessToCorporation(user: Awaited<ReturnType<typeof getCurrentUser>>, cityId: string): boolean {
   const userCorps = getUserCorporations(user);
-  return userCorps === 'all' || userCorps.includes(corporationId);
+  return userCorps === 'all' || userCorps.includes(cityId);
 }

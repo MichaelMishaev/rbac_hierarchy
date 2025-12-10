@@ -55,7 +55,7 @@ export async function GET() {
                     email: true,
                   },
                 },
-                siteAssignments: {
+                neighborhoodAssignments: {
                   include: {
                     neighborhood: {
                       select: {
@@ -82,7 +82,7 @@ export async function GET() {
                     activistCoordinatorId: true, // CRITICAL: Include supervisorId for hierarchy
                   },
                 },
-                supervisorAssignments: {
+                activistCoordinatorAssignments: {
                   include: {
                     activistCoordinator: {
                       include: {
@@ -118,96 +118,96 @@ export async function GET() {
         name: `${areaManager.user.fullName} - ${areaManager.regionName}`,
         type: 'areamanager' as const,
         count: {
-          cities: areaManager.corporations?.length || 0,
+          cities: areaManager.cities?.length || 0,
         },
-        children: (areaManager.corporations || []).map((corp: any) => ({
+        children: (areaManager.cities || []).map((corp: any) => ({
           id: corp.id,
           name: corp.name,
           type: 'city' as const,
           count: {
-            coordinators: corp.managers.length,
-            activistCoordinators: corp.supervisors.length,
-            neighborhoods: corp.sites.length,
+            coordinators: corp.coordinators.length,
+            activistCoordinators: corp.activistCoordinators.length,
+            neighborhoods: corp.neighborhoods.length,
           },
           children: [
-            // Managers branch
-            ...(corp.managers.length > 0
+            // Coordinators branch
+            ...(corp.coordinators.length > 0
               ? [
                   {
-                    id: `${corp.id}-managers`,
-                    name: `מנהלים (${corp.managers.length})`,
-                    type: 'managers-group' as const,
+                    id: `${corp.id}-coordinators`,
+                    name: `רכזים (${corp.coordinators.length})`,
+                    type: 'coordinators-group' as const,
                     count: {},
-                    children: corp.managers.map((manager: any) => ({
-                      id: manager.id,
-                      name: `${manager.user.fullName} - ${manager.title}`,
-                      type: 'manager' as const,
+                    children: corp.coordinators.map((coordinator: any) => ({
+                      id: coordinator.id,
+                      name: `${coordinator.user.fullName} - ${coordinator.title || ''}`,
+                      type: 'coordinator' as const,
                       count: {},
                     })),
                   },
                 ]
               : []),
-            // Supervisors branch
-            ...(corp.supervisors.length > 0
+            // Activist Coordinators branch
+            ...(corp.activistCoordinators.length > 0
               ? [
                   {
-                    id: `${corp.id}-supervisors`,
-                    name: `מפקחים (${corp.supervisors.length})`,
-                    type: 'supervisors-group' as const,
+                    id: `${corp.id}-activist-coordinators`,
+                    name: `רכזי פעילים (${corp.activistCoordinators.length})`,
+                    type: 'activist-coordinators-group' as const,
                     count: {},
-                    children: corp.supervisors.map((activistCoordinator: any) => ({
+                    children: corp.activistCoordinators.map((activistCoordinator: any) => ({
                       id: activistCoordinator.id,
-                      name: `${activistCoordinator.user.fullName} - ${activistCoordinator.title}`,
+                      name: `${activistCoordinator.user.fullName} - ${activistCoordinator.title || ''}`,
                       type: 'activistCoordinator' as const,
                       count: {
-                        neighborhoods: activistCoordinator.siteAssignments?.length || 0,
+                        neighborhoods: activistCoordinator.neighborhoodAssignments?.length || 0,
                       },
                     })),
                   },
                 ]
               : []),
-            // Sites branch
-            ...corp.sites.map((neighborhood: any) => {
-              const workers = neighborhood.workers || [];
-              const supervisorAssignments = neighborhood.supervisorAssignments || [];
-              const hasSupervisors = supervisorAssignments.length > 0;
+            // Neighborhoods branch
+            ...corp.neighborhoods.map((neighborhood: any) => {
+              const activists = neighborhood.activists || [];
+              const activistCoordinatorAssignments = neighborhood.activistCoordinatorAssignments || [];
+              const hasActivistCoordinators = activistCoordinatorAssignments.length > 0;
 
-              // Build activistCoordinator nodes with their assigned workers as children
-              const supervisorNodes = supervisorAssignments.map((assignment: any) => {
-                const supervisorId = assignment.activistCoordinator.id;
+              // Build activistCoordinator nodes with their assigned activists as children
+              const activistCoordinatorNodes = activistCoordinatorAssignments.map((assignment: any) => {
+                const activistCoordinatorId = assignment.activistCoordinator.id;
 
-                // Find all workers assigned to this activistCoordinator
-                const assignedWorkers = workers.filter(
-                  (w: any) => w.activistCoordinatorId === supervisorId
+                // Find all activists assigned to this activistCoordinator
+                const assignedActivists = activists.filter(
+                  (a: any) => a.activistCoordinatorId === activistCoordinatorId
                 );
 
                 return {
                   id: `activistCoordinator-${activistCoordinatorId}-neighborhood-${neighborhood.id}`,
-                  name: `${assignment.activistCoordinator.user.fullName} - ${assignment.activistCoordinator.title}`,
+                  name: `${assignment.activistCoordinator.user.fullName} - ${assignment.activistCoordinator.title || ''}`,
                   type: 'activistCoordinator' as const,
                   count: {
-                    activists: assignedWorkers.length,
+                    activists: assignedActivists.length,
                   },
-                  children: assignedWorkers.map((activist: any) => ({
+                  children: assignedActivists.map((activist: any) => ({
                     id: activist.id,
-                    name: `${activist.fullName} - ${activist.position}`,
+                    name: `${activist.fullName} - ${activist.position || ''}`,
                     type: 'activist' as const,
                     count: {},
                   })),
                 };
               });
 
-              // Find orphan workers (not assigned to any activistCoordinator)
-              const orphanWorkers = workers
-                .filter((w: any) => !w.activistCoordinatorId)
+              // Find orphan activists (not assigned to any activistCoordinator)
+              const orphanActivists = activists
+                .filter((a: any) => !a.activistCoordinatorId)
                 .map((activist: any) => ({
                   id: activist.id,
-                  name: `${activist.fullName} - ${activist.position}`,
+                  name: `${activist.fullName} - ${activist.position || ''}`,
                   type: 'activist' as const,
                   count: {},
-                  // CRITICAL: Flag as error if neighborhood has supervisors but activist has none
-                  hasError: hasSupervisors,
-                  errorMessage: hasSupervisors ? 'Worker not assigned to activistCoordinator (neighborhood has supervisors)' : undefined,
+                  // CRITICAL: Flag as error if neighborhood has activist coordinators but activist has none
+                  hasError: hasActivistCoordinators,
+                  errorMessage: hasActivistCoordinators ? 'Activist not assigned to activist coordinator (neighborhood has coordinators)' : undefined,
                 }));
 
               return {
@@ -215,18 +215,18 @@ export async function GET() {
                 name: neighborhood.name,
                 type: 'neighborhood' as const,
                 count: {
-                  activists: workers.length,
-                  activistCoordinators: supervisorAssignments.length,
-                  orphanWorkers: orphanWorkers.length,
+                  activists: activists.length,
+                  activistCoordinators: activistCoordinatorAssignments.length,
+                  orphanActivists: orphanActivists.length,
                 },
-                // CRITICAL: Flag neighborhood as having data integrity issue if orphan workers exist with supervisors
-                hasError: hasSupervisors && orphanWorkers.length > 0,
-                errorMessage: hasSupervisors && orphanWorkers.length > 0
-                  ? `${orphanWorkers.length} activist(s) not assigned to activistCoordinator`
+                // CRITICAL: Flag neighborhood as having data integrity issue if orphan activists exist with coordinators
+                hasError: hasActivistCoordinators && orphanActivists.length > 0,
+                errorMessage: hasActivistCoordinators && orphanActivists.length > 0
+                  ? `${orphanActivists.length} activist(s) not assigned to activist coordinator`
                   : undefined,
                 children: [
-                  ...supervisorNodes,  // Supervisors with their workers as children
-                  ...orphanWorkers,    // Unassigned workers appear at neighborhood level
+                  ...activistCoordinatorNodes,  // Activist coordinators with their activists as children
+                  ...orphanActivists,           // Unassigned activists appear at neighborhood level
                 ],
               };
             }),

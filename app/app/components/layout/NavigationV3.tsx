@@ -139,7 +139,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
       id: 'management',
       label: t('groupManagement'),
       items: [
-        { path: '/cities', label: t('corporations'), icon: <BusinessIcon /> },
+        { path: '/cities', label: t('citys'), icon: <BusinessIcon /> },
         { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
         { path: '/activists', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
         { path: '/users', label: t('users'), icon: <PeopleIcon /> },
@@ -169,7 +169,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
       id: 'management',
       label: t('groupManagement'),
       items: [
-        { path: '/cities', label: t('corporations'), icon: <BusinessIcon /> },
+        { path: '/cities', label: t('citys'), icon: <BusinessIcon /> },
         { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
         { path: '/activists', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
         { path: '/users', label: t('users'), icon: <PeopleIcon /> },

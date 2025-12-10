@@ -25,12 +25,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **ALL development work happens in the `/app` directory.**
 
 ```
-/corporations
+/corporations (repository name - historical)
 ├── app/                    ← 🎯 MAIN APPLICATION (WORK HERE)
 │   ├── prisma/            ← Database schema & seed (SINGLE SOURCE OF TRUTH)
 │   │   ├── schema.prisma  ← ONLY DATABASE SCHEMA
 │   │   └── seed.ts        ← ONLY SEED SCRIPT
 │   ├── app/               ← Next.js 15 App Router
+│   │   ├── [locale]/      ← Internationalization routes (Hebrew primary)
+│   │   ├── api/           ← API Routes
+│   │   ├── actions/       ← Server Actions
+│   │   └── components/    ← Shared components
+│   ├── lib/               ← Utilities, auth, design system
 │   ├── package.json       ← Dependencies & scripts
 │   └── ...
 └── docs/                  ← Documentation only (READ-ONLY)
@@ -51,55 +56,106 @@ npm run db:studio    # Open Prisma Studio
 
 ## Project Overview
 
-**RBAC Hierarchy Platform** - A multi-tenant organizational management system for corporations with strict role-based access control and complete tenant isolation.
+**Election/Activism Management System (v2.0)** - A hierarchical organization management platform for election campaigns and activism coordination with strict role-based access control.
+
+**IMPORTANT MIGRATION NOTE**: This system was migrated from a corporate hierarchy platform to an election/activism system. The repository name "corporations" is historical. The actual domain is now:
+- **Election System** (formerly Corporations)
+- **Activists** (formerly Workers)
+- **Neighborhoods** (formerly Sites)
+- **City Coordinators** (formerly Managers)
+- **Activist Coordinators** (formerly Supervisors)
 
 **Current State**:
-- ✅ **Next.js 15 app** - Running at http://localhost:3000
-- ✅ **SuperAdmin dashboard** - With organizational tree visualization
-- ✅ **Database schema** - With passwords and RBAC (in `app/prisma/schema.prisma`)
-- ✅ **Authentication** - NextAuth v5 with bcrypt
-- ✅ **Docker environment** - PostgreSQL, Redis, PgBouncer
-- ✅ **Playwright E2E tests** - Authentication and RBAC tests
-- ⏳ **Full CRUD operations** - In progress
+- ✅ **Next.js 15 app** - Running at http://localhost:3200 (dev), http://localhost:3000 (tests)
+- ✅ **Authentication** - NextAuth v5 with bcrypt password hashing
+- ✅ **Database schema** - Election/Activism domain model (migrated from corporate)
+- ✅ **Docker environment** - PostgreSQL, Redis, PgBouncer, Adminer, MailHog
+- ✅ **Playwright E2E tests** - Auth, RBAC, multi-tenant isolation
+- ✅ **Hebrew-first UI** - RTL support with next-intl
+- ⏳ **Full CRUD operations** - In active development
 
 **Tech Stack**:
 - **Backend**: Next.js 15 API Routes + Server Actions, NextAuth v5, Prisma ORM
-- **Frontend**: Next.js 15 (App Router), Material-UI v6, React Hook Form + Zod, **HEBREW-ONLY, RTL-ONLY**
-- **Database**: PostgreSQL 15 (Railway for production, Docker for development)
-- **Infrastructure**: Docker Compose (local), Railway (production)
-- **Testing**: Playwright E2E tests
-- **Tree Visualization**: react-d3-tree (Hebrew-first, RTL support)
+- **Frontend**: Next.js 15 App Router, Material-UI v6, React Hook Form + Zod, Framer Motion
+- **Database**: PostgreSQL 15 (via PgBouncer connection pooling)
+- **Infrastructure**: Docker Compose (local), Railway (planned production)
+- **Testing**: Playwright E2E tests, integration tests for worker-supervisor integrity
+- **i18n**: next-intl with Hebrew (he-IL) as primary locale
+- **Design**: Monday.com-inspired design system with pastel colors
 
 ## Development Environment
 
-### Quick Start Commands
+### Quick Start (First Time Setup)
 
 ```bash
-# Initial setup
-make setup              # Create .env from .env.example
-
-# Start development environment
-make up                 # Start all Docker containers
+# 1. Start Docker services (from project root)
+make up                 # Starts PostgreSQL, Redis, PgBouncer, Adminer, MailHog
 make health             # Verify all services are running
-make logs               # View logs from all containers
 
-# Database management
+# 2. Setup database (from app/ directory)
+cd app
+npm install             # Install dependencies
+npm run db:generate     # Generate Prisma Client
+npm run db:push         # Create database tables
+npm run db:seed         # Seed with test data
+
+# 3. Start development server
+npm run dev             # Starts at http://localhost:3200
+```
+
+### Common Commands (from project root)
+
+```bash
+# Docker services
+make up                 # Start all Docker containers
+make down               # Stop all containers (data persists)
+make clean              # Stop and remove volumes (⚠️ deletes data!)
+make health             # Check service health
+make logs               # View all container logs
+make ps                 # List running containers
+
+# Database operations
 make db-shell           # Connect to PostgreSQL with psql
 make db-backup          # Backup database to ./backups/
-make db-reset           # Reset database (deletes all data!)
+make db-reset           # Reset database (⚠️ deletes all data!)
 
-# Redis management
+# Redis operations
 make redis-cli          # Connect to Redis CLI
 make redis-flush        # Clear all Redis data
 
 # Testing
 make test               # Run Playwright E2E tests
-make test-ui            # Run Playwright tests with UI
-make test-headed        # Run Playwright tests in headed mode
+make test-ui            # Run tests with Playwright UI
+make test-headed        # Run tests in headed browser
+```
 
-# Stop environment
-make down               # Stop all containers (data persists)
-make clean              # Stop and remove all volumes (deletes data!)
+### Application Commands (from app/ directory)
+
+```bash
+# Development
+npm run dev             # Start dev server (port 3200)
+npm run build           # Build for production
+npm run start           # Start production server
+npm run lint            # Run ESLint
+
+# Database
+npm run db:generate     # Generate Prisma Client (after schema changes)
+npm run db:push         # Push schema changes to database
+npm run db:migrate      # Create migration files (production)
+npm run db:seed         # Seed database with test data
+npm run db:seed:prod    # Seed production database
+npm run db:studio       # Open Prisma Studio (database GUI)
+
+# Data integrity
+npm run db:check-integrity    # Check worker-supervisor relationships
+npm run db:fix-integrity      # Fix integrity issues
+
+# Testing
+npm run test:e2e              # Run all E2E tests (headless)
+npm run test:e2e:ui           # Run with Playwright UI
+npm run test:e2e:headed       # Run in headed browser
+npm run test:e2e:debug        # Run in debug mode
+npm run test:worker-supervisor # Run worker-supervisor integration tests
 ```
 
 ### Available Services
@@ -124,78 +180,105 @@ DATABASE_URL="postgresql://postgres:postgres_dev_password@localhost:5434/hierarc
 
 ## Architecture
 
-### Organizational Hierarchy
+### Organizational Hierarchy (Election/Activism Domain)
 
 ```
 SuperAdmin (system-wide access)
-└── Corporations (multi-tenant root)
-    ├── Managers (full corp access)
-    └── Supervisors (site-scoped access)
-        └── Sites (physical locations)
-            └── Workers (data only, no login)
+└── Election System (multi-region root)
+    ├── Area Managers (region-wide access)
+    └── City Coordinators (city-scoped access)
+        └── Activist Coordinators (neighborhood-scoped access)
+            └── Neighborhoods (physical locations)
+                └── Activists (tracked individuals with attendance)
 ```
 
 ### Role-Based Access Control (RBAC)
 
 **SuperAdmin**:
-- System-wide access across all corporations
-- Creates and manages corporations
-- Cannot be created via UI/API (database/bootstrap only)
+- System-wide access across all election systems
+- Creates and manages area managers and cities
+- Cannot be created via UI/API (database/seed script only)
 - Flag: `users.is_super_admin = true`
 
-**Manager** (DB: `corporation_managers`):
-- Scoped to single corporation
-- Full CRUD: Managers, Supervisors, Sites, Workers (within their corp)
-- Cannot access other corporations
+**Area Manager** (DB: `area_managers`):
+- Region-wide access (e.g., Tel Aviv region)
+- Full CRUD: City Coordinators, Activist Coordinators, Neighborhoods, Activists
+- Manages multiple cities within their area
+- Can view cross-city analytics
 
-**Supervisor** (DB: `supervisors`):
-- Scoped to single corporation
-- Assigned to specific sites via M2M (`supervisor_sites`)
-- Can only manage workers in assigned sites
-- Cannot manage managers, supervisors, or sites
+**City Coordinator** (DB: `city_coordinators`):
+- City-scoped access (single city)
+- Full CRUD: Activist Coordinators, Neighborhoods, Activists within their city
+- Cannot access other cities
+- Manages task distribution and attendance
 
-**Worker** (DB: `workers`):
-- Data entity only, no login capability
-- Assigned to one site
+**Activist Coordinator** (DB: `activist_coordinators`):
+- Neighborhood-scoped access (via M2M `activist_coordinator_neighborhoods`)
+- Can manage activists in assigned neighborhoods only
+- Track attendance, assign tasks
+- Cannot manage neighborhoods or other coordinators
+
+**Activist** (DB: `activists`):
+- Tracked individual (not a system user)
+- Assigned to one neighborhood
+- Has attendance records and task assignments
 - Soft-deleted via `is_active = false`
-- Unique constraint: `(site_id, full_name, phone)`
 
 ### Critical RBAC Rules
 
 **Creation Permissions**:
-- SuperAdmin → Only via database/bootstrap script
-- Corporation → Only SuperAdmin can create
-- Manager → SuperAdmin or Manager (same corp)
-- Supervisor → SuperAdmin or Manager (same corp)
-- Site → SuperAdmin or Manager (same corp)
-- Worker → SuperAdmin, Manager, or Supervisor (assigned sites only)
+- SuperAdmin → Only via database/seed script (never via UI/API)
+- Area Manager → Only SuperAdmin can create
+- City Coordinator → SuperAdmin or Area Manager
+- Activist Coordinator → SuperAdmin, Area Manager, or City Coordinator (same city)
+- Neighborhood → SuperAdmin, Area Manager, or City Coordinator (same city)
+- Activist → SuperAdmin, Area Manager, City Coordinator, or Activist Coordinator (assigned neighborhoods only)
 
 **Data Isolation**:
-- All queries MUST filter by `corporation_id` except for SuperAdmin
-- Supervisors can only access sites in `supervisor_sites` table
-- Use Prisma middleware or NestJS interceptors to enforce corporation filters
-- Test cross-corporation isolation thoroughly
+- All queries MUST filter by `city_id` or area scope except for SuperAdmin
+- Activist Coordinators can only access neighborhoods in `activist_coordinator_neighborhoods` table
+- Use Prisma middleware or API middleware to enforce data filters
+- Test cross-city and cross-area isolation thoroughly
+
+**Special Features**:
+- **Attendance Tracking**: Record check-in/out times, notes, GPS coordinates
+- **Task Management**: Assign tasks to activists with priority and deadlines
+- **Push Notifications**: Web push notifications for task assignments
+- **Analytics**: Area-wide and city-wide reporting dashboards
 
 ## Database Schema
 
-### Core Tables
+**Schema Location**: `app/prisma/schema.prisma` (Single Source of Truth)
 
-- `users` - All user accounts with `is_super_admin` flag
-- `corporations` - Multi-tenant root entities
-- `sites` - Physical locations within corporations
-- `corporation_managers` - Manager role assignments
-- `supervisors` - Supervisor role assignments (v1.4: renamed from site_managers)
-- `supervisor_sites` - M2M relationship (supervisor ↔ sites)
-- `workers` - Non-login worker data entities
-- `user_invitations` - Invitation system with tokens
-- `audit_logs` - Complete change tracking
+### Core Tables (Election/Activism Domain)
+
+**User Management:**
+- `users` - All user accounts with role and `is_super_admin` flag
+- `user_tokens` - Password reset and email confirmation tokens
+
+**Organizational Structure:**
+- `area_managers` - Area manager role assignments
+- `cities` - Cities within election system (geographic boundaries)
+- `city_coordinators` - City coordinator role assignments
+- `activist_coordinators` - Activist coordinator role assignments
+- `activist_coordinator_neighborhoods` - M2M relationship (coordinator ↔ neighborhoods)
+- `neighborhoods` - Physical locations/districts within cities
+- `activists` - Tracked individuals (non-system users)
+
+**Feature Tables:**
+- `invitations` - User invitation system with tokens
+- `tasks` - Task management system
+- `task_assignments` - M2M relationship (tasks ↔ users/activists)
+- `attendance_records` - Check-in/out tracking with GPS
+- `push_subscriptions` - Web push notification subscriptions
 
 ### Important Constraints
 
-- All role tables: `UNIQUE (corporation_id, user_id)`
-- Workers: `UNIQUE (site_id, full_name, phone)`
-- M2M junction references composite FKs: `(supervisor_id, corporation_id)` and `(site_id, corporation_id)`
-- Cascade delete from corporation (except audit logs → SET NULL)
+- **Role Uniqueness**: `UNIQUE (city_id, user_id)` for city coordinators
+- **Activist Uniqueness**: `UNIQUE (neighborhood_id, full_name, phone)`
+- **M2M Junction**: References composite FKs with cascade deletes
+- **Soft Deletes**: Use `is_active = false` for activists
+- **Data Integrity**: Foreign key constraints with cascade/set null rules
 
 ### PostgreSQL Extensions (Auto-installed)
 
@@ -236,12 +319,19 @@ tests/e2e/
 
 ```typescript
 testUsers = {
-  superAdmin: 'superadmin@hierarchy.test',
-  manager: 'manager@corp1.test',        // Corporation 1
-  supervisor: 'supervisor@corp1.test',  // Corporation 1, Sites 1-2
-  managerCorp2: 'manager@corp2.test'    // Corporation 2
+  superAdmin: 'superadmin@election.test',
+  areaManager: 'area.manager@election.test',
+  cityCoordinator: 'city.coordinator@telaviv.test',
+  activistCoordinator: 'activist.coordinator@telaviv.test'
 }
 ```
+
+**Note**: E2E tests verify:
+- Authentication flows (login, logout, session)
+- RBAC permission boundaries (role-specific access)
+- Multi-tenant isolation (cross-city data leakage prevention)
+- Attendance tracking workflow
+- Task assignment and notification flow
 
 ### Running Tests
 
@@ -254,39 +344,51 @@ npm run test:e2e:debug     # Run in debug mode
 
 ### Test Configuration
 
-- Base URL: `http://localhost:3000` (configurable via `BASE_URL` env)
-- RTL locale: `he-IL` (Hebrew)
-- Timezone: `Asia/Jerusalem`
-- Browsers: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
-- Web server auto-starts in dev mode (when `npm run dev` is available)
+- **Base URL**: `http://localhost:3000` (configurable via `BASE_URL` env)
+- **RTL locale**: `he-IL` (Hebrew)
+- **Timezone**: `Asia/Jerusalem`
+- **Browsers**: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
+- **Web server**: Auto-starts in dev mode (when `npm run dev` is available)
+- **Config file**: `app/playwright.config.ts`
 
 ## System Flows
 
 ### Invitation & Onboarding
 
-1. Admin (SuperAdmin/Manager) creates invitation with `target_type` (corporation_manager or supervisor)
-2. System generates unique token → stored in `user_invitations`
-3. Email sent via SMTP (MailHog in dev)
-4. User clicks link → token validated
-5. New user created if not exists, role assigned
+1. Admin creates invitation with role type (area_manager, city_coordinator, activist_coordinator)
+2. System generates unique token → stored in `invitations` table
+3. Email sent via SMTP (MailHog in dev, SendGrid/Resend in production)
+4. User clicks invitation link → token validated and not expired
+5. New user created if doesn't exist, appropriate role table populated
 6. Invitation marked with `accepted_at` timestamp
+7. User redirected to role-specific dashboard
 
-### Authentication Flow
+### Authentication Flow (NextAuth v5)
 
-1. User logs in with email/password
-2. JWT access + refresh tokens returned
-3. Token payload: `user_id`, `isSuperAdmin`, corporation list
-4. If multiple corporations → user selects active corporation
-5. Minimal role info in token; full permissions resolved server-side per request
+1. User logs in with email/password (bcrypt verification)
+2. Session token stored in HTTP-only cookie
+3. Session payload: `user_id`, `email`, `role`, `isSuperAdmin`, area/city scope
+4. Middleware validates session on protected routes
+5. Server Actions/API Routes verify permissions per-request
+6. Token refresh handled automatically by NextAuth
 
-### Audit Logging
+### Attendance Tracking Flow
 
-Every mutation logs to `audit_logs`:
-- `action` (create/update/delete)
-- `entity` type and `entity_id`
-- `before` and `after` JSON snapshots
-- `user_id` and `corporation_id`
-- `timestamp`
+1. Coordinator marks activist as "checked in" with timestamp
+2. System records GPS coordinates (if available)
+3. Coordinator can add notes about activist status
+4. Check-out recorded with duration calculation
+5. Attendance history displayed in activist profile
+6. Analytics aggregate attendance by neighborhood/city
+
+### Task Management Flow
+
+1. Coordinator creates task with title, description, priority, deadline
+2. Assigns task to specific activists or neighborhoods
+3. Push notification sent to assigned activists (if subscribed)
+4. Activists see tasks in their dashboard/notifications
+5. Task status tracked: pending → in_progress → completed
+6. Coordinators monitor completion rates
 
 ## UI/UX Requirements
 
@@ -305,37 +407,67 @@ Every mutation logs to `audit_logs`:
 - ❌ NO English translations
 - ❌ NO bilingual support
 
-### SuperAdmin Dashboard (Hebrew)
+### Dashboard Navigation (Hebrew)
 
-**Sidebar Navigation**:
-- תאגידים (Corporations)
-- משתמשים (Users)
-- תפקידים והרשאות (Roles & Permissions)
-- מבנה ארגוני (Organizational Structure)
-- לוגים (Audit Logs)
+**Sidebar Structure (varies by role)**:
+
+SuperAdmin:
+- מערכת הבחירות (Election System Overview)
+- מנהלי אזור (Area Managers)
+- ערים (Cities)
+- רכזים (Coordinators)
+- שכונות (Neighborhoods)
+- פעילים (Activists)
+- משימות (Tasks)
+- נוכחות (Attendance)
 - הגדרות מערכת (System Settings)
 
-**Top Bar**:
-- Corporation selector (SuperAdmin only)
-- Search bar
-- User greeting: "שלום, [role name]"
+Area Manager:
+- לוח בקרה (Dashboard)
+- ערים שלי (My Cities)
+- רכזי עיר (City Coordinators)
+- שכונות (Neighborhoods)
+- פעילים (Activists)
+- משימות (Tasks)
+- דוחות (Reports)
 
-**KPI Cards**:
-- Active Corporations
-- Total Managers
-- Total Supervisors
-- Total Sites
-- Total Workers
+City Coordinator:
+- לוח בקרה (Dashboard)
+- רכזי פעילים (Activist Coordinators)
+- שכונות (Neighborhoods)
+- פעילים (Activists)
+- משימות (Tasks)
+- נוכחות (Attendance)
+- מפה (Map)
+
+Activist Coordinator:
+- לוח בקרה (Dashboard)
+- הפעילים שלי (My Activists)
+- משימות (Tasks)
+- נוכחות (Attendance)
+- מפה (Map)
+
+**Top Bar (All Roles)**:
+- Search: "חיפוש..." (Search...)
+- Notifications: עדכונים (Updates)
+- User menu: שלום, [שם מלא] (Hello, [Full Name])
+
+**KPI Cards (Role-Specific)**:
+- פעילים פעילים (Active Activists)
+- משימות פעילות (Active Tasks)
+- נוכחות היום (Today's Attendance)
+- שכונות (Neighborhoods)
 
 ## Security Considerations
 
 ### Multi-Tenancy Security
 
-- **ALWAYS** include `corporation_id` in WHERE clauses (except SuperAdmin)
+- **ALWAYS** filter by `city_id` or area scope in WHERE clauses (except SuperAdmin)
 - **NEVER** expose `is_super_admin` flag in public APIs
-- Validate corporation_id matches user's scope on every API request
-- Supervisors must validate site access via `supervisor_sites` join
-- Test cross-corporation data leakage thoroughly in E2E tests
+- Validate city/area scope matches user's role on every API request
+- Activist Coordinators must validate neighborhood access via `activist_coordinator_neighborhoods` join
+- Test cross-city and cross-area data leakage thoroughly in E2E tests
+- **GPS Coordinates**: Store securely, only visible to authorized coordinators
 
 ### Authentication & Authorization
 
@@ -374,123 +506,169 @@ Every mutation logs to `audit_logs`:
 5. Ensure all UI is responsive and mobile-friendly
 6. Test with `he-IL` locale enabled
 
-### Terminology (v1.4 Unified Naming)
+### Terminology (v2.0 Election System)
 
-**IMPORTANT**: As of v1.4, naming is UNIFIED across all layers:
-- **UX/UI**: "Supervisor"
-- **Database**: `supervisors` table (renamed from `site_managers`)
-- **Code**: `Supervisor` model, `supervisor` variables
-- **Junction Table**: `supervisor_sites` (renamed from `site_manager_sites`)
+**IMPORTANT**: As of v2.0, the system was migrated from corporate hierarchy to election/activism:
 
-**Historical Note**: Pre-v1.4 used dual naming (UX: "Supervisor", DB: "site_manager"). This caused confusion and was unified in v1.4 for consistency.
+| Domain Entity | Database Table | Code Reference |
+|---------------|----------------|----------------|
+| Election System | N/A (organizational concept) | - |
+| Area Manager | `area_managers` | `AreaManager` |
+| City | `cities` | `City` |
+| City Coordinator | `city_coordinators` | `CityCoordinator` |
+| Activist Coordinator | `activist_coordinators` | `ActivistCoordinator` |
+| Neighborhood | `neighborhoods` | `Neighborhood` |
+| Activist | `activists` | `Activist` |
+| Task | `tasks` | `Task` |
+| Attendance | `attendance_records` | `AttendanceRecord` |
 
-## File Structure (When Implementing)
+**Migration from v1.x (Corporate)**:
+- Corporation → Election System (conceptual)
+- Manager → Area Manager / City Coordinator
+- Supervisor → Activist Coordinator
+- Site → Neighborhood
+- Worker → Activist
+
+**Historical Note**: Pre-v2.0 was a corporate hierarchy system. Repository name "corporations" remains for continuity but domain is now elections/activism.
+
+## File Structure
 
 ```
-corporations-mvp/
-├── app/                          # Next.js 15 App Router
-│   ├── (auth)/login/
-│   ├── (dashboard)/
-│   │   ├── dashboard/
-│   │   ├── corporations/
-│   │   ├── sites/
-│   │   ├── users/
-│   │   └── workers/
-│   └── api/                      # API Routes
-│       ├── auth/[...nextauth]/
-│       ├── corporations/
-│       ├── sites/
-│       ├── users/
-│       └── workers/
-├── prisma/
-│   ├── schema.prisma             # Database schema
-│   └── seed.ts                   # Seed data with SuperAdmin
-├── lib/
-│   ├── prisma.ts                 # Prisma client singleton
-│   ├── auth.ts                   # NextAuth config
-│   └── rbac.ts                   # RBAC utilities
-├── components/
-│   ├── ui/                       # Shadcn/MUI components
-│   └── ...                       # Feature components
-├── tests/e2e/                    # Playwright tests (already exists)
-├── docker/                       # Docker init scripts (already exists)
-├── docker-compose.yml            # Docker services (already exists)
-├── Makefile                      # Development commands (already exists)
-└── .env.local                    # Environment variables
+/corporations (repository root)
+├── app/                          # 🎯 MAIN APPLICATION
+│   ├── app/                      # Next.js 15 App Router
+│   │   ├── [locale]/             # i18n routes (he, en)
+│   │   │   ├── (auth)/           # Auth pages
+│   │   │   │   └── login/
+│   │   │   └── (dashboard)/      # Protected routes
+│   │   │       ├── dashboard/    # Main dashboard
+│   │   │       ├── activists/    # Activist management
+│   │   │       ├── attendance/   # Attendance tracking
+│   │   │       ├── cities/       # City management
+│   │   │       ├── map/          # Interactive map view
+│   │   │       ├── neighborhoods/# Neighborhood management
+│   │   │       ├── tasks/        # Task management
+│   │   │       └── users/        # User management
+│   │   ├── api/                  # API Routes
+│   │   │   ├── auth/[...nextauth]/ # NextAuth endpoints
+│   │   │   ├── org-tree/         # Organization tree API
+│   │   │   └── ...               # Feature APIs
+│   │   ├── actions/              # Server Actions
+│   │   │   ├── dashboard.ts
+│   │   │   ├── activists.ts
+│   │   │   └── ...
+│   │   └── components/           # Shared UI components
+│   ├── lib/                      # Core utilities
+│   │   ├── auth.ts               # NextAuth config
+│   │   ├── prisma.ts             # Prisma client
+│   │   ├── theme.ts              # MUI theme with RTL
+│   │   ├── design-system.ts      # Design tokens
+│   │   ├── tasks.ts              # Task management utilities
+│   │   ├── attendance.ts         # Attendance tracking
+│   │   └── push-notifications.ts # Web push setup
+│   ├── prisma/                   # 🗄️ DATABASE (Single Source of Truth)
+│   │   ├── schema.prisma         # Database schema
+│   │   ├── seed.ts               # Development seed
+│   │   └── seed-production.ts   # Production seed
+│   ├── messages/                 # i18n translations
+│   │   ├── he.json               # Hebrew (primary)
+│   │   └── en.json               # English (secondary)
+│   ├── scripts/                  # Utility scripts
+│   │   └── check-worker-supervisor-integrity.ts
+│   ├── tests/                    # Integration tests
+│   │   └── integration/
+│   ├── package.json              # Dependencies & scripts
+│   ├── next.config.ts            # Next.js configuration
+│   ├── auth.config.ts            # NextAuth configuration
+│   ├── middleware.ts             # Route protection & i18n
+│   └── i18n.ts                   # i18n configuration
+├── tests/e2e/                    # E2E tests (Playwright)
+│   ├── fixtures/                 # Test data
+│   ├── auth/                     # Auth tests
+│   ├── rbac/                     # Permission tests
+│   └── multi-tenant/             # Isolation tests
+├── docs/                         # Documentation (READ-ONLY)
+│   └── syAnalyse/                # Requirements & specs
+├── docker/                       # Docker init scripts
+├── docker-compose.yml            # Docker services
+├── Makefile                      # Development commands
+├── playwright.config.ts          # Playwright configuration
+└── CLAUDE.md                     # This file
 ```
 
 ## Documentation Reference
 
-Project documentation is in `docs/` (excluded from git):
+Documentation is in `docs/syAnalyse/`:
 
-- `docs/syAnalyse/mvp/00_TECH_STACK_FINAL.md` - Complete tech stack
-- `docs/syAnalyse/mvp/02_DATABASE_SCHEMA.md` - Database schema (Prisma format)
-- `docs/syAnalyse/mvp/03_API_DESIGN.md` - API endpoints specification
-- `docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md` - UI/UX requirements
-- `docs/syAnalyse/mvp/05_IMPLEMENTATION_PLAN.md` - 3-week implementation plan
-- `docs/syAnalyse/mvp/08_DOCKER_DEVELOPMENT.md` - Docker setup guide
-- `docs/syAnalyse/draws/dbSchema.png` - Visual database schema
-- `docs/infrastructure/bugs.md` - Bug tracking (document all bugs found)
+- **PRD**: `PRD_2025_Updated_Industry_Standards.md` - Product requirements with 2025 standards
+- **Tech Stack**: `mvp/00_TECH_STACK_FINAL.md` - Complete technology decisions
+- **Database**: `mvp/02_DATABASE_SCHEMA.md` - Schema documentation (Prisma format)
+- **API Design**: `mvp/03_API_DESIGN.md` - RESTful API endpoints
+- **UI Specs**: `mvp/04_UI_SPECIFICATIONS.md` - Screen-by-screen UI/UX requirements
+- **Implementation**: `mvp/05_IMPLEMENTATION_PLAN.md` - Development roadmap
+- **Docker**: `mvp/08_DOCKER_DEVELOPMENT.md` - Docker environment guide
 
-## Bug Tracking & QA
+## Key Architecture Patterns
 
-### Bug Documentation
+### Server Actions vs API Routes
 
-When you find bugs during development:
-1. Document in `docs/infrastructure/bugs.md`
-2. Include: Problem description, root cause, solution implemented
-3. Reference commit hash where bug was fixed
+- **Server Actions** (preferred): Direct database access for mutations within components
+- **API Routes**: Use for external integrations, webhooks, non-React clients
+- **Auth Middleware**: NextAuth middleware validates all requests in `middleware.ts`
 
-### QA Automation
+### Data Fetching Strategy
 
-When developing features:
-1. Create automation tests in parallel
-2. Store in `docs/infrastructure/qa/automations/`
-3. Ensure E2E tests cover critical user flows
+- **RSC**: Use React Server Components for initial page data (async components)
+- **Client**: Use TanStack Query for client-side data fetching and mutations
+- **Optimistic Updates**: Implement for task assignments and attendance tracking
 
-## Implementation Checklist
+### RTL Support
 
-When starting development:
+- **MUI Theme**: Configure with `createTheme({ direction: 'rtl' })` + `stylis-plugin-rtl`
+- **CSS Logical Properties**: Use `marginInlineStart/End` instead of left/right
+- **next-intl**: Provides locale-based routing and translations
 
-1. **Setup** (Week 1):
-   - [ ] Ensure Docker environment is running (`make up`)
-   - [ ] Initialize Prisma schema from database spec
-   - [ ] Run Prisma migrations (`npx prisma db push`)
-   - [ ] Seed database with SuperAdmin user
-   - [ ] Setup NextAuth v5 configuration
-   - [ ] Verify all services with `make health`
+### Design System
 
-2. **Backend** (Week 1-2):
-   - [ ] Implement authentication API routes
-   - [ ] Build RBAC middleware/guards
-   - [ ] Create API routes for all entities
-   - [ ] Add audit logging middleware
-   - [ ] Test with Prisma Studio
-
-3. **Frontend** (Week 2-3):
-   - [ ] Setup MUI theme with RTL
-   - [ ] Build 14 UI screens
-   - [ ] Implement all CRUD forms
-   - [ ] Add data tables with TanStack Table
-   - [ ] Ensure responsive design
-
-4. **Testing & Polish** (Week 3):
-   - [ ] Run all Playwright E2E tests
-   - [ ] Fix failing tests
-   - [ ] Test multi-corporation isolation
-   - [ ] Verify RTL support
-   - [ ] Deploy to Railway
+- **Monday.com Style**: Pastel colors, rounded corners (20px), soft shadows
+- **Component Library**: Material-UI v6 with custom theme
+- **Icons**: Lucide React (RTL-compatible)
+- **Animations**: Framer Motion for smooth transitions
 
 ## Important Reminders
 
-- ✅ **ALWAYS** use PgBouncer connection (`localhost:6433`) for app code
-- ✅ **ALWAYS** filter by `corporation_id` (except SuperAdmin)
-- ✅ **ALWAYS** use `data-testid` attributes for testable elements
-- ✅ **ALWAYS** validate inputs with Zod on client AND server
-- ✅ **ALWAYS** log mutations to `audit_logs`
-- ❌ **NEVER** create SuperAdmin via API (only via seed script)
-- ❌ **NEVER** expose `is_super_admin` flag in public APIs
-- ❌ **NEVER** skip RBAC validation on any endpoint
-- ❌ **NEVER** allow cross-corporation data access
-- the project must be organised, do not put .md files in root, aggrigate them in olders in '/Users/michaelmishayev/Desktop/Projects/corporations/docs/mdFiles'
-- when automation fail, first check if its automation problem or code!
+### ✅ ALWAYS DO
+
+- **Use PgBouncer** connection (`localhost:6433`) for app database queries
+- **Filter by scope**: `city_id` or area for all queries (except SuperAdmin)
+- **Add `data-testid`** attributes to all interactive elements for E2E testing
+- **Validate inputs** with Zod schemas on BOTH client and server
+- **Work in `app/` directory** - run all npm commands from there
+- **Use Hebrew labels** - this is a Hebrew-first, RTL-only application
+- **Test data isolation** - verify cross-city/area data cannot leak
+- **Run integrity checks** after database changes: `npm run db:check-integrity`
+
+### ❌ NEVER DO
+
+- **Create SuperAdmin via UI/API** - only via `seed.ts` script
+- **Expose `is_super_admin`** flag in public APIs
+- **Skip RBAC validation** on any endpoint or Server Action
+- **Allow cross-city data access** without proper authorization
+- **Use LTR CSS** - always use RTL-compatible properties
+- **Put .md files in root** - organize in `docs/mdFiles/`
+- **Delete production data** - use soft deletes (`is_active = false`)
+
+### 🔍 Testing & Debugging
+
+- **Test failures**: First check if it's a test issue (selectors, timing) vs actual bug
+- **Port conflicts**: Dev server runs on **port 3200**, tests expect **port 3000**
+- **Database changes**: Always run `npm run db:generate` after schema updates
+- **Integrity issues**: Use `npm run db:fix-integrity --fix` to repair relationships
+
+### 📝 Code Organization
+
+- **Server Actions**: In `app/actions/` directory
+- **API Routes**: In `app/api/` directory
+- **Utilities**: In `lib/` directory
+- **Documentation**: In `docs/mdFiles/` or `docs/syAnalyse/`
+- **Tests**: E2E in `tests/e2e/`, integration in `app/tests/integration/`
