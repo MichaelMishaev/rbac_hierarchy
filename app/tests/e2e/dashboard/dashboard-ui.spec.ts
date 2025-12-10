@@ -54,7 +54,7 @@ test.describe('Dashboard UI/UX Improvements', () => {
     await corporationsCard.click();
 
     // Should navigate to corporations page
-    await expect(page).toHaveURL(/.*\/corporations/);
+    await expect(page).toHaveURL(/.*\/cities/);
   });
 
   test('should display correct KPI values for SuperAdmin', async ({ page }) => {
@@ -153,7 +153,7 @@ test.describe('Dashboard UI/UX Improvements', () => {
 
     // Navigate away
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     // Navigate back
     await page.click('text=לוח בקרה');

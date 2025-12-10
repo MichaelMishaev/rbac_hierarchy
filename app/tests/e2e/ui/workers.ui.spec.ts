@@ -18,7 +18,7 @@ test.describe('Workers UI - SuperAdmin', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
   });
 
   test('should render workers page with RTL and Hebrew', async ({ page }) => {
@@ -75,7 +75,7 @@ test.describe('Workers UI - Manager', () => {
     await loginAs(page, testUsers.manager);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
   });
 
   test('should see only workers from their corporation', async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe('Workers UI - Supervisor', () => {
     await loginAs(page, testUsers.supervisor);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
   });
 
   test('should see only workers from assigned sites', async ({ page }) => {
@@ -135,7 +135,7 @@ test.describe('Workers UI - Data Display', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
     await waitForDataLoad(page);
 
     // Verify workers are displayed (either in table or grid/card layout)
@@ -155,7 +155,7 @@ test.describe('Workers UI - Search and Filter', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
     await waitForDataLoad(page);
 
     const searchInput = page.locator('input[type="text"]').first();

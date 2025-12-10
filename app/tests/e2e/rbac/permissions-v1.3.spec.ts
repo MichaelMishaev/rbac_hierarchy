@@ -17,7 +17,7 @@ test.describe('RBAC - SuperAdmin Permissions', () => {
 
   test('SuperAdmin can view all corporations', async ({ page }) => {
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     // FIX: Wait for data to load
     await page.waitForTimeout(1000);
@@ -38,7 +38,7 @@ test.describe('RBAC - SuperAdmin Permissions', () => {
 
   test('SuperAdmin can access all sites', async ({ page }) => {
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/, { timeout: 5000 });
+    await page.waitForURL(/.*\/neighborhoods/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -48,7 +48,7 @@ test.describe('RBAC - SuperAdmin Permissions', () => {
 
   test('SuperAdmin can view all workers', async ({ page }) => {
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/, { timeout: 5000 });
+    await page.waitForURL(/.*\/activists/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -78,7 +78,7 @@ test.describe('RBAC - City Coordinator Permissions', () => {
 
   test('Manager can view sites in their corporation', async ({ page }) => {
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/, { timeout: 5000 });
+    await page.waitForURL(/.*\/neighborhoods/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -89,7 +89,7 @@ test.describe('RBAC - City Coordinator Permissions', () => {
 
   test('Manager can view workers in their corporation', async ({ page }) => {
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/, { timeout: 5000 });
+    await page.waitForURL(/.*\/activists/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -119,7 +119,7 @@ test.describe('RBAC - Activist Coordinator Permissions', () => {
 
   test('Supervisor can only view assigned sites', async ({ page }) => {
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/, { timeout: 5000 });
+    await page.waitForURL(/.*\/neighborhoods/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
 
@@ -131,7 +131,7 @@ test.describe('RBAC - Activist Coordinator Permissions', () => {
 
   test('Supervisor can view workers in assigned sites only', async ({ page }) => {
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/, { timeout: 5000 });
+    await page.waitForURL(/.*\/activists/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -168,7 +168,7 @@ test.describe('v1.3 Composite FK Enforcement', () => {
 
     // Navigate to workers
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     const pageContent = await page.textContent('body');
 
@@ -205,7 +205,7 @@ test.describe('Cross-Corporation Access Prevention', () => {
 
     // Try to access workers page
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     const pageContent = await page.textContent('body');
 
@@ -226,7 +226,7 @@ test.describe('Cross-Corporation Access Prevention', () => {
 
     // Navigate to workers
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     const pageContent = await page.textContent('body');
 
@@ -266,10 +266,10 @@ test.describe('Session Management', () => {
 
     // Navigate to different pages
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
 
     // Go back to dashboard
     await page.click('text=לוח בקרה');

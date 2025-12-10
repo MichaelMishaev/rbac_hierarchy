@@ -26,7 +26,7 @@ test.describe('Corporations UI - SuperAdmin', () => {
 
     // Navigate to corporations page
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
   });
 
   test('should render corporations page with RTL and Hebrew', async ({ page }) => {
@@ -190,7 +190,7 @@ test.describe('Corporations UI - Area Manager', () => {
 
     // Navigate to corporations
     await corporationsLink.click();
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
     await waitForDataLoad(page);
 
     // Should see corporations they manage
@@ -206,7 +206,7 @@ test.describe('Corporations UI - Area Manager', () => {
     await page.waitForURL(/\/(he\/)?dashboard/);
 
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
     await waitForDataLoad(page);
 
     // Area City Coordinator should NOT see create button (SuperAdmin only)
@@ -222,7 +222,7 @@ test.describe('Corporations UI - Card Interactions', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
     await waitForDataLoad(page);
   });
 
@@ -250,7 +250,7 @@ test.describe('Corporations UI - Loading States', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     // Check for loading indicators (skeletons or spinners)
     await page.waitForTimeout(500);

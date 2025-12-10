@@ -21,7 +21,7 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
 
     // Navigate to sites
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
 
     const sitesContent = await page.textContent('body');
 
@@ -46,7 +46,7 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
 
     // Navigate to workers
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     const workersContent = await page.textContent('body');
 
@@ -94,7 +94,7 @@ test.describe('Supervisor Neighborhood Isolation - Composite FK', () => {
 
     // Navigate to workers
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     const workersContent = await page.textContent('body');
 
@@ -117,7 +117,7 @@ test.describe('Supervisor Neighborhood Isolation - Composite FK', () => {
 
     // Navigate to sites
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
 
     const sitesContent = await page.textContent('body');
 
@@ -147,7 +147,7 @@ test.describe('Database-Level Isolation Verification', () => {
 
     // Navigate to workers
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     const workersContent = await page.textContent('body');
 
@@ -211,7 +211,7 @@ test.describe('SuperAdmin Cross-Corporation Access', () => {
 
     // Navigate to corporations
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     // FIX: Wait for data to load (loading skeletons to disappear)
     await page.waitForTimeout(1000);
@@ -238,7 +238,7 @@ test.describe('SuperAdmin Cross-Corporation Access', () => {
 
     // Navigate to workers
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/);
+    await page.waitForURL(/.*\/activists/);
 
     // FIX: Wait for data to load
     await page.waitForTimeout(1000);

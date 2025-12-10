@@ -30,9 +30,9 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
 
     // Check for key navigation items
     const dashboardLink = page.locator('[data-testid="nav-link-dashboard"]');
-    const corporationsLink = page.locator('[data-testid="nav-link-corporations"]');
-    const sitesLink = page.locator('[data-testid="nav-link-sites"]');
-    const workersLink = page.locator('[data-testid="nav-link-workers"]');
+    const corporationsLink = page.locator('[data-testid="nav-link-cities"]');
+    const sitesLink = page.locator('[data-testid="nav-link-neighborhoods"]');
+    const workersLink = page.locator('[data-testid="nav-link-activists"]');
 
     await expect(dashboardLink).toBeVisible();
     await expect(corporationsLink).toBeVisible();
@@ -45,7 +45,7 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
   test('Area City Coordinator can view corporations page', async ({ page }) => {
     // Click on corporations link
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
 
     // Wait for data to load
     await page.waitForTimeout(1000);
@@ -63,7 +63,7 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
   test('Area City Coordinator sees only THEIR assigned corporations', async ({ page }) => {
     // Navigate to corporations page
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
     await page.waitForTimeout(1000);
 
     const pageContent = await page.textContent('body');
@@ -78,7 +78,7 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
   test('Area City Coordinator CANNOT see "New Corporation" button', async ({ page }) => {
     // Navigate to corporations page
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
     await page.waitForTimeout(1000);
 
     // Check that "New Corporation" button is NOT visible
@@ -90,7 +90,7 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
 
   test('Area City Coordinator can view sites page', async ({ page }) => {
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/, { timeout: 5000 });
+    await page.waitForURL(/.*\/neighborhoods/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -103,7 +103,7 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
 
   test('Area City Coordinator can view workers page', async ({ page }) => {
     await page.click('text=עובדים');
-    await page.waitForURL(/.*\/workers/, { timeout: 5000 });
+    await page.waitForURL(/.*\/activists/, { timeout: 5000 });
 
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
@@ -141,7 +141,7 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
     // Adjust based on your seed data
 
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
     await page.waitForTimeout(1000);
 
     const pageContent = await page.textContent('body');
@@ -167,7 +167,7 @@ test.describe('RBAC - Area City Coordinator vs SuperAdmin Comparison', () => {
     await page.waitForURL(/\/(he\/)?dashboard/, { timeout: 10000 });
 
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
     await page.waitForTimeout(1000);
 
     // SuperAdmin should see "New Corporation" button
@@ -185,7 +185,7 @@ test.describe('RBAC - Area City Coordinator vs SuperAdmin Comparison', () => {
     await page.waitForURL(/\/(he\/)?dashboard/, { timeout: 10000 });
 
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
     await page.waitForTimeout(1000);
 
     // Area City Coordinator should NOT see "New Corporation" button

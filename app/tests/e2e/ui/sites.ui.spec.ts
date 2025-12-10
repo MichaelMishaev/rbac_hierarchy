@@ -19,7 +19,7 @@ test.describe('Sites UI - SuperAdmin', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
   });
 
   test('should render sites page with RTL and Hebrew', async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe('Sites UI - Manager', () => {
     await loginAs(page, testUsers.manager);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
   });
 
   test('should see only sites from their corporation', async ({ page }) => {
@@ -102,7 +102,7 @@ test.describe('Sites UI - Supervisor', () => {
     await loginAs(page, testUsers.supervisor);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
   });
 
   test('should see only assigned sites', async ({ page }) => {
@@ -132,7 +132,7 @@ test.describe('Sites UI - Data Display', () => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=אתרים');
-    await page.waitForURL(/.*\/sites/);
+    await page.waitForURL(/.*\/neighborhoods/);
     await waitForDataLoad(page);
 
     // Verify sites are displayed (either in table or grid/card layout)

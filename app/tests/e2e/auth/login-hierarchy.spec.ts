@@ -36,7 +36,7 @@ test.describe('Authentication & Hierarchy - v1.3', () => {
 
     // Navigate to corporations
     await page.locator('nav').getByText('תאגידים').click();
-    await page.waitForURL(/.*\/corporations/, { timeout: 5000 });
+    await page.waitForURL(/.*\/cities/, { timeout: 5000 });
 
     // Should see corporations page
     const pageContent = await page.textContent('body');
@@ -103,7 +103,7 @@ test.describe('Role Hierarchy Enforcement', () => {
 
     // SuperAdmin should see ALL corporations
     await page.locator('nav').getByText('תאגידים').click();
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     // FIX: Wait for data to load
     await page.waitForTimeout(1000);

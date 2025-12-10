@@ -82,7 +82,7 @@ test.describe('Dashboard UI - SuperAdmin', () => {
 
   test('should navigate to corporations page', async ({ page }) => {
     await page.click('text=תאגידים');
-    await page.waitForURL(/.*\/corporations/);
+    await page.waitForURL(/.*\/cities/);
 
     // Verify navigation worked
     await verifyPageTitle(page, 'תאגידים');
