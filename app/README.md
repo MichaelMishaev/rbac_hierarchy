@@ -53,11 +53,11 @@ Visit http://localhost:3000/login and use:
 - Email: `superadmin@hierarchy.test`
 - Password: `admin123`
 
-**Manager:**
+**City Coordinator:**
 - Email: `manager@acme.com`
 - Password: `manager123`
 
-**Supervisor:**
+**Activist Coordinator:**
 - Email: `supervisor@acme.com`
 - Password: `supervisor123`
 
