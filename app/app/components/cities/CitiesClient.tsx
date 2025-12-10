@@ -74,7 +74,7 @@ type CitiesClientProps = {
 };
 
 export default function CitiesClient({ cities: initialCorporations, userRole }: CitiesClientProps) {
-  const t = useTranslations('corporations');
+  const t = useTranslations('citys');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();

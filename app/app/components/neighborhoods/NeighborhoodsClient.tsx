@@ -41,7 +41,7 @@ import {
   listActivistCoordinatorsByCity,
 } from '@/app/actions/neighborhoods';
 
-type Corporation = {
+type City = {
   id: string;
   name: string;
   code: string;
@@ -68,7 +68,7 @@ type Site = {
   email: string | null;
   isActive: boolean;
   cityId: string;
-  corporation?: Corporation;
+  city?: City;
   _count?: {
     supervisorAssignments: number;
     activists: number;
@@ -77,10 +77,10 @@ type Site = {
 
 type NeighborhoodsClientProps = {
   neighborhoods: Site[];
-  cities: Corporation[];
+  cities: City[];
 };
 
-export default function NeighborhoodsClient({ neighborhoods: initialSites, corporations }: NeighborhoodsClientProps) {
+export default function NeighborhoodsClient({ neighborhoods: initialSites, cities }: NeighborhoodsClientProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -89,7 +89,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
 
   const [sites, setSites] = useState(initialSites);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCorporation, setFilterCorporation] = useState<string>('all');
+  const [filterCity, setFilterCorporation] = useState<string>('all');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -102,8 +102,8 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
   const filteredSites = useMemo(() => {
     let filtered = sites;
     
-    if (filterCorporation !== 'all') {
-      filtered = filtered.filter((site) => site.cityId === filterCorporation);
+    if (filterCity !== 'all') {
+      filtered = filtered.filter((site) => site.cityId === filterCity);
     }
     
     if (searchQuery.trim()) {
@@ -118,7 +118,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
     }
     
     return filtered;
-  }, [sites, searchQuery, filterCorporation]);
+  }, [sites, searchQuery, filterCity]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -160,7 +160,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
 
   // Open create modal and fetch supervisors for first corporation
   const handleOpenCreateModal = async () => {
-    const corpId = filterCorporation !== 'all' ? filterCorporation : corporations[0]?.id;
+    const corpId = filterCity !== 'all' ? filterCity : cities[0]?.id;
     if (corpId) {
       await fetchSupervisors(corpId);
     }
@@ -347,7 +347,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
           
           {/* Filter Dropdown - Clean style without floating label */}
           <Select
-            value={filterCorporation}
+            value={filterCity}
             onChange={(e) => setFilterCorporation(e.target.value)}
             displayEmpty
             size="small"
@@ -369,7 +369,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
               },
               '& .MuiSelect-select': {
                 fontWeight: 500,
-                color: filterCorporation === 'all' ? colors.neutral[500] : colors.neutral[900],
+                color: filterCity === 'all' ? colors.neutral[500] : colors.neutral[900],
               },
             }}
             MenuProps={{
@@ -382,8 +382,8 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
               },
             }}
           >
-            <MenuItem value="all">{isRTL ? 'כל התאגידים' : 'All Corporations'}</MenuItem>
-            {corporations.map((corp) => (
+            <MenuItem value="all">{isRTL ? 'כל הערים' : 'All Cities'}</MenuItem>
+            {cities.map((corp) => (
               <MenuItem key={corp.id} value={corp.id}>
                 {corp.name}
               </MenuItem>
@@ -455,7 +455,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
               mb: 1,
             }}
           >
-            {searchQuery || filterCorporation !== 'all' 
+            {searchQuery || filterCity !== 'all' 
               ? (isRTL ? 'לא נמצאו תוצאות' : 'No results found') 
               : (isRTL ? 'אין אתרים עדיין' : 'No sites yet')}
           </Typography>
@@ -468,7 +468,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
               mx: 'auto',
             }}
           >
-            {searchQuery || filterCorporation !== 'all'
+            {searchQuery || filterCity !== 'all'
               ? isRTL
                 ? 'נסה לחפש עם מילות מפתח אחרות או שנה את הסינון'
                 : 'Try searching with different keywords or change the filter'
@@ -476,7 +476,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
                 ? 'צור את האתר הראשון שלך כדי להתחיל'
                 : 'Create your first site to get started'}
           </Typography>
-          {!searchQuery && filterCorporation === 'all' && (
+          {!searchQuery && filterCity === 'all' && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -806,9 +806,9 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateSite}
         mode="create"
-        corporations={corporations}
+        cities={cities}
         supervisors={supervisors}
-        onCorporationChange={fetchSupervisors}
+        onCityChange={fetchSupervisors}
       />
 
       {/* Edit Modal */}
@@ -832,9 +832,9 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, corpo
             isActive: selectedSite.isActive,
           }}
           mode="edit"
-          corporations={corporations}
+          cities={cities}
           supervisors={supervisors}
-          onCorporationChange={fetchSupervisors}
+          onCityChange={fetchSupervisors}
         />
       )}
 

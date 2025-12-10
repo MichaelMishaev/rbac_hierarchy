@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
-import { listCorporations } from '@/app/actions/cities';
+import { listCities } from '@/app/actions/cities';
 import NeighborhoodsClient from '@/app/components/neighborhoods/NeighborhoodsClient';
 import { Suspense } from 'react';
 
@@ -33,10 +33,10 @@ export default async function SitesPage() {
     );
   }
 
-  // Fetch sites and corporations
-  const [sitesResult, corporationsResult] = await Promise.all([
+  // Fetch sites and cities
+  const [sitesResult, citiesResult] = await Promise.all([
     listNeighborhoods({}),
-    listCorporations({}),
+    listCities({}),
   ]);
 
   if (!sitesResult.success) {
@@ -50,7 +50,7 @@ export default async function SitesPage() {
   }
 
   const sites = sitesResult.sites || [];
-  const corporations = corporationsResult.corporations || [];
+  const cities = citiesResult.cities || [];
 
   return (
     <Box
@@ -89,9 +89,9 @@ export default async function SitesPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      <NeighborhoodsClient 
-        sites={sites} 
-        corporations={corporations.map(c => ({ id: c.id, name: c.name, code: c.code }))} 
+      <NeighborhoodsClient
+        sites={sites}
+        cities={cities.map(c => ({ id: c.id, name: c.name, code: c.code }))}
       />
     </Box>
   );
