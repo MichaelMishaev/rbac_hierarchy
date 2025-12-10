@@ -71,7 +71,7 @@ type NeighborhoodModalProps = {
   mode: 'create' | 'edit';
   cities: Corporation[];
   activistCoordinators: Supervisor[];
-  onCorporationChange?: (cityId: string) => Promise<void>;
+  onCityChange?: (cityId: string) => Promise<void>;
 };
 
 export default function NeighborhoodModal({
@@ -80,9 +80,9 @@ export default function NeighborhoodModal({
   onSubmit,
   initialData,
   mode,
-  corporations,
+  cities,
   supervisors,
-  onCorporationChange,
+  onCityChange,
 }: NeighborhoodModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
@@ -126,7 +126,7 @@ export default function NeighborhoodModal({
         country: initialData?.country || 'ישראל',
         phone: initialData?.phone || '',
         email: initialData?.email || '',
-        cityId: initialData?.cityId || corporations[0]?.id || '',
+        cityId: initialData?.cityId || cities[0]?.id || '',
         activistCoordinatorId: initialData?.activistCoordinatorId || supervisors[0]?.id || '',
         isActive: initialData?.isActive ?? true,
       });
@@ -136,7 +136,7 @@ export default function NeighborhoodModal({
       setSupervisorErrors({});
       setTempPassword(null);
     }
-  }, [open, initialData, corporations, supervisors]);
+  }, [open, initialData, cities, supervisors]);
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof SiteFormData, string>> = {};
@@ -193,8 +193,8 @@ export default function NeighborhoodModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
 
     // When city changes, fetch activist coordinators for that city
-    if (field === 'cityId' && onCorporationChange) {
-      await onCorporationChange(value as string);
+    if (field === 'cityId' && onCityChange) {
+      await onCityChange(value as string);
       // Reset activist coordinator selection when city changes
       setFormData((prev) => ({ ...prev, activistCoordinatorId: '' }));
     }
@@ -236,8 +236,8 @@ export default function NeighborhoodModal({
         setTempPassword(result.tempPassword);
 
         // Refresh activist coordinators list
-        if (onCorporationChange) {
-          await onCorporationChange(formData.cityId);
+        if (onCityChange) {
+          await onCityChange(formData.cityId);
         }
 
         // Auto-select the new activist coordinator
@@ -323,7 +323,7 @@ export default function NeighborhoodModal({
                     </InputAdornment>
                   }
                 >
-                  {corporations.map((corp) => (
+                  {cities.map((corp) => (
                     <MenuItem key={corp.id} value={corp.id}>
                       {corp.name} ({corp.code})
                     </MenuItem>
