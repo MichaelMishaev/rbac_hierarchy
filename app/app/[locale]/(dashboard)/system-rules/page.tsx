@@ -109,31 +109,31 @@ export default async function SystemRulesPage() {
       capability: t('roleCapabilities.createCorporations'),
       superAdmin: t('roleCapabilities.yes'),
       manager: t('roleCapabilities.no'),
-      supervisor: t('roleCapabilities.no'),
+      activistCoordinator: t('roleCapabilities.no'),
     },
     {
       capability: t('roleCapabilities.manageSites'),
       superAdmin: t('roleCapabilities.fullAccess'),
       manager: t('roleCapabilities.corpOnly'),
-      supervisor: t('roleCapabilities.no'),
+      activistCoordinator: t('roleCapabilities.no'),
     },
     {
       capability: t('roleCapabilities.manageUsers'),
       superAdmin: t('roleCapabilities.fullAccess'),
       manager: t('roleCapabilities.corpOnly'),
-      supervisor: t('roleCapabilities.no'),
+      activistCoordinator: t('roleCapabilities.no'),
     },
     {
       capability: t('roleCapabilities.manageWorkers'),
       superAdmin: t('roleCapabilities.fullAccess'),
       manager: t('roleCapabilities.corpOnly'),
-      supervisor: t('roleCapabilities.assignedSitesOnly'),
+      activistCoordinator: t('roleCapabilities.assignedSitesOnly'),
     },
     {
       capability: t('roleCapabilities.viewReports'),
       superAdmin: t('roleCapabilities.fullAccess'),
       manager: t('roleCapabilities.corpOnly'),
-      supervisor: t('roleCapabilities.assignedSitesOnly'),
+      activistCoordinator: t('roleCapabilities.assignedSitesOnly'),
     },
   ];
 

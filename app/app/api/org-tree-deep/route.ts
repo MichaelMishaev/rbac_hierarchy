@@ -16,8 +16,8 @@ export async function GET() {
     name: 'System Administrator',
     type: 'superadmin',
     count: {
-      corporations: 1,
-      sites: 1,
+      cities: 1,
+      neighborhoods: 1,
       departments: 3,
       teams: 8,
     },
@@ -28,7 +28,7 @@ export async function GET() {
         type: 'corporation',
         count: {
           coordinators: 3,
-          sites: 1,
+          neighborhoods: 1,
           departments: 3,
           teams: 8,
         },
@@ -38,8 +38,8 @@ export async function GET() {
             name: 'Tel Aviv HQ',
             type: 'site',
             count: {
-              supervisors: 2,
-              workers: 25,
+              activistCoordinators: 2,
+              activists: 25,
               departments: 3,
             },
             children: [

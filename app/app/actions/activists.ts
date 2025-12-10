@@ -202,16 +202,16 @@ export async function createWorker(data: CreateWorkerInput) {
       },
     });
 
-    revalidatePath('/workers');
-    revalidatePath(`/sites/${data.neighborhoodId}`);
+    revalidatePath('/activists');
+    revalidatePath(`/neighborhoods/${data.neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      worker: newActivist,
+      activist: newActivist,
     };
   } catch (error) {
-    console.error('Error creating worker:', error);
+    console.error('Error creating activist:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create worker',
@@ -323,11 +323,11 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
       count: activists.length,
     };
   } catch (error) {
-    console.error('Error listing workers:', error);
+    console.error('Error listing activists:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to list workers',
-      workers: [],
+      activists: [],
       count: 0,
     };
   }
@@ -409,7 +409,7 @@ export async function getWorkerById(activistId: string) {
       activist,
     };
   } catch (error) {
-    console.error('Error getting worker:', error);
+    console.error('Error getting activist:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get worker',
@@ -614,19 +614,19 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
       },
     });
 
-    revalidatePath('/workers');
-    revalidatePath(`/workers/${activistId}`);
-    revalidatePath(`/sites/${existingActivist.neighborhoodId}`);
+    revalidatePath('/activists');
+    revalidatePath(`/activists/${activistId}`);
+    revalidatePath(`/neighborhoods/${existingActivist.neighborhoodId}`);
     if (data.neighborhoodId && data.neighborhoodId !== existingActivist.neighborhoodId) {
-      revalidatePath(`/sites/${data.neighborhoodId}`);
+      revalidatePath(`/neighborhoods/${data.neighborhoodId}`);
     }
 
     return {
       success: true,
-      worker: updatedActivist,
+      activist: updatedActivist,
     };
   } catch (error) {
-    console.error('Error updating worker:', error);
+    console.error('Error updating activist:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update worker',
@@ -722,17 +722,17 @@ export async function deleteWorker(activistId: string) {
       },
     });
 
-    revalidatePath('/workers');
-    revalidatePath(`/sites/${activistToDelete.neighborhoodId}`);
+    revalidatePath('/activists');
+    revalidatePath(`/neighborhoods/${activistToDelete.neighborhoodId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
       message: 'Worker deactivated successfully',
-      worker: deletedActivist,
+      activist: deletedActivist,
     };
   } catch (error) {
-    console.error('Error deleting worker:', error);
+    console.error('Error deleting activist:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete worker',
@@ -835,13 +835,13 @@ export async function toggleWorkerStatus(activistId: string) {
       },
     });
 
-    revalidatePath('/workers');
-    revalidatePath(`/workers/${activistId}`);
-    revalidatePath(`/sites/${activist.neighborhoodId}`);
+    revalidatePath('/activists');
+    revalidatePath(`/activists/${activistId}`);
+    revalidatePath(`/neighborhoods/${activist.neighborhoodId}`);
 
     return {
       success: true,
-      worker: updatedActivist,
+      activist: updatedActivist,
     };
   } catch (error) {
     console.error('Error toggling worker status:', error);
@@ -862,13 +862,13 @@ export async function toggleWorkerStatus(activistId: string) {
  * Permissions:
  * - Same as createWorker for each worker
  */
-export async function bulkCreateWorkers(workers: CreateWorkerInput[]) {
+export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
   try {
     const currentUser = await requireSupervisor();
 
     const results = {
       success: [] as any[],
-      failed: [] as { worker: CreateWorkerInput; error: string }[],
+      failed: [] as { activist: CreateWorkerInput; error: string }[],
     };
 
     for (const workerData of workers) {
@@ -878,7 +878,7 @@ export async function bulkCreateWorkers(workers: CreateWorkerInput[]) {
         results.success.push(result.worker);
       } else {
         results.failed.push({
-          worker: workerData,
+          activist: workerData,
           error: result.error || 'Unknown error',
         });
       }
@@ -894,7 +894,7 @@ export async function bulkCreateWorkers(workers: CreateWorkerInput[]) {
       },
     };
   } catch (error) {
-    console.error('Error bulk creating workers:', error);
+    console.error('Error bulk creating activists:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to bulk create workers',

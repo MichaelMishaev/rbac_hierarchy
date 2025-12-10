@@ -67,7 +67,7 @@ export default async function DashboardContent() {
           subtitle: t('activeCompanies'),
           color: 'blue' as const,
           icon: <BusinessIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/corporations`,
+          href: `/${locale}/cities`,
         },
         {
           title: t('totalSites'),
@@ -75,7 +75,7 @@ export default async function DashboardContent() {
           subtitle: `${stats.superadmin?.activeSites ?? 0} ${tCommon('active')}`,
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/sites`,
+          href: `/${locale}/neighborhoods`,
         },
         {
           title: t('systemUsers'),
@@ -95,7 +95,7 @@ export default async function DashboardContent() {
           subtitle: `${stats.superadmin?.activeWorkers ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/workers`,
+          href: `/${locale}/activists`,
         },
         {
           title: t('pendingInvitations'),
@@ -108,12 +108,12 @@ export default async function DashboardContent() {
 
       // Mock data for monthly trends (replace with real data from API)
       const monthlyTrendsData = [
-        { month: 'ינואר', corporations: 12, sites: 45, workers: 320 },
-        { month: 'פברואר', corporations: 15, sites: 52, workers: 380 },
-        { month: 'מרץ', corporations: 18, sites: 61, workers: 425 },
-        { month: 'אפריל', corporations: 20, sites: 70, workers: 490 },
-        { month: 'מאי', corporations: 23, sites: 78, workers: 550 },
-        { month: 'יוני', corporations: stats.superadmin?.totalCorporations ?? 25, sites: stats.superadmin?.totalSites ?? 85, workers: stats.superadmin?.totalWorkers ?? 600 },
+        { month: 'ינואר', cities: 12, neighborhoods: 45, activists: 320 },
+        { month: 'פברואר', cities: 15, neighborhoods: 52, activists: 380 },
+        { month: 'מרץ', cities: 18, neighborhoods: 61, activists: 425 },
+        { month: 'אפריל', cities: 20, neighborhoods: 70, activists: 490 },
+        { month: 'מאי', cities: 23, neighborhoods: 78, activists: 550 },
+        { month: 'יוני', cities: stats.superadmin?.totalCorporations ?? 25, neighborhoods: stats.superadmin?.totalSites ?? 85, activists: stats.superadmin?.totalWorkers ?? 600 },
       ];
 
       // Mock data for status distribution (replace with real data)
@@ -190,7 +190,7 @@ export default async function DashboardContent() {
           subtitle: t('allLocations'),
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/sites`,
+          href: `/${locale}/neighborhoods`,
         },
         {
           title: t('totalWorkers'),
@@ -198,7 +198,7 @@ export default async function DashboardContent() {
           subtitle: `${stats.manager?.activeWorkers ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/workers`,
+          href: `/${locale}/activists`,
         },
         {
           title: t('supervisors'),
@@ -226,7 +226,7 @@ export default async function DashboardContent() {
           subtitle: `${stats.supervisor?.activeWorkers ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/workers`,
+          href: `/${locale}/activists`,
         },
         {
           title: t('totalSites'),
@@ -234,7 +234,7 @@ export default async function DashboardContent() {
           subtitle: stats.supervisor?.neighborhood?.isActive ? tCommon('active') : tCommon('inactive'),
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/sites`,
+          href: `/${locale}/neighborhoods`,
         },
       ];
 

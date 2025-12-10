@@ -136,7 +136,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
 
   // Get unique sites and workers for filters
   const { sites, workers } = useMemo(() => {
-    if (!data?.records) return { sites: [], workers: [] };
+    if (!data?.records) return { neighborhoods: [], activists: [] };
 
     const siteMap = new Map();
     const workerMap = new Map();
@@ -151,8 +151,8 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
     });
 
     return {
-      sites: Array.from(siteMap.values()),
-      workers: Array.from(workerMap.values()),
+      neighborhoods: Array.from(siteMap.values()),
+      activists: Array.from(workerMap.values()),
     };
   }, [data]);
 
@@ -243,11 +243,11 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
             status: 'DELETED',
             checkedInAt: beforeData.checkedInAt,
             notes: afterData.reason || '', // Cancellation reason
-            worker: {
+            activist: {
               fullName: beforeData.workerName || 'לא ידוע',
               phone: beforeData.workerPhone || '',
             },
-            site: {
+            neighborhood: {
               name: beforeData.siteName || '-',
             },
             checkedInBy: {
@@ -427,7 +427,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                     sx={{ direction: 'rtl' }}
                   >
                     <MenuItem value="all">כל האתרים</MenuItem>
-                    {sites.map((site: any) => (
+                    {sites.map((neighborhood: any) => (
                       <MenuItem key={site.id} value={site.id}>
                         {site.name}
                       </MenuItem>
@@ -456,7 +456,7 @@ export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
                     sx={{ direction: 'rtl' }}
                   >
                     <MenuItem value="all">כל העובדים</MenuItem>
-                    {workers.map((worker: any) => (
+                    {workers.map((activist: any) => (
                       <MenuItem key={worker.id} value={worker.id}>
                         {worker.fullName}
                       </MenuItem>

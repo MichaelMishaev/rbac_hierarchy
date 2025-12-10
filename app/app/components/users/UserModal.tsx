@@ -50,7 +50,7 @@ type UserModalProps = {
   onClose: () => void;
   onSuccess: () => void;
   user?: User | null;
-  corporations: Corporation[];
+  cities: Corporation[];
   sites?: Site[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
   currentUserCorporationId?: string | null;

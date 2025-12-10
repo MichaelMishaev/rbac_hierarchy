@@ -74,8 +74,8 @@ type Site = {
 
 type UsersClientProps = {
   users: User[];
-  corporations: Corporation[];
-  sites: Site[];
+  cities: Corporation[];
+  neighborhoods: Site[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
 };
 

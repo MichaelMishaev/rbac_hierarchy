@@ -32,7 +32,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PlaceIcon from '@mui/icons-material/Place';
-import SiteModal, { SiteFormData } from '@/app/components/modals/SiteModal';
+import NeighborhoodModal, { SiteFormData } from '@/app/components/modals/NeighborhoodModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
   createNeighborhood,
@@ -71,16 +71,16 @@ type Site = {
   corporation?: Corporation;
   _count?: {
     supervisorAssignments: number;
-    workers: number;
+    activists: number;
   };
 };
 
-type SitesClientProps = {
-  sites: Site[];
-  corporations: Corporation[];
+type NeighborhoodsClientProps = {
+  neighborhoods: Site[];
+  cities: Corporation[];
 };
 
-export default function SitesClient({ sites: initialSites, corporations }: SitesClientProps) {
+export default function NeighborhoodsClient({ neighborhoods: initialSites, corporations }: NeighborhoodsClientProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -129,7 +129,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
     totalSupervisors: sites.reduce((acc, s) => acc + (s._count?.supervisorAssignments || 0), 0),
   }), [sites]);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, site: Site) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, neighborhood: Site) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedSite(site);
@@ -147,11 +147,11 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
       if (result.success) {
         setSupervisors(result.activistCoordinators);
       } else {
-        console.error('Failed to fetch supervisors:', result.error);
+        console.error('Failed to fetch activistCoordinators:', result.error);
         setSupervisors([]);
       }
     } catch (error) {
-      console.error('Error fetching supervisors:', error);
+      console.error('Error fetching activistCoordinators:', error);
       setSupervisors([]);
     } finally {
       setLoadingSupervisors(false);
@@ -801,7 +801,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
       </Menu>
 
       {/* Create Modal */}
-      <SiteModal
+      <NeighborhoodModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateSite}
@@ -813,7 +813,7 @@ export default function SitesClient({ sites: initialSites, corporations }: Sites
 
       {/* Edit Modal */}
       {selectedSite && (
-        <SiteModal
+        <NeighborhoodModal
           open={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);

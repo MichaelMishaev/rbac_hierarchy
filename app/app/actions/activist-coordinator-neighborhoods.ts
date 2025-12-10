@@ -134,7 +134,7 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
       tempPassword, // Return temp password to show to user
     };
   } catch (error) {
-    console.error('Error creating supervisor:', error);
+    console.error('Error creating activistCoordinator:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create supervisor',
@@ -283,7 +283,7 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
       activistsAutoAssigned: activistsAssigned,
     };
   } catch (error) {
-    console.error('Error assigning supervisor to site:', error);
+    console.error('Error assigning supervisor to neighborhood:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to assign supervisor',

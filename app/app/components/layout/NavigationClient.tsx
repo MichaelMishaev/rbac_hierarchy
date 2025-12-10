@@ -44,9 +44,9 @@ export default function NavigationClient({ role }: NavigationClientProps) {
   };
 
   const handlePrefetch = (path: string) => {
-    if (path.includes('/workers')) {
+    if (path.includes('/activists')) {
       prefetchWorkers();
-    } else if (path.includes('/sites')) {
+    } else if (path.includes('/neighborhoods')) {
       prefetchSites();
     } else if (path.includes('/dashboard')) {
       prefetchDashboard();
@@ -57,10 +57,10 @@ export default function NavigationClient({ role }: NavigationClientProps) {
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
     { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
     { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
-    { path: '/corporations', label: t('corporations'), icon: <BusinessIcon /> },
+    { path: '/cities', label: t('corporations'), icon: <BusinessIcon /> },
     { path: '/users', label: t('users'), icon: <PeopleIcon /> },
-    { path: '/sites', label: t('sites'), icon: <LocationOnIcon /> },
-    { path: '/workers', label: t('workers'), icon: <GroupIcon /> },
+    { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon /> },
+    { path: '/activists', label: t('workers'), icon: <GroupIcon /> },
     { path: '/invitations', label: t('invitations'), icon: <MailIcon /> },
     { path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> },
     { path: '/map', label: t('map'), icon: <MapIcon /> },
@@ -70,15 +70,15 @@ export default function NavigationClient({ role }: NavigationClientProps) {
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
     { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
     { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
-    { path: '/sites', label: t('sites'), icon: <LocationOnIcon /> },
-    { path: '/workers', label: t('workers'), icon: <GroupIcon /> },
+    { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon /> },
+    { path: '/activists', label: t('workers'), icon: <GroupIcon /> },
     { path: '/users', label: t('users'), icon: <PeopleIcon /> },
   ];
 
   const supervisorRoutes = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
     { path: '/tasks/inbox', label: t('taskInbox'), icon: <AssignmentIcon /> },
-    { path: '/workers', label: t('workers'), icon: <GroupIcon /> },
+    { path: '/activists', label: t('workers'), icon: <GroupIcon /> },
   ];
 
   const routes =

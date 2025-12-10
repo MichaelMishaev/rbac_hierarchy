@@ -46,7 +46,7 @@ type AreaManager = {
   email: string;
 };
 
-type CorporationModalProps = {
+type CityModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CorporationFormData) => Promise<void>;
@@ -55,14 +55,14 @@ type CorporationModalProps = {
   areaManagers: AreaManager[];
 };
 
-export default function CorporationModal({
+export default function CityModal({
   open,
   onClose,
   onSubmit,
   initialData,
   mode,
   areaManagers,
-}: CorporationModalProps) {
+}: CityModalProps) {
   const t = useTranslations('corporations');
   const tCommon = useTranslations('common');
 
@@ -113,7 +113,7 @@ export default function CorporationModal({
       await onSubmit(formData);
       onClose();
     } catch (error) {
-      console.error('Error submitting corporation:', error);
+      console.error('Error submitting city:', error);
     } finally {
       setLoading(false);
     }

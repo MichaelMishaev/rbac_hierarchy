@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import {
   Box,
@@ -12,6 +12,7 @@ import {
   Button,
   Stack,
   Grid,
+  Chip,
   useMediaQuery,
   useTheme,
   SwipeableDrawer,
@@ -19,27 +20,25 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
-import MailIcon from '@mui/icons-material/Mail';
-import PeopleIcon from '@mui/icons-material/People';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import GroupIcon from '@mui/icons-material/Group';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import QuickPreviewSkeleton from './QuickPreviewSkeleton';
 import StatChip from './StatChip';
 import ListPreviewModal from './ListPreviewModal';
 
-type CorporationQuickPreviewProps = {
-  corporationId: string;
+type NeighborhoodQuickPreviewProps = {
+  siteId: string;
   open: boolean;
   onClose: () => void;
 };
 
-export default function CorporationQuickPreview({
-  corporationId,
+export default function NeighborhoodQuickPreview({
+  siteId,
   open,
   onClose,
-}: CorporationQuickPreviewProps) {
+}: NeighborhoodQuickPreviewProps) {
   const router = useRouter();
   const locale = useLocale();
   const theme = useTheme();
@@ -48,47 +47,36 @@ export default function CorporationQuickPreview({
 
   // List preview modal state
   const [listPreview, setListPreview] = useState<{
-    type: 'sites' | 'workers' | 'managers' | 'supervisors' | null;
+    type: 'supervisors' | 'workers' | null;
     title: string;
   }>({ type: null, title: '' });
 
   // TODO: Replace with actual API call
   const [isLoading, setIsLoading] = useState(false);
   const data = {
-    id: corporationId,
-    name: 'תאגיד דוגמה',
-    code: 'CORP001',
-    logo: null,
-    email: 'contact@example.com',
-    phone: '050-1234567',
+    id: siteId,
+    name: 'אתר ראשון',
     address: 'רחוב הדוגמה 123, תל אביב',
+    isActive: true,
     _count: {
-      managers: 5,
-      supervisors: 12,
-      sites: 8,
-      workers: 145,
+      activistCoordinators: 3,
+      activists: 45,
     },
     // Mock data for lists
-    managers: [
-      { id: '1', name: 'יוסי כהן', subtitle: 'מנהל ראשי', isActive: true },
-      { id: '2', name: 'שרה לוי', subtitle: 'מנהלת משנה', isActive: true },
+    activistCoordinators: [
+      { id: '1', name: 'דוד משה', subtitle: 'מפקח בכיר', isActive: true },
+      { id: '2', name: 'רחל אברהם', subtitle: 'מפקחת משנה', isActive: true },
+      { id: '3', name: 'יוסי כהן', subtitle: 'מפקח', isActive: true },
     ],
-    supervisors: [
-      { id: '1', name: 'דוד משה', subtitle: 'אתר ראשון', isActive: true },
-      { id: '2', name: 'רחל אברהם', subtitle: 'אתר שני', isActive: true },
-    ],
-    sites: [
-      { id: '1', name: 'אתר ראשון', subtitle: 'תל אביב', isActive: true },
-      { id: '2', name: 'אתר שני', subtitle: 'ירושלים', isActive: true },
-    ],
-    workers: [
-      { id: '1', name: 'מיכאל דוד', subtitle: 'עובד כללי', isActive: true },
-      { id: '2', name: 'יעל משה', subtitle: 'עובדת כללית', isActive: true },
+    activists: [
+      { id: '1', name: 'מיכאל דוד', subtitle: '050-1234567', isActive: true },
+      { id: '2', name: 'יעל משה', subtitle: '050-2345678', isActive: true },
+      { id: '3', name: 'שרה לוי', subtitle: '050-3456789', isActive: true },
     ],
   };
 
   const handleViewFull = () => {
-    router.push(`/${locale}/corporations/${corporationId}`);
+    router.push(`/${locale}/neighborhoods/${siteId}`);
     onClose();
   };
 
@@ -99,18 +87,25 @@ export default function CorporationQuickPreview({
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box display="flex" alignItems="center" gap={2}>
             <Avatar
-              src={data?.logo || undefined}
-              sx={{ width: 48, height: 48, borderRadius: borderRadius.lg, bgcolor: colors.pastel.blue }}
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: borderRadius.lg,
+                bgcolor: colors.pastel.green,
+              }}
             >
-              {data?.name?.[0]}
+              <LocationOnIcon sx={{ fontSize: 28 }} />
             </Avatar>
             <Box>
               <Typography variant="h6" fontWeight={600}>
                 {data?.name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {data?.code}
-              </Typography>
+              <Chip
+                label={data?.isActive ? 'פעיל' : 'לא פעיל'}
+                color={data?.isActive ? 'success' : 'default'}
+                size="small"
+                sx={{ mt: 0.5 }}
+              />
             </Box>
           </Box>
           <IconButton onClick={onClose} size="small">
@@ -119,24 +114,14 @@ export default function CorporationQuickPreview({
         </Box>
       </Box>
 
-      {/* Content - Essential Info Only */}
+      {/* Content */}
       <Box sx={{ p: 3, overflowY: 'auto', flex: 1 }}>
         {isLoading ? (
           <QuickPreviewSkeleton />
         ) : (
           <Stack spacing={3}>
-            {/* KPI Summary - Compact & Clickable */}
+            {/* KPIs - Clickable */}
             <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <StatChip
-                  icon={<PeopleIcon />}
-                  label="מנהלים"
-                  value={data?._count.managers || 0}
-                  color="purple"
-                  clickable={data?._count.managers > 0}
-                  onClick={() => setListPreview({ type: 'managers', title: 'מנהלים' })}
-                />
-              </Grid>
               <Grid item xs={6}>
                 <StatChip
                   icon={<SupervisorAccountIcon />}
@@ -145,16 +130,6 @@ export default function CorporationQuickPreview({
                   color="blue"
                   clickable={data?._count.supervisors > 0}
                   onClick={() => setListPreview({ type: 'supervisors', title: 'מפקחים' })}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <StatChip
-                  icon={<LocationOnIcon />}
-                  label="אתרים"
-                  value={data?._count.sites || 0}
-                  color="green"
-                  clickable={data?._count.sites > 0}
-                  onClick={() => setListPreview({ type: 'sites', title: 'אתרים' })}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -169,64 +144,31 @@ export default function CorporationQuickPreview({
               </Grid>
             </Grid>
 
-            {/* Contact Info */}
+            {/* Location */}
             <Box>
               <Typography variant="subtitle2" fontWeight={600} mb={1.5}>
-                פרטי יצירת קשר
+                מיקום
               </Typography>
-              <Stack spacing={1.5}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: borderRadius.md,
-                    backgroundColor: colors.neutral[50],
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                    כתובת
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {data?.address}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: borderRadius.md,
-                    backgroundColor: colors.neutral[50],
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                    טלפון
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {data?.phone}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: borderRadius.md,
-                    backgroundColor: colors.neutral[50],
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                    דוא״ל
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {data?.email}
-                  </Typography>
-                </Box>
-              </Stack>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: borderRadius.md,
+                  backgroundColor: colors.neutral[50],
+                  border: `1px solid ${colors.neutral[200]}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+              >
+                <LocationOnIcon sx={{ color: colors.pastel.green }} />
+                <Typography variant="body2">{data?.address}</Typography>
+              </Box>
             </Box>
           </Stack>
         )}
       </Box>
 
-      {/* Footer - Quick Actions */}
+      {/* Footer */}
       <Box
         sx={{
           p: 3,
@@ -247,24 +189,14 @@ export default function CorporationQuickPreview({
           >
             צפה במלואו
           </Button>
-          <Stack direction="row" spacing={2}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<EditIcon />}
-              sx={{ borderRadius: borderRadius.lg }}
-            >
-              ערוך
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<MailIcon />}
-              sx={{ borderRadius: borderRadius.lg }}
-            >
-              הזמן מנהל
-            </Button>
-          </Stack>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<EditIcon />}
+            sx={{ borderRadius: borderRadius.lg }}
+          >
+            ערוך אתר
+          </Button>
         </Stack>
       </Box>
     </>
@@ -273,12 +205,8 @@ export default function CorporationQuickPreview({
   const getListItems = () => {
     if (!listPreview.type) return [];
     switch (listPreview.type) {
-      case 'managers':
-        return data.managers || [];
       case 'supervisors':
         return data.supervisors || [];
-      case 'sites':
-        return data.sites || [];
       case 'workers':
         return data.workers || [];
       default:
@@ -304,7 +232,6 @@ export default function CorporationQuickPreview({
             },
           }}
         >
-          {/* Mobile: Bottom sheet with swipe handle */}
           <Box sx={{ p: 2, textAlign: 'center' }}>
             <Box
               sx={{
@@ -325,7 +252,7 @@ export default function CorporationQuickPreview({
           onClose={() => setListPreview({ type: null, title: '' })}
           title={listPreview.title}
           items={getListItems()}
-          type={listPreview.type || 'sites'}
+          type={listPreview.type || 'workers'}
           onItemClick={(id) => {
             // TODO: Open entity quick preview
             console.log('Clicked item:', id);
@@ -360,7 +287,7 @@ export default function CorporationQuickPreview({
         onClose={() => setListPreview({ type: null, title: '' })}
         title={listPreview.title}
         items={getListItems()}
-        type={listPreview.type || 'sites'}
+        type={listPreview.type || 'workers'}
         onItemClick={(id) => {
           // TODO: Open entity quick preview
           console.log('Clicked item:', id);

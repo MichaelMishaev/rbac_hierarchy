@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import { prisma } from '@/lib/prisma';
-import CorporationsClient from '@/app/components/corporations/CorporationsClient';
+import CitiesClient from '@/app/components/cities/CitiesClient';
 
 export default async function CorporationsPage() {
   const session = await auth();
@@ -118,7 +118,7 @@ export default async function CorporationsPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      <CorporationsClient
+      <CitiesClient
         corporations={corporations}
         userRole={session.user.role}
       />

@@ -42,7 +42,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableRowsIcon from '@mui/icons-material/TableRows';
-import WorkerModal, { WorkerFormData } from '@/app/components/modals/WorkerModal';
+import ActivistModal, { WorkerFormData } from '@/app/components/modals/ActivistModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
   createActivist,
@@ -85,21 +85,21 @@ type Worker = {
   supervisor?: Supervisor | null;
 };
 
-type WorkersClientProps = {
-  workers: Worker[];
-  sites: Site[];
-  supervisors: Supervisor[];
+type ActivistsClientProps = {
+  activists: Worker[];
+  neighborhoods: Site[];
+  activistCoordinators: Supervisor[];
   currentUserId: string;
   defaultSupervisorId?: string;
 };
 
-export default function WorkersClient({
-  workers: initialWorkers,
+export default function ActivistsClient({
+  activists: initialWorkers,
   sites,
   supervisors,
   currentUserId,
   defaultSupervisorId,
-}: WorkersClientProps) {
+}: ActivistsClientProps) {
   const t = useTranslations('workers');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -119,7 +119,7 @@ export default function WorkersClient({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Transform supervisors to match WorkerModal expected format
+  // Transform supervisors to match ActivistModal expected format
   const transformedSupervisors = useMemo(() => {
     return supervisors.map(supervisor => ({
       id: supervisor.id,
@@ -165,7 +165,7 @@ export default function WorkersClient({
     sitesCount: new Set(workers.map(w => w.neighborhoodId)).size,
   }), [workers]);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, worker: Worker) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, activist: Worker) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedWorker(worker);
@@ -1012,7 +1012,7 @@ export default function WorkersClient({
       </Menu>
 
       {/* Create Modal */}
-      <WorkerModal
+      <ActivistModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateWorker}
@@ -1024,7 +1024,7 @@ export default function WorkersClient({
 
       {/* Edit Modal */}
       {selectedWorker && (
-        <WorkerModal
+        <ActivistModal
           open={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);

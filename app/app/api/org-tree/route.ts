@@ -44,7 +44,7 @@ export async function GET() {
                 },
               },
             },
-            supervisors: {
+            activistCoordinators: {
               where: {
                 isActive: true,
               },
@@ -66,12 +66,12 @@ export async function GET() {
                 },
               },
             },
-            sites: {
+            neighborhoods: {
               where: {
                 isActive: true,
               },
               include: {
-                workers: {
+                activists: {
                   where: {
                     isActive: true,
                   },
@@ -126,8 +126,8 @@ export async function GET() {
           type: 'city' as const,
           count: {
             coordinators: corp.managers.length,
-            supervisors: corp.supervisors.length,
-            sites: corp.sites.length,
+            activistCoordinators: corp.supervisors.length,
+            neighborhoods: corp.sites.length,
           },
           children: [
             // Managers branch
@@ -160,7 +160,7 @@ export async function GET() {
                       name: `${activistCoordinator.user.fullName} - ${activistCoordinator.title}`,
                       type: 'activistCoordinator' as const,
                       count: {
-                        sites: activistCoordinator.siteAssignments?.length || 0,
+                        neighborhoods: activistCoordinator.siteAssignments?.length || 0,
                       },
                     })),
                   },
@@ -186,7 +186,7 @@ export async function GET() {
                   name: `${assignment.activistCoordinator.user.fullName} - ${assignment.activistCoordinator.title}`,
                   type: 'activistCoordinator' as const,
                   count: {
-                    workers: assignedWorkers.length,
+                    activists: assignedWorkers.length,
                   },
                   children: assignedWorkers.map((activist: any) => ({
                     id: activist.id,
@@ -215,8 +215,8 @@ export async function GET() {
                 name: neighborhood.name,
                 type: 'neighborhood' as const,
                 count: {
-                  workers: workers.length,
-                  supervisors: supervisorAssignments.length,
+                  activists: workers.length,
+                  activistCoordinators: supervisorAssignments.length,
                   orphanWorkers: orphanWorkers.length,
                 },
                 // CRITICAL: Flag neighborhood as having data integrity issue if orphan workers exist with supervisors

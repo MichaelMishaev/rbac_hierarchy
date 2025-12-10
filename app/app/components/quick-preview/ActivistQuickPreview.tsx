@@ -24,17 +24,17 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import QuickPreviewSkeleton from './QuickPreviewSkeleton';
 
-type WorkerQuickPreviewProps = {
+type ActivistQuickPreviewProps = {
   workerId: string;
   open: boolean;
   onClose: () => void;
 };
 
-export default function WorkerQuickPreview({
+export default function ActivistQuickPreview({
   workerId,
   open,
   onClose,
-}: WorkerQuickPreviewProps) {
+}: ActivistQuickPreviewProps) {
   const router = useRouter();
   const locale = useLocale();
   const theme = useTheme();
@@ -49,7 +49,7 @@ export default function WorkerQuickPreview({
     phone: '050-1234567',
     idNumber: '123456789',
     isActive: true,
-    site: {
+    neighborhood: {
       name: 'אתר ראשון',
       address: 'רחוב הדוגמה 123, תל אביב',
     },

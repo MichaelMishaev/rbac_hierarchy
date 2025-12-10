@@ -17,16 +17,16 @@ interface Site {
   city: string | null;
   latitude: number;
   longitude: number;
-  corporation: {
+  city: {
     id: string;
     name: string;
   };
-  workers: {
+  activists: {
     active: number;
     inactive: number;
     total: number;
   };
-  supervisors: Array<{
+  activistCoordinators: Array<{
     id: string;
     name: string;
     email: string;
@@ -35,7 +35,7 @@ interface Site {
 }
 
 interface LeafletMapProps {
-  sites: Site[];
+  neighborhoods: Site[];
   onSiteSelect?: (siteId: string | null) => void;
   selectedSiteId?: string | null;
 }

@@ -29,7 +29,7 @@ import { checkInWorker, undoCheckIn } from '@/actions/attendance';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
-type WorkerCardProps = {
+type ActivistCardProps = {
   worker?: any; // Not checked in worker
   record?: any; // Checked in record
   isCheckedIn: boolean;
@@ -37,13 +37,13 @@ type WorkerCardProps = {
   isTimeWindowValid: boolean;
 };
 
-export default function WorkerCard({
+export default function ActivistCard({
   worker,
   record,
   isCheckedIn,
   onUpdate,
   isTimeWindowValid,
-}: WorkerCardProps) {
+}: ActivistCardProps) {
   const [loading, setLoading] = useState(false);
   const [undoDialogOpen, setUndoDialogOpen] = useState(false);
   const [undoReason, setUndoReason] = useState('');

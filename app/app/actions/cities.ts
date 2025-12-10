@@ -129,15 +129,15 @@ export async function createCity(data: CreateCityInput) {
       },
     });
 
-    revalidatePath('/corporations');
+    revalidatePath('/cities');
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      corporation: newCorporation,
+      city: newCorporation,
     };
   } catch (error) {
-    console.error('Error creating corporation:', error);
+    console.error('Error creating city:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create corporation',
@@ -209,11 +209,11 @@ export async function listCities(filters: ListCitiesFilters = {}) {
       count: corporations.length,
     };
   } catch (error) {
-    console.error('Error listing corporations:', error);
+    console.error('Error listing cities:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to list corporations',
-      corporations: [],
+      cities: [],
       count: 0,
     };
   }
@@ -299,7 +299,7 @@ export async function getCityById(cityId: string) {
       corporation,
     };
   } catch (error) {
-    console.error('Error getting corporation:', error);
+    console.error('Error getting city:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get corporation',
@@ -449,16 +449,16 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
       },
     });
 
-    revalidatePath('/corporations');
-    revalidatePath(`/corporations/${cityId}`);
+    revalidatePath('/cities');
+    revalidatePath(`/cities/${cityId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      corporation: updatedCorporation,
+      city: updatedCorporation,
     };
   } catch (error) {
-    console.error('Error updating corporation:', error);
+    console.error('Error updating city:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update corporation',
@@ -537,7 +537,7 @@ export async function deleteCity(cityId: string) {
       },
     });
 
-    revalidatePath('/corporations');
+    revalidatePath('/cities');
     revalidatePath('/dashboard');
 
     return {
@@ -545,7 +545,7 @@ export async function deleteCity(cityId: string) {
       message: 'Corporation deleted successfully',
     };
   } catch (error) {
-    console.error('Error deleting corporation:', error);
+    console.error('Error deleting city:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete corporation',
@@ -738,13 +738,13 @@ export async function toggleCityStatus(cityId: string) {
       },
     });
 
-    revalidatePath('/corporations');
-    revalidatePath(`/corporations/${cityId}`);
+    revalidatePath('/cities');
+    revalidatePath(`/cities/${cityId}`);
     revalidatePath('/dashboard');
 
     return {
       success: true,
-      corporation: updatedCorporation,
+      city: updatedCorporation,
     };
   } catch (error) {
     console.error('Error toggling corporation status:', error);

@@ -290,11 +290,11 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
       count: sites.length,
     };
   } catch (error) {
-    console.error('Error listing sites:', error);
+    console.error('Error listing neighborhoods:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to list sites',
-      sites: [],
+      neighborhoods: [],
       count: 0,
     };
   }
@@ -832,7 +832,7 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
         return {
           success: false,
           error: 'Cannot list supervisors from different corporation',
-          supervisors: [],
+          activistCoordinators: [],
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
@@ -848,7 +848,7 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
         return {
           success: false,
           error: 'Access denied',
-          supervisors: [],
+          activistCoordinators: [],
         };
       }
     }
@@ -883,7 +883,7 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
 
     return {
       success: true,
-      supervisors: supervisors.map(s => ({
+      activistCoordinators: supervisors.map(s => ({
         id: s.id,
         userId: s.user.id,
         fullName: s.user.fullName,
@@ -896,11 +896,11 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
       })),
     };
   } catch (error) {
-    console.error('Error listing supervisors:', error);
+    console.error('Error listing activistCoordinators:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to list supervisors',
-      supervisors: [],
+      activistCoordinators: [],
     };
   }
 }

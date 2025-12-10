@@ -115,9 +115,9 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
   };
 
   const handlePrefetch = (path: string) => {
-    if (path.includes('/workers')) {
+    if (path.includes('/activists')) {
       prefetchWorkers();
-    } else if (path.includes('/sites')) {
+    } else if (path.includes('/neighborhoods')) {
       prefetchSites();
     } else if (path.includes('/dashboard')) {
       prefetchDashboard();
@@ -139,9 +139,9 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
       id: 'management',
       label: t('groupManagement'),
       items: [
-        { path: '/corporations', label: t('corporations'), icon: <BusinessIcon /> },
-        { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
-        { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+        { path: '/cities', label: t('corporations'), icon: <BusinessIcon /> },
+        { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
+        { path: '/activists', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
         { path: '/users', label: t('users'), icon: <PeopleIcon /> },
       ],
     },
@@ -169,9 +169,9 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
       id: 'management',
       label: t('groupManagement'),
       items: [
-        { path: '/corporations', label: t('corporations'), icon: <BusinessIcon /> },
-        { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
-        { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+        { path: '/cities', label: t('corporations'), icon: <BusinessIcon /> },
+        { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
+        { path: '/activists', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
         { path: '/users', label: t('users'), icon: <PeopleIcon /> },
       ],
     },
@@ -194,8 +194,8 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
   const managerItems: NavItem[] = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
     { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
-    { path: '/sites', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
-    { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+    { path: '/neighborhoods', label: t('sites'), icon: <LocationOnIcon />, badge: stats?.activeSites },
+    { path: '/activists', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
     { path: '/users', label: t('users'), icon: <PeopleIcon /> },
   ];
 
@@ -203,7 +203,7 @@ export default function NavigationV3({ role, stats }: NavigationV3Props) {
   const supervisorItems: NavItem[] = [
     { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
     { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
-    { path: '/workers', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
+    { path: '/activists', label: t('workers'), icon: <GroupIcon />, badge: stats?.activeWorkers },
   ];
 
   // Remove locale from pathname for comparison

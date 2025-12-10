@@ -41,11 +41,11 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
 });
 
 interface MapData {
-  sites: any[];
-  corporations: any[];
+  neighborhoods: any[];
+  cities: any[];
   areaManagers: any[];
   managers: any[];
-  supervisors: any[];
+  activistCoordinators: any[];
   stats: any;
   user: any;
 }
@@ -57,10 +57,10 @@ export default function LeafletClient() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState({
-    corporations: true,
-    sites: false,
+    cities: true,
+    neighborhoods: false,
     managers: false,
-    supervisors: false,
+    activistCoordinators: false,
     areaManagers: false,
   });
 
@@ -337,7 +337,7 @@ export default function LeafletClient() {
             </ListItem>
             <Collapse in={expandedSections.sites} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ mt: 1 }}>
-                {data.sites.map((site: any) => (
+                {data.sites.map((neighborhood: any) => (
                   <ListItem
                     key={site.id}
                     component="button"
@@ -484,7 +484,7 @@ export default function LeafletClient() {
             </ListItem>
             <Collapse in={expandedSections.supervisors} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ mt: 1 }}>
-                {data.supervisors.map((supervisor: any) => (
+                {data.supervisors.map((activistCoordinator: any) => (
                   <ListItem 
                     key={supervisor.id} 
                     sx={{ 

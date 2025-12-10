@@ -5,7 +5,7 @@ import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { listCorporations } from '@/app/actions/cities';
-import SitesClient from '@/app/components/sites/SitesClient';
+import NeighborhoodsClient from '@/app/components/neighborhoods/NeighborhoodsClient';
 import { Suspense } from 'react';
 
 // Enable route caching - revalidate every 30 seconds
@@ -89,7 +89,7 @@ export default async function SitesPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      <SitesClient 
+      <NeighborhoodsClient 
         sites={sites} 
         corporations={corporations.map(c => ({ id: c.id, name: c.name, code: c.code }))} 
       />

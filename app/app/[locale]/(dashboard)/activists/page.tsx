@@ -6,7 +6,7 @@ import { colors } from '@/lib/design-system';
 import { listWorkers } from '@/app/actions/activists';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { prisma } from '@/lib/prisma';
-import WorkersClient from '@/app/components/workers/WorkersClient';
+import ActivistsClient from '@/app/components/activists/ActivistsClient';
 import { Suspense } from 'react';
 
 // Enable route caching - revalidate every 30 seconds
@@ -105,7 +105,7 @@ export default async function WorkersPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      <WorkersClient
+      <ActivistsClient
         workers={workers.map(w => ({
           ...w,
           neighborhood: w.neighborhood ? {

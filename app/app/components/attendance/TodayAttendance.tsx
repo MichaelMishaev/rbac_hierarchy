@@ -21,7 +21,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
-import WorkerCard from './WorkerCard';
+import ActivistCard from './ActivistCard';
 import { getTodaysAttendance } from '@/actions/attendance';
 import { validateTimeWindow, getCurrentIsraelTime } from '@/lib/attendance';
 
@@ -92,7 +92,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
     });
 
     // Add sites from unchecked workers
-    data.notCheckedIn?.forEach((worker: any) => {
+    data.notCheckedIn?.forEach((activist: any) => {
       if (worker.site && !siteMap.has(worker.site.id)) {
         siteMap.set(worker.site.id, worker.site);
       }
@@ -105,7 +105,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
   const filteredWorkers = useMemo(() => {
     if (!data) return { checkedIn: [], notCheckedIn: [] };
 
-    const filterWorker = (worker: any) => {
+    const filterWorker = (activist: any) => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
       const name = worker.worker?.fullName || worker.fullName || '';
@@ -388,7 +388,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
               sx={{ direction: 'rtl' }}
             >
               <MenuItem value="all">כל האתרים</MenuItem>
-              {sites.map((site: any) => (
+              {sites.map((neighborhood: any) => (
                 <MenuItem key={site.id} value={site.id}>
                   {site.name}
                 </MenuItem>
@@ -435,7 +435,7 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
             <Grid container spacing={2}>
               {filteredWorkers.checkedIn.map((record: any) => (
                 <Grid item xs={12} sm={6} md={4} key={record.id}>
-                  <WorkerCard
+                  <ActivistCard
                     record={record}
                     isCheckedIn={true}
                     onUpdate={fetchAttendance}
@@ -480,9 +480,9 @@ export default function TodayAttendance({ user }: TodayAttendanceProps) {
               />
             </Box>
             <Grid container spacing={2}>
-              {filteredWorkers.notCheckedIn.map((worker: any) => (
+              {filteredWorkers.notCheckedIn.map((activist: any) => (
                 <Grid item xs={12} sm={6} md={4} key={worker.id}>
-                  <WorkerCard
+                  <ActivistCard
                     worker={worker}
                     isCheckedIn={false}
                     onUpdate={fetchAttendance}

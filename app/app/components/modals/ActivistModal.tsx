@@ -64,14 +64,14 @@ type Supervisor = {
   email: string;
 };
 
-type WorkerModalProps = {
+type ActivistModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: WorkerFormData) => Promise<{ success: boolean; error?: string }>;
   initialData?: Partial<WorkerFormData>;
   mode: 'create' | 'edit';
-  sites: Site[];
-  supervisors: Supervisor[];
+  neighborhoods: Site[];
+  activistCoordinators: Supervisor[];
   defaultSiteId?: string;
   defaultSupervisorId?: string;
 };
@@ -89,7 +89,7 @@ const COMMON_TAGS = [
   'מנהל צוות',
 ];
 
-export default function WorkerModal({
+export default function ActivistModal({
   open,
   onClose,
   onSubmit,
@@ -99,7 +99,7 @@ export default function WorkerModal({
   supervisors,
   defaultSiteId,
   defaultSupervisorId,
-}: WorkerModalProps) {
+}: ActivistModalProps) {
   const t = useTranslations('workers');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -177,7 +177,7 @@ export default function WorkerModal({
         setErrors((prev) => ({ ...prev, [errorField]: result.error || 'Failed to save worker' }));
       }
     } catch (error) {
-      console.error('Error submitting worker:', error);
+      console.error('Error submitting activist:', error);
       const errorField: keyof WorkerFormData = 'name';
       setErrors((prev) => ({ ...prev, [errorField]: 'An unexpected error occurred' }));
     } finally {

@@ -43,7 +43,7 @@ export type ManagerStats = {
 
 export type SupervisorStats = {
   neighborhood: any;
-  sites: any[]; // All sites assigned to supervisor
+  neighborhoods: any[]; // All sites assigned to supervisor
   totalWorkers: number;
   activeWorkers: number;
   inactiveWorkers: number;
@@ -321,7 +321,7 @@ async function getSupervisorStats(userId: string): Promise<SupervisorStats> {
   if (siteIds.length === 0) {
     return {
       neighborhood: null,
-      sites: [],
+      neighborhoods: [],
       totalWorkers: 0,
       activeWorkers: 0,
       inactiveWorkers: 0,

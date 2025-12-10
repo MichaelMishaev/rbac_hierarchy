@@ -20,23 +20,23 @@ export default function Navigation({ role }: NavigationProps) {
 
   const superAdminRoutes = [
     { path: '/dashboard', label: 'Dashboard / לוח בקרה', icon: <DashboardIcon /> },
-    { path: '/corporations', label: 'Corporations / תאגידים', icon: <BusinessIcon /> },
+    { path: '/cities', label: 'Corporations / תאגידים', icon: <BusinessIcon /> },
     { path: '/users', label: 'Users / משתמשים', icon: <PeopleIcon /> },
-    { path: '/sites', label: 'Sites / אתרים', icon: <LocationOnIcon /> },
-    { path: '/workers', label: 'Workers / עובדים', icon: <GroupIcon /> },
+    { path: '/neighborhoods', label: 'Sites / אתרים', icon: <LocationOnIcon /> },
+    { path: '/activists', label: 'Workers / עובדים', icon: <GroupIcon /> },
     { path: '/invitations', label: 'Invitations / הזמנות', icon: <MailIcon /> },
   ];
 
   const managerRoutes = [
     { path: '/dashboard', label: 'Dashboard / לוח בקרה', icon: <DashboardIcon /> },
-    { path: '/sites', label: 'Sites / אתרים', icon: <LocationOnIcon /> },
-    { path: '/workers', label: 'Workers / עובדים', icon: <GroupIcon /> },
+    { path: '/neighborhoods', label: 'Sites / אתרים', icon: <LocationOnIcon /> },
+    { path: '/activists', label: 'Workers / עובדים', icon: <GroupIcon /> },
     { path: '/users', label: 'Users / משתמשים', icon: <PeopleIcon /> },
   ];
 
   const supervisorRoutes = [
     { path: '/dashboard', label: 'Dashboard / לוח בקרה', icon: <DashboardIcon /> },
-    { path: '/workers', label: 'Workers / עובדים', icon: <GroupIcon /> },
+    { path: '/activists', label: 'Workers / עובדים', icon: <GroupIcon /> },
   ];
 
   const routes =

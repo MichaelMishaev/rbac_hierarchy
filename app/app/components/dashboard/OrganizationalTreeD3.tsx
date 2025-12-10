@@ -81,15 +81,15 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     exitFullscreen: 'צא ממסך מלא',
     noData: 'אין נתוני ארגון זמינים',
     superadmin: 'מנהל על',
-    corporation: 'תאגיד',
-    site: 'אתר',
+    city: 'תאגיד',
+    neighborhood: 'אתר',
     department: 'מחלקה',
     team: 'צוות',
-    corporations: 'תאגידים',
-    sites: 'אתרים',
-    workers: 'עובדים',
+    cities: 'תאגידים',
+    neighborhoods: 'אתרים',
+    activists: 'עובדים',
     managers: 'מנהלים',
-    supervisors: 'מפקחים',
+    activistCoordinators: 'מפקחים',
     searchPlaceholder: 'חפש צומת בעץ...',
     noMatch: 'לא נמצאו תוצאות',
     matchesFound: 'נמצאו',
@@ -390,13 +390,13 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     const typeLabels: Record<string, string> = {
       superadmin: 'מנהל על',
       areamanager: 'מנהל אזורי',
-      corporation: 'תאגיד',
+      city: 'תאגיד',
       'managers-group': 'קבוצת מנהלים',
       manager: 'מנהל',
       'supervisors-group': 'קבוצת מפקחים',
-      supervisor: 'מפקח',
-      site: 'אתר',
-      worker: 'עובד',
+      activistCoordinator: 'מפקח',
+      neighborhood: 'אתר',
+      activist: 'עובד',
     };
     return typeLabels[type] || type;
   }, []);
@@ -404,11 +404,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   // Get translated stat key
   const getStatLabel = useCallback((key: string) => {
     const statLabels: Record<string, string> = {
-      corporations: labels.corporations,
-      sites: labels.sites,
-      workers: labels.workers,
+      cities: labels.corporations,
+      neighborhoods: labels.sites,
+      activists: labels.workers,
       managers: labels.managers,
-      supervisors: labels.supervisors,
+      activistCoordinators: labels.supervisors,
     };
     return statLabels[key] || key;
   }, [labels]);

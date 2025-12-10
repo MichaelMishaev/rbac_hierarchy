@@ -1,8 +1,8 @@
 'use client';
 
-import CorporationQuickPreview from './CorporationQuickPreview';
-import SiteQuickPreview from './SiteQuickPreview';
-import WorkerQuickPreview from './WorkerQuickPreview';
+import CityQuickPreview from './CityQuickPreview';
+import NeighborhoodQuickPreview from './NeighborhoodQuickPreview';
+import ActivistQuickPreview from './ActivistQuickPreview';
 
 type EntityQuickPreviewProps = {
   type: 'corporations' | 'sites' | 'workers' | 'managers' | 'supervisors' | null;
@@ -21,17 +21,17 @@ export default function EntityQuickPreview({
 
   switch (type) {
     case 'corporations':
-      return <CorporationQuickPreview corporationId={id} open={open} onClose={onClose} />;
+      return <CityQuickPreview corporationId={id} open={open} onClose={onClose} />;
     case 'sites':
-      return <SiteQuickPreview siteId={id} open={open} onClose={onClose} />;
+      return <NeighborhoodQuickPreview siteId={id} open={open} onClose={onClose} />;
     case 'workers':
-      return <WorkerQuickPreview workerId={id} open={open} onClose={onClose} />;
+      return <ActivistQuickPreview workerId={id} open={open} onClose={onClose} />;
     case 'managers':
       // TODO: Create ManagerQuickPreview component
-      return <CorporationQuickPreview corporationId={id} open={open} onClose={onClose} />;
+      return <CityQuickPreview corporationId={id} open={open} onClose={onClose} />;
     case 'supervisors':
       // TODO: Create SupervisorQuickPreview component
-      return <SiteQuickPreview siteId={id} open={open} onClose={onClose} />;
+      return <NeighborhoodQuickPreview siteId={id} open={open} onClose={onClose} />;
     default:
       return null;
   }

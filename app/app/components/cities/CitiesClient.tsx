@@ -30,7 +30,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import CorporationModal, { CorporationFormData } from '@/app/components/modals/CorporationModal';
+import CityModal, { CorporationFormData } from '@/app/components/modals/CityModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
   createCity,
@@ -57,7 +57,7 @@ type Corporation = {
   };
   _count?: {
     managers: number;
-    sites: number;
+    neighborhoods: number;
   };
 };
 
@@ -68,12 +68,12 @@ type AreaManager = {
   email: string;
 };
 
-type CorporationsClientProps = {
-  corporations: Corporation[];
+type CitiesClientProps = {
+  cities: Corporation[];
   userRole: string;
 };
 
-export default function CorporationsClient({ corporations: initialCorporations, userRole }: CorporationsClientProps) {
+export default function CitiesClient({ cities: initialCorporations, userRole }: CitiesClientProps) {
   const t = useTranslations('corporations');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -708,7 +708,7 @@ export default function CorporationsClient({ corporations: initialCorporations, 
       </Menu>
 
       {/* Create Modal */}
-      <CorporationModal
+      <CityModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateCorporation}
@@ -718,7 +718,7 @@ export default function CorporationsClient({ corporations: initialCorporations, 
 
       {/* Edit Modal */}
       {selectedCorp && (
-        <CorporationModal
+        <CityModal
           open={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);

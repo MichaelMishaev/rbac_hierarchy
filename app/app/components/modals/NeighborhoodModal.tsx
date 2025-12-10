@@ -63,18 +63,18 @@ type Supervisor = {
   email: string;
 };
 
-type SiteModalProps = {
+type NeighborhoodModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: SiteFormData) => Promise<{ success: boolean; error?: string }>;
   initialData?: Partial<SiteFormData>;
   mode: 'create' | 'edit';
-  corporations: Corporation[];
-  supervisors: Supervisor[];
+  cities: Corporation[];
+  activistCoordinators: Supervisor[];
   onCorporationChange?: (cityId: string) => Promise<void>;
 };
 
-export default function SiteModal({
+export default function NeighborhoodModal({
   open,
   onClose,
   onSubmit,
@@ -83,7 +83,7 @@ export default function SiteModal({
   corporations,
   supervisors,
   onCorporationChange,
-}: SiteModalProps) {
+}: NeighborhoodModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -175,7 +175,7 @@ export default function SiteModal({
         setErrors((prev) => ({ ...prev, [errorField]: result.error || 'Failed to save site' }));
       }
     } catch (error) {
-      console.error('Error submitting site:', error);
+      console.error('Error submitting neighborhood:', error);
       const errorField: keyof SiteFormData = 'name';
       setErrors((prev) => ({ ...prev, [errorField]: 'An unexpected error occurred' }));
     } finally {
@@ -251,7 +251,7 @@ export default function SiteModal({
         setSupervisorErrors({ general: result.error || 'Failed to create supervisor' });
       }
     } catch (error) {
-      console.error('Error creating supervisor:', error);
+      console.error('Error creating activistCoordinator:', error);
       setSupervisorErrors({ general: 'An unexpected error occurred' });
     } finally {
       setCreatingSupervisor(false);

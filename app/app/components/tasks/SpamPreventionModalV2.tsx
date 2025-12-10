@@ -37,9 +37,9 @@ interface RecipientPreview {
     by_role: {
       area_manager: number;
       corporation_manager: number;
-      supervisor: number;
+      activistCoordinator: number;
     };
-    by_corporation: Array<{
+    by_city: Array<{
       corporation_id: string;
       name: string;
       count: number;

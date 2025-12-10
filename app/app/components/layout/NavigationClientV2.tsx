@@ -75,7 +75,7 @@ export default function NavigationClientV2({ role, stats = {} }: NavigationClien
           icon: <DashboardIcon />,
         },
         {
-          path: `/${locale}/corporations`,
+          path: `/${locale}/cities`,
           label: t('corporations'),
           icon: <BusinessIcon />,
           badge: stats.corporations,
@@ -98,13 +98,13 @@ export default function NavigationClientV2({ role, stats = {} }: NavigationClien
           badge: stats.supervisors,
         },
         {
-          path: `/${locale}/sites`,
+          path: `/${locale}/neighborhoods`,
           label: t('sites'),
           icon: <LocationOnIcon />,
           badge: stats.activeSites,
         },
         {
-          path: `/${locale}/workers`,
+          path: `/${locale}/activists`,
           label: t('workers'),
           icon: <GroupIcon />,
           badge: stats.activeWorkers,
@@ -146,13 +146,13 @@ export default function NavigationClientV2({ role, stats = {} }: NavigationClien
           badge: stats.supervisors,
         },
         {
-          path: `/${locale}/sites`,
+          path: `/${locale}/neighborhoods`,
           label: t('sites'),
           icon: <LocationOnIcon />,
           badge: stats.activeSites,
         },
         {
-          path: `/${locale}/workers`,
+          path: `/${locale}/activists`,
           label: t('workers'),
           icon: <GroupIcon />,
           badge: stats.activeWorkers,
@@ -172,7 +172,7 @@ export default function NavigationClientV2({ role, stats = {} }: NavigationClien
           icon: <DashboardIcon />,
         },
         {
-          path: `/${locale}/workers`,
+          path: `/${locale}/activists`,
           label: t('workers'),
           icon: <GroupIcon />,
           badge: stats.activeWorkers,

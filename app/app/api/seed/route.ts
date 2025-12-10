@@ -441,16 +441,16 @@ export async function POST(request: Request) {
       success: true,
       message: '🎉 Production seed completed successfully!',
       data: {
-        corporations: 3,
+        cities: 3,
         coordinators: 3,
-        supervisors: 3,
-        sites: 3,
-        workers: 3,
+        activistCoordinators: 3,
+        neighborhoods: 3,
+        activists: 3,
       },
       credentials: {
         superAdmin: 'admin@rbac.shop / admin123',
         coordinators: 'manager123',
-        supervisors: 'supervisor123',
+        activistCoordinators: 'supervisor123',
       },
     });
   } catch (error: any) {
