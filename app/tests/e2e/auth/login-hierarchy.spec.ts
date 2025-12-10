@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Authentication and Hierarchy Tests - v1.3 Compliance
- * Tests SuperAdmin, Manager, Supervisor role hierarchy
+ * Tests SuperAdmin, Manager, Activist Coordinator role hierarchy
  */
 
 test.describe('Authentication & Hierarchy - v1.3', () => {
@@ -54,10 +54,10 @@ test.describe('Authentication & Hierarchy - v1.3', () => {
     // Should reach dashboard
     await page.waitForURL('/dashboard', { timeout: 10000 });
 
-    // Manager should see their role
+    // City Coordinator should see their role
     await expect(page.locator('text=/שלום.*דוד.*כהן/i')).toBeVisible({ timeout: 10000 });
 
-    console.log('✅ Manager login successful');
+    console.log('✅ City Coordinator login successful');
   });
 
   test('Supervisor should only access assigned sites', async ({ page }) => {
@@ -69,10 +69,10 @@ test.describe('Authentication & Hierarchy - v1.3', () => {
     // Should reach dashboard
     await page.waitForURL('/dashboard', { timeout: 10000 });
 
-    // Supervisor should see their role
+    // Activist Coordinator should see their role
     await expect(page.locator('text=/שלום.*משה.*ישראלי/i')).toBeVisible({ timeout: 10000 });
 
-    console.log('✅ Supervisor login successful');
+    console.log('✅ Activist Coordinator login successful');
   });
 
   test('Invalid credentials should fail', async ({ page }) => {
@@ -92,7 +92,7 @@ test.describe('Authentication & Hierarchy - v1.3', () => {
 });
 
 test.describe('Role Hierarchy Enforcement', () => {
-  test('SuperAdmin > Manager hierarchy', async ({ page }) => {
+  test('SuperAdmin > City Coordinator hierarchy', async ({ page }) => {
     // Login as SuperAdmin
     // FIX: Use locale-based routing
     await page.goto('/he/login');
@@ -109,7 +109,7 @@ test.describe('Role Hierarchy Enforcement', () => {
     await page.waitForTimeout(1000);
 
     const pageContent = await page.textContent('body');
-    // Should see corporation names
+    // Should see city names
     expect(pageContent?.includes('טכנולוגיות אלקטרה') ||
            pageContent?.includes('קבוצת בינוי') ||
            pageContent?.includes('רשת מזון טעים')).toBeTruthy();
@@ -124,11 +124,11 @@ test.describe('Role Hierarchy Enforcement', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard');
 
-    // Manager should be able to navigate to users/supervisors
+    // City Coordinator should be able to navigate to users/supervisors
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Manager has access to their corporation');
+    console.log('✅ City Coordinator has access to their corporation');
   });
 
   test('Supervisor cannot create other supervisors', async ({ page }) => {
@@ -138,11 +138,11 @@ test.describe('Role Hierarchy Enforcement', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard');
 
-    // Supervisor should NOT see create supervisor option
+    // Activist Coordinator should NOT see create activist coordinator option
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor has limited access');
+    console.log('✅ Activist Coordinator has limited access');
   });
 });
 

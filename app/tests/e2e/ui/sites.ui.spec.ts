@@ -50,7 +50,7 @@ test.describe('Sites UI - SuperAdmin', () => {
     const createButton = page.locator('button').filter({ hasText: /אתר חדש|הוסף אתר/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Create Site button is visible');
+    console.log('✅ Create Neighborhood button is visible');
   });
 
   test('should be responsive on mobile', async ({ page }) => {
@@ -79,21 +79,21 @@ test.describe('Sites UI - Manager', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see Corp1 site (מפעל תל אביב)
+    // Should see Corp1 neighborhood (מפעל תל אביב)
     // Should NOT see sites from other corporations
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Manager sees only their corporation sites');
+    console.log('✅ City Coordinator sees only their city sites');
   });
 
   test('should display "Create Site" button', async ({ page }) => {
     await waitForDataLoad(page);
 
-    // Manager CAN create sites
+    // City Coordinator CAN create sites
     const createButton = page.locator('button').filter({ hasText: /אתר חדש|הוסף אתר/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Manager can create sites');
+    console.log('✅ City Coordinator can create sites');
   });
 });
 
@@ -110,25 +110,25 @@ test.describe('Sites UI - Supervisor', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see their assigned site only
+    // Should see their assigned neighborhood only
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor sees only assigned sites');
+    console.log('✅ Activist Coordinator sees only assigned sites');
   });
 
   test('should NOT display "Create Site" button', async ({ page }) => {
     await waitForDataLoad(page);
 
-    // Supervisor CANNOT create sites
+    // Activist Coordinator CANNOT create sites
     const createButton = page.locator('button').filter({ hasText: /אתר חדש|הוסף אתר/ });
     await expect(createButton).not.toBeVisible();
 
-    console.log('✅ Supervisor cannot create sites');
+    console.log('✅ Activist Coordinator cannot create sites');
   });
 });
 
 test.describe('Sites UI - Data Display', () => {
-  test('should display site information', async ({ page }) => {
+  test('should display neighborhood information', async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=אתרים');
@@ -140,9 +140,9 @@ test.describe('Sites UI - Data Display', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Verify site information is shown (Hebrew labels)
+    // Verify neighborhood information is shown (Hebrew labels)
     expect(pageContent).toContain('שם');
 
-    console.log('✅ Site information displayed correctly');
+    console.log('✅ Neighborhood information displayed correctly');
   });
 });

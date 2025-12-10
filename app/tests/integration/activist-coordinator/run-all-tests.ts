@@ -1,15 +1,15 @@
 #!/usr/bin/env tsx
 /**
- * Integration Test Runner for Worker-Supervisor Business Rules
+ * Integration Test Runner for Activist-ActivistCoordinator Business Rules
  *
  * Run all automated tests to verify business logic
  */
 
-import { setupWorkerSupervisorTestData, cleanupWorkerSupervisorTestData } from './test-setup';
-import { testWorkerCreation } from './01-worker-creation.test';
-import { testWorkerUpdates } from './02-worker-updates.test';
-import { testSupervisorAssignment } from './03-supervisor-assignment.test';
-import { testSupervisorRemoval } from './04-supervisor-removal.test';
+import { setupActivistCoordinatorTestData, cleanupActivistCoordinatorTestData } from './test-setup';
+import { testActivistCreation } from './01-worker-creation.test';
+import { testActivistUpdates } from './02-worker-updates.test';
+import { testActivistCoordinatorAssignment } from './03-supervisor-assignment.test';
+import { testActivistCoordinatorRemoval } from './04-supervisor-removal.test';
 import { testDataIntegrity } from './05-data-integrity.test';
 
 interface TestResult {
@@ -55,7 +55,7 @@ async function runTestSuite(name: string, testFn: Function): Promise<TestResult>
 
 async function main() {
   console.log('\n╔══════════════════════════════════════════════════════════╗');
-  console.log('║   Worker-Supervisor Integration Test Suite              ║');
+  console.log('║   Activist-ActivistCoordinator Integration Test Suite              ║');
   console.log('╚══════════════════════════════════════════════════════════╝\n');
 
   const overallStart = Date.now();
@@ -64,16 +64,16 @@ async function main() {
   try {
     // Setup test data
     console.log('🔧 Setting up test data...');
-    testData = await setupWorkerSupervisorTestData();
+    testData = await setupActivistCoordinatorTestData();
     console.log('✅ Test data ready\n');
 
     // Run all test suites
     const results: TestResult[] = [];
 
-    results.push(await runTestSuite('Worker Creation Validation', (r: TestResult) => testWorkerCreation(testData, r)));
-    results.push(await runTestSuite('Worker Updates & Site Changes', (r: TestResult) => testWorkerUpdates(testData, r)));
-    results.push(await runTestSuite('Supervisor Assignment & Auto-Assignment', (r: TestResult) => testSupervisorAssignment(testData, r)));
-    results.push(await runTestSuite('Supervisor Removal & Reassignment', (r: TestResult) => testSupervisorRemoval(testData, r)));
+    results.push(await runTestSuite('Activist Creation Validation', (r: TestResult) => testActivistCreation(testData, r)));
+    results.push(await runTestSuite('Worker Updates & Neighborhood Changes', (r: TestResult) => testActivistUpdates(testData, r)));
+    results.push(await runTestSuite('Supervisor Assignment & Auto-Assignment', (r: TestResult) => testActivistCoordinatorAssignment(testData, r)));
+    results.push(await runTestSuite('Supervisor Removal & Reassignment', (r: TestResult) => testActivistCoordinatorRemoval(testData, r)));
     results.push(await runTestSuite('Data Integrity Checks', (r: TestResult) => testDataIntegrity(testData, r)));
 
     // Calculate totals
@@ -115,7 +115,7 @@ async function main() {
     // Cleanup
     if (testData) {
       console.log('\n🧹 Cleaning up test data...');
-      await cleanupWorkerSupervisorTestData(testData);
+      await cleanupActivistCoordinatorTestData(testData);
       console.log('✅ Cleanup complete\n');
     }
   }

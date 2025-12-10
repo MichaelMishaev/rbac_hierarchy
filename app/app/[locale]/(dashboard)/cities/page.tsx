@@ -48,7 +48,7 @@ export default async function CorporationsPage() {
   // SUPERADMIN: See all corporations (no filter needed)
 
   // v1.4: Fetch cities with areaManager relation
-  const corporationsData = await prisma.city.findMany({
+  const citiesData = await prisma.city.findMany({
     where: whereClause,
     include: {
       areaManager: {
@@ -76,9 +76,9 @@ export default async function CorporationsPage() {
   });
 
   // Transform null to undefined for optional relations (TypeScript compatibility)
-  const corporations = corporationsData.map(corp => ({
-    ...corp,
-    areaManager: corp.areaManager || undefined,
+  const cities = citiesData.map(city => ({
+    ...city,
+    areaManager: city.areaManager || undefined,
   }));
 
   return (
@@ -119,7 +119,7 @@ export default async function CorporationsPage() {
 
       {/* Client Component with Modals */}
       <CitiesClient
-        corporations={corporations}
+        cities={cities}
         userRole={session.user.role}
       />
     </Box>

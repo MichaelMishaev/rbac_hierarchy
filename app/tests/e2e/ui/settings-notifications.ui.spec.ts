@@ -65,7 +65,7 @@ test.describe('Settings/Notifications UI - Manager', () => {
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Manager notification settings displayed');
+    console.log('✅ City Coordinator notification settings displayed');
   });
 });
 
@@ -81,7 +81,7 @@ test.describe('Settings/Notifications UI - Supervisor', () => {
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor notification settings displayed');
+    console.log('✅ Activist Coordinator notification settings displayed');
   });
 });
 

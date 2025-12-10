@@ -96,9 +96,9 @@ test.describe('Users UI - Manager', () => {
       // Should see only users from their corporation
       expect(pageContent).toBeTruthy();
 
-      console.log('✅ Manager sees only their corporation users');
+      console.log('✅ City Coordinator sees only their city users');
     } else {
-      console.log('⏭️  Manager may not have access to users page');
+      console.log('⏭️  City Coordinator may not have access to users page');
     }
   });
 
@@ -110,14 +110,14 @@ test.describe('Users UI - Manager', () => {
 
       const createButton = page.locator('button').filter({ hasText: /משתמש חדש|הוסף משתמש/ });
 
-      // Manager may or may not have permission depending on RBAC rules
+      // City Coordinator may or may not have permission depending on RBAC rules
       const isVisible = await createButton.isVisible();
-      console.log(`✅ Manager create user button: ${isVisible ? 'visible' : 'not visible'}`);
+      console.log(`✅ City Coordinator create user button: ${isVisible ? 'visible' : 'not visible'}`);
     }
   });
 });
 
-test.describe('Users UI - Supervisor (Should Not Access)', () => {
+test.describe('Users UI - Activist Coordinator (Should Not Access)', () => {
   test('should NOT display users in navigation', async ({ page }) => {
     await loginAs(page, testUsers.supervisor);
     await page.waitForURL(/\/(he\/)?dashboard/);
@@ -125,10 +125,10 @@ test.describe('Users UI - Supervisor (Should Not Access)', () => {
     const nav = page.locator('nav');
     const usersLink = nav.locator('text=משתמשים');
 
-    // Supervisor should NOT see users link
+    // Activist Coordinator should NOT see users link
     await expect(usersLink).not.toBeVisible();
 
-    console.log('✅ Supervisor cannot see users in navigation');
+    console.log('✅ Activist Coordinator cannot see users in navigation');
   });
 });
 

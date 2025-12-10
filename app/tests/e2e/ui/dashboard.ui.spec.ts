@@ -97,27 +97,27 @@ test.describe('Dashboard UI - Manager', () => {
     await page.waitForURL(/\/(he\/)?dashboard/);
   });
 
-  test('should render dashboard with manager view', async ({ page }) => {
+  test('should render dashboard with city coordinator view', async ({ page }) => {
     await waitForDataLoad(page);
 
     // Verify RTL layout
     await verifyRTL(page);
     await verifyHebrewLocale(page);
 
-    // Verify manager greeting
+    // Verify city coordinator greeting
     await verifyUserGreeting(page, 'דוד כהן');
 
-    console.log('✅ Manager dashboard renders correctly');
+    console.log('✅ City Coordinator dashboard renders correctly');
   });
 
   test('should NOT show corporations in navigation', async ({ page }) => {
     const nav = page.locator('nav');
     const corporationsLink = nav.locator('text=תאגידים');
 
-    // Manager should not see corporations link
+    // City Coordinator should not see corporations link
     await expect(corporationsLink).not.toBeVisible();
 
-    console.log('✅ Manager cannot see corporations link');
+    console.log('✅ City Coordinator cannot see corporations link');
   });
 
   test('should display corporation-scoped data only', async ({ page }) => {
@@ -125,10 +125,10 @@ test.describe('Dashboard UI - Manager', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see their corporation name (טכנולוגיות אלקטרה)
+    // Should see their city name (טכנולוגיות אלקטרה)
     expect(pageContent?.includes('טכנולוגיות') || pageContent?.includes('אלקטרה')).toBeTruthy();
 
-    console.log('✅ Manager sees corporation-scoped data');
+    console.log('✅ City Coordinator sees corporation-scoped data');
   });
 });
 
@@ -138,30 +138,30 @@ test.describe('Dashboard UI - Supervisor', () => {
     await page.waitForURL(/\/(he\/)?dashboard/);
   });
 
-  test('should render dashboard with supervisor view', async ({ page }) => {
+  test('should render dashboard with activist coordinator view', async ({ page }) => {
     await waitForDataLoad(page);
 
     // Verify RTL layout
     await verifyRTL(page);
     await verifyHebrewLocale(page);
 
-    // Verify supervisor greeting
+    // Verify activist coordinator greeting
     await verifyUserGreeting(page, 'משה ישראלי');
 
-    console.log('✅ Supervisor dashboard renders correctly');
+    console.log('✅ Activist Coordinator dashboard renders correctly');
   });
 
   test('should have limited navigation items', async ({ page }) => {
     const nav = page.locator('nav');
 
-    // Supervisor should see limited navigation
+    // Activist Coordinator should see limited navigation
     await expect(nav.getByText('לוח בקרה')).toBeVisible();
     await expect(nav.getByText('עובדים')).toBeVisible();
 
     // Should NOT see corporations
     await expect(nav.getByText('תאגידים')).not.toBeVisible();
 
-    console.log('✅ Supervisor has limited navigation');
+    console.log('✅ Activist Coordinator has limited navigation');
   });
 
   test('should display site-scoped data only', async ({ page }) => {
@@ -169,10 +169,10 @@ test.describe('Dashboard UI - Supervisor', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see their assigned site info
+    // Should see their assigned neighborhood info
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor sees site-scoped data');
+    console.log('✅ Activist Coordinator sees site-scoped data');
   });
 });
 

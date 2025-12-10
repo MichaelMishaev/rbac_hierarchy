@@ -79,7 +79,7 @@ test.describe('Tasks Inbox UI - Manager', () => {
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Manager sees corporation-scoped tasks');
+    console.log('✅ City Coordinator sees corporation-scoped tasks');
   });
 
   test('should display "Create Task" button', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('Tasks Inbox UI - Manager', () => {
     const createButton = page.locator('button').filter({ hasText: /משימה חדשה|משימה/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Manager can create tasks');
+    console.log('✅ City Coordinator can create tasks');
   });
 });
 
@@ -106,7 +106,7 @@ test.describe('Tasks Inbox UI - Supervisor', () => {
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor sees assigned tasks only');
+    console.log('✅ Activist Coordinator sees assigned tasks only');
   });
 
   test('should NOT display "Create Task" button', async ({ page }) => {
@@ -115,7 +115,7 @@ test.describe('Tasks Inbox UI - Supervisor', () => {
     const createButton = page.locator('button').filter({ hasText: /משימה חדשה|צור משימה/ });
     await expect(createButton).not.toBeVisible();
 
-    console.log('✅ Supervisor cannot create tasks');
+    console.log('✅ Activist Coordinator cannot create tasks');
   });
 });
 

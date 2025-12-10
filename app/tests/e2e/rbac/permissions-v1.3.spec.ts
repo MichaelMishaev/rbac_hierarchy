@@ -57,7 +57,7 @@ test.describe('RBAC - SuperAdmin Permissions', () => {
   });
 });
 
-test.describe('RBAC - Manager Permissions', () => {
+test.describe('RBAC - City Coordinator Permissions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'david.cohen@electra-tech.co.il');
@@ -69,11 +69,11 @@ test.describe('RBAC - Manager Permissions', () => {
   test('Manager can only view their corporation', async ({ page }) => {
     const pageContent = await page.textContent('body');
 
-    // Should see their corporation name
+    // Should see their city name
     expect(pageContent?.includes('טכנולוגיות אלקטרה') ||
            pageContent?.includes('דוד כהן')).toBeTruthy();
 
-    console.log('✅ Manager sees their corporation only');
+    console.log('✅ City Coordinator sees their city only');
   });
 
   test('Manager can view sites in their corporation', async ({ page }) => {
@@ -84,7 +84,7 @@ test.describe('RBAC - Manager Permissions', () => {
     expect(pageContent).toBeTruthy();
 
     // Should only see sites from their corporation
-    console.log('✅ Manager can view their corporation sites');
+    console.log('✅ City Coordinator can view their city sites');
   });
 
   test('Manager can view workers in their corporation', async ({ page }) => {
@@ -94,21 +94,21 @@ test.describe('RBAC - Manager Permissions', () => {
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Manager can view their corporation workers');
+    console.log('✅ City Coordinator can view their city workers');
   });
 
   test('Manager CANNOT create corporations', async ({ page }) => {
     // Try to navigate to corporations page
     const navLinks = await page.locator('nav a, button').allTextContents();
 
-    // Manager should NOT see "Create Corporation" option
+    // City Coordinator should NOT see "Create Corporation" option
     // (SuperAdmin only feature)
 
-    console.log('✅ Manager cannot create corporations');
+    console.log('✅ City Coordinator cannot create corporations');
   });
 });
 
-test.describe('RBAC - Supervisor Permissions', () => {
+test.describe('RBAC - Activist Coordinator Permissions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[name="email"]', 'moshe.israeli@electra-tech.co.il');
@@ -123,10 +123,10 @@ test.describe('RBAC - Supervisor Permissions', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should only see their assigned site (מפעל תל אביב)
+    // Should only see their assigned neighborhood (מפעל תל אביב)
     expect(pageContent?.includes('מפעל') || pageContent?.includes('אתר')).toBeTruthy();
 
-    console.log('✅ Supervisor sees only assigned sites');
+    console.log('✅ Activist Coordinator sees only assigned sites');
   });
 
   test('Supervisor can view workers in assigned sites only', async ({ page }) => {
@@ -136,24 +136,24 @@ test.describe('RBAC - Supervisor Permissions', () => {
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor sees only workers in assigned sites');
+    console.log('✅ Activist Coordinator sees only workers in assigned sites');
   });
 
   test('Supervisor CANNOT create sites', async ({ page }) => {
     const pageContent = await page.textContent('body');
 
-    // Supervisor should NOT see "Create Site" button
+    // Activist Coordinator should NOT see "Create Site" button
     // (Manager/SuperAdmin only)
 
-    console.log('✅ Supervisor cannot create sites');
+    console.log('✅ Activist Coordinator cannot create sites');
   });
 
   test('Supervisor CANNOT view other supervisors', async ({ page }) => {
     const pageContent = await page.textContent('body');
 
-    // Supervisor should NOT see supervisor management
+    // Activist Coordinator should NOT see activist coordinator management
 
-    console.log('✅ Supervisor cannot view other supervisors');
+    console.log('✅ Activist Coordinator cannot view other supervisors');
   });
 });
 
@@ -196,7 +196,7 @@ test.describe('v1.3 Composite FK Enforcement', () => {
 
 test.describe('Cross-Corporation Access Prevention', () => {
   test('Manager from Corp1 cannot access Corp2 data', async ({ page }) => {
-    // Login as Manager from Corp1
+    // Login as City Coordinator from Corp1
     await page.goto('/login');
     await page.fill('input[name="email"]', 'david.cohen@electra-tech.co.il');
     await page.fill('input[name="password"]', 'manager123');
@@ -230,7 +230,7 @@ test.describe('Cross-Corporation Access Prevention', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should only see workers from assigned site (מפעל תל אביב)
+    // Should only see workers from assigned neighborhood (מפעל תל אביב)
     // Should NOT see workers from other sites
 
     expect(pageContent).toBeTruthy();

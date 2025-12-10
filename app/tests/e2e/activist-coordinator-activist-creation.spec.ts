@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Test supervisor worker creation flow
+ * Test activist coordinator activist creation flow
  * User: moshe.israeli@electra-tech.co.il
  * Password: supervisor123
  * Site: משרד ראשי - תל אביב (electra-tlv-hq)
  */
 
-test.describe('Supervisor Worker Creation', () => {
+test.describe('Supervisor Activist Creation', () => {
   test.beforeEach(async ({ page }) => {
     // Capture console messages
     page.on('console', (msg) => {
@@ -39,12 +39,12 @@ test.describe('Supervisor Worker Creation', () => {
     console.log('✅ Logged in successfully');
   });
 
-  test('should display correct worker count on dashboard', async ({ page }) => {
+  test('should display correct activist count on dashboard', async ({ page }) => {
     // Check dashboard shows 2 workers
     const workerCountText = await page.locator('text=2').first();
     await expect(workerCountText).toBeVisible();
 
-    console.log('✅ Dashboard shows correct worker count');
+    console.log('✅ Dashboard shows correct activist count');
   });
 
   test('should navigate to workers page and display existing workers', async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe('Supervisor Worker Creation', () => {
     console.log('✅ Existing workers are displayed');
   });
 
-  test('should create a new worker and see it in the list', async ({ page }) => {
+  test('should create a new activist and see it in the list', async ({ page }) => {
     // Navigate to workers page
     await page.goto('http://localhost:3200/he/workers');
     await page.waitForSelector('text=עובדים', { timeout: 10000 });
@@ -75,14 +75,14 @@ test.describe('Supervisor Worker Creation', () => {
     const addButton = page.locator('button:has-text("הוסף עובד"), button:has-text("עובד חדש")').first();
     await addButton.click();
 
-    console.log('📍 Clicked add worker button');
+    console.log('📍 Clicked add activist button');
 
     // Wait for modal to open (correct title: "הוסף עובד חדש")
     await page.waitForSelector('text=הוסף עובד חדש', { timeout: 5000 });
 
     console.log('📍 Modal opened');
 
-    // Fill in worker details
+    // Fill in activist details
     const timestamp = Date.now();
     const workerName = `עובד טסט ${timestamp}`;
 
@@ -90,8 +90,8 @@ test.describe('Supervisor Worker Creation', () => {
     await page.getByLabel('שם *').fill(workerName);
     console.log(`📍 Filled name: ${workerName}`);
 
-    // Site and supervisor should be pre-selected (required fields)
-    console.log('📍 Site and supervisor are pre-selected');
+    // Neighborhood and activist coordinator should be pre-selected (required fields)
+    console.log('📍 Neighborhood and activist coordinator are pre-selected');
 
     // Take screenshot before submit
     await page.screenshot({ path: 'tests/screenshots/before-submit.png', fullPage: true });
@@ -107,22 +107,22 @@ test.describe('Supervisor Worker Creation', () => {
 
     console.log('📍 Modal closed');
 
-    // Wait a bit for the worker to appear
+    // Wait a bit for the activist to appear
     await page.waitForTimeout(2000);
 
     // Take screenshot after submit
     await page.screenshot({ path: 'tests/screenshots/after-submit.png', fullPage: true });
 
-    // Check if the new worker appears in the list
+    // Check if the new activist appears in the list
     const newWorker = page.locator(`text=${workerName}`);
 
     try {
       await expect(newWorker).toBeVisible({ timeout: 5000 });
-      console.log('✅ New worker appears in the list!');
+      console.log('✅ New activist appears in the list!');
     } catch (error) {
-      console.error('❌ New worker NOT visible in the list');
+      console.error('❌ New activist NOT visible in the list');
 
-      // Get all worker names on the page for debugging
+      // Get all activist names on the page for debugging
       const allWorkers = await page.locator('[data-testid="worker-card"], .worker-name, text=/^[א-ת]+ [א-ת]+$/').allTextContents();
       console.log('All workers on page:', allWorkers);
 

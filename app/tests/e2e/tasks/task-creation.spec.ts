@@ -43,7 +43,7 @@ test.describe('Task Creation - Recipients Count Insert Order', () => {
     // This test verifies CRITICAL FIX #2: Recipients count must be computed FIRST
     // to avoid constraint violation (recipients_count > 0)
 
-    // 1. Login as Corporation Manager (has access to supervisors)
+    // 1. Login as City City Coordinator (has access to supervisors)
     const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
     // 2. Create task with "all under me"
@@ -81,7 +81,7 @@ test.describe('Task Creation - Recipients Count Insert Order', () => {
   });
 
   test('should create task with specific recipients', async ({ page, baseURL }) => {
-    // 1. Login as Corporation Manager
+    // 1. Login as City Manager
     const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
     // 2. Get available recipients
@@ -143,7 +143,7 @@ test.describe('Task Creation - RBAC Permissions', () => {
     await request.dispose();
   });
 
-  test('TC-TASK-004: Area Manager can send tasks', async ({ page, baseURL }) => {
+  test('TC-TASK-004: Area City Coordinator can send tasks', async ({ page, baseURL }) => {
     const request = await getAuthenticatedContext(page, testUsers.areaManager, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
@@ -159,13 +159,13 @@ test.describe('Task Creation - RBAC Permissions', () => {
     await request.dispose();
   });
 
-  test('TC-TASK-004: Corporation Manager can send tasks', async ({ page, baseURL }) => {
+  test('TC-TASK-004: City City Coordinator can send tasks', async ({ page, baseURL }) => {
     const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {
       data: {
         type: 'Task',
-        body: 'Task from Corporation Manager',
+        body: 'Task from City Manager',
         execution_date: '2025-12-15',
         send_to: 'all',
       },
@@ -175,7 +175,7 @@ test.describe('Task Creation - RBAC Permissions', () => {
     await request.dispose();
   });
 
-  test('TC-TASK-004: Supervisor CANNOT send tasks', async ({ page, baseURL }) => {
+  test('TC-TASK-004: Activist Coordinator CANNOT send tasks', async ({ page, baseURL }) => {
     const request = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     const createResponse = await request.post('/api/tasks', {

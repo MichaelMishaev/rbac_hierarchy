@@ -50,7 +50,7 @@ test.describe('Corporations UI - SuperAdmin', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see corporation names from seed data
+    // Should see city names from seed data
     const hasCorporations =
       pageContent?.includes('טכנולוגיות') ||
       pageContent?.includes('בינוי') ||
@@ -67,10 +67,10 @@ test.describe('Corporations UI - SuperAdmin', () => {
     // SuperAdmin should see create button
     await verifyActionButton(page, 'תאגיד חדש');
 
-    console.log('✅ Create Corporation button is visible');
+    console.log('✅ Create City button is visible');
   });
 
-  test('should open create corporation modal', async ({ page }) => {
+  test('should open create city modal', async ({ page }) => {
     await waitForDataLoad(page);
 
     // Click create button
@@ -79,10 +79,10 @@ test.describe('Corporations UI - SuperAdmin', () => {
     // Verify modal opens
     await verifyModalOpen(page, 'תאגיד חדש');
 
-    console.log('✅ Create Corporation modal opens');
+    console.log('✅ Create City modal opens');
   });
 
-  test('should display corporation details in cards', async ({ page }) => {
+  test('should display city details in cards', async ({ page }) => {
     await waitForDataLoad(page);
 
     // Verify Grid/Card layout is visible (there are 2 grids: stats + corporations)
@@ -94,7 +94,7 @@ test.describe('Corporations UI - SuperAdmin', () => {
     const cardCount = await cards.count();
     expect(cardCount).toBeGreaterThan(0);
 
-    console.log('✅ Corporation details displayed in cards');
+    console.log('✅ City details displayed in cards');
   });
 
   test('should be responsive on mobile', async ({ page }) => {
@@ -138,7 +138,7 @@ test.describe('Corporations UI - SuperAdmin', () => {
   });
 });
 
-test.describe('Corporations UI - Manager (Should Not Access)', () => {
+test.describe('Corporations UI - City Coordinator (Should Not Access)', () => {
   test('should NOT display corporations in navigation', async ({ page }) => {
     await loginAs(page, testUsers.manager);
     await page.waitForURL(/\/(he\/)?dashboard/);
@@ -146,10 +146,10 @@ test.describe('Corporations UI - Manager (Should Not Access)', () => {
     const nav = page.locator('nav');
     const corporationsLink = nav.locator('text=תאגידים');
 
-    // Manager should NOT see corporations link
+    // City Coordinator should NOT see corporations link
     await expect(corporationsLink).not.toBeVisible();
 
-    console.log('✅ Manager cannot see corporations in navigation');
+    console.log('✅ City Coordinator cannot see corporations in navigation');
   });
 
   test('should redirect or show 403 when accessing corporations URL directly', async ({ page }) => {
@@ -171,18 +171,18 @@ test.describe('Corporations UI - Manager (Should Not Access)', () => {
 
     expect(isBlocked).toBeTruthy();
 
-    console.log('✅ Manager blocked from direct access to corporations');
+    console.log('✅ City Coordinator blocked from direct access to corporations');
   });
 });
 
 test.describe('Corporations UI - Area Manager', () => {
   test.skip('should see corporations they manage', async ({ page }) => {
-    // SKIPPED: Area Manager navigation to corporations may not be implemented yet
+    // SKIPPED: Area City Coordinator navigation to corporations may not be implemented yet
     // See analysis: docs/mdFiles/ui-tests-analysis.md - Category 4
     await loginAs(page, testUsers.areaManager);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
-    // Area Manager should see corporations in navigation
+    // Area City Coordinator should see corporations in navigation
     const nav = page.locator('nav');
     const corporationsLink = nav.locator('text=תאגידים');
 
@@ -196,11 +196,11 @@ test.describe('Corporations UI - Area Manager', () => {
     // Should see corporations they manage
     await verifyDataDisplayed(page, 1);
 
-    console.log('✅ Area Manager sees corporations they manage');
+    console.log('✅ Area City Coordinator sees corporations they manage');
   });
 
   test.skip('should NOT see "Create Corporation" button', async ({ page }) => {
-    // SKIPPED: Area Manager navigation to corporations may not be implemented yet
+    // SKIPPED: Area City Coordinator navigation to corporations may not be implemented yet
     // See analysis: docs/mdFiles/ui-tests-analysis.md - Category 4
     await loginAs(page, testUsers.areaManager);
     await page.waitForURL(/\/(he\/)?dashboard/);
@@ -209,11 +209,11 @@ test.describe('Corporations UI - Area Manager', () => {
     await page.waitForURL(/.*\/corporations/);
     await waitForDataLoad(page);
 
-    // Area Manager should NOT see create button (SuperAdmin only)
+    // Area City Coordinator should NOT see create button (SuperAdmin only)
     const createButton = page.locator('button:has-text("תאגיד חדש")');
     await expect(createButton).not.toBeVisible();
 
-    console.log('✅ Area Manager cannot create corporations');
+    console.log('✅ Area City Coordinator cannot create corporations');
   });
 });
 

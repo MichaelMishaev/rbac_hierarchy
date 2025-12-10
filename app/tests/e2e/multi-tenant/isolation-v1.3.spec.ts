@@ -6,15 +6,15 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
-  test('Corp1 Manager cannot see Corp2 data', async ({ page }) => {
-    // Login as Manager from Corporation 1 (טכנולוגיות אלקטרה)
+  test('Corp1 City Coordinator cannot see Corp2 data', async ({ page }) => {
+    // Login as City Coordinator from City 1 (טכנולוגיות אלקטרה)
     await page.goto('/login');
     await page.fill('input[name="email"]', 'david.cohen@electra-tech.co.il');
     await page.fill('input[name="password"]', 'manager123');
     await page.click('button[type="submit"]');
     await page.waitForURL('/dashboard', { timeout: 10000 });
 
-    // Manager should see their corporation name
+    // City Coordinator should see their city name
     const dashboardContent = await page.textContent('body');
     expect(dashboardContent?.includes('טכנולוגיות אלקטרה') ||
            dashboardContent?.includes('דוד כהן')).toBeTruthy();
@@ -33,11 +33,11 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
     expect(!sitesContent?.includes('פרויקט הרצליה')).toBeTruthy();
     expect(!sitesContent?.includes('דיזנגוף')).toBeTruthy();
 
-    console.log('✅ Corp1 Manager cannot see Corp2/Corp3 sites');
+    console.log('✅ Corp1 City Coordinator cannot see Corp2/Corp3 sites');
   });
 
-  test('Corp2 Manager cannot see Corp1 workers', async ({ page }) => {
-    // Login as Manager from Corporation 2 (קבוצת בינוי)
+  test('Corp2 City Coordinator cannot see Corp1 workers', async ({ page }) => {
+    // Login as City Coordinator from City 2 (קבוצת בינוי)
     await page.goto('/login');
     await page.fill('input[name="email"]', 'sara.levi@binuy.co.il');
     await page.fill('input[name="password"]', 'manager123');
@@ -58,11 +58,11 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
     expect(!workersContent?.includes('יוסי אבוחצירא')).toBeTruthy(); // Corp1
     expect(!workersContent?.includes('יאיר כהן')).toBeTruthy(); // Corp3
 
-    console.log('✅ Corp2 Manager cannot see Corp1/Corp3 workers');
+    console.log('✅ Corp2 City Coordinator cannot see Corp1/Corp3 workers');
   });
 
-  test('Corp3 Manager cannot see Corp1/Corp2 supervisors', async ({ page }) => {
-    // Login as Manager from Corporation 3 (רשת מזון טעים)
+  test('Corp3 City Coordinator cannot see Corp1/Corp2 supervisors', async ({ page }) => {
+    // Login as City Coordinator from City 3 (רשת מזון טעים)
     await page.goto('/login');
     await page.fill('input[name="email"]', 'orna.hadad@taim-food.co.il');
     await page.fill('input[name="password"]', 'manager123');
@@ -79,13 +79,13 @@ test.describe('Corporation Isolation - v1.3 Composite FKs', () => {
     expect(!pageContent?.includes('משה ישראלי')).toBeTruthy(); // Corp1
     expect(!pageContent?.includes('יוסי מזרחי')).toBeTruthy(); // Corp2
 
-    console.log('✅ Corp3 Manager cannot see Corp1/Corp2 supervisors');
+    console.log('✅ Corp3 City Coordinator cannot see Corp1/Corp2 supervisors');
   });
 });
 
-test.describe('Supervisor Site Isolation - Composite FK', () => {
-  test('Corp1 Supervisor only sees assigned site workers', async ({ page }) => {
-    // Login as Supervisor from Corp1 (משה ישראלי)
+test.describe('Supervisor Neighborhood Isolation - Composite FK', () => {
+  test('Corp1 Activist Coordinator only sees assigned neighborhood workers', async ({ page }) => {
+    // Login as Activist Coordinator from Corp1 (משה ישראלי)
     await page.goto('/login');
     await page.fill('input[name="email"]', 'moshe.israeli@electra-tech.co.il');
     await page.fill('input[name="password"]', 'supervisor123');
@@ -104,11 +104,11 @@ test.describe('Supervisor Site Isolation - Composite FK', () => {
 
     expect(workersContent).toBeTruthy();
 
-    console.log('✅ Supervisor sees only assigned site workers');
+    console.log('✅ Activist Coordinator sees only assigned neighborhood workers');
   });
 
-  test('Corp2 Supervisor cannot access Corp1 sites', async ({ page }) => {
-    // Login as Supervisor from Corp2 (יוסי מזרחי)
+  test('Corp2 Activist Coordinator cannot access Corp1 sites', async ({ page }) => {
+    // Login as Activist Coordinator from Corp2 (יוסי מזרחי)
     await page.goto('/login');
     await page.fill('input[name="email"]', 'yossi.mizrahi@binuy.co.il');
     await page.fill('input[name="password"]', 'supervisor123');
@@ -129,7 +129,7 @@ test.describe('Supervisor Site Isolation - Composite FK', () => {
     expect(!sitesContent?.includes('מפעל תל אביב')).toBeTruthy();
     expect(!sitesContent?.includes('דיזנגוף')).toBeTruthy();
 
-    console.log('✅ Corp2 Supervisor cannot access Corp1 sites');
+    console.log('✅ Corp2 Activist Coordinator cannot access Corp1 sites');
   });
 });
 
@@ -178,7 +178,7 @@ test.describe('Database-Level Isolation Verification', () => {
 });
 
 test.describe('Cross-Corporation API Access Prevention', () => {
-  test('Cannot access other corporation data via direct URL', async ({ page }) => {
+  test('Cannot access other city data via direct URL', async ({ page }) => {
     // Login as Corp1 Manager
     await page.goto('/login');
     await page.fill('input[name="email"]', 'david.cohen@electra-tech.co.il');
@@ -284,7 +284,7 @@ test.describe('v1.3 Compliance Verification', () => {
 
     // The database schema v1.3 composite FKs guarantee:
     // 1. Worker.corporationId = Site.corporationId (always)
-    // 2. SupervisorSite: supervisor, site, manager all in same corp (always)
+    // 2. SupervisorSite: supervisor, site, city coordinator all in same corp (always)
     // 3. No cross-corporation data leaks possible (database-level)
 
     // If the UI shows any data, it's guaranteed to be valid

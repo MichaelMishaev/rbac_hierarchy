@@ -45,7 +45,7 @@ test.describe('Workers UI - SuperAdmin', () => {
     const createButton = page.locator('button').filter({ hasText: /עובד חדש|הוסף עובד/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Create Worker button is visible');
+    console.log('✅ Create Activist button is visible');
   });
 
   test('should display workers from all corporations', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('Workers UI - Manager', () => {
     expect(!pageContent?.includes('דני אברהם')).toBeTruthy(); // Corp2 worker
     expect(!pageContent?.includes('יאיר כהן')).toBeTruthy(); // Corp3 worker
 
-    console.log('✅ Manager sees only their corporation workers');
+    console.log('✅ City Coordinator sees only their city workers');
   });
 
   test('should display "Create Worker" button', async ({ page }) => {
@@ -97,7 +97,7 @@ test.describe('Workers UI - Manager', () => {
     const createButton = page.locator('button').filter({ hasText: /עובד חדש|הוסף עובד/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Manager can create workers');
+    console.log('✅ City Coordinator can create workers');
   });
 });
 
@@ -114,10 +114,10 @@ test.describe('Workers UI - Supervisor', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see workers from assigned site only
+    // Should see workers from assigned neighborhood only
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor sees only workers from assigned sites');
+    console.log('✅ Activist Coordinator sees only workers from assigned sites');
   });
 
   test('should display "Create Worker" button', async ({ page }) => {
@@ -126,12 +126,12 @@ test.describe('Workers UI - Supervisor', () => {
     const createButton = page.locator('button').filter({ hasText: /עובד חדש|הוסף עובד/ });
     await expect(createButton.first()).toBeVisible();
 
-    console.log('✅ Supervisor can create workers');
+    console.log('✅ Activist Coordinator can create workers');
   });
 });
 
 test.describe('Workers UI - Data Display', () => {
-  test('should display worker information', async ({ page }) => {
+  test('should display activist information', async ({ page }) => {
     await loginAs(page, testUsers.superAdmin);
     await page.waitForURL(/\/(he\/)?dashboard/);
     await page.click('text=עובדים');
@@ -143,10 +143,10 @@ test.describe('Workers UI - Data Display', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Verify worker information is shown
+    // Verify activist information is shown
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Worker information displayed correctly');
+    console.log('✅ Activist information displayed correctly');
   });
 });
 
@@ -161,6 +161,6 @@ test.describe('Workers UI - Search and Filter', () => {
     const searchInput = page.locator('input[type="text"]').first();
     await expect(searchInput).toBeVisible();
 
-    console.log('✅ Worker search functionality available');
+    console.log('✅ Activist search functionality available');
   });
 });

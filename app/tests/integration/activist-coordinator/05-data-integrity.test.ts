@@ -10,50 +10,50 @@ import { assert } from './test-setup';
 export async function testDataIntegrity(testData: TestData, result: { passed: number; failed: number; errors: string[] }) {
   // Test 1: Detect orphan workers
   try {
-    // Create orphan worker (site has supervisor, worker doesn't)
-    const orphan = await prisma.worker.create({
+    // Create orphan activist (site has supervisor, activist doesn't)
+    const orphan = await prisma.activist.create({
       data: {
-        fullName: 'Orphan Worker Integrity Test',
+        fullName: 'Orphan Activist Integrity Test',
         phone: '6666666666',
         position: 'Orphan',
-        corporationId: testData.corporation.id,
-        siteId: testData.siteWithOneSupervisor.id, // Site has supervisor
-        supervisorId: null, // INVALID: Should have supervisor
+        cityId: testData.city.id,
+        neighborhoodId: testData.neighborhoodWithOneActivistCoordinator.id, // Neighborhood has supervisor
+        activistCoordinatorId: null, // INVALID: Should have supervisor
         isActive: true,
       },
     });
 
-    const orphans = await findOrphanWorkers(testData.siteWithOneSupervisor.id);
+    const orphans = await findOrphanWorkers(testData.neighborhoodWithOneActivistCoordinator.id);
     const foundOrphan = orphans.find(w => w.id === orphan.id);
 
     assert(foundOrphan !== undefined, 'Scenario 1: Detects orphan workers', result);
 
-    await prisma.worker.delete({ where: { id: orphan.id } });
+    await prisma.activist.delete({ where: { id: orphan.id } });
   } catch (error) {
     result.failed++;
     result.errors.push(`Scenario 1 failed: ${error}`);
   }
 
-  // Test 2: No orphans in site without supervisors (valid state)
+  // Test 2: No orphans in neighborhood without supervisors (valid state)
   try {
-    const worker = await prisma.worker.create({
+    const activist = await prisma.activist.create({
       data: {
-        fullName: 'Valid Worker Integrity Test',
+        fullName: 'Valid Activist Integrity Test',
         phone: '7777777777',
         position: 'Valid',
-        corporationId: testData.corporation.id,
-        siteId: testData.siteWithNoSupervisors.id, // No supervisors
-        supervisorId: null, // VALID
+        cityId: testData.city.id,
+        neighborhoodId: testData.neighborhoodWithNoActivistCoordinators.id, // No supervisors
+        activistCoordinatorId: null, // VALID
         isActive: true,
       },
     });
 
-    const orphans = await findOrphanWorkers(testData.siteWithNoSupervisors.id);
+    const orphans = await findOrphanWorkers(testData.neighborhoodWithNoActivistCoordinators.id);
     const foundWorker = orphans.find(w => w.id === worker.id);
 
     assert(foundWorker === undefined, 'Scenario 2: Does not flag workers in sites without supervisors', result);
 
-    await prisma.worker.delete({ where: { id: worker.id } });
+    await prisma.activist.delete({ where: { id: worker.id } });
   } catch (error) {
     result.failed++;
     result.errors.push(`Scenario 2 failed: ${error}`);

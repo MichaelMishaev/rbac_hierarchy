@@ -55,7 +55,7 @@ test.describe('System Rules UI - SuperAdmin', () => {
 });
 
 test.describe('System Rules UI - Manager', () => {
-  test('should handle manager access to system rules', async ({ page }) => {
+  test('should handle city coordinator access to system rules', async ({ page }) => {
     await loginAs(page, testUsers.manager);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
@@ -66,15 +66,15 @@ test.describe('System Rules UI - Manager', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Manager may or may not have access depending on RBAC rules
+    // City Coordinator may or may not have access depending on RBAC rules
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Manager access to System Rules handled');
+    console.log('✅ City Coordinator access to System Rules handled');
   });
 });
 
 test.describe('System Rules UI - Supervisor', () => {
-  test('should handle supervisor access to system rules', async ({ page }) => {
+  test('should handle activist coordinator access to system rules', async ({ page }) => {
     await loginAs(page, testUsers.supervisor);
     await page.waitForURL(/\/(he\/)?dashboard/);
 
@@ -85,9 +85,9 @@ test.describe('System Rules UI - Supervisor', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Supervisor may or may not have access
+    // Activist Coordinator may or may not have access
     expect(pageContent).toBeTruthy();
 
-    console.log('✅ Supervisor access to System Rules handled');
+    console.log('✅ Activist Coordinator access to System Rules handled');
   });
 });

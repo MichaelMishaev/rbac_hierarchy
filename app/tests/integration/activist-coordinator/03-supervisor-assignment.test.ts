@@ -1,5 +1,5 @@
 /**
- * Supervisor Assignment & Auto-Assignment Tests
+ * Activist Coordinator Assignment & Auto-Assignment Tests
  */
 
 import { prisma } from '@/lib/prisma';
@@ -7,10 +7,10 @@ import { getSiteSupervisorCount, autoAssignWorkersToFirstSupervisor, findLeastLo
 import type { TestData } from './test-setup';
 import { assert } from './test-setup';
 
-export async function testSupervisorAssignment(testData: TestData, result: { passed: number; failed: number; errors: string[] }) {
-  // Test 1: Get supervisor count
+export async function testActivistCoordinatorAssignment(testData: TestData, result: { passed: number; failed: number; errors: string[] }) {
+  // Test 1: Get activist coordinator count
   try {
-    const count = await getSiteSupervisorCount(testData.siteWithOneSupervisor.id);
+    const count = await getSiteSupervisorCount(testData.neighborhoodWithOneActivistCoordinator.id);
     assert(count === 1, 'Scenario 1: Correctly counts supervisors in site', result);
   } catch (error) {
     result.failed++;
@@ -19,27 +19,27 @@ export async function testSupervisorAssignment(testData: TestData, result: { pas
 
   // Test 2: Auto-assign workers to first supervisor
   try {
-    // Create orphan workers in site with no supervisors
+    // Create orphan workers in neighborhood with no activist coordinators
     const workers = await Promise.all([
-      prisma.worker.create({
+      prisma.activist.create({
         data: {
-          fullName: 'Orphan Worker 1',
+          fullName: 'Orphan Activist 1',
           phone: '3333333331',
           position: 'Worker',
-          corporationId: testData.corporation.id,
-          siteId: testData.siteWithNoSupervisors.id,
-          supervisorId: null,
+          cityId: testData.city.id,
+          neighborhoodId: testData.neighborhoodWithNoActivistCoordinators.id,
+          activistCoordinatorId: null,
           isActive: true,
         },
       }),
-      prisma.worker.create({
+      prisma.activist.create({
         data: {
-          fullName: 'Orphan Worker 2',
+          fullName: 'Orphan Activist 2',
           phone: '3333333332',
           position: 'Worker',
-          corporationId: testData.corporation.id,
-          siteId: testData.siteWithNoSupervisors.id,
-          supervisorId: null,
+          cityId: testData.city.id,
+          neighborhoodId: testData.neighborhoodWithNoActivistCoordinators.id,
+          activistCoordinatorId: null,
           isActive: true,
         },
       }),
@@ -47,8 +47,8 @@ export async function testSupervisorAssignment(testData: TestData, result: { pas
 
     // Auto-assign to supervisor1
     const autoAssignResult = await autoAssignWorkersToFirstSupervisor(
-      testData.siteWithNoSupervisors.id,
-      testData.supervisor1.id,
+      testData.neighborhoodWithNoActivistCoordinators.id,
+      testData.activistCoordinator1.id,
       'test-user-id',
       'test@test.com',
       'SUPERADMIN'
@@ -57,11 +57,11 @@ export async function testSupervisorAssignment(testData: TestData, result: { pas
     assert(autoAssignResult.success === true && autoAssignResult.workersUpdated === 2, 'Scenario 2: Auto-assigns workers to first supervisor', result);
 
     // Cleanup
-    await prisma.worker.deleteMany({ where: { id: { in: workers.map(w => w.id) } } });
-    await prisma.supervisorSite.deleteMany({
+    await prisma.activist.deleteMany({ where: { id: { in: workers.map(w => w.id) } } });
+    await prisma.activistCoordinatorNeighborhood.deleteMany({
       where: {
-        supervisorId: testData.supervisor1.id,
-        siteId: testData.siteWithNoSupervisors.id,
+        activistCoordinatorId: testData.activistCoordinator1.id,
+        neighborhoodId: testData.neighborhoodWithNoActivistCoordinators.id,
       },
     });
   } catch (error) {
@@ -71,7 +71,7 @@ export async function testSupervisorAssignment(testData: TestData, result: { pas
 
   // Test 3: Find least-loaded supervisor
   try {
-    const leastLoaded = await findLeastLoadedSupervisor(testData.siteWithMultipleSupervisors.id);
+    const leastLoaded = await findLeastLoadedSupervisor(testData.neighborhoodWithMultipleActivistCoordinators.id);
     assert(leastLoaded !== null, 'Scenario 3: Finds least-loaded supervisor', result);
   } catch (error) {
     result.failed++;

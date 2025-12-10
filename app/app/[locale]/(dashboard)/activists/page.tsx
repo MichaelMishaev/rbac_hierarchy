@@ -30,7 +30,7 @@ export default async function WorkersPage() {
   ]);
 
   // Fetch activist coordinators (ActivistCoordinator records, not User records!)
-  const supervisors = await prisma.activistCoordinator.findMany({
+  const activistCoordinators = await prisma.activistCoordinator.findMany({
     where: {
       isActive: true,
     },
@@ -52,8 +52,8 @@ export default async function WorkersPage() {
   });
 
   // Find current user's coordinator record (if they are a coordinator)
-  const currentUserSupervisor = supervisors.find((s: any) => s.userId === session.user.id);
-  const defaultSupervisorId = currentUserSupervisor?.id || undefined;
+  const currentUserActivistCoordinator = activistCoordinators.find((c: any) => c.userId === session.user.id);
+  const defaultActivistCoordinatorId = currentUserActivistCoordinator?.id || undefined;
 
   if (!workersResult.success) {
     return (
@@ -65,8 +65,8 @@ export default async function WorkersPage() {
     );
   }
 
-  const workers = workersResult.workers || [];
-  const sites = sitesResult.sites || [];
+  const activists = workersResult.activists || [];
+  const neighborhoods = sitesResult.neighborhoods || [];
 
   return (
     <Box
@@ -106,31 +106,31 @@ export default async function WorkersPage() {
 
       {/* Client Component with Modals */}
       <ActivistsClient
-        workers={workers.map(w => ({
-          ...w,
-          neighborhood: w.neighborhood ? {
-            id: w.neighborhood.id,
-            name: w.neighborhood.name,
-            cityId: w.neighborhood.cityRelation?.id || '',
-            cityRelation: w.neighborhood.cityRelation,
+        activists={activists.map(a => ({
+          ...a,
+          neighborhood: a.neighborhood ? {
+            id: a.neighborhood.id,
+            name: a.neighborhood.name,
+            cityId: a.neighborhood.cityRelation?.id || '',
+            cityRelation: a.neighborhood.cityRelation,
           } : undefined,
-          activistCoordinator: w.activistCoordinator ? {
-            id: w.activistCoordinator.id,
+          activistCoordinator: a.activistCoordinator ? {
+            id: a.activistCoordinator.id,
             user: {
-              fullName: w.activistCoordinator.user.fullName,
-              email: w.activistCoordinator.user.email,
+              fullName: a.activistCoordinator.user.fullName,
+              email: a.activistCoordinator.user.email,
             },
           } : undefined,
         }))}
-        sites={sites.map(s => ({
-          id: s.id,
-          name: s.name,
-          cityId: s.cityId,
-          cityRelation: s.cityRelation,
+        neighborhoods={neighborhoods.map(n => ({
+          id: n.id,
+          name: n.name,
+          cityId: n.cityId,
+          cityRelation: n.cityRelation,
         }))}
-        supervisors={supervisors}
+        activistCoordinators={activistCoordinators}
         currentUserId={session.user.id}
-        defaultSupervisorId={defaultSupervisorId}
+        defaultActivistCoordinatorId={defaultActivistCoordinatorId}
       />
     </Box>
   );

@@ -1,13 +1,13 @@
 /**
- * Data Integrity Check: Worker-Supervisor Assignment
+ * Data Integrity Check: Activist-ActivistCoordinator Assignment
  *
  * Finds and reports violations of business rules:
- * 1. Orphan workers in sites with supervisors (supervisorId = null, but site has supervisors)
- * 2. Workers assigned to supervisors not in their site (dangling references)
+ * 1. Orphan workers in sites with supervisors (supervisorId = null, but neighborhood has supervisors)
+ * 2. Workers assigned to supervisors not in their neighborhood (dangling references)
  * 3. Workers assigned to inactive supervisors
  *
  * Usage:
- *   npx tsx scripts/check-worker-supervisor-integrity.ts [--fix]
+ *   npx tsx scripts/check-activist-coordinator-integrity.ts [--fix]
  *
  * Options:
  *   --fix    Automatically fix issues (assign orphans, clear invalid refs)
@@ -19,9 +19,9 @@ import { findOrphanWorkers } from '../lib/activist-coordinator-assignment';
 
 interface IntegrityIssue {
   type: 'ORPHAN_WORKER' | 'DANGLING_REFERENCE' | 'INACTIVE_SUPERVISOR';
-  workerId: string;
+  activistId: string;
   workerName: string;
-  siteId: string;
+  neighborhoodId: string;
   siteName: string;
   supervisorId?: string | null;
   supervisorName?: string;
@@ -35,22 +35,22 @@ async function checkOrphanWorkers(): Promise<IntegrityIssue[]> {
 
   return orphans.map(worker => ({
     type: 'ORPHAN_WORKER' as const,
-    workerId: worker.id,
+    activistId: worker.id,
     workerName: worker.fullName,
-    siteId: worker.siteId,
+    neighborhoodId: worker.siteId,
     siteName: worker.site.name,
-    supervisorId: null,
-    details: `Worker has no supervisor, but site has ${worker.site.supervisorAssignments.length} supervisor(s)`,
+    activistCoordinatorId: null,
+    details: `Worker has no supervisor, but neighborhood has ${worker.site.supervisorAssignments.length} supervisor(s)`,
   }));
 }
 
 async function checkDanglingReferences(): Promise<IntegrityIssue[]> {
-  console.log('\n🔍 Checking for dangling supervisor references...');
+  console.log('\n🔍 Checking for dangling activist coordinator references...');
 
-  // Find workers with supervisorId not in their site's supervisor assignments
-  const workers = await prisma.worker.findMany({
+  // Find workers with supervisorId not in their site's activist coordinator assignments
+  const workers = await prisma.activist.findMany({
     where: {
-      supervisorId: { not: null },
+      activistCoordinatorId: { not: null },
       isActive: true,
     },
     include: {
@@ -63,7 +63,7 @@ async function checkDanglingReferences(): Promise<IntegrityIssue[]> {
         include: {
           supervisorAssignments: {
             select: {
-              supervisorId: true,
+              activistCoordinatorId: true,
             },
           },
         },
@@ -73,20 +73,20 @@ async function checkDanglingReferences(): Promise<IntegrityIssue[]> {
 
   const issues: IntegrityIssue[] = [];
 
-  for (const worker of workers) {
+  for (const activist of workers) {
     const assignedSupervisorIds = worker.site.supervisorAssignments.map(sa => sa.supervisorId);
 
-    // Check if worker's supervisor is assigned to their site
+    // Check if worker's activist coordinator is assigned to their site
     if (worker.supervisorId && !assignedSupervisorIds.includes(worker.supervisorId)) {
       issues.push({
         type: 'DANGLING_REFERENCE',
-        workerId: worker.id,
+        activistId: worker.id,
         workerName: worker.fullName,
-        siteId: worker.siteId,
+        neighborhoodId: worker.siteId,
         siteName: worker.site.name,
-        supervisorId: worker.supervisorId,
+        activistCoordinatorId: worker.supervisorId,
         supervisorName: worker.supervisor?.user.fullName || 'Unknown',
-        details: `Worker assigned to supervisor not in site (supervisor not in supervisorSites)`,
+        details: `Worker assigned to activist coordinator not in neighborhood (supervisor not in supervisorSites)`,
       });
     }
   }
@@ -97,7 +97,7 @@ async function checkDanglingReferences(): Promise<IntegrityIssue[]> {
 async function checkInactiveSupervisors(): Promise<IntegrityIssue[]> {
   console.log('\n🔍 Checking for workers assigned to inactive supervisors...');
 
-  const workers = await prisma.worker.findMany({
+  const workers = await prisma.activist.findMany({
     where: {
       isActive: true,
       supervisor: {
@@ -121,11 +121,11 @@ async function checkInactiveSupervisors(): Promise<IntegrityIssue[]> {
 
   return workers.map(worker => ({
     type: 'INACTIVE_SUPERVISOR' as const,
-    workerId: worker.id,
+    activistId: worker.id,
     workerName: worker.fullName,
-    siteId: worker.siteId,
+    neighborhoodId: worker.siteId,
     siteName: worker.site.name,
-    supervisorId: worker.supervisorId,
+    activistCoordinatorId: worker.supervisorId,
     supervisorName: worker.supervisor?.user.fullName || 'Unknown',
     details: `Worker assigned to inactive supervisor`,
   }));
@@ -144,28 +144,28 @@ async function fixOrphanWorkers(issues: IntegrityIssue[]): Promise<number> {
   }, {} as Record<string, IntegrityIssue[]>);
 
   for (const [siteId, siteIssues] of Object.entries(bySite)) {
-    // Find least-loaded supervisor for this site
+    // Find least-loaded activist coordinator for this site
     const { findLeastLoadedSupervisor } = await import('../lib/supervisor-worker-assignment');
     const targetSupervisorId = await findLeastLoadedSupervisor(siteId);
 
     if (!targetSupervisorId) {
-      console.log(`  ⚠️  Site ${siteIssues[0].siteName}: No available supervisor`);
+      console.log(`  ⚠️  Neighborhood ${siteIssues[0].siteName}: No available supervisor`);
       continue;
     }
 
     // Update all orphan workers in this site
     const workerIds = siteIssues.map(i => i.workerId);
 
-    await prisma.worker.updateMany({
+    await prisma.activist.updateMany({
       where: {
         id: { in: workerIds },
       },
       data: {
-        supervisorId: targetSupervisorId,
+        activistCoordinatorId: targetSupervisorId,
       },
     });
 
-    console.log(`  ✅ Site ${siteIssues[0].siteName}: Fixed ${workerIds.length} worker(s)`);
+    console.log(`  ✅ Neighborhood ${siteIssues[0].siteName}: Fixed ${workerIds.length} worker(s)`);
     fixed += workerIds.length;
   }
 
@@ -179,12 +179,12 @@ async function fixDanglingReferences(issues: IntegrityIssue[]): Promise<number> 
 
   if (workerIds.length === 0) return 0;
 
-  await prisma.worker.updateMany({
+  await prisma.activist.updateMany({
     where: {
       id: { in: workerIds },
     },
     data: {
-      supervisorId: null,
+      activistCoordinatorId: null,
     },
   });
 
@@ -193,7 +193,7 @@ async function fixDanglingReferences(issues: IntegrityIssue[]): Promise<number> 
 }
 
 async function fixInactiveSupervisors(issues: IntegrityIssue[]): Promise<number> {
-  console.log('\n🔧 Fixing inactive supervisor assignments...');
+  console.log('\n🔧 Fixing inactive activist coordinator assignments...');
 
   let fixed = 0;
 
@@ -205,7 +205,7 @@ async function fixInactiveSupervisors(issues: IntegrityIssue[]): Promise<number>
   }, {} as Record<string, IntegrityIssue[]>);
 
   for (const [siteId, siteIssues] of Object.entries(bySite)) {
-    // Check if site has active supervisors
+    // Check if neighborhood has active supervisors
     const { getSiteSupervisorCount, findLeastLoadedSupervisor } = await import('../lib/supervisor-worker-assignment');
     const activeCount = await getSiteSupervisorCount(siteId);
 
@@ -216,32 +216,32 @@ async function fixInactiveSupervisors(issues: IntegrityIssue[]): Promise<number>
       if (targetSupervisorId) {
         const workerIds = siteIssues.map(i => i.workerId);
 
-        await prisma.worker.updateMany({
+        await prisma.activist.updateMany({
           where: {
             id: { in: workerIds },
           },
           data: {
-            supervisorId: targetSupervisorId,
+            activistCoordinatorId: targetSupervisorId,
           },
         });
 
-        console.log(`  ✅ Site ${siteIssues[0].siteName}: Reassigned ${workerIds.length} worker(s)`);
+        console.log(`  ✅ Neighborhood ${siteIssues[0].siteName}: Reassigned ${workerIds.length} worker(s)`);
         fixed += workerIds.length;
       }
     } else {
       // No active supervisors - clear supervisorId
       const workerIds = siteIssues.map(i => i.workerId);
 
-      await prisma.worker.updateMany({
+      await prisma.activist.updateMany({
         where: {
           id: { in: workerIds },
         },
         data: {
-          supervisorId: null,
+          activistCoordinatorId: null,
         },
       });
 
-      console.log(`  ✅ Site ${siteIssues[0].siteName}: Cleared ${workerIds.length} worker(s) (no active supervisors)`);
+      console.log(`  ✅ Neighborhood ${siteIssues[0].siteName}: Cleared ${workerIds.length} worker(s) (no active supervisors)`);
       fixed += workerIds.length;
     }
   }
@@ -253,7 +253,7 @@ async function main() {
   const shouldFix = process.argv.includes('--fix');
 
   console.log('═══════════════════════════════════════════════════════');
-  console.log('   Worker-Supervisor Data Integrity Check');
+  console.log('   Activist-ActivistCoordinator Data Integrity Check');
   console.log('═══════════════════════════════════════════════════════');
   console.log(`Mode: ${shouldFix ? '🔧 FIX' : '📊 REPORT ONLY'}`);
 
@@ -333,7 +333,7 @@ async function main() {
       console.log('\n✅ Database integrity restored!');
     } else {
       console.log('\n💡 Run with --fix flag to automatically fix these issues:');
-      console.log('   npx tsx scripts/check-worker-supervisor-integrity.ts --fix');
+      console.log('   npx tsx scripts/check-activist-coordinator-integrity.ts --fix');
     }
 
     process.exit(totalIssues > 0 && !shouldFix ? 1 : 0);

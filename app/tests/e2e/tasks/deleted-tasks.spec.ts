@@ -38,7 +38,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
   test('TC-TASK-002: should block status changes on deleted tasks', async ({ page, baseURL }) => {
     // This test verifies CRITICAL FIX #1: Status changes MUST be blocked on deleted tasks
 
-    // 1. Login as Manager and create task
+    // 1. Login as City Coordinator and create task
     const managerRequest = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
     const createResponse = await managerRequest.post('/api/tasks', {
@@ -60,7 +60,7 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     // FIX: Add wait for database to sync after delete
     await page.waitForTimeout(500);
 
-    // 3. Login as Supervisor (recipient)
+    // 3. Login as Activist Coordinator (recipient)
     const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     // 4. Try to change status to 'read' - SHOULD FAIL
@@ -73,12 +73,12 @@ test.describe('Deleted Tasks - Status Change Block', () => {
     const error = await updateResponse.json();
     expect(error.error).toContain('לא ניתן לשנות סטטוס של משימה שנמחקה');
 
-    // 6. Get supervisor user ID from database
+    // 6. Get activist coordinator user ID from database
     const supervisorUser = await prisma.user.findUnique({
       where: { email: testUsers.supervisor.email },
     });
 
-    // FIX: Verify supervisor user exists (seed data check)
+    // FIX: Verify activist coordinator user exists (seed data check)
     expect(supervisorUser).toBeDefined();
 
     // Verify status unchanged in database
@@ -251,7 +251,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
 
     const { task_id } = await createResponse.json();
 
-    // Supervisor acknowledges task
+    // Activist Coordinator acknowledges task
     const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     // First mark as read, then acknowledge (proper flow)
@@ -263,7 +263,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
       data: { status: 'acknowledged' },
     });
 
-    // Manager tries to delete - should fail
+    // City Coordinator tries to delete - should fail
     const deleteResponse = await managerRequest.delete(`/api/tasks/${task_id}`);
 
     expect(deleteResponse.status()).toBe(400);
@@ -288,7 +288,7 @@ test.describe('Deleted Tasks - Sender Deletion', () => {
 
     const { task_id } = await createResponse.json();
 
-    // Get a different manager (SuperAdmin in this case, who is not the sender)
+    // Get a different city coordinator (SuperAdmin in this case, who is not the sender)
     const otherRequest = await getAuthenticatedContext(page, testUsers.superAdmin, baseURL || 'http://localhost:3000');
 
     const deleteResponse = await otherRequest.delete(`/api/tasks/${task_id}`);
@@ -323,7 +323,7 @@ test.describe('Deleted Tasks - Inbox Display', () => {
     // FIX: Add wait for database to sync after delete
     await page.waitForTimeout(500);
 
-    // Supervisor checks inbox
+    // Activist Coordinator checks inbox
     const supervisorRequest = await getAuthenticatedContext(page, testUsers.supervisor, baseURL || 'http://localhost:3000');
 
     const inboxResponse = await supervisorRequest.get('/api/tasks/inbox');
@@ -359,7 +359,7 @@ test.describe('Deleted Tasks - Audit Trail', () => {
   test('should create audit log when task is deleted', async ({ page, baseURL }) => {
     const request = await getAuthenticatedContext(page, testUsers.manager, baseURL || 'http://localhost:3000');
 
-    // Get manager user ID
+    // Get city coordinator user ID
     const managerUser = await prisma.user.findUnique({
       where: { email: testUsers.manager.email },
     });

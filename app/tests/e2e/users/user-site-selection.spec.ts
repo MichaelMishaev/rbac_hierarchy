@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Test suite for User Creation with Site Selection (RTL)
+ * Test suite for User Creation with Neighborhood Selection (RTL)
  * Verifies that when creating a Supervisor, sites are visible and selectable in RTL layout
  */
 
@@ -16,7 +16,7 @@ const testUsers = {
   },
 };
 
-test.describe('User Site Selection (RTL)', () => {
+test.describe('User Neighborhood Selection (RTL)', () => {
   test.beforeEach(async ({ page }) => {
     // Set RTL locale
     await page.goto('/he/login');
@@ -52,13 +52,13 @@ test.describe('User Site Selection (RTL)', () => {
     );
     await nameField.first().fill('בודק טסט');
 
-    // Select role: Supervisor (מפקח)
+    // Select role: Activist Coordinator (מפקח)
     const roleSelect = page.locator('div[role="button"]').filter({ hasText: /תפקיד|מפקח/ }).first();
     await roleSelect.click();
     await page.getByRole('option', { name: /מפקח/i }).click();
 
     // Select corporation
-    await page.waitForTimeout(500); // Wait for corporation field to appear
+    await page.waitForTimeout(500); // Wait for city field to appear
     const corpSelect = page.locator('div[role="button"]').filter({ hasText: /תאגיד/ }).first();
     await corpSelect.click();
     await page.getByRole('option').first().click(); // Select first corporation
@@ -82,7 +82,7 @@ test.describe('User Site Selection (RTL)', () => {
     const firstSiteName = await firstSiteOption.textContent();
     await firstSiteOption.click();
 
-    // Verify that selected site chip is visible
+    // Verify that selected neighborhood chip is visible
     const selectedChip = page.locator('.MuiChip-root', { hasText: firstSiteName || '' });
     await expect(selectedChip).toBeVisible({ timeout: 3000 });
 
@@ -104,11 +104,11 @@ test.describe('User Site Selection (RTL)', () => {
       fullPage: true
     });
 
-    console.log('✅ Site chip is visible with text:', chipText);
+    console.log('✅ Neighborhood chip is visible with text:', chipText);
     console.log('✅ Chip background color:', chipBackground);
   });
 
-  test('should handle multiple site selection in RTL', async ({ page }) => {
+  test('should handle multiple neighborhood selection in RTL', async ({ page }) => {
     // Click "Create User" button
     const createButton = page.getByRole('button', { name: /משתמש חדש/i });
     await createButton.click();
@@ -125,7 +125,7 @@ test.describe('User Site Selection (RTL)', () => {
     );
     await nameField.first().fill('מפקח רב-אתרים');
 
-    // Select Supervisor role
+    // Select Activist Coordinator role
     const roleSelect = page.locator('div[role="button"]').filter({ hasText: /תפקיד/ }).first();
     await roleSelect.click();
     await page.getByRole('option', { name: /מפקח/i }).click();
@@ -177,7 +177,7 @@ test.describe('User Site Selection (RTL)', () => {
     }
   });
 
-  test('should show validation error if no site selected for supervisor', async ({ page }) => {
+  test('should show validation error if no neighborhood selected for supervisor', async ({ page }) => {
     // Click "Create User"
     const createButton = page.getByRole('button', { name: /משתמש חדש/i });
     await createButton.click();
@@ -220,6 +220,6 @@ test.describe('User Site Selection (RTL)', () => {
 
     await expect(errorMessage).toBeVisible({ timeout: 3000 });
 
-    console.log('✅ Validation error displayed correctly for missing site selection');
+    console.log('✅ Validation error displayed correctly for missing neighborhood selection');
   });
 });
