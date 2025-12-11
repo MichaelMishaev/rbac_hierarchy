@@ -13,9 +13,6 @@ export type CreateCityInput = {
   code: string;
   description?: string;
   logo?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
   isActive?: boolean;
   areaManagerId: string; // v1.4: Required - Area Manager assignment
 };
@@ -25,9 +22,6 @@ export type UpdateCityInput = {
   code?: string;
   description?: string;
   logo?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
   isActive?: boolean;
   areaManagerId?: string; // v1.4: Allow changing Area Manager assignment
 };
@@ -133,9 +127,6 @@ export async function createCity(data: CreateCityInput) {
         code: data.code,
         description: data.description,
         logoUrl: data.logo,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
         isActive: data.isActive ?? true,
         areaManagerId: data.areaManagerId, // v1.4: Required field from user input
       },
@@ -446,9 +437,6 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
         code: data.code,
         description: data.description,
         logoUrl: data.logo,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
         isActive: data.isActive,
         areaManagerId: data.areaManagerId, // v1.4: Update Area Manager if provided
       },

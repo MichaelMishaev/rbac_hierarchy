@@ -26,8 +26,6 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PeopleIcon from '@mui/icons-material/People';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CityModal, { CorporationFormData } from '@/app/components/modals/CityModal';
@@ -43,9 +41,6 @@ type Corporation = {
   id: string;
   name: string;
   code: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
   description: string | null;
   isActive: boolean;
   areaManager?: {
@@ -109,9 +104,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
     return corporations.filter(
       (corp) =>
         corp.name.toLowerCase().includes(query) ||
-        corp.code.toLowerCase().includes(query) ||
-        corp.email?.toLowerCase().includes(query) ||
-        corp.address?.toLowerCase().includes(query)
+        corp.code.toLowerCase().includes(query)
     );
   }, [corporations, searchQuery]);
 
@@ -520,50 +513,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                       </Typography>
                     )}
 
-                    {/* Contact Info */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
-                      {corp.email && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <EmailIcon sx={{ fontSize: 18, color: colors.neutral[400] }} />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.neutral[600],
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {corp.email}
-                          </Typography>
-                        </Box>
-                      )}
-                      {corp.phone && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <PhoneIcon sx={{ fontSize: 18, color: colors.neutral[400] }} />
-                          <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
-                            {corp.phone}
-                          </Typography>
-                        </Box>
-                      )}
-                      {corp.address && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <LocationOnIcon sx={{ fontSize: 18, color: colors.neutral[400] }} />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: colors.neutral[600],
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {corp.address}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-
                     {/* Stats Row */}
                     <Box
                       sx={{
@@ -573,7 +522,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                         borderTop: `1px solid ${colors.neutral[200]}`,
                       }}
                     >
-                      <Tooltip title={isRTL ? 'מנהלים' : 'Managers'}>
+                      <Tooltip title={isRTL ? 'מספר רכזי עיר בעיר זו' : 'Number of City Coordinators in this city'}>
                         <Box
                           sx={{
                             flex: 1,
@@ -596,7 +545,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                           </Typography>
                         </Box>
                       </Tooltip>
-                      <Tooltip title={isRTL ? 'אתרים' : 'Sites'}>
+                      <Tooltip title={isRTL ? 'מספר שכונות בעיר זו' : 'Number of neighborhoods in this city'}>
                         <Box
                           sx={{
                             flex: 1,
@@ -730,9 +679,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
           initialData={{
             name: selectedCorp.name,
             code: selectedCorp.code,
-            email: selectedCorp.email || '',
-            phone: selectedCorp.phone || '',
-            address: selectedCorp.address || '',
             description: selectedCorp.description || '',
             isActive: selectedCorp.isActive,
             areaManagerId: selectedCorp.areaManager?.id || '', // v1.4: Pass current Area Manager ID

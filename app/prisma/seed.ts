@@ -59,7 +59,159 @@ async function main() {
     },
   });
 
-  console.log('✅ Level 2: Area Manager created:', telAvivDistrict.regionName);
+  console.log('✅ Level 2: Area Manager (Tel Aviv) created:', telAvivDistrict.regionName);
+
+  // ========================
+  // LEVEL 2: Additional District Managers (All 6 Israeli Districts)
+  // ========================
+
+  // North District (מחוז הצפון)
+  const northDistrictUser = await prisma.user.upsert({
+    where: { email: 'manager@north-district.test' },
+    update: {},
+    create: {
+      email: 'manager@north-district.test',
+      fullName: 'יעל גולן',
+      passwordHash: await bcrypt.hash('area123', 10),
+      role: 'AREA_MANAGER',
+      phone: '+972-54-200-0002',
+      isActive: true,
+    },
+  });
+
+  const northDistrict = await prisma.areaManager.upsert({
+    where: { userId: northDistrictUser.id },
+    update: {},
+    create: {
+      userId: northDistrictUser.id,
+      regionName: 'מחוז הצפון',
+      regionCode: 'NORTH',
+      isActive: true,
+      metadata: {
+        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז הצפון',
+      },
+    },
+  });
+
+  // Haifa District (מחוז חיפה)
+  const haifaDistrictUser = await prisma.user.upsert({
+    where: { email: 'manager@haifa-district.test' },
+    update: {},
+    create: {
+      email: 'manager@haifa-district.test',
+      fullName: 'מיכאל כרמל',
+      passwordHash: await bcrypt.hash('area123', 10),
+      role: 'AREA_MANAGER',
+      phone: '+972-54-200-0003',
+      isActive: true,
+    },
+  });
+
+  const haifaDistrict = await prisma.areaManager.upsert({
+    where: { userId: haifaDistrictUser.id },
+    update: {},
+    create: {
+      userId: haifaDistrictUser.id,
+      regionName: 'מחוז חיפה',
+      regionCode: 'HAIFA',
+      isActive: true,
+      metadata: {
+        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז חיפה',
+      },
+    },
+  });
+
+  // Center District (מחוז המרכז)
+  const centerDistrictUser = await prisma.user.upsert({
+    where: { email: 'manager@center-district.test' },
+    update: {},
+    create: {
+      email: 'manager@center-district.test',
+      fullName: 'רונית שרון',
+      passwordHash: await bcrypt.hash('area123', 10),
+      role: 'AREA_MANAGER',
+      phone: '+972-54-200-0004',
+      isActive: true,
+    },
+  });
+
+  const centerDistrict = await prisma.areaManager.upsert({
+    where: { userId: centerDistrictUser.id },
+    update: {},
+    create: {
+      userId: centerDistrictUser.id,
+      regionName: 'מחוז המרכז',
+      regionCode: 'CENTER',
+      isActive: true,
+      metadata: {
+        description: 'מנהלת אזורית אחראית על קמפיין הבחירות במחוז המרכז',
+      },
+    },
+  });
+
+  // Jerusalem District (מחוז ירושלים)
+  const jerusalemDistrictUser = await prisma.user.upsert({
+    where: { email: 'manager@jerusalem-district.test' },
+    update: {},
+    create: {
+      email: 'manager@jerusalem-district.test',
+      fullName: 'אבי הר-טוב',
+      passwordHash: await bcrypt.hash('area123', 10),
+      role: 'AREA_MANAGER',
+      phone: '+972-54-200-0005',
+      isActive: true,
+    },
+  });
+
+  const jerusalemDistrict = await prisma.areaManager.upsert({
+    where: { userId: jerusalemDistrictUser.id },
+    update: {},
+    create: {
+      userId: jerusalemDistrictUser.id,
+      regionName: 'מחוז ירושלים',
+      regionCode: 'JERUSALEM',
+      isActive: true,
+      metadata: {
+        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז ירושלים',
+      },
+    },
+  });
+
+  // South District (מחוז הדרום)
+  const southDistrictUser = await prisma.user.upsert({
+    where: { email: 'manager@south-district.test' },
+    update: {},
+    create: {
+      email: 'manager@south-district.test',
+      fullName: 'תמר נגב',
+      passwordHash: await bcrypt.hash('area123', 10),
+      role: 'AREA_MANAGER',
+      phone: '+972-54-200-0006',
+      isActive: true,
+    },
+  });
+
+  const southDistrict = await prisma.areaManager.upsert({
+    where: { userId: southDistrictUser.id },
+    update: {},
+    create: {
+      userId: southDistrictUser.id,
+      regionName: 'מחוז הדרום',
+      regionCode: 'SOUTH',
+      isActive: true,
+      metadata: {
+        description: 'מנהלת אזורית אחראית על קמפיין הבחירות במחוז הדרום',
+      },
+    },
+  });
+
+  console.log('✅ Level 2: All 6 District Managers created');
+  console.log('  - מחוז תל אביב (Tel Aviv District)');
+  console.log('  - מחוז הצפון (North District)');
+  console.log('  - מחוז חיפה (Haifa District)');
+  console.log('  - מחוז המרכז (Center District)');
+  console.log('  - מחוז ירושלים (Jerusalem District)');
+  console.log('  - מחוז הדרום (South District)');
 
   // ========================
   // LEVEL 3-7: Tel Aviv-Yafo City (Full Campaign Hierarchy)

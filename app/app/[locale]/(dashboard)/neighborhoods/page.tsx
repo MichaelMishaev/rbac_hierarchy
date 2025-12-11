@@ -94,7 +94,7 @@ export default async function SitesPage() {
       {/* Client Component with Modals */}
       <NeighborhoodsClient
         neighborhoods={neighborhoods}
-        cities={cities.map(c => ({ id: c.id, name: c.name, code: c.code }))}
+        cities={cities.map(c => ({ id: c.id, name: c.name, code: c.code, areaManagerId: c.areaManagerId }))}
         areas={areas.map(a => ({ id: a.id, regionName: a.regionName, regionCode: a.regionCode }))}
       />
     </Box>

@@ -22,9 +22,6 @@ import { generateCityCode } from '@/lib/transliteration';
 export type CorporationFormData = {
   name: string;
   code: string;
-  email: string;
-  phone: string;
-  address: string;
   description: string;
   isActive: boolean;
   areaManagerId: string;
@@ -65,9 +62,6 @@ export default function CityModal({
   const [formData, setFormData] = useState<CorporationFormData>({
     name: initialData?.name || '',
     code: initialData?.code || '',
-    email: initialData?.email || '',
-    phone: initialData?.phone || '',
-    address: initialData?.address || '',
     description: initialData?.description || '',
     isActive: initialData?.isActive ?? true,
     // For Area Managers creating cities: auto-select their area if only one available
@@ -96,12 +90,6 @@ export default function CityModal({
     // Just ensure it exists before submit
     if (!formData.code.trim()) {
       newErrors.code = 'Code generation failed';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
     }
 
     if (mode === 'create' && !formData.areaManagerId.trim()) {
@@ -323,127 +311,6 @@ export default function CityModal({
                   </Typography>
                 </Box>
               )}
-            </Box>
-          </Box>
-
-          {/* Contact Information */}
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              backgroundColor: '#FAFBFC',
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: '#F5F6F8',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              },
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 700,
-                color: 'primary.main',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 6,
-                  height: 24,
-                  borderRadius: '3px',
-                  background: 'linear-gradient(135deg, #00C875 0%, #00A661 100%)',
-                }}
-              />
-              פרטי התקשרות
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  label={t('email')}
-                  value={formData.email}
-                  onChange={handleChange('email')}
-                  error={!!errors.email}
-                  helperText={errors.email}
-                  type="email"
-                  required
-                  sx={{
-                    flex: 1,
-                    minWidth: '200px',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      backgroundColor: 'white',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
-                      },
-                      '&.Mui-focused': {
-                        boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '1rem',
-                      fontWeight: 500,
-                    },
-                  }}
-                />
-
-                <TextField
-                  label={t('phone')}
-                  value={formData.phone}
-                  onChange={handleChange('phone')}
-                  sx={{
-                    flex: 1,
-                    minWidth: '200px',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      backgroundColor: 'white',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
-                      },
-                      '&.Mui-focused': {
-                        boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '1rem',
-                      fontWeight: 500,
-                    },
-                  }}
-                />
-              </Box>
-
-              <TextField
-                label={t('address')}
-                value={formData.address}
-                onChange={handleChange('address')}
-                fullWidth
-                multiline
-                rows={2}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              />
             </Box>
           </Box>
 

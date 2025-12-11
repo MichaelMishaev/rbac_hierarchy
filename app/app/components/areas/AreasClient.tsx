@@ -87,15 +87,21 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
 
-  // Fetch available users when opening create modal
+  // Fetch available users when opening create or edit modal
   useEffect(() => {
     if (createModalOpen) {
       fetchAvailableUsers();
     }
   }, [createModalOpen]);
 
-  const fetchAvailableUsers = async () => {
-    const result = await getAvailableAreaManagerUsers();
+  useEffect(() => {
+    if (editModalOpen && selectedArea) {
+      fetchAvailableUsers(selectedArea.id);
+    }
+  }, [editModalOpen, selectedArea]);
+
+  const fetchAvailableUsers = async (currentAreaId?: string) => {
+    const result = await getAvailableAreaManagerUsers(currentAreaId);
     if (result.success && result.users) {
       setAvailableUsers(result.users);
     }

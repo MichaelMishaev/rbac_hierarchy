@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -27,7 +27,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RtlButton from '@/app/components/ui/RtlButton';
 import UserModal from './UserModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
-import { deleteUser } from '@/app/actions/users';
+import { deleteUser, getExistingRegions } from '@/app/actions/users';
 import { useRouter } from 'next/navigation';
 
 type User = {
@@ -89,6 +89,18 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [existingRegions, setExistingRegions] = useState<string[]>([]);
+
+  // Fetch existing regions on mount
+  useEffect(() => {
+    async function fetchRegions() {
+      const result = await getExistingRegions();
+      if (result.success) {
+        setExistingRegions(result.regions);
+      }
+    }
+    fetchRegions();
+  }, []);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: User) => {
     setAnchorEl(event.currentTarget);
@@ -402,6 +414,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         neighborhoods={neighborhoods}
         currentUserRole={currentUserRole}
         currentUserCityId={currentUserCityId}
+        existingRegions={existingRegions}
       />
 
       {/* Delete Confirmation Modal */}

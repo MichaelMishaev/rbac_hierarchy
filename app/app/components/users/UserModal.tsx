@@ -54,6 +54,7 @@ type UserModalProps = {
   neighborhoods?: Site[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
   currentUserCityId?: string | null;
+  existingRegions?: string[];
 };
 
 type FormData = {
@@ -76,6 +77,7 @@ export default function UserModal({
   neighborhoods = [],
   currentUserRole,
   currentUserCityId,
+  existingRegions = [],
 }: UserModalProps) {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
@@ -164,11 +166,8 @@ export default function UserModal({
       return false;
     }
 
-    // Region name required for AREA_MANAGER
-    if (formData.role === 'AREA_MANAGER' && !formData.regionName.trim()) {
-      setError('שם אזור הוא שדה חובה עבור מנהל אזור');
-      return false;
-    }
+    // AREA_MANAGER: No area assignment during user creation
+    // Area assignment happens later in /areas page
 
     // Corporation required for CITY_COORDINATOR/ACTIVIST_COORDINATOR (not for SUPERADMIN or AREA_MANAGER)
     if (
@@ -209,7 +208,6 @@ export default function UserModal({
           phone: formData.phone || undefined,
           role: formData.role,
           cityId: formData.cityId || undefined,
-          regionName: formData.role === 'AREA_MANAGER' ? formData.regionName : undefined,
           ...(formData.password && { password: formData.password }),
         });
       } else {
@@ -221,7 +219,6 @@ export default function UserModal({
           password: formData.password,
           role: formData.role,
           cityId: formData.cityId || undefined,
-          regionName: formData.role === 'AREA_MANAGER' ? formData.regionName : undefined,
         });
       }
 
@@ -252,12 +249,12 @@ export default function UserModal({
       ? [
           { value: 'SUPERADMIN', label: t('superadmin') },
           { value: 'AREA_MANAGER', label: t('area_manager') },
-          { value: 'MANAGER', label: t('manager') },
-          { value: 'ACTIVIST_COORDINATOR', label: t('supervisor') },
+          { value: 'CITY_COORDINATOR', label: t('cityCoordinator') },
+          { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
         ]
       : [
-          { value: 'MANAGER', label: t('manager') },
-          { value: 'ACTIVIST_COORDINATOR', label: t('supervisor') },
+          { value: 'CITY_COORDINATOR', label: t('cityCoordinator') },
+          { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
         ];
 
   return (
@@ -385,23 +382,8 @@ export default function UserModal({
             ))}
           </TextField>
 
-          {/* Region Name (for AREA_MANAGER) */}
-          {formData.role === 'AREA_MANAGER' && (
-            <TextField
-              label="שם אזור"
-              value={formData.regionName}
-              onChange={handleChange('regionName')}
-              fullWidth
-              required
-              disabled={loading}
-              helperText="למשל: מרכז, דרום, צפון"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: borderRadius.md,
-                },
-              }}
-            />
-          )}
+          {/* AREA_MANAGER: No area assignment during user creation */}
+          {/* Area assignment happens later in /areas page */}
 
           {/* Corporation (for CITY_COORDINATOR/ACTIVIST_COORDINATOR) */}
           {(formData.role === 'CITY_COORDINATOR' || formData.role === 'ACTIVIST_COORDINATOR') && (

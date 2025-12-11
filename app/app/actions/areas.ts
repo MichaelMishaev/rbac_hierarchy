@@ -484,7 +484,7 @@ export async function deleteArea(areaId: string) {
  * Permissions:
  * - SUPERADMIN: Can access this list
  */
-export async function getAvailableAreaManagerUsers() {
+export async function getAvailableAreaManagerUsers(currentAreaId?: string) {
   try {
     // Only SUPERADMIN can access
     await requireSuperAdmin();
@@ -508,6 +508,12 @@ export async function getAvailableAreaManagerUsers() {
 
     // Get IDs of users who are already area managers
     const assignedUsers = await prisma.areaManager.findMany({
+      where: currentAreaId
+        ? {
+            // When editing, exclude users assigned to OTHER areas
+            id: { not: currentAreaId },
+          }
+        : undefined,
       select: {
         userId: true,
       },
@@ -516,6 +522,8 @@ export async function getAvailableAreaManagerUsers() {
     const assignedUserIds = new Set(assignedUsers.map((am) => am.userId));
 
     // Filter to get only available users
+    // When editing (currentAreaId provided), includes the currently assigned user
+    // When creating (no currentAreaId), excludes all assigned users
     const availableUsers = areaManagerUsers.filter(
       (user) => !assignedUserIds.has(user.id)
     );

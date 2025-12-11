@@ -59,9 +59,6 @@ export default function CityQuickPreview({
     name: 'תאגיד דוגמה',
     code: 'CORP001',
     logo: null,
-    email: 'contact@example.com',
-    phone: '050-1234567',
-    address: 'רחוב הדוגמה 123, תל אביב',
     _count: {
       coordinators: 5,
       activistCoordinators: 12,
@@ -168,60 +165,6 @@ export default function CityQuickPreview({
                 />
               </Grid>
             </Grid>
-
-            {/* Contact Info */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={600} mb={1.5}>
-                פרטי יצירת קשר
-              </Typography>
-              <Stack spacing={1.5}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: borderRadius.md,
-                    backgroundColor: colors.neutral[50],
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                    כתובת
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {data?.address}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: borderRadius.md,
-                    backgroundColor: colors.neutral[50],
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                    טלפון
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {data?.phone}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: borderRadius.md,
-                    backgroundColor: colors.neutral[50],
-                    border: `1px solid ${colors.neutral[200]}`,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                    דוא״ל
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {data?.email}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Box>
           </Stack>
         )}
       </Box>

@@ -879,11 +879,6 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
           onSubmit={handleEditSite}
           initialData={{
             name: selectedSite.name,
-            address: selectedSite.address || '',
-            city: selectedSite.city || '',
-            country: selectedSite.country || 'ישראל',
-            phone: selectedSite.phone || '',
-            email: selectedSite.email || '',
             cityId: selectedSite.cityId,
             activistCoordinatorId: '', // TODO: Fetch current supervisor assignment
             isActive: selectedSite.isActive,

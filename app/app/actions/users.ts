@@ -94,13 +94,8 @@ export async function createUser(data: CreateUserInput) {
       };
     }
 
-    // AREA_MANAGER requires region name
-    if (data.role === 'AREA_MANAGER' && !data.regionName) {
-      return {
-        success: false,
-        error: 'Region name is required for Area Manager role.',
-      };
-    }
+    // AREA_MANAGER users are created without area assignment
+    // Areas are assigned later in /areas page
 
     // City-based roles require cityId
     if ((data.role === 'CITY_COORDINATOR' || data.role === 'ACTIVIST_COORDINATOR') && !data.cityId) {
@@ -204,19 +199,10 @@ export async function createUser(data: CreateUserInput) {
     });
 
     // Create role-specific record based on role type
-    if (data.role === 'AREA_MANAGER' && data.regionName) {
-      // v1.4: AreaManager requires regionCode (unique identifier)
-      const regionCode = `REGION-${Date.now()}`; // Generate unique code
+    // AREA_MANAGER: User is created without area assignment
+    // Area assignment happens later in /areas page (create or edit area)
 
-      // Create AreaManager record for AREA_MANAGER role
-      await prisma.areaManager.create({
-        data: {
-          userId: newUser.id,
-          regionName: data.regionName,
-          regionCode, // v1.4: Required field
-        },
-      });
-    } else if (data.cityId) {
+    if (data.cityId) {
       if (data.role === 'CITY_COORDINATOR') {
         await prisma.cityCoordinator.create({
           data: {
@@ -843,6 +829,40 @@ export async function deleteUser(userId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete user',
+    };
+  }
+}
+
+// ============================================
+// GET EXISTING REGIONS
+// ============================================
+
+/**
+ * Get distinct region names from existing Area Managers
+ * Used for autocomplete in user creation modal
+ */
+export async function getExistingRegions() {
+  try {
+    const regions = await prisma.areaManager.findMany({
+      select: {
+        regionName: true,
+      },
+      distinct: ['regionName'],
+      orderBy: {
+        regionName: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      regions: regions.map(r => r.regionName),
+    };
+  } catch (error) {
+    console.error('Error fetching regions:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch regions',
+      regions: [],
     };
   }
 }
