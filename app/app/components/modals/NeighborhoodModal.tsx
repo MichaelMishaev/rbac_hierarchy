@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -131,8 +131,14 @@ export default function NeighborhoodModal({
   };
 
   // Reset form when modal opens with new initialData
+  // Track previous open state to only reset on open transition
+  const prevOpenRef = useRef(open);
+
   useEffect(() => {
-    if (open) {
+    // Only reset form when modal transitions from closed to open
+    const justOpened = open && !prevOpenRef.current;
+
+    if (justOpened) {
       // If editing and has initial city, pre-select area
       if (initialData?.cityId) {
         const city = cities.find((c) => c.id === initialData.cityId);
@@ -156,6 +162,9 @@ export default function NeighborhoodModal({
       setSupervisorErrors({});
       setTempPassword(null);
     }
+
+    // Update ref for next render
+    prevOpenRef.current = open;
   }, [open, initialData, cities]);
 
   // Auto-select first activist coordinator when loaded (but don't reset form!)
@@ -535,53 +544,89 @@ export default function NeighborhoodModal({
                 </Select>
               </FormControl>
 
-              <FormControl
+              <Autocomplete
+                value={activistCoordinators.find((ac) => ac.id === formData.activistCoordinatorId) || null}
+                onChange={(event, newValue) => {
+                  setFormData((prev) => ({ ...prev, activistCoordinatorId: newValue?.id || '' }));
+                  if (errors.activistCoordinatorId) {
+                    setErrors((prev) => ({ ...prev, activistCoordinatorId: undefined }));
+                  }
+                }}
+                options={activistCoordinators}
+                getOptionLabel={(option) => option.fullName}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                noOptionsText={isRTL ? 'אין מפקחים זמינים' : 'No supervisors available'}
+                disabled={activistCoordinators.length === 0}
                 fullWidth
-                required
-                error={!!errors.activistCoordinatorId}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={isRTL ? 'מפקח' : 'Supervisor'}
+                    placeholder={isRTL ? 'חפש לפי שם או אימייל...' : 'Search by name or email...'}
+                    error={!!errors.activistCoordinatorId}
+                    helperText={errors.activistCoordinatorId}
+                    required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        backgroundColor: 'white',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                        },
+                        '&.Mui-focused': {
+                          boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
+                    }}
+                  />
+                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <Box
+                      component="li"
+                      key={key}
+                      {...otherProps}
+                      sx={{
+                        padding: '12px 16px !important',
+                        '&:hover': {
+                          backgroundColor: 'rgba(97, 97, 255, 0.08)',
+                        },
+                      }}
+                    >
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {option.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.email}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                }}
+                filterOptions={(options, { inputValue }) => {
+                  const searchTerm = inputValue.toLowerCase();
+                  return options.filter(
+                    (option) =>
+                      option.fullName.toLowerCase().includes(searchTerm) ||
+                      option.email.toLowerCase().includes(searchTerm)
+                  );
+                }}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
-                    },
+                  '& .MuiAutocomplete-popupIndicator': {
+                    color: 'primary.main',
                   },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
+                  '& .MuiAutocomplete-clearIndicator': {
+                    color: 'primary.main',
                   },
                 }}
-              >
-                <InputLabel>{isRTL ? 'מפקח' : 'Supervisor'}</InputLabel>
-                <Select
-                  value={formData.activistCoordinatorId}
-                  onChange={(e) => handleChange('activistCoordinatorId')(e as any)}
-                  label={isRTL ? 'מפקח' : 'Supervisor'}
-                  disabled={activistCoordinators.length === 0}
-                >
-                  {activistCoordinators.length === 0 ? (
-                    <MenuItem disabled value="">
-                      {isRTL ? 'אין מפקחים זמינים' : 'No supervisors available'}
-                    </MenuItem>
-                  ) : (
-                    activistCoordinators.map((supervisor) => (
-                      <MenuItem key={supervisor.id} value={supervisor.id}>
-                        {supervisor.fullName}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-                {errors.activistCoordinatorId && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
-                    {errors.activistCoordinatorId}
-                  </Typography>
-                )}
-              </FormControl>
+              />
 
               {/* Quick supervisor creation when none exist */}
               {activistCoordinators.length === 0 && formData.cityId && (

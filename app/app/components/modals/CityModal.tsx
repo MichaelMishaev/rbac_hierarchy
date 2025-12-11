@@ -14,6 +14,7 @@ import {
   CircularProgress,
   MenuItem,
   Typography,
+  Autocomplete,
 } from '@mui/material';
 import { Business as BusinessIcon } from '@mui/icons-material';
 import { useTranslations } from 'next-intl';
@@ -253,48 +254,95 @@ export default function CityModal({
                 }}
               />
 
-              <TextField
-                select
-                label="מנהל אזור"
-                value={formData.areaManagerId}
-                onChange={handleChange('areaManagerId')}
-                error={!!errors.areaManagerId}
-                helperText={
-                  errors.areaManagerId ||
-                  (isAreaManagerRestricted
-                    ? 'מנהלי אזור יכולים ליצור ערים רק באזור שלהם'
-                    : undefined)
-                }
-                required={mode === 'create'}
+              <Autocomplete
+                value={areaManagers.find((am) => am.id === formData.areaManagerId) || null}
+                onChange={(event, newValue) => {
+                  setFormData((prev) => ({ ...prev, areaManagerId: newValue?.id || '' }));
+                  if (errors.areaManagerId) {
+                    setErrors((prev) => ({ ...prev, areaManagerId: undefined }));
+                  }
+                }}
+                options={areaManagers}
+                getOptionLabel={(option) => `${option.regionName} - ${option.fullName}`}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                noOptionsText="אין מנהלי אזור זמינים"
                 disabled={isAreaManagerRestricted}
                 fullWidth
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="מנהל אזור"
+                    placeholder="חפש לפי אזור, שם או אימייל..."
+                    error={!!errors.areaManagerId}
+                    helperText={
+                      errors.areaManagerId ||
+                      (isAreaManagerRestricted
+                        ? 'מנהלי אזור יכולים ליצור ערים רק באזור שלהם'
+                        : undefined)
+                    }
+                    required={mode === 'create'}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        backgroundColor: 'white',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                        },
+                        '&.Mui-focused': {
+                          boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
+                    }}
+                  />
+                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <Box
+                      component="li"
+                      key={key}
+                      {...otherProps}
+                      sx={{
+                        padding: '12px 16px !important',
+                        '&:hover': {
+                          backgroundColor: 'rgba(97, 97, 255, 0.08)',
+                        },
+                      }}
+                    >
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {option.regionName} - {option.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.email}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                }}
+                filterOptions={(options, { inputValue }) => {
+                  const searchTerm = inputValue.toLowerCase();
+                  return options.filter(
+                    (option) =>
+                      option.regionName.toLowerCase().includes(searchTerm) ||
+                      option.fullName.toLowerCase().includes(searchTerm) ||
+                      option.email.toLowerCase().includes(searchTerm)
+                  );
+                }}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
-                    },
+                  '& .MuiAutocomplete-popupIndicator': {
+                    color: 'primary.main',
                   },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
+                  '& .MuiAutocomplete-clearIndicator': {
+                    color: 'primary.main',
                   },
                 }}
-              >
-                <MenuItem value="">
-                  <em>{mode === 'create' ? 'בחר מנהל אזור' : 'לא לשנות'}</em>
-                </MenuItem>
-                {areaManagers.map((am) => (
-                  <MenuItem key={am.id} value={am.id}>
-                    {am.regionName} - {am.fullName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
 
               {mode === 'create' && formData.code && (
                 <Box

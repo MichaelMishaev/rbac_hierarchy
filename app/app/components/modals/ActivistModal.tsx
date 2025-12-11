@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -141,8 +141,14 @@ export default function ActivistModal({
     : [];
 
   // Reset form when modal opens with new initialData
+  // Track previous open state to only reset on open transition
+  const prevOpenRef = useRef(open);
+
   useEffect(() => {
-    if (open) {
+    // Only reset form when modal transitions from closed to open
+    const justOpened = open && !prevOpenRef.current;
+
+    if (justOpened) {
       // If editing and has initial neighborhood, pre-select area and city
       if (initialData?.siteId) {
         const neighborhood = neighborhoods.find((n) => n.id === initialData.siteId);
@@ -173,6 +179,9 @@ export default function ActivistModal({
       });
       setErrors({});
     }
+
+    // Update ref for next render
+    prevOpenRef.current = open;
   }, [open, initialData, neighborhoods, cities, activistCoordinators, defaultSiteId, defaultSupervisorId]);
 
   // Handle area change - clear city and neighborhood
@@ -470,30 +479,90 @@ export default function ActivistModal({
                 </FormControl>
 
                 {/* Activist Coordinator */}
-                <FormControl sx={{ flex: 1, minWidth: '200px' }} required error={!!errors.supervisorId}>
-                  <InputLabel>{isRTL ? 'רכז פעילים' : 'Activist Coordinator'}</InputLabel>
-                  <Select
-                    value={formData.supervisorId}
-                    onChange={(e) => handleChange('supervisorId')(e as any)}
-                    label={isRTL ? 'רכז פעילים' : 'Activist Coordinator'}
+                <Box sx={{ flex: 1, minWidth: '200px' }}>
+                  <Autocomplete
+                    value={activistCoordinators.find((ac) => ac.id === formData.supervisorId) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({ ...prev, supervisorId: newValue?.id || '' }));
+                      if (errors.supervisorId) {
+                        setErrors((prev) => ({ ...prev, supervisorId: undefined }));
+                      }
+                    }}
+                    options={activistCoordinators}
+                    getOptionLabel={(option) => option.name}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    noOptionsText={isRTL ? 'אין רכזים זמינים' : 'No coordinators available'}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label={isRTL ? 'רכז פעילים' : 'Activist Coordinator'}
+                        placeholder={isRTL ? 'חפש לפי שם או אימייל...' : 'Search by name or email...'}
+                        error={!!errors.supervisorId}
+                        helperText={errors.supervisorId}
+                        required
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            backgroundColor: 'white',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                            },
+                            '&.Mui-focused': {
+                              boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                            },
+                          },
+                          '& .MuiInputLabel-root': {
+                            fontSize: '1rem',
+                            fontWeight: 500,
+                          },
+                        }}
+                      />
+                    )}
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props as any;
+                      return (
+                        <Box
+                          component="li"
+                          key={key}
+                          {...otherProps}
+                          sx={{
+                            padding: '12px 16px !important',
+                            '&:hover': {
+                              backgroundColor: 'rgba(97, 97, 255, 0.08)',
+                            },
+                          }}
+                        >
+                          <Box sx={{ width: '100%' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {option.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    }}
+                    filterOptions={(options, { inputValue }) => {
+                      const searchTerm = inputValue.toLowerCase();
+                      return options.filter(
+                        (option) =>
+                          option.name.toLowerCase().includes(searchTerm) ||
+                          option.email.toLowerCase().includes(searchTerm)
+                      );
+                    }}
                     sx={{
-                      borderRadius: '12px',
-                      backgroundColor: 'white',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                      '& .MuiAutocomplete-popupIndicator': {
+                        color: 'primary.main',
+                      },
+                      '& .MuiAutocomplete-clearIndicator': {
+                        color: 'primary.main',
                       },
                     }}
-                  >
-                    <MenuItem value="">
-                      <em>{isRTL ? 'בחר רכז' : 'Select Coordinator'}</em>
-                    </MenuItem>
-                    {activistCoordinators.map((coordinator) => (
-                      <MenuItem key={coordinator.id} value={coordinator.id}>
-                        {coordinator.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                  />
+                </Box>
               </Box>
             </Box>
           </Box>

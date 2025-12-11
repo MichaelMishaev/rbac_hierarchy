@@ -15,6 +15,7 @@ import {
   MenuItem,
   Typography,
   Alert,
+  Autocomplete,
 } from '@mui/material';
 import {
   Public as PublicIcon,
@@ -363,55 +364,94 @@ export default function AreaModal({
               מנהל אזור
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                select
-                label="בחר משתמש"
-                value={formData.userId}
-                onChange={handleChange('userId')}
-                error={!!errors.userId}
-                helperText={errors.userId || 'רק משתמשים עם תפקיד "מנהל אזור" זמינים'}
-                required
+              <Autocomplete
+                value={availableUsers.find((user) => user.id === formData.userId) || null}
+                onChange={(event, newValue) => {
+                  setFormData((prev) => ({ ...prev, userId: newValue?.id || '' }));
+                  if (errors.userId) {
+                    setErrors((prev) => ({ ...prev, userId: undefined }));
+                  }
+                  if (error) {
+                    setError('');
+                  }
+                }}
+                options={availableUsers}
+                getOptionLabel={(option) => option.fullName}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                noOptionsText="אין משתמשים זמינים"
+                loading={availableUsers.length === 0}
                 fullWidth
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="בחר משתמש"
+                    placeholder="חפש לפי שם, אימייל או טלפון..."
+                    error={!!errors.userId}
+                    helperText={errors.userId || 'רק משתמשים עם תפקיד "מנהל אזור" זמינים'}
+                    required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        backgroundColor: 'white',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
+                        },
+                        '&.Mui-focused': {
+                          boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
+                    }}
+                  />
+                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <Box
+                      component="li"
+                      key={key}
+                      {...otherProps}
+                      sx={{
+                        padding: '12px 16px !important',
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 200, 117, 0.08)',
+                        },
+                      }}
+                    >
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {option.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.email}
+                          {option.phone && ` • ${option.phone}`}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                }}
+                filterOptions={(options, { inputValue }) => {
+                  const searchTerm = inputValue.toLowerCase();
+                  return options.filter(
+                    (option) =>
+                      option.fullName.toLowerCase().includes(searchTerm) ||
+                      option.email.toLowerCase().includes(searchTerm) ||
+                      (option.phone && option.phone.includes(searchTerm))
+                  );
+                }}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
-                    },
+                  '& .MuiAutocomplete-popupIndicator': {
+                    color: '#00C875',
                   },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
+                  '& .MuiAutocomplete-clearIndicator': {
+                    color: '#00C875',
                   },
                 }}
-              >
-                <MenuItem value="">
-                  <em>בחר משתמש...</em>
-                </MenuItem>
-                {availableUsers.length === 0 && (
-                  <MenuItem disabled>
-                    <em>אין משתמשים זמינים</em>
-                  </MenuItem>
-                )}
-                {availableUsers.map((user) => (
-                  <MenuItem key={user.id} value={user.id}>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {user.fullName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {user.email}
-                        {user.phone && ` • ${user.phone}`}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
 
               {availableUsers.length === 0 && (
                 <Alert severity="warning" sx={{ mt: 1 }}>

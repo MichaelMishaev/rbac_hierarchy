@@ -20,6 +20,7 @@ import {
   LocationOn as LocationOnIcon,
   SupervisorAccount as SupervisorIcon,
   AccountTree as DepartmentIcon,
+  AccountTree,
   Group as TeamIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
@@ -28,6 +29,7 @@ import {
   Clear as ClearIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import dynamic from 'next/dynamic';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
@@ -67,6 +69,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [searchTerm, setSearchTerm] = useState('');
   const [matchedNodePaths, setMatchedNodePaths] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const treeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -77,8 +80,12 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     zoomIn: 'הגדל',
     zoomOut: 'הקטן',
     fitToScreen: 'התאם למסך',
+    showAll: 'הצג הכל',
     fullscreen: 'מסך מלא',
     exitFullscreen: 'צא ממסך מלא',
+    downloadExcel: 'הורד אקסל',
+    downloadHTML: 'הורד HTML',
+    downloading: 'מוריד...',
     noData: 'אין נתוני ארגון זמינים',
     superadmin: 'מנהל על',
     city: 'עיר',
@@ -301,6 +308,27 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     }, 100);
   }, [dimensions]);
 
+  // Show All - Bird's Eye View (zoom out to see entire tree)
+  const handleShowAll = useCallback(() => {
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+
+    console.log('Showing entire tree - Bird\'s Eye View');
+    // Zoom out significantly to show the whole tree
+    setZoom(0.3);
+    // Center the tree at the top
+    setTranslate({
+      x: dimensions.width > 0 ? dimensions.width / 2 : window.innerWidth / 2,
+      y: 50
+    });
+    // Clear search to show all nodes
+    setSearchTerm('');
+
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
+  }, [dimensions]);
+
   // Fullscreen handler
   const handleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
@@ -315,6 +343,72 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       }
     } catch (err) {
       console.error('Error toggling fullscreen:', err);
+    }
+  }, []);
+
+  // Excel download handler
+  const handleDownloadExcel = useCallback(async () => {
+    try {
+      setIsDownloading(true);
+      const response = await fetch('/api/org-tree-export');
+
+      if (!response.ok) {
+        throw new Error('Failed to download Excel file');
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `org-tree-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Download file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading Excel:', err);
+      alert('שגיאה בהורדת קובץ אקסל');
+    } finally {
+      setIsDownloading(false);
+    }
+  }, []);
+
+  // HTML download handler (standalone interactive tree)
+  const handleDownloadHTML = useCallback(async () => {
+    try {
+      setIsDownloading(true);
+      const response = await fetch('/api/org-tree-export-html');
+
+      if (!response.ok) {
+        throw new Error('Failed to download HTML file');
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `org-tree-${new Date().toISOString().split('T')[0]}.html`;
+
+      // Download file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading HTML:', err);
+      alert('שגיאה בהורדת קובץ HTML');
+    } finally {
+      setIsDownloading(false);
     }
   }, []);
 
@@ -340,6 +434,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     switch (type) {
       case 'superadmin':
         return '#7C3AED'; // Deep Purple - Platform Administrator
+      case 'area':
+        return '#6366F1'; // Indigo - Geographic Area/District
       case 'areamanager':
         return '#2563EB'; // Royal Blue - Regional Campaign Director
       case 'corporation':
@@ -374,6 +470,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     switch (type) {
       case 'superadmin':
         return <SupervisorIcon sx={{ fontSize: 20 }} />;
+      case 'area':
+        return <LocationOnIcon sx={{ fontSize: 20 }} />;
       case 'areamanager':
         return <DepartmentIcon sx={{ fontSize: 20 }} />;
       case 'corporation':
@@ -397,6 +495,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const getNodeTypeLabel = useCallback((type: string) => {
     const typeLabels: Record<string, string> = {
       superadmin: 'מנהל מערכת',
+      area: 'מחוז',
       areamanager: 'מנהל אזור',
       city: 'עיר',
       'coordinators-group': 'רכזי עיר',
@@ -751,6 +850,12 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#6366F1' }} />
+            <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
+              מחוז / אזור
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
             <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#2563EB' }} />
             <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
               מנהל אזור
@@ -837,32 +942,14 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           {labels.zoomOut}
           <ZoomOutIcon fontSize="small" />
         </Button>
+        {/* Download HTML Button - Interactive Standalone Tree */}
         <Button
           size="small"
-          onClick={handleFitToScreen}
-          variant="outlined"
-          sx={{
-            borderColor: colors.neutral[300],
-            color: colors.neutral[700],
-            display: 'flex',
-            gap: 1,
-            '&:hover': {
-              borderColor: colors.primary,
-              backgroundColor: colors.pastel.blue,
-            },
-          }}
-        >
-          {labels.fitToScreen}
-          <FitScreenIcon fontSize="small" />
-        </Button>
-
-        {/* Fullscreen Button - 2025 UX Best Practice */}
-        <Button
-          size="small"
-          onClick={handleFullscreen}
+          onClick={handleDownloadHTML}
+          disabled={isDownloading}
           variant="contained"
           sx={{
-            backgroundColor: isFullscreen ? colors.error : colors.primary,
+            backgroundColor: colors.status.orange,
             color: '#fff',
             fontWeight: 600,
             boxShadow: shadows.medium,
@@ -870,7 +957,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
             gap: 1,
             transition: 'all 0.2s ease',
             '&:hover': {
-              backgroundColor: isFullscreen ? colors.error : colors.primary,
+              backgroundColor: colors.status.orange,
               filter: 'brightness(0.95)',
               transform: 'translateY(-2px)',
               boxShadow: shadows.large,
@@ -878,12 +965,33 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
             '&:active': {
               transform: 'translateY(0)',
             },
+            '&.Mui-disabled': {
+              backgroundColor: colors.neutral[300],
+              color: colors.neutral[500],
+            },
           }}
         >
-          {isFullscreen ? labels.exitFullscreen : labels.fullscreen}
-          {isFullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
+          {isDownloading ? labels.downloading : labels.downloadHTML}
+          <DownloadIcon fontSize="small" />
         </Button>
       </Box>
+
+      {/* SVG Arrow Marker Definition */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="3"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L0,6 L9,3 z" fill="#4B5563" />
+          </marker>
+        </defs>
+      </svg>
 
       {/* React D3 Tree */}
       <Box
@@ -948,18 +1056,25 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
       {/* Custom link styling */}
       <style jsx global>{`
+        /* Arrow marker definition for directional flow */
+        .rd3t-svg defs marker {
+          fill: #374151;
+        }
+
         .custom-link {
-          stroke: #94A3B8 !important;
-          stroke-width: 3px !important;
+          stroke: #4B5563 !important;
+          stroke-width: 4px !important;
           fill: none !important;
-          opacity: 0.6;
+          opacity: 0.9;
           transition: all 0.3s ease;
+          marker-end: url(#arrowhead);
         }
 
         .custom-link:hover {
-          stroke: #64748B !important;
-          stroke-width: 4px !important;
+          stroke: #1F2937 !important;
+          stroke-width: 5px !important;
           opacity: 1;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
         }
 
         .rd3t-tree-container {

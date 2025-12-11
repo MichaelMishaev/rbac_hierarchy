@@ -105,7 +105,8 @@ export async function GET() {
       },
     });
 
-    // Build complete 7-level hierarchical tree structure
+    // Build complete 8-level hierarchical tree structure
+    // SuperAdmin → Area (District) → Area Manager (Person) → Cities → ...
     const tree = {
       id: 'root',
       name: 'Super Admin',
@@ -114,13 +115,23 @@ export async function GET() {
         areaManagers: areaManagers.length,
       },
       children: areaManagers.map((areaManager: any) => ({
-        id: areaManager.id,
-        name: `${areaManager.user.fullName} - ${areaManager.regionName}`,
-        type: 'areamanager' as const,
+        // Level 2: Area/District (Geographic entity)
+        id: `area-${areaManager.id}`,
+        name: areaManager.regionName,
+        type: 'area' as const,
         count: {
           cities: areaManager.cities?.length || 0,
         },
-        children: (areaManager.cities || []).map((corp: any) => ({
+        children: [
+          {
+            // Level 3: Area Manager (Person who manages the area)
+            id: areaManager.id,
+            name: areaManager.user.fullName,
+            type: 'areamanager' as const,
+            count: {
+              cities: areaManager.cities?.length || 0,
+            },
+            children: (areaManager.cities || []).map((corp: any) => ({
           id: corp.id,
           name: corp.name,
           type: 'city' as const,
@@ -232,6 +243,8 @@ export async function GET() {
             }),
           ],
         })),
+          },
+        ],
       })),
     };
 
