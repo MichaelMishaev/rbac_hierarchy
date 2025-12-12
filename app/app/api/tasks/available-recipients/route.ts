@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
         full_name: r.fullName,
         email: r.email,
         role: r.role,
-        corporation_name: r.city_name,
-        site_names: r.neighborhood_names || [],
+        city_name: r.city_name,
+        neighborhood_names: r.neighborhood_names || [],
       })),
       pagination: {
         page,

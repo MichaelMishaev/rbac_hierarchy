@@ -48,8 +48,8 @@ export async function getAllRecipientsUnderMe(
   }
 
   if (userRole === 'SUPERADMIN') {
-    // SuperAdmin: all non-SuperAdmins
-    // FIX: Use DISTINCT ON to avoid duplicate users (e.g., Area Manager managing multiple corps)
+    // SuperAdmin: ALL active non-SuperAdmin users (regardless of role assignments)
+    // SuperAdmin can broadcast to everyone in the system!
     const users = await prisma.$queryRaw<any[]>`
       SELECT DISTINCT ON (u.id)
         u.id as "userId",
@@ -59,14 +59,13 @@ export async function getAllRecipientsUnderMe(
         COALESCE(c1.name, c2.name, c3.name) as "city_name"
       FROM users u
       LEFT JOIN area_managers am ON am.user_id = u.id
-      LEFT JOIN corporations c1 ON c1.area_manager_id = am.id
-      LEFT JOIN corporation_managers cm ON cm.user_id = u.id
-      LEFT JOIN corporations c2 ON c2.id = cm.corporation_id
-      LEFT JOIN supervisors s ON s.user_id = u.id
-      LEFT JOIN corporations c3 ON c3.id = s.corporation_id
+      LEFT JOIN cities c1 ON c1.area_manager_id = am.id
+      LEFT JOIN city_coordinators cm ON cm.user_id = u.id
+      LEFT JOIN cities c2 ON c2.id = cm.city_id
+      LEFT JOIN activist_coordinators s ON s.user_id = u.id
+      LEFT JOIN cities c3 ON c3.id = s.city_id
       WHERE u.is_super_admin = FALSE
         AND u.is_active = TRUE
-        AND (am.user_id IS NOT NULL OR cm.user_id IS NOT NULL OR s.user_id IS NOT NULL)
       ORDER BY u.id, u.full_name
     `;
 
@@ -80,7 +79,7 @@ export async function getAllRecipientsUnderMe(
   }
 
   if (userRole === 'AREA_MANAGER') {
-    // Area Manager: Corp Managers + Supervisors in their region
+    // Area Manager: City Coordinators + Activist Coordinators in their region
     const areaManager = await prisma.areaManager.findUnique({
       where: { userId },
     });
@@ -90,32 +89,32 @@ export async function getAllRecipientsUnderMe(
     }
 
     const users = await prisma.$queryRaw<any[]>`
-      -- Corporation Managers in my region
+      -- City Coordinators in my region
       SELECT
         u.id as "userId",
         u.full_name as "fullName",
         u.email,
         'CITY_COORDINATOR' as role,
         c.name as "city_name"
-      FROM corporation_managers cm
+      FROM city_coordinators cm
       JOIN users u ON u.id = cm.user_id
-      JOIN corporations c ON c.id = cm.corporation_id
+      JOIN cities c ON c.id = cm.city_id
       WHERE c.area_manager_id = ${areaManager.id}
         AND u.is_active = TRUE
         AND cm.is_active = TRUE
 
       UNION
 
-      -- Supervisors in my region
+      -- Activist Coordinators in my region
       SELECT
         u.id as "userId",
         u.full_name as "fullName",
         u.email,
         'ACTIVIST_COORDINATOR' as role,
         c.name as "city_name"
-      FROM supervisors s
+      FROM activist_coordinators s
       JOIN users u ON u.id = s.user_id
-      JOIN corporations c ON c.id = s.corporation_id
+      JOIN cities c ON c.id = s.city_id
       WHERE c.area_manager_id = ${areaManager.id}
         AND u.is_active = TRUE
         AND s.is_active = TRUE

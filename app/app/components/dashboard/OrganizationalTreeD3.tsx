@@ -84,7 +84,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     fullscreen: 'מסך מלא',
     exitFullscreen: 'צא ממסך מלא',
     downloadExcel: 'הורד אקסל',
-    downloadHTML: 'הורד HTML',
+    downloadHTML: 'הורד',
     downloading: 'מוריד...',
     noData: 'אין נתוני ארגון זמינים',
     superadmin: 'מנהל על',

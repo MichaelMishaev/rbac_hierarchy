@@ -401,7 +401,7 @@ export default async function SystemRulesPage() {
                   textAlign: isRTL ? 'right' : 'left',
                 }}
               >
-                תפקיד
+                {t('workerCreation.roleHeader')}
               </Box>
               <Box
                 sx={{
@@ -425,7 +425,7 @@ export default async function SystemRulesPage() {
                   textAlign: isRTL ? 'right' : 'left',
                 }}
               >
-                סיבה עסקית
+                {t('workerCreation.reasonHeader')}
               </Box>
 
               {/* Data Rows */}
@@ -788,7 +788,7 @@ export default async function SystemRulesPage() {
                     </Box>
                     <Box>
                       <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                        רמה {level.level}
+                        {t('hierarchy.level')} {level.level}
                       </Typography>
                       <Typography sx={{ fontWeight: 600, fontSize: '16px', color: colors.neutral[800] }}>
                         {level.role}

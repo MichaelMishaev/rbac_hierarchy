@@ -116,9 +116,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
   useEffect(() => {
     if (!formTouched) return;
 
-    if (taskBody.length > 0 && taskBody.length < 10) {
-      setTaskBodyError('תיאור המשימה קצר מדי (מינימום 10 תווים)');
-    } else if (taskBody.length > 2000) {
+    if (taskBody.length > 2000) {
       setTaskBodyError('תיאור המשימה ארוך מדי (מקסימום 2000 תווים)');
     } else {
       setTaskBodyError(null);
@@ -167,8 +165,8 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
   };
 
   const validateForm = (): string | null => {
-    if (!taskBody || taskBody.length < 10) {
-      return 'תיאור המשימה קצר מדי (מינימום 10 תווים)';
+    if (!taskBody || taskBody.trim().length === 0) {
+      return 'יש להזין תיאור למשימה';
     }
     if (taskBody.length > 2000) {
       return 'תיאור המשימה ארוך מדי (מקסימום 2000 תווים)';
@@ -434,6 +432,42 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
           }}
         >
           <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            {/* Step Progress Indicator */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                mb: 4,
+                pb: 3,
+                borderBottom: `2px solid ${colors.neutral[100]}`,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, direction: 'rtl' }}>
+                <Box sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  backgroundColor: '#6161FF',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: '18px',
+                }}>
+                  1
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: '16px', color: colors.neutral[900] }}>
+                    יצירת משימה חדשה
+                  </Typography>
+                  <Typography sx={{ fontSize: '13px', color: colors.neutral[500] }}>
+                    מלא את הפרטים למטה
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
             {/* Error Message */}
             {error && (
               <Fade in>
@@ -453,12 +487,25 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
 
             {/* Task Description */}
             <Box sx={{ mb: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, justifyContent: 'flex-end' }}>
                 <Typography sx={{ fontWeight: 700, fontSize: '16px', color: colors.neutral[900] }}>
                   תיאור המשימה *
                 </Typography>
-                <DescriptionIcon sx={{ color: colors.primary }} />
+                <DescriptionIcon sx={{ color: '#6161FF' }} />
               </Box>
+              {/* Helper Text */}
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  color: colors.neutral[600],
+                  mb: 2,
+                  textAlign: 'right',
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                }}
+              >
+                כתוב מה צריך לעשות, למה זה חשוב, ומתי להשלים. תן דוגמאות אם צריך. ככל שהמשימה ברורה יותר, כך יהיה קל יותר לבצע אותה!
+              </Typography>
               <TextField
                 fullWidth
                 multiline
@@ -487,7 +534,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                     },
                     '&.Mui-focused': {
                       backgroundColor: '#fff',
-                      boxShadow: `0 0 0 3px ${colors.primary}20`,
+                      boxShadow: '0 0 0 3px #6161FF20',
                     },
                   },
                 }}
@@ -504,7 +551,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                     border: `1.5px solid ${getCharCountColor()}`,
                   }}
                 />
-                {taskBody.length >= 10 && taskBody.length <= 2000 && (
+                {taskBody.length > 0 && taskBody.length <= 2000 && (
                   <Chip
                     icon={<CheckCircleIcon />}
                     label="אורך מתאים"
@@ -522,12 +569,25 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
 
             {/* Send To - Toggle Button Style */}
             <Box sx={{ mb: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, justifyContent: 'flex-end' }}>
                 <Typography sx={{ fontWeight: 700, fontSize: '16px', color: colors.neutral[900] }}>
-                  שלח אל *
+                  למי לשלוח את המשימה? *
                 </Typography>
-                <GroupsIcon sx={{ color: colors.primary }} />
+                <GroupsIcon sx={{ color: '#6161FF' }} />
               </Box>
+              {/* Helper Text */}
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  color: colors.neutral[600],
+                  mb: 2,
+                  textAlign: 'right',
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                }}
+              >
+                בחר אם לשלוח את המשימה לכולם תחתיך בהיררכיה, או רק לאנשים ספציפיים שתבחר
+              </Typography>
               <ToggleButtonGroup
                 value={sendTo}
                 exclusive
@@ -547,31 +607,124 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                     fontWeight: 600,
                     fontSize: '15px',
                     py: 2,
+                    backgroundColor: '#fff',
+                    position: 'relative',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      borderColor: '#6161FF',
+                      backgroundColor: '#6161FF05',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px #6161FF20',
+                    },
                     '&.Mui-selected': {
-                      backgroundColor: colors.primary,
+                      backgroundColor: '#6161FF',
                       color: '#fff',
-                      borderColor: colors.primary,
+                      borderColor: '#6161FF',
+                      border: '3px solid #6161FF',
+                      boxShadow: '0 6px 20px #6161FF40',
+                      transform: 'translateY(-4px)',
                       '&:hover': {
-                        backgroundColor: colors.primary,
+                        backgroundColor: '#6161FF',
                         filter: 'brightness(0.95)',
+                        transform: 'translateY(-4px)',
                       },
                     },
                   },
                 }}
               >
                 <ToggleButton value="all" data-testid="send-to-all">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    כל הנמענים תחתיי
-                    <GroupsIcon />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 1, position: 'relative' }}>
+                    {sendTo === 'all' && (
+                      <CheckCircleIcon
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          fontSize: '28px',
+                          color: colors.success,
+                          backgroundColor: '#fff',
+                          borderRadius: '50%',
+                        }}
+                      />
+                    )}
+                    <GroupsIcon fontSize="large" sx={{ fontSize: '48px' }} />
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '15px' }}>
+                        שלח לכולם
+                      </Typography>
+                      <Typography sx={{ fontSize: '12px', opacity: sendTo === 'all' ? 0.9 : 0.6 }}>
+                        כל הרכזים והפעילים תחתיך
+                      </Typography>
+                    </Box>
                   </Box>
                 </ToggleButton>
                 <ToggleButton value="selected">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    נמענים ספציפיים
-                    <PersonIcon />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 1, position: 'relative' }}>
+                    {sendTo === 'selected' && (
+                      <CheckCircleIcon
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          fontSize: '28px',
+                          color: colors.success,
+                          backgroundColor: '#fff',
+                          borderRadius: '50%',
+                        }}
+                      />
+                    )}
+                    <PersonIcon fontSize="large" sx={{ fontSize: '48px' }} />
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '15px' }}>
+                        בחר ספציפי
+                      </Typography>
+                      <Typography sx={{ fontSize: '12px', opacity: sendTo === 'selected' ? 0.9 : 0.6 }}>
+                        בחר נמענים לפי שם
+                      </Typography>
+                    </Box>
                   </Box>
                 </ToggleButton>
               </ToggleButtonGroup>
+
+              {/* Info box for selected option - with animation */}
+              <Fade in key={sendTo}>
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2.5,
+                    backgroundColor: sendTo === 'all' ? '#6161FF15' : `${colors.info}15`,
+                    borderRadius: borderRadius.md,
+                    border: `2px solid ${sendTo === 'all' ? '#6161FF' : colors.info}`,
+                    textAlign: 'right',
+                    boxShadow: `0 2px 8px ${sendTo === 'all' ? '#6161FF' : colors.info}20`,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'flex-end' }}>
+                    <Typography variant="body2" sx={{ color: sendTo === 'all' ? '#6161FF' : colors.info, fontWeight: 700, fontSize: '14px', lineHeight: 1.5 }}>
+                      {sendTo === 'all' ?
+                        '✓ המשימה תישלח לכל הרכזים והפעילים המשויכים אליך בהיררכיה' :
+                        '✓ עכשיו תוכל לבחור נמענים ספציפיים מהרשימה למטה'
+                      }
+                    </Typography>
+                    <Box sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      backgroundColor: sendTo === 'all' ? '#6161FF' : colors.info,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      {sendTo === 'all' ? (
+                        <GroupsIcon sx={{ fontSize: '18px', color: '#fff' }} />
+                      ) : (
+                        <PersonIcon sx={{ fontSize: '18px', color: '#fff' }} />
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              </Fade>
 
               {/* Searchable Multi-Select (only if sendTo = selected) */}
               {sendTo === 'selected' && (
@@ -586,12 +739,48 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                         setFormTouched(true);
                       }}
                       onInputChange={(_, newInputValue) => handleSearchChange(newInputValue)}
-                      getOptionLabel={(option) => `${option.full_name} - ${option.city_name}`}
+                      getOptionLabel={(option) =>
+                        `${option.full_name} - ${option.city_name || 'לא משויך לעיר'}`
+                      }
+                      renderOption={(props, option) => (
+                        <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between', py: 1.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                            <Typography sx={{ fontWeight: 500, fontSize: '14px' }}>
+                              {option.full_name}
+                            </Typography>
+                            {option.city_name ? (
+                              <Chip
+                                label={option.city_name}
+                                size="small"
+                                sx={{
+                                  backgroundColor: `${colors.info}20`,
+                                  color: colors.info,
+                                  fontWeight: 600,
+                                  fontSize: '12px',
+                                  height: '22px',
+                                }}
+                              />
+                            ) : (
+                              <Chip
+                                label="לא משויך"
+                                size="small"
+                                sx={{
+                                  backgroundColor: `${colors.warning}20`,
+                                  color: colors.warning,
+                                  fontWeight: 600,
+                                  fontSize: '12px',
+                                  height: '22px',
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                      )}
                       loading={loadingRecipients}
                       renderInput={(params) => (
                         <TextField
                           {...params}
-                          placeholder="חפש נמענים לפי שם או תאגיד..."
+                          placeholder="חפש נמענים לפי שם או עיר..."
                           InputProps={{
                             ...params.InputProps,
                             endAdornment: (
@@ -602,15 +791,34 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                             ),
                             sx: {
                               borderRadius: borderRadius.lg,
-                              backgroundColor: colors.neutral[50],
+                              backgroundColor: '#fff',
+                              border: `2px solid ${colors.neutral[200]}`,
                               '&:hover': {
+                                borderColor: '#6161FF',
+                                boxShadow: '0 0 0 3px #6161FF10',
+                              },
+                              '&.Mui-focused': {
                                 backgroundColor: '#fff',
+                                borderColor: '#6161FF',
+                                boxShadow: '0 0 0 4px #6161FF20',
                               },
                             },
                           }}
                           inputProps={{
                             ...params.inputProps,
                             dir: 'rtl',
+                          }}
+                          sx={{
+                            '& .MuiInputBase-input': {
+                              color: colors.neutral[900],
+                              fontSize: '15px',
+                              fontWeight: 500,
+                            },
+                            '& .MuiInputBase-input::placeholder': {
+                              color: colors.neutral[500],
+                              opacity: 1,
+                              fontWeight: 400,
+                            },
                           }}
                         />
                       )}
@@ -621,11 +829,23 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                             {...getTagProps({ index })}
                             key={option.user_id}
                             sx={{
-                              backgroundColor: colors.primary,
+                              backgroundColor: '#6161FF',
                               color: '#fff',
                               fontWeight: 600,
+                              height: '36px',
+                              fontSize: '14px',
+                              px: 1.5,
+                              py: 0.5,
+                              m: 0.5,
+                              '& .MuiChip-label': {
+                                px: 1,
+                                py: 0.5,
+                              },
                               '& .MuiChip-deleteIcon': {
                                 color: 'rgba(255,255,255,0.7)',
+                                fontSize: '20px',
+                                marginInlineStart: '8px',
+                                marginInlineEnd: '-4px',
                                 '&:hover': {
                                   color: '#fff',
                                 },
@@ -650,11 +870,12 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                           textTransform: 'none',
                           fontWeight: 600,
                           borderRadius: borderRadius.lg,
-                          borderColor: colors.primary,
-                          color: colors.primary,
+                          borderColor: '#6161FF',
+                          color: '#6161FF',
+                          fontSize: '14px',
                           '&:hover': {
-                            borderColor: colors.primary,
-                            backgroundColor: `${colors.primary}10`,
+                            borderColor: '#6161FF',
+                            backgroundColor: '#6161FF10',
                           },
                         }}
                       >
@@ -685,12 +906,25 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
 
             {/* Execution Date with Quick Actions */}
             <Box sx={{ mb: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, justifyContent: 'flex-end' }}>
                 <Typography sx={{ fontWeight: 700, fontSize: '16px', color: colors.neutral[900] }}>
-                  תאריך ביצוע *
+                  מתי לבצע? *
                 </Typography>
-                <EventIcon sx={{ color: colors.primary }} />
+                <EventIcon sx={{ color: '#6161FF' }} />
               </Box>
+              {/* Helper Text */}
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  color: colors.neutral[600],
+                  mb: 2,
+                  textAlign: 'right',
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                }}
+              >
+                בחר את התאריך בו המשימה צריכה להתבצע. אפשר לבחור תאריך מהיר או לבחור תאריך ספציפי מהלוח
+              </Typography>
 
               {/* Quick Date Buttons */}
               <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -706,8 +940,8 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                     borderColor: colors.neutral[300],
                     color: colors.neutral[700],
                     '&:hover': {
-                      borderColor: colors.primary,
-                      backgroundColor: `${colors.primary}10`,
+                      borderColor: '#6161FF',
+                      backgroundColor: '#6161FF10',
                     },
                   }}
                 >
@@ -725,8 +959,8 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                     borderColor: colors.neutral[300],
                     color: colors.neutral[700],
                     '&:hover': {
-                      borderColor: colors.primary,
-                      backgroundColor: `${colors.primary}10`,
+                      borderColor: '#6161FF',
+                      backgroundColor: '#6161FF10',
                     },
                   }}
                 >
@@ -744,8 +978,8 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                     borderColor: colors.neutral[300],
                     color: colors.neutral[700],
                     '&:hover': {
-                      borderColor: colors.primary,
-                      backgroundColor: `${colors.primary}10`,
+                      borderColor: '#6161FF',
+                      backgroundColor: '#6161FF10',
                     },
                   }}
                 >
@@ -776,7 +1010,7 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                         },
                         '&.Mui-focused': {
                           backgroundColor: '#fff',
-                          boxShadow: `0 0 0 3px ${colors.primary}20`,
+                          boxShadow: '0 0 0 3px #6161FF20',
                         },
                       },
                     },
@@ -824,12 +1058,12 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                   py: 1.8,
                   fontSize: '16px',
                   fontWeight: 700,
-                  backgroundColor: colors.primary,
+                  backgroundColor: '#6161FF',
                   borderRadius: borderRadius.lg,
                   boxShadow: shadows.medium,
                   textTransform: 'none',
                   '&:hover': {
-                    backgroundColor: colors.primary,
+                    backgroundColor: '#6161FF',
                     filter: 'brightness(0.95)',
                     transform: 'translateY(-2px)',
                     boxShadow: shadows.large,

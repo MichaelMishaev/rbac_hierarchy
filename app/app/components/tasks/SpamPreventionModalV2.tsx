@@ -68,7 +68,6 @@ export default function SpamPreventionModalV2({
 }: SpamPreventionModalV2Props) {
   const t = useTranslations('tasks');
   const tCommon = useTranslations('common');
-  const tNav = useTranslations('navigation');
 
   const [expandedDetails, setExpandedDetails] = useState(false);
   const [expandedTask, setExpandedTask] = useState(false);
@@ -103,8 +102,8 @@ export default function SpamPreventionModalV2({
       <Box
         sx={{
           background: isHighRisk
-            ? `linear-gradient(135deg, ${colors.error} 0%, #d32f2f 100%)`
-            : `linear-gradient(135deg, ${colors.primary} 0%, #1565c0 100%)`,
+            ? 'linear-gradient(135deg, #E44258 0%, #D12F45 100%)'
+            : 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
           color: '#fff',
           p: 3,
           position: 'relative',
@@ -131,11 +130,11 @@ export default function SpamPreventionModalV2({
         <Box sx={{ position: 'relative', zIndex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, justifyContent: 'flex-end' }}>
             <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-                אישור שליחה
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                אישור שליחת משימה
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                סקור את הפרטים לפני השליחה
+              <Typography variant="body2" sx={{ opacity: 1, color: 'rgba(255,255,255,0.95)', fontWeight: 500 }}>
+                וודא שהפרטים נכונים לפני השליחה
               </Typography>
             </Box>
             <Box
@@ -219,7 +218,7 @@ export default function SpamPreventionModalV2({
                 gap: 2,
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: colors.primary,
+                  borderColor: '#6161FF',
                   backgroundColor: '#fff',
                   transform: 'translateY(-2px)',
                   boxShadow: shadows.medium,
@@ -231,7 +230,7 @@ export default function SpamPreventionModalV2({
                   width: 48,
                   height: 48,
                   borderRadius: borderRadius.lg,
-                  backgroundColor: colors.primary,
+                  backgroundColor: '#6161FF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -266,7 +265,7 @@ export default function SpamPreventionModalV2({
                 backgroundColor: colors.neutral[50],
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: colors.primary,
+                  borderColor: '#6161FF',
                   backgroundColor: '#fff',
                   transform: 'translateY(-2px)',
                   boxShadow: shadows.medium,
@@ -290,7 +289,7 @@ export default function SpamPreventionModalV2({
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     פירוט נמענים
                   </Typography>
-                  <PeopleIcon sx={{ color: colors.primary }} />
+                  <PeopleIcon sx={{ color: '#6161FF' }} />
                 </Box>
               </Box>
 
@@ -298,40 +297,46 @@ export default function SpamPreventionModalV2({
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1, justifyContent: 'flex-end' }}>
                 {recipientPreview.breakdown.by_role.area_manager > 0 && (
                   <Chip
-                    label={`${recipientPreview.breakdown.by_role.area_manager} ${tNav('areaManagers')}`}
-                    size="small"
+                    label={`מנהלי אזור ${recipientPreview.breakdown.by_role.area_manager}`}
+                    size="medium"
                     sx={{
-                      backgroundColor: colors.primary,
+                      backgroundColor: '#6161FF',
                       color: '#fff',
                       fontWeight: 600,
+                      fontSize: '13px',
+                      px: 1,
                     }}
                   />
                 )}
                 {recipientPreview.breakdown.by_role.city_coordinator > 0 && (
                   <Chip
-                    label={`${recipientPreview.breakdown.by_role.city_coordinator} ${t('managers')}`}
-                    size="small"
+                    label={`רכזי עיר ${recipientPreview.breakdown.by_role.city_coordinator}`}
+                    size="medium"
                     sx={{
                       backgroundColor: colors.info,
                       color: '#fff',
                       fontWeight: 600,
+                      fontSize: '13px',
+                      px: 1,
                     }}
                   />
                 )}
                 {recipientPreview.breakdown.by_role.activistCoordinator > 0 && (
                   <Chip
-                    label={`${recipientPreview.breakdown.by_role.activistCoordinator} ${tNav('activistCoordinators')}`}
-                    size="small"
+                    label={`רכזי פעילים ${recipientPreview.breakdown.by_role.activistCoordinator}`}
+                    size="medium"
                     sx={{
                       backgroundColor: colors.success,
                       color: '#fff',
                       fontWeight: 600,
+                      fontSize: '13px',
+                      px: 1,
                     }}
                   />
                 )}
               </Box>
 
-              {/* Expandable corporation details */}
+              {/* Expandable city details */}
               <Collapse in={expandedDetails}>
                 <Divider sx={{ my: 1.5 }} />
                 <Box sx={{ textAlign: 'right' }}>
@@ -348,7 +353,7 @@ export default function SpamPreventionModalV2({
                     }}
                   >
                     <BusinessIcon fontSize="small" />
-                    פילוח לפי תאגידים:
+                    פילוח לפי ערים:
                   </Typography>
                   {recipientPreview.breakdown.by_city.map((corp, index) => (
                     <Box
@@ -385,7 +390,7 @@ export default function SpamPreventionModalV2({
                 backgroundColor: colors.neutral[50],
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: colors.primary,
+                  borderColor: '#6161FF',
                   backgroundColor: '#fff',
                   transform: 'translateY(-2px)',
                   boxShadow: shadows.medium,
@@ -409,7 +414,7 @@ export default function SpamPreventionModalV2({
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     תוכן המשימה
                   </Typography>
-                  <DescriptionIcon sx={{ color: colors.primary }} />
+                  <DescriptionIcon sx={{ color: '#6161FF' }} />
                 </Box>
               </Box>
 
