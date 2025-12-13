@@ -218,6 +218,7 @@ export default function ActivistsClient({
     if (result.success && result.activist) {
       const worker = {
         ...result.activist,
+        startDate: result.activist.startDate ? result.activist.startDate.toISOString() : null,
         neighborhood: result.activist.neighborhood ? {
           ...result.activist.neighborhood,
           cityId: result.activist.neighborhood.cityRelation?.id || '',
@@ -275,6 +276,7 @@ export default function ActivistsClient({
     if (result.success && result.activist) {
       const updatedWorker = {
         ...result.activist,
+        startDate: result.activist.startDate ? result.activist.startDate.toISOString() : null,
         neighborhood: result.activist.neighborhood ? {
           ...result.activist.neighborhood,
           cityId: result.activist.neighborhood.cityRelation?.id || '',
