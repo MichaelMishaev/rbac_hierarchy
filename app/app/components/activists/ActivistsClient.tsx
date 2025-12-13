@@ -82,7 +82,7 @@ type Worker = {
   notes: string | null;
   tags: string[];
   isActive: boolean;
-  startDate: Date | null;
+  startDate: string | null; // ISO string from Server Action serialization
   neighborhoodId: string;
   activistCoordinatorId: string | null;
   site?: Site;
