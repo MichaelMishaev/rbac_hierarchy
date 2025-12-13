@@ -118,7 +118,7 @@ export default async function WorkersPage() {
             id: a.neighborhood.id,
             name: a.neighborhood.name,
             cityId: a.neighborhood.cityRelation?.id || '',
-            cityRelation: a.neighborhood.cityRelation,
+            cityRelation: a.neighborhood.cityRelation || undefined,
           } : undefined,
           activistCoordinator: a.activistCoordinator ? {
             id: a.activistCoordinator.id,
@@ -132,7 +132,7 @@ export default async function WorkersPage() {
           id: n.id,
           name: n.name,
           cityId: n.cityId,
-          cityRelation: n.cityRelation,
+          cityRelation: n.cityRelation || undefined,
         }))}
         activistCoordinators={activistCoordinators}
         areas={areas.map(a => ({
