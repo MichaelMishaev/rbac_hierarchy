@@ -16,15 +16,15 @@ export interface AuthUser {
 export const testUsers = {
   superAdmin: {
     email: 'admin@election.test',
-    password: 'admin123', // Matches seed password
+    password: 'admin123',
     role: 'SUPERADMIN',
-    name: 'מנהל מערכת',
+    name: 'מנהל מערכת ראשי',
   },
   areaManager: {
-    email: 'regional@rbac.shop',
-    password: 'area123', // Corrected to match actual seed password
+    email: 'sarah.cohen@telaviv-district.test',
+    password: 'area123',
     role: 'AREA_MANAGER',
-    name: 'Regional Manager',
+    name: 'מנהלת אזור - שרה כהן',
   },
   cityCoordinator: {
     email: 'david.cohen@electra-tech.co.il',
