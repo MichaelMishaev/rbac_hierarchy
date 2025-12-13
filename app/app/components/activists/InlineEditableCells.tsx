@@ -23,7 +23,7 @@ import { quickUpdateActivistField } from '@/app/actions/activists';
 // ============================================
 
 type EditableTextCellProps = {
-  value: string | null;
+  value: string | null | undefined;
   activistId: string;
   field: 'phone' | 'email' | 'position';
   onUpdate: () => void;
