@@ -193,6 +193,52 @@ export default async function SystemRulesPage() {
     },
   ];
 
+  // Creation permissions matrix (Who Can Create What?)
+  const creationPermissionsMatrix = [
+    {
+      entity: t('creationPermissions.superAdmin'),
+      whoCanCreate: t('creationPermissions.onlyViaDatabase'),
+      explanation: t('creationPermissions.superAdminExplain'),
+      color: colors.pastel.purple,
+    },
+    {
+      entity: t('creationPermissions.areaManager'),
+      whoCanCreate: t('creationPermissions.onlySuperAdmin'),
+      explanation: t('creationPermissions.areaManagerExplain'),
+      color: colors.pastel.orange,
+    },
+    {
+      entity: t('creationPermissions.city'),
+      whoCanCreate: t('creationPermissions.superAdminOrAreaManager'),
+      explanation: t('creationPermissions.cityExplain'),
+      color: colors.pastel.blue,
+    },
+    {
+      entity: t('creationPermissions.cityCoordinator'),
+      whoCanCreate: t('creationPermissions.superAdminOrAreaManager'),
+      explanation: t('creationPermissions.cityCoordinatorExplain'),
+      color: colors.pastel.blue,
+    },
+    {
+      entity: t('creationPermissions.activistCoordinator'),
+      whoCanCreate: t('creationPermissions.superAdminAreaManagerOrCityCoord'),
+      explanation: t('creationPermissions.activistCoordinatorExplain'),
+      color: colors.pastel.green,
+    },
+    {
+      entity: t('creationPermissions.neighborhood'),
+      whoCanCreate: t('creationPermissions.superAdminAreaManagerOrCityCoord'),
+      explanation: t('creationPermissions.neighborhoodExplain'),
+      color: colors.status.lightGreen,
+    },
+    {
+      entity: t('creationPermissions.activist'),
+      whoCanCreate: t('creationPermissions.allExceptActivistCoord'),
+      explanation: t('creationPermissions.activistExplain'),
+      color: colors.neutral[400],
+    },
+  ];
+
   // Modification rights matrix
   const modificationMatrix = [
     {
@@ -951,7 +997,134 @@ export default async function SystemRulesPage() {
         rules={isolationRules}
       />
 
-      {/* 6. Modification Rights Matrix */}
+      {/* 6. Creation Permissions - Who Can Create What? */}
+      <Card
+        sx={{
+          borderRadius: borderRadius.xl,
+          boxShadow: shadows.medium,
+          border: `1px solid ${colors.neutral[200]}`,
+          overflow: 'hidden',
+          mb: 3,
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            color: colors.neutral[0],
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <Box sx={{ fontSize: 32 }}>
+            <AccountTreeIcon />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+              {t('creationPermissions.title')}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.95 }}>
+              {t('creationPermissions.description')}
+            </Typography>
+          </Box>
+        </Box>
+
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          {/* Desktop Table */}
+          <Box sx={{ display: { xs: 'none', md: 'block' }, overflowX: 'auto' }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, textAlign: isRTL ? 'right' : 'left' }}>
+                    {t('creationPermissions.entity')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: isRTL ? 'right' : 'left' }}>
+                    {t('creationPermissions.whoCanCreate')}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: isRTL ? 'right' : 'left' }}>
+                    {t('creationPermissions.explanation')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {creationPermissionsMatrix.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: item.color,
+                          }}
+                        />
+                        <Typography sx={{ fontWeight: 600 }}>{item.entity}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                      {item.whoCanCreate}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '13px', color: colors.neutral[600] }}>
+                      {item.explanation}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+
+          {/* Mobile Cards */}
+          <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            {creationPermissionsMatrix.map((item, index) => (
+              <Card
+                key={`mobile-creation-${index}`}
+                sx={{
+                  mb: 2,
+                  borderRadius: borderRadius.lg,
+                  border: `2px solid ${item.color}20`,
+                  boxShadow: shadows.soft,
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        background: item.color,
+                      }}
+                    />
+                    <Typography sx={{ fontWeight: 600, fontSize: '16px', color: colors.neutral[800] }}>
+                      {item.entity}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" sx={{ color: colors.neutral[500], fontWeight: 600 }}>
+                      {t('creationPermissions.whoCanCreate')}:
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                      {item.whoCanCreate}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: colors.neutral[500], fontWeight: 600 }}>
+                      {t('creationPermissions.explanation')}:
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colors.neutral[700], lineHeight: 1.6 }}>
+                      {item.explanation}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* 7. Modification Rights Matrix */}
       <Card
         sx={{
           borderRadius: borderRadius.xl,
