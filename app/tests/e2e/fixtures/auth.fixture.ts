@@ -27,16 +27,16 @@ export const testUsers = {
     name: 'מנהלת אזור - שרה כהן',
   },
   cityCoordinator: {
-    email: 'david.cohen@electra-tech.co.il',
-    password: 'manager123',
+    email: 'david.levi@telaviv.test',
+    password: 'city123',
     role: 'CITY_COORDINATOR',
-    name: 'דוד כהן',
+    name: 'רכז עיר - דוד לוי (תל אביב)',
   },
   activistCoordinator: {
-    email: 'moshe.israeli@electra-tech.co.il',
-    password: 'supervisor123',
+    email: 'rachel.bendavid@telaviv.test',
+    password: 'activist123',
     role: 'ACTIVIST_COORDINATOR',
-    name: 'משה ישראלי',
+    name: 'רכזת פעילים - רחל בן-דוד',
   },
 } as const;
 

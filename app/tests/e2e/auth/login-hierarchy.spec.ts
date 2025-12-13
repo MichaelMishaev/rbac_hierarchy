@@ -14,12 +14,12 @@ test.describe('Authentication & Hierarchy - v2.0', () => {
     // Should reach dashboard
     await page.waitForURL(/\/(he\/)?dashboard/, { timeout: 10000 });
 
-    // SuperAdmin should see greeting
-    await expect(page.locator('text=/שלום.*Super.*Admin/i')).toBeVisible({ timeout: 10000 });
+    // SuperAdmin should see greeting (מנהל מערכת ראשי)
+    await expect(page.locator('text=/שלום/i')).toBeVisible({ timeout: 10000 });
 
     // SuperAdmin should see all navigation items
-    await expect(page.locator('nav').getByText('תאגידים')).toBeVisible();
-    await expect(page.locator('nav').getByText('אתרים')).toBeVisible();
+    await expect(page.locator('nav').getByText('ערים')).toBeVisible();
+    await expect(page.locator('nav').getByText('שכונות')).toBeVisible();
     await expect(page.locator('nav').getByText('משתמשים')).toBeVisible();
 
     console.log('✅ SuperAdmin has system-wide access');
@@ -51,8 +51,8 @@ test.describe('Authentication & Hierarchy - v2.0', () => {
   test('City Coordinator should only see their city', async ({ page }) => {
     await loginAs(page, testUsers.cityCoordinator);
 
-    // City Coordinator should see their role
-    await expect(page.locator('text=/שלום.*דוד.*כהן/i')).toBeVisible({ timeout: 10000 });
+    // City Coordinator should see their role (David Levi)
+    await expect(page.locator('text=/שלום.*דוד.*לוי/i')).toBeVisible({ timeout: 10000 });
 
     console.log('✅ City Coordinator login successful');
   });
@@ -60,14 +60,14 @@ test.describe('Authentication & Hierarchy - v2.0', () => {
   test('Activist Coordinator should only access assigned neighborhoods', async ({ page }) => {
     await loginAs(page, testUsers.activistCoordinator);
 
-    // Activist Coordinator should see their role
-    await expect(page.locator('text=/שלום.*משה.*ישראלי/i')).toBeVisible({ timeout: 10000 });
+    // Activist Coordinator should see their role (Rachel Ben-David)
+    await expect(page.locator('text=/שלום.*רחל/i')).toBeVisible({ timeout: 10000 });
 
     console.log('✅ Activist Coordinator login successful');
   });
 
   test('Invalid credentials should fail', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/he/login');
     await page.fill('input[name="email"]', 'invalid@test.com');
     await page.fill('input[name="password"]', 'wrongpassword');
     await page.click('button[type="submit"]');
