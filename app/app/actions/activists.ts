@@ -359,15 +359,10 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
       };
     }
 
-    // Query workers
-    const activists = await prisma.activist.findMany({
+    // Query activists without neighborhood include (Prisma doesn't handle composite FK properly in includes)
+    const activistData = await prisma.activist.findMany({
       where,
       include: {
-        neighborhood: {
-          include: {
-            cityRelation: true,
-          },
-        },
         activistCoordinator: {
           select: {
             id: true,
@@ -384,6 +379,64 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
         { isActive: 'desc' },
         { createdAt: 'desc' },
       ],
+    });
+
+    // Manually fetch neighborhoods using composite FK (neighborhoodId, cityId)
+    const neighborhoodKeys = activistData.map((a) => ({
+      id: a.neighborhoodId,
+      cityId: a.cityId,
+    }));
+
+    const neighborhoods = await prisma.neighborhood.findMany({
+      where: {
+        OR: neighborhoodKeys.map((key) => ({
+          id: key.id,
+          cityId: key.cityId,
+        })),
+      },
+      include: {
+        cityRelation: true,
+      },
+    });
+
+    // Create a lookup map using composite key
+    const neighborhoodMap = new Map(
+      neighborhoods.map((n) => [`${n.id}:${n.cityId}`, n])
+    );
+
+    // Manually join activists with neighborhoods and serialize to plain objects
+    const activists = activistData.map((activist) => {
+      const neighborhood = neighborhoodMap.get(`${activist.neighborhoodId}:${activist.cityId}`);
+
+      return {
+        ...activist,
+        // Serialize Date objects to ISO strings for Server Action compatibility
+        createdAt: activist.createdAt?.toISOString(),
+        updatedAt: activist.updatedAt?.toISOString(),
+        startDate: activist.startDate?.toISOString() || null,
+        endDate: activist.endDate?.toISOString() || null,
+        // Explicitly serialize neighborhood to avoid Prisma object issues
+        neighborhood: neighborhood ? {
+          id: neighborhood.id,
+          name: neighborhood.name,
+          address: neighborhood.address || null,
+          city: neighborhood.city || null,
+          country: neighborhood.country || null,
+          latitude: neighborhood.latitude || null,
+          longitude: neighborhood.longitude || null,
+          phone: neighborhood.phone || null,
+          email: neighborhood.email || null,
+          isActive: neighborhood.isActive,
+          cityId: neighborhood.cityId,
+          createdAt: neighborhood.createdAt?.toISOString(),
+          updatedAt: neighborhood.updatedAt?.toISOString(),
+          cityRelation: neighborhood.cityRelation ? {
+            id: neighborhood.cityRelation.id,
+            name: neighborhood.cityRelation.name,
+            code: neighborhood.cityRelation.code || null,
+          } : null,
+        } : null,
+      };
     });
 
     return {
@@ -418,14 +471,10 @@ export async function getWorkerById(activistId: string) {
   try {
     const currentUser = await getCurrentUser();
 
-    const activist = await prisma.activist.findUnique({
+    // Fetch activist without neighborhood include (Prisma composite FK issue)
+    const activistData = await prisma.activist.findUnique({
       where: { id: activistId },
       include: {
-        neighborhood: {
-          include: {
-            cityRelation: true,
-          },
-        },
         activistCoordinator: {
           select: {
             id: true,
@@ -441,16 +490,40 @@ export async function getWorkerById(activistId: string) {
       },
     });
 
-    if (!activist) {
+    if (!activistData) {
       return {
         success: false,
         error: 'Worker not found',
       };
     }
 
+    // Manually fetch neighborhood using composite FK
+    const neighborhood = await prisma.neighborhood.findFirst({
+      where: {
+        id: activistData.neighborhoodId,
+        cityId: activistData.cityId,
+      },
+      include: {
+        cityRelation: true,
+      },
+    });
+
+    const activist = {
+      ...activistData,
+      neighborhood,
+    };
+
+    // Ensure neighborhood was found
+    if (!neighborhood) {
+      return {
+        success: false,
+        error: 'Neighborhood not found for activist',
+      };
+    }
+
     // Validate access permissions
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      if (!hasAccessToCorporation(currentUser, activist.neighborhood.cityId)) {
+      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
         return {
           success: false,
           error: 'Access denied',

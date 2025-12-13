@@ -113,7 +113,8 @@ export default async function WorkersPage() {
       <ActivistsClient
         activists={activists.map(a => ({
           ...a,
-          neighborhood: a.neighborhood ? {
+          // Map 'neighborhood' to 'site' for ActivistsClient (legacy naming)
+          site: a.neighborhood ? {
             id: a.neighborhood.id,
             name: a.neighborhood.name,
             cityId: a.neighborhood.cityRelation?.id || '',
