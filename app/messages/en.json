@@ -93,7 +93,15 @@
     "createUser": "Create New User",
     "editUser": "Edit User",
     "deleteUser": "Delete User",
-    "deleteConfirm": "Are you sure you want to delete this user?"
+    "deleteConfirm": "Are you sure you want to delete this user?",
+    "searchByName": "Search by name",
+    "searchByEmail": "Search by email",
+    "filterByArea": "Filter by area",
+    "filterByCity": "Filter by city",
+    "allAreas": "All areas",
+    "allCities": "All cities",
+    "clearFilters": "Clear filters",
+    "filters": "Filters"
   },
   "sites": {
     "title": "Neighborhoods",

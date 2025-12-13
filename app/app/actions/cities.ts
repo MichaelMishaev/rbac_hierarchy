@@ -791,33 +791,29 @@ export async function toggleCityStatus(cityId: string) {
 /**
  * Get Area Managers for dropdown selection (filtered by user scope)
  *
- * SCOPE FILTERING:
- * - SuperAdmin: See all areas in dropdown
- * - Area Manager: Pre-fill with THEIR area (disabled field)
+ * STRICT SCOPE FILTERING (RBAC):
+ * - SuperAdmin: See ALL areas (no filtering)
+ * - Area Manager: See ONLY their area
+ * - City Coordinator: See ONLY the area their city belongs to
+ * - Activist Coordinator: See ONLY the area their city belongs to
  *
  * Permissions:
- * - SUPERADMIN: Can see all area managers
- * - AREA_MANAGER: Can see only their own area
+ * - SUPERADMIN: Full access to all areas
+ * - AREA_MANAGER: Restricted to their own area
+ * - CITY_COORDINATOR: Restricted to their city's area
+ * - ACTIVIST_COORDINATOR: Restricted to their city's area
  */
 export async function getAreaManagers() {
   try {
     const currentUser = await getCurrentUser();
 
-    // Only SUPERADMIN and AREA_MANAGER can access this
-    if (currentUser.role !== 'SUPERADMIN' && currentUser.role !== 'AREA_MANAGER') {
-      return {
-        success: false,
-        error: 'Access denied',
-        areaManagers: [],
-      };
-    }
-
     let whereClause: any = {
       isActive: true,
     };
 
-    // Area Manager can ONLY see their own area
+    // ROLE-BASED SCOPE FILTERING
     if (currentUser.role === 'AREA_MANAGER') {
+      // Area Manager: ONLY see their own area
       const currentUserAreaManager = await prisma.areaManager.findFirst({
         where: { userId: currentUser.id },
       });
@@ -830,9 +826,53 @@ export async function getAreaManagers() {
         };
       }
 
-      // Filter to ONLY their area
       whereClause.id = currentUserAreaManager.id;
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      // City Coordinator: ONLY see the area their city belongs to
+      const cityCoordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        include: {
+          city: {
+            select: {
+              areaManagerId: true,
+            },
+          },
+        },
+      });
+
+      if (!cityCoordinator || !cityCoordinator.city.areaManagerId) {
+        return {
+          success: false,
+          error: 'City Coordinator record or city area not found',
+          areaManagers: [],
+        };
+      }
+
+      whereClause.id = cityCoordinator.city.areaManagerId;
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Activist Coordinator: ONLY see the area their city belongs to
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        include: {
+          city: {
+            select: {
+              areaManagerId: true,
+            },
+          },
+        },
+      });
+
+      if (!activistCoordinator || !activistCoordinator.city.areaManagerId) {
+        return {
+          success: false,
+          error: 'Activist Coordinator record or city area not found',
+          areaManagers: [],
+        };
+      }
+
+      whereClause.id = activistCoordinator.city.areaManagerId;
     }
+    // else: SUPERADMIN sees all areas (no additional filtering)
 
     const areaManagers = await prisma.areaManager.findMany({
       where: whereClause,

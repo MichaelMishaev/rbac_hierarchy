@@ -21,6 +21,7 @@ export type CreateActivistCoordinatorQuickInput = {
   phone?: string;
   cityId: string;
   title?: string;
+  tempPassword?: string; // Optional custom temp password
 };
 
 // ============================================
@@ -72,8 +73,8 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
       };
     }
 
-    // Generate temporary password
-    const tempPassword = `Temp${Math.random().toString(36).slice(2, 10)}!`;
+    // Use custom temp password or default to "admin0"
+    const tempPassword = data.tempPassword || 'admin0';
     const hashedPassword = await hash(tempPassword, 12);
 
     // Create User + Supervisor in transaction

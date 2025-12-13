@@ -1153,3 +1153,178 @@ export async function getWorkerStats() {
     };
   }
 }
+
+// ============================================
+// QUICK UPDATE ACTIVIST FIELD (INLINE EDITING)
+// ============================================
+
+/**
+ * Quick update a single activist field for inline editing
+ * Supports: phone, email, position, isActive
+ *
+ * RBAC Rules:
+ * - SuperAdmin: Can update any activist
+ * - Area Manager: Can update activists in their area
+ * - City Coordinator: Can update activists in their city
+ * - Activist Coordinator: Can update activists in assigned neighborhoods only
+ */
+export async function quickUpdateActivistField(
+  activistId: string,
+  field: 'phone' | 'email' | 'position' | 'isActive',
+  value: string | boolean
+) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Only authorized roles can update activists
+    if (
+      currentUser.role !== 'SUPERADMIN' &&
+      currentUser.role !== 'AREA_MANAGER' &&
+      currentUser.role !== 'CITY_COORDINATOR' &&
+      currentUser.role !== 'ACTIVIST_COORDINATOR'
+    ) {
+      return {
+        success: false,
+        error: 'Unauthorized to update activists',
+      };
+    }
+
+    // Get activist with neighborhood and city info for RBAC check
+    const activist = await prisma.activist.findUnique({
+      where: { id: activistId },
+      include: {
+        neighborhood: {
+          include: {
+            cityRelation: {
+              include: {
+                areaManager: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!activist) {
+      return {
+        success: false,
+        error: 'Activist not found',
+      };
+    }
+
+    // RBAC: Check access based on role
+    if (currentUser.role === 'AREA_MANAGER') {
+      // Area Manager can only update activists in their area
+      const areaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!areaManager || activist.neighborhood.cityRelation?.areaManagerId !== areaManager.id) {
+        return {
+          success: false,
+          error: 'You can only update activists in your area',
+        };
+      }
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      // City Coordinator can only update activists in their city
+      const cityCoordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!cityCoordinator || activist.neighborhood.cityId !== cityCoordinator.cityId) {
+        return {
+          success: false,
+          error: 'You can only update activists in your city',
+        };
+      }
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Activist Coordinator can only update activists in assigned neighborhoods
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        include: {
+          neighborhoodAssignments: {
+            select: {
+              neighborhoodId: true,
+            },
+          },
+        },
+      });
+
+      const assignedNeighborhoodIds = activistCoordinator?.neighborhoodAssignments.map(n => n.neighborhoodId) || [];
+
+      if (!assignedNeighborhoodIds.includes(activist.neighborhoodId)) {
+        return {
+          success: false,
+          error: 'You can only update activists in your assigned neighborhoods',
+        };
+      }
+    }
+
+    // Validate field-specific data
+    if (field === 'email' && value && typeof value === 'string') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return {
+          success: false,
+          error: 'Invalid email format',
+        };
+      }
+    }
+
+    if (field === 'phone' && value && typeof value === 'string') {
+      // Israeli phone validation (optional - basic check)
+      const phoneRegex = /^[0-9\-\+\(\)\s]+$/;
+      if (!phoneRegex.test(value)) {
+        return {
+          success: false,
+          error: 'Invalid phone format',
+        };
+      }
+    }
+
+    // Update the field
+    const updatedActivist = await prisma.activist.update({
+      where: { id: activistId },
+      data: { [field]: value },
+      include: {
+        neighborhood: {
+          select: {
+            id: true,
+            name: true,
+            cityRelation: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        activistCoordinator: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    revalidatePath('/activists');
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      activist: updatedActivist,
+    };
+  } catch (error) {
+    console.error('Error updating activist field:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update activist',
+    };
+  }
+}

@@ -139,7 +139,15 @@
     "createUser": "צור משתמש חדש",
     "editUser": "ערוך משתמש",
     "deleteUser": "מחק משתמש",
-    "deleteConfirm": "האם אתה בטוח שברצונך למחוק את המשתמש הזה?"
+    "deleteConfirm": "האם אתה בטוח שברצונך למחוק את המשתמש הזה?",
+    "searchByName": "חיפוש לפי שם",
+    "searchByEmail": "חיפוש לפי אימייל",
+    "filterByArea": "סינון לפי אזור",
+    "filterByCity": "סינון לפי עיר",
+    "allAreas": "כל האזורים",
+    "allCities": "כל הערים",
+    "clearFilters": "נקה סינונים",
+    "filters": "סינונים"
   },
   "sites": {
     "title": "שכונות",

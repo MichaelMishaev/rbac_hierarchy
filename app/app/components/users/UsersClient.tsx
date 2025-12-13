@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -16,6 +16,12 @@ import {
   Menu,
   MenuItem,
   Avatar,
+  TextField,
+  Select,
+  MenuItem as SelectMenuItem,
+  FormControl,
+  InputLabel,
+  Grid,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -24,6 +30,9 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
 import RtlButton from '@/app/components/ui/RtlButton';
 import UserModal from './UserModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
@@ -90,6 +99,12 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
+
+  // Filter state
+  const [nameFilter, setNameFilter] = useState('');
+  const [emailFilter, setEmailFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
 
   // Fetch existing regions on mount
   useEffect(() => {
@@ -189,6 +204,89 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
     return '-';
   };
 
+  // Get area (region) for user
+  const getUserArea = (user: User): string => {
+    if (user.role === 'AREA_MANAGER' && user.areaManager) {
+      return user.areaManager.regionName || '';
+    }
+    return '';
+  };
+
+  // Get cities for user
+  const getUserCities = (user: User): string[] => {
+    if (user.role === 'CITY_COORDINATOR' && user.cityCoordinatorOf) {
+      return user.cityCoordinatorOf.map(c => c.city.name);
+    }
+    if (user.role === 'ACTIVIST_COORDINATOR' && user.activistCoordinatorOf) {
+      return user.activistCoordinatorOf.map(c => c.city.name);
+    }
+    return [];
+  };
+
+  // Get unique areas from users
+  const uniqueAreas = useMemo(() => {
+    const areas = new Set<string>();
+    users.forEach(user => {
+      const area = getUserArea(user);
+      if (area) areas.add(area);
+    });
+    return Array.from(areas).sort();
+  }, [users]);
+
+  // Get unique cities from users
+  const uniqueCities = useMemo(() => {
+    const citiesSet = new Set<string>();
+    users.forEach(user => {
+      const userCities = getUserCities(user);
+      userCities.forEach(city => citiesSet.add(city));
+    });
+    return Array.from(citiesSet).sort();
+  }, [users]);
+
+  // Filter users based on search criteria
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // Name filter
+      if (nameFilter && !user.fullName.toLowerCase().includes(nameFilter.toLowerCase())) {
+        return false;
+      }
+
+      // Email filter
+      if (emailFilter && !user.email.toLowerCase().includes(emailFilter.toLowerCase())) {
+        return false;
+      }
+
+      // Area filter
+      if (areaFilter) {
+        const userArea = getUserArea(user);
+        if (userArea !== areaFilter) {
+          return false;
+        }
+      }
+
+      // City filter
+      if (cityFilter) {
+        const userCities = getUserCities(user);
+        if (!userCities.includes(cityFilter)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [users, nameFilter, emailFilter, areaFilter, cityFilter]);
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setNameFilter('');
+    setEmailFilter('');
+    setAreaFilter('');
+    setCityFilter('');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = nameFilter || emailFilter || areaFilter || cityFilter;
+
   return (
     <Box sx={{ p: 4 }}>
       {/* Header */}
@@ -238,6 +336,174 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         )}
       </Box>
 
+      {/* Filters Section */}
+      <Paper
+        sx={{
+          mb: 3,
+          p: 3,
+          borderRadius: borderRadius.lg,
+          boxShadow: shadows.soft,
+          border: `1px solid ${colors.neutral[200]}`,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <FilterListIcon sx={{ color: colors.neutral[600] }} />
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 600,
+              color: colors.neutral[700],
+            }}
+          >
+            {t('filters')}
+          </Typography>
+          <Chip
+            label={`${filteredUsers.length} מתוך ${users.length}`}
+            size="small"
+            sx={{
+              backgroundColor: colors.primary.ultraLight,
+              color: colors.primary.main,
+              fontWeight: 600,
+            }}
+          />
+          {hasActiveFilters && (
+            <Chip
+              label={t('clearFilters')}
+              icon={<ClearIcon />}
+              onClick={handleClearFilters}
+              size="small"
+              sx={{
+                marginInlineStart: 'auto',
+                backgroundColor: colors.error + '20',
+                color: colors.error,
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: colors.error + '30',
+                },
+              }}
+            />
+          )}
+        </Box>
+
+        <Grid container spacing={2} dir="rtl">
+          {/* Name Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label={t('searchByName')}
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              variant="outlined"
+              size="small"
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: colors.neutral[400], marginInlineEnd: 1 }} />,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md,
+                  backgroundColor: colors.secondary.white,
+                  '&:hover fieldset': {
+                    borderColor: colors.primary.main,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: colors.primary.main,
+                  },
+                },
+              }}
+            />
+          </Grid>
+
+          {/* Email Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label={t('searchByEmail')}
+              value={emailFilter}
+              onChange={(e) => setEmailFilter(e.target.value)}
+              variant="outlined"
+              size="small"
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: colors.neutral[400], marginInlineEnd: 1 }} />,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md,
+                  backgroundColor: colors.secondary.white,
+                  '&:hover fieldset': {
+                    borderColor: colors.primary.main,
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: colors.primary.main,
+                  },
+                },
+              }}
+            />
+          </Grid>
+
+          {/* Area Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>{t('filterByArea')}</InputLabel>
+              <Select
+                value={areaFilter}
+                onChange={(e) => setAreaFilter(e.target.value)}
+                label={t('filterByArea')}
+                sx={{
+                  borderRadius: borderRadius.md,
+                  backgroundColor: colors.secondary.white,
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: colors.primary.main,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: colors.primary.main,
+                  },
+                }}
+              >
+                <SelectMenuItem value="">
+                  <em>{t('allAreas')}</em>
+                </SelectMenuItem>
+                {uniqueAreas.map((area) => (
+                  <SelectMenuItem key={area} value={area}>
+                    {area}
+                  </SelectMenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* City Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>{t('filterByCity')}</InputLabel>
+              <Select
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                label={t('filterByCity')}
+                sx={{
+                  borderRadius: borderRadius.md,
+                  backgroundColor: colors.secondary.white,
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: colors.primary.main,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: colors.primary.main,
+                  },
+                }}
+              >
+                <SelectMenuItem value="">
+                  <em>{t('allCities')}</em>
+                </SelectMenuItem>
+                {uniqueCities.map((city) => (
+                  <SelectMenuItem key={city} value={city}>
+                    {city}
+                  </SelectMenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
+
       {/* Users Table */}
       <TableContainer
         component={Paper}
@@ -278,20 +544,20 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                   <PersonIcon sx={{ fontSize: 64, color: colors.neutral[300], mb: 2 }} />
                   <Typography variant="h6" sx={{ color: colors.neutral[600], mb: 1 }}>
-                    {t('noUsers')}
+                    {hasActiveFilters ? 'לא נמצאו משתמשים' : t('noUsers')}
                   </Typography>
                   <Typography variant="body2" sx={{ color: colors.neutral[400] }}>
-                    {t('createFirst')}
+                    {hasActiveFilters ? 'נסה לשנות את הסינונים' : t('createFirst')}
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
+              filteredUsers.map((user) => (
                 <TableRow
                   key={user.id}
                   sx={{

@@ -111,6 +111,7 @@ export default function NeighborhoodModal({
     email: '',
     phone: '',
     title: '',
+    tempPassword: '', // Custom temp password field
   });
   const [supervisorErrors, setSupervisorErrors] = useState<Record<string, string>>({});
   const [creatingSupervisor, setCreatingSupervisor] = useState(false);
@@ -143,14 +144,18 @@ export default function NeighborhoodModal({
       // If editing and has initial city, pre-select area
       if (initialData?.cityId) {
         const city = cities.find((c) => c.id === initialData.cityId);
-        if (city) {
-          setSelectedAreaId(city.areaManagerId || '');
+        if (city?.areaManagerId) {
+          setSelectedAreaId(city.areaManagerId);
         }
+      } else if (areas.length === 1) {
+        // When creating new neighborhood with only 1 area, auto-select it
+        setSelectedAreaId(areas[0].id);
       } else {
-        // Reset cascade for new neighborhood
+        // Reset cascade for new neighborhood (multiple areas available)
         setSelectedAreaId('');
       }
 
+      // Reset form data
       setFormData({
         name: initialData?.name || '',
         cityId: initialData?.cityId || '',
@@ -159,17 +164,27 @@ export default function NeighborhoodModal({
       });
       setErrors({});
       setShowCreateSupervisor(false);
-      setSupervisorFormData({ fullName: '', email: '', phone: '', title: '' });
+      setSupervisorFormData({ fullName: '', email: '', phone: '', title: '', tempPassword: '' });
       setSupervisorErrors({});
       setTempPassword(null);
     }
 
     // Update ref for next render
     prevOpenRef.current = open;
-  }, [open, initialData, cities]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialData]);  // cities and areas intentionally excluded to prevent form reset
 
   // Auto-select first activist coordinator when loaded (but don't reset form!)
+  // Track if we've just created a supervisor to prevent auto-selection override
+  const justCreatedSupervisorRef = useRef(false);
+
   useEffect(() => {
+    // Don't auto-select if we just created a supervisor - it will be manually selected
+    if (justCreatedSupervisorRef.current) {
+      justCreatedSupervisorRef.current = false;
+      return;
+    }
+
     if (open && activistCoordinators.length > 0 && !formData.activistCoordinatorId) {
       setFormData((prev) => ({
         ...prev,
@@ -268,11 +283,15 @@ export default function NeighborhoodModal({
         phone: supervisorFormData.phone,
         cityId: formData.cityId,
         title: supervisorFormData.title || 'Activist Coordinator',
+        tempPassword: supervisorFormData.tempPassword || undefined, // Pass custom password if provided
       });
 
       if (result.success && result.activistCoordinator && result.tempPassword) {
         // Show temporary password
         setTempPassword(result.tempPassword);
+
+        // Set flag to prevent auto-selection from overriding our manual selection
+        justCreatedSupervisorRef.current = true;
 
         // Refresh activist coordinators list
         if (onCityChange) {
@@ -283,7 +302,7 @@ export default function NeighborhoodModal({
         setFormData((prev) => ({ ...prev, activistCoordinatorId: result.activistCoordinator.id }));
 
         // Reset supervisor form
-        setSupervisorFormData({ fullName: '', email: '', phone: '', title: '' });
+        setSupervisorFormData({ fullName: '', email: '', phone: '', title: '', tempPassword: '' });
         setSupervisorErrors({});
         setShowCreateSupervisor(false);
       } else {
@@ -723,6 +742,17 @@ export default function NeighborhoodModal({
                           placeholder={isRTL ? 'מפקח' : 'Supervisor'}
                           fullWidth
                           size="small"
+                        />
+                        <TextField
+                          label={isRTL ? 'סיסמה זמנית (אופציונלי)' : 'Temp Password (Optional)'}
+                          value={supervisorFormData.tempPassword}
+                          onChange={(e) =>
+                            setSupervisorFormData((prev) => ({ ...prev, tempPassword: e.target.value }))
+                          }
+                          placeholder={isRTL ? 'ברירת מחדל: admin0' : 'Default: admin0'}
+                          fullWidth
+                          size="small"
+                          helperText={isRTL ? 'השאר ריק עבור ברירת מחדל: admin0' : 'Leave empty for default: admin0'}
                         />
                         <Button
                           variant="contained"

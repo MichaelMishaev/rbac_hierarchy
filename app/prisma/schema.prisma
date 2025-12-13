@@ -161,7 +161,7 @@ model City {
   activistCoordinators ActivistCoordinator[]
   neighborhoods        Neighborhood[]
   invitations          Invitation[]
-  activists            Activist[]
+  activists            Activist[] @relation("CityToActivist")
   attendanceRecords    AttendanceRecord[]
 
   @@index([code])
@@ -231,7 +231,7 @@ model ActivistCoordinator {
 
   // Relations
   neighborhoodAssignments ActivistCoordinatorNeighborhood[]
-  activists               Activist[]
+  activists               Activist[] @relation("CoordinatorToActivist")
 
   @@unique([cityId, userId]) // User can be activist coordinator once per city
   @@unique([id, cityId])     // v2.0 compliance: composite FK support
@@ -275,7 +275,7 @@ model Neighborhood {
 
   // Relations
   activistCoordinatorAssignments ActivistCoordinatorNeighborhood[]
-  activists                      Activist[]
+  activists                      Activist[] @relation("NeighborhoodToActivist")
   attendanceRecords              AttendanceRecord[]
 
   @@unique([id, cityId]) // v2.0 compliance: composite FK support
@@ -347,14 +347,14 @@ model Activist {
 
   // Relationships - CRITICAL: cityId for data integrity
   cityId String @map("city_id")
-  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  city   City   @relation("CityToActivist", fields: [cityId], references: [id], onDelete: Cascade)
 
   neighborhoodId String       @map("neighborhood_id")
-  neighborhood   Neighborhood @relation(fields: [neighborhoodId], references: [id], onDelete: Cascade)
+  neighborhood   Neighborhood @relation("NeighborhoodToActivist", fields: [neighborhoodId, cityId], references: [id, cityId], onDelete: Cascade)
 
   // v2.0: activist_coordinator_id is NULLABLE (activist can be temporarily unassigned)
   activistCoordinatorId String?              @map("activist_coordinator_id")
-  activistCoordinator   ActivistCoordinator? @relation(fields: [activistCoordinatorId, cityId], references: [id, cityId], onDelete: SetNull)
+  activistCoordinator   ActivistCoordinator? @relation("CoordinatorToActivist", fields: [activistCoordinatorId, cityId], references: [id, cityId], onDelete: SetNull)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")

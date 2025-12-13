@@ -47,6 +47,8 @@ import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationM
 import ActivistCardSwipeable from './ActivistCardSwipeable';
 import SmartAssignmentDialog from '@/app/components/tasks/SmartAssignmentDialog';
 import RtlButton from '@/app/components/ui/RtlButton';
+import { EditableTextCell, StatusToggleCell } from './InlineEditableCells';
+import KeyboardShortcutsHelp from './KeyboardShortcutsHelp';
 import toast from 'react-hot-toast';
 import {
   createWorker,
@@ -393,6 +395,9 @@ export default function ActivistsClient({
         ))}
       </Grid>
 
+      {/* Keyboard Shortcuts Help - 2025 Accessibility Best Practice */}
+      <KeyboardShortcutsHelp isRTL={isRTL} />
+
       {/* Search, Filters and Actions Bar */}
       <Box
         sx={{
@@ -734,6 +739,7 @@ export default function ActivistsClient({
               neighborhood: worker.site ? { name: worker.site.name } : undefined,
               position: worker.position,
               tags: worker.tags,
+              isActive: worker.isActive,
             };
 
             return (
@@ -742,6 +748,7 @@ export default function ActivistsClient({
                   activist={activistData}
                   onCheckIn={handleQuickCheckIn}
                   onEdit={handleQuickEdit}
+                  isRTL={isRTL}
                 />
               </Grid>
             );
@@ -749,8 +756,49 @@ export default function ActivistsClient({
         </Grid>
       ) : (
         /* Table View */
-        <Paper sx={{ borderRadius: borderRadius.xl, overflow: 'hidden', boxShadow: shadows.soft }}>
-          <TableContainer>
+        <Box>
+          {/* Inline Editing Info Banner - 2025 UX Best Practice */}
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              borderRadius: borderRadius.lg,
+              background: `linear-gradient(135deg, ${colors.pastel.blueLight} 0%, ${colors.pastel.purpleLight} 100%)`,
+              border: `1px solid ${colors.primary.light}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: colors.primary.main,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: colors.neutral[0],
+                fontSize: 20,
+              }}
+            >
+              ✨
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontWeight: 600, color: colors.neutral[800], mb: 0.5 }}>
+                {isRTL ? 'עריכה מהירה זמינה!' : 'Quick Editing Available!'}
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
+                {isRTL
+                  ? 'לחץ פעמיים על תפקיד, טלפון או שנה את הסטטוס ישירות בטבלה'
+                  : 'Double-click position or phone to edit, or toggle status directly in the table'}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Paper sx={{ borderRadius: borderRadius.xl, overflow: 'hidden', boxShadow: shadows.soft }}>
+            <TableContainer>
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: colors.neutral[50] }}>
@@ -816,9 +864,15 @@ export default function ActivistsClient({
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography sx={{ color: colors.neutral[700] }}>
-                            {worker.position || '-'}
-                          </Typography>
+                          <EditableTextCell
+                            value={worker.position}
+                            activistId={worker.id}
+                            field="position"
+                            onUpdate={() => router.refresh()}
+                            isRTL={isRTL}
+                            placeholder={isRTL ? 'ללא תפקיד' : 'No position'}
+                            icon={<WorkIcon fontSize="inherit" />}
+                          />
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ color: colors.neutral[700] }}>
@@ -826,19 +880,23 @@ export default function ActivistsClient({
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography sx={{ color: colors.neutral[700] }}>
-                            {worker.phone || '-'}
-                          </Typography>
+                          <EditableTextCell
+                            value={worker.phone}
+                            activistId={worker.id}
+                            field="phone"
+                            onUpdate={() => router.refresh()}
+                            isRTL={isRTL}
+                            type="tel"
+                            placeholder={isRTL ? 'ללא טלפון' : 'No phone'}
+                            icon={<PhoneIcon fontSize="inherit" />}
+                          />
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={worker.isActive ? tCommon('active') : tCommon('inactive')}
-                            size="small"
-                            sx={{
-                              backgroundColor: worker.isActive ? colors.pastel.greenLight : colors.pastel.redLight,
-                              color: worker.isActive ? colors.pastel.green : colors.pastel.red,
-                              fontWeight: 600,
-                            }}
+                          <StatusToggleCell
+                            isActive={worker.isActive}
+                            activistId={worker.id}
+                            onUpdate={() => router.refresh()}
+                            isRTL={isRTL}
                           />
                         </TableCell>
                         <TableCell align="center">
@@ -872,6 +930,7 @@ export default function ActivistsClient({
             }}
           />
         </Paper>
+        </Box>
       )}
 
       {/* Context Menu */}

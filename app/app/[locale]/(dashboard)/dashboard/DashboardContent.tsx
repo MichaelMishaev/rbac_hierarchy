@@ -31,6 +31,44 @@ export default async function DashboardContent() {
     redirect('/login');
   }
 
+  // Fetch user's comprehensive role information from database
+  const { getCurrentUser } = await import('@/lib/auth');
+  const currentUserData = await getCurrentUser();
+
+  // Build comprehensive role description
+  let roleDescription: string = '';
+
+  if (currentUserData.role === 'SUPERADMIN') {
+    roleDescription = 'מנהל על';
+  } else if (currentUserData.role === 'AREA_MANAGER' && currentUserData.areaManager) {
+    const regionName = currentUserData.areaManager.regionName;
+    const cityCount = currentUserData.areaManager.cities.length;
+    roleDescription = `מנהל אזור ${regionName} (${cityCount} ערים)`;
+  } else if (currentUserData.role === 'CITY_COORDINATOR' && currentUserData.coordinatorOf.length > 0) {
+    const coordinator = currentUserData.coordinatorOf[0];
+    const cityName = coordinator.city.name;
+    roleDescription = `מנהל עיר - ${cityName}`;
+  } else if (currentUserData.role === 'ACTIVIST_COORDINATOR' && currentUserData.activistCoordinatorOf.length > 0) {
+    const coordinator = currentUserData.activistCoordinatorOf[0];
+    const cityName = coordinator.city.name;
+    const neighborhoods = currentUserData.activistCoordinatorNeighborhoods;
+    const neighborhoodCount = neighborhoods.length;
+
+    if (neighborhoodCount > 0) {
+      const neighborhoodNames = neighborhoods.map(n => n.neighborhood.name).join(', ');
+      roleDescription = `מפקח - ${cityName} (${neighborhoodCount} שכונות: ${neighborhoodNames})`;
+    } else {
+      roleDescription = `מפקח - ${cityName}`;
+    }
+  } else {
+    // Fallback to basic role labels
+    roleDescription =
+      role === 'MANAGER' ? 'מנהל עיר' :
+      role === 'SUPERVISOR' ? 'מפקח' :
+      role === 'ACTIVIST_COORDINATOR' ? 'מפקח' :
+      role === 'CITY_COORDINATOR' ? 'מנהל עיר' : role;
+  }
+
   // Fetch dashboard stats based on user role
   const statsResult = await getDashboardStats();
 
@@ -348,11 +386,7 @@ export default async function DashboardContent() {
               fontWeight: 500,
             }}
           >
-            {t('role')}: <strong>{
-              role === 'SUPERADMIN' ? 'מנהל על' :
-              role === 'MANAGER' ? 'מנהל' :
-              role === 'SUPERVISOR' ? 'מפקח' : role
-            }</strong>
+            {t('role')}: <strong>{roleDescription}</strong>
           </Typography>
         </Box>
 

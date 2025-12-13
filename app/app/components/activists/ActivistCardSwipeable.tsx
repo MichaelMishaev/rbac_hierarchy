@@ -1,14 +1,19 @@
 /**
- * Swipeable Activist Card Component
- * Mobile-optimized card with swipe gestures for quick actions
+ * Swipeable Activist Card Component with Inline Editing
+ * Mobile-optimized card with swipe gestures + inline editing
  *
  * Swipe Actions:
  * - Swipe Right: Quick check-in
- * - Swipe Left: Edit activist
+ * - Swipe Left: Full edit (modal)
+ *
+ * Inline Actions (2025 UX):
+ * - Click phone/position to edit inline
+ * - Toggle status with switch
+ * - Enter to save, Escape to cancel
  *
  * Features:
  * - Smooth animations
- * - Visual feedback
+ * - Optimistic updates
  * - Touch-friendly (56x56px action buttons)
  * - RTL support
  */
@@ -17,12 +22,15 @@
 
 import { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
-import { Card, CardContent, Box, Typography, IconButton, Avatar } from '@mui/material';
-import { colors, shadows } from '@/lib/design-system';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, Box, Typography, IconButton, Avatar, Switch, Chip } from '@mui/material';
+import { colors, shadows, borderRadius } from '@/lib/design-system';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import WorkIcon from '@mui/icons-material/Work';
+import { EditableTextCell } from './InlineEditableCells';
 
 interface Activist {
   id: string;
@@ -33,21 +41,25 @@ interface Activist {
   };
   position?: string | null;
   tags?: string[];
+  isActive?: boolean;
 }
 
 interface ActivistCardSwipeableProps {
   activist: Activist;
   onCheckIn?: (activistId: string) => void;
   onEdit?: (activistId: string) => void;
+  isRTL?: boolean;
 }
 
 export default function ActivistCardSwipeable({
   activist,
   onCheckIn,
   onEdit,
+  isRTL = true,
 }: ActivistCardSwipeableProps) {
   const [offset, setOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const router = useRouter();
 
   const handlers = useSwipeable({
     onSwiping: (eventData) => {
@@ -66,7 +78,7 @@ export default function ActivistCardSwipeable({
     },
     onSwipedLeft: () => {
       if (offset < -80) {
-        // Trigger edit
+        // Trigger full edit (modal)
         onEdit?.(activist.id);
       }
       setOffset(0);
@@ -87,7 +99,7 @@ export default function ActivistCardSwipeable({
       sx={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '16px',
+        borderRadius: borderRadius.xl,
         mb: 2,
       }}
       data-testid="activist-card-swipeable"
@@ -113,7 +125,7 @@ export default function ActivistCardSwipeable({
             width: 80,
             height: '100%',
             bgcolor: colors.status.green,
-            borderRadius: '16px 0 0 16px',
+            borderRadius: `${borderRadius.xl} 0 0 ${borderRadius.xl}`,
             opacity: checkInVisible ? 1 : 0,
             transition: 'opacity 0.2s',
           }}
@@ -121,7 +133,7 @@ export default function ActivistCardSwipeable({
           <CheckCircleIcon sx={{ color: 'white', fontSize: 32 }} />
         </Box>
 
-        {/* Left Swipe Action - Edit */}
+        {/* Left Swipe Action - Full Edit */}
         <Box
           sx={{
             display: 'flex',
@@ -130,7 +142,7 @@ export default function ActivistCardSwipeable({
             width: 80,
             height: '100%',
             bgcolor: colors.primary.main,
-            borderRadius: '0 16px 16px 0',
+            borderRadius: `0 ${borderRadius.xl} ${borderRadius.xl} 0`,
             opacity: editVisible ? 1 : 0,
             transition: 'opacity 0.2s',
           }}
@@ -145,18 +157,20 @@ export default function ActivistCardSwipeable({
         sx={{
           transform: `translateX(${offset}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease',
-          cursor: 'grab',
-          '&:active': {
-            cursor: 'grabbing',
-          },
+          cursor: isDragging ? 'grabbing' : 'default',
           boxShadow: shadows.soft,
-          borderRadius: '16px',
+          borderRadius: borderRadius.xl,
           bgcolor: colors.neutral[0],
           border: `1px solid ${colors.neutral[200]}`,
+          '&:hover': {
+            boxShadow: shadows.medium,
+            borderColor: colors.primary.light,
+          },
         }}
       >
-        <CardContent sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <CardContent sx={{ p: 3 }}>
+          {/* Header Row - Avatar + Name + Status */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
             {/* Avatar */}
             <Avatar
               sx={{
@@ -165,19 +179,20 @@ export default function ActivistCardSwipeable({
                 bgcolor: colors.primary.main,
                 fontSize: '1.25rem',
                 fontWeight: 700,
+                boxShadow: shadows.soft,
               }}
             >
               {activist.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </Avatar>
 
-            {/* Info */}
+            {/* Name + Neighborhood */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="h6"
                 sx={{
                   fontWeight: 700,
-                  fontSize: '1rem',
-                  color: colors.neutral[700],
+                  fontSize: '1.1rem',
+                  color: colors.neutral[800],
                   mb: 0.5,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -187,85 +202,180 @@ export default function ActivistCardSwipeable({
                 {activist.fullName}
               </Typography>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                <LocationOnIcon sx={{ fontSize: 14, color: colors.neutral[400] }} />
-                <Typography variant="caption" color="text.secondary">
-                  {activist.neighborhood?.name || 'ללא שכונה'}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <LocationOnIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
+                <Typography variant="body2" sx={{ color: colors.neutral[600], fontWeight: 500 }}>
+                  {activist.neighborhood?.name || (isRTL ? 'ללא שכונה' : 'No neighborhood')}
                 </Typography>
               </Box>
-
-              {activist.phone && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <PhoneIcon sx={{ fontSize: 14, color: colors.neutral[400] }} />
-                  <Typography variant="caption" color="text.secondary">
-                    {activist.phone}
-                  </Typography>
-                </Box>
-              )}
             </Box>
 
-            {/* Desktop Actions (Visible on hover) */}
-            <Box
+            {/* Desktop Full Edit Button */}
+            <IconButton
+              size="small"
+              onClick={() => onEdit?.(activist.id)}
               sx={{
                 display: { xs: 'none', md: 'flex' },
-                gap: 1,
-                opacity: 0,
-                transition: 'opacity 0.2s',
+                bgcolor: colors.primary.main + '15',
                 '&:hover': {
-                  opacity: 1,
+                  bgcolor: colors.primary.main,
+                  color: 'white',
                 },
               }}
             >
-              <IconButton
-                size="small"
-                onClick={() => onCheckIn?.(activist.id)}
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          {/* Editable Fields Section */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+              p: 2,
+              borderRadius: borderRadius.lg,
+              bgcolor: colors.neutral[50],
+              border: `1px solid ${colors.neutral[200]}`,
+            }}
+          >
+            {/* Position - Editable */}
+            <Box>
+              <Typography
+                variant="caption"
                 sx={{
-                  bgcolor: colors.status.green + '20',
-                  '&:hover': {
-                    bgcolor: colors.status.green,
-                    color: 'white',
+                  display: 'block',
+                  color: colors.neutral[600],
+                  fontWeight: 600,
+                  mb: 0.5,
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {isRTL ? 'תפקיד' : 'Position'}
+              </Typography>
+              <Box
+                sx={{
+                  '& > div': {
+                    // Override padding for card view
+                    p: '8px !important',
                   },
                 }}
               >
-                <CheckCircleIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => onEdit?.(activist.id)}
+                <EditableTextCell
+                  value={activist.position}
+                  activistId={activist.id}
+                  field="position"
+                  onUpdate={() => router.refresh()}
+                  isRTL={isRTL}
+                  placeholder={isRTL ? 'ללא תפקיד' : 'No position'}
+                  icon={<WorkIcon fontSize="inherit" />}
+                />
+              </Box>
+            </Box>
+
+            {/* Phone - Editable */}
+            <Box>
+              <Typography
+                variant="caption"
                 sx={{
-                  bgcolor: colors.primary.main + '20',
-                  '&:hover': {
-                    bgcolor: colors.primary.main,
-                    color: 'white',
+                  display: 'block',
+                  color: colors.neutral[600],
+                  fontWeight: 600,
+                  mb: 0.5,
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {isRTL ? 'טלפון' : 'Phone'}
+              </Typography>
+              <Box
+                sx={{
+                  '& > div': {
+                    // Override padding for card view
+                    p: '8px !important',
                   },
                 }}
               >
-                <EditIcon fontSize="small" />
-              </IconButton>
+                <EditableTextCell
+                  value={activist.phone}
+                  activistId={activist.id}
+                  field="phone"
+                  onUpdate={() => router.refresh()}
+                  isRTL={isRTL}
+                  type="tel"
+                  placeholder={isRTL ? 'ללא טלפון' : 'No phone'}
+                  icon={<PhoneIcon fontSize="inherit" />}
+                />
+              </Box>
             </Box>
           </Box>
 
-          {/* Tags */}
-          {activist.tags && activist.tags.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap' }}>
-              {activist.tags.slice(0, 3).map((tag, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    px: 1,
-                    py: 0.25,
-                    borderRadius: '6px',
-                    bgcolor: colors.pastel.blueLight,
-                    border: `1px solid ${colors.primary.main}20`,
-                  }}
-                >
-                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: colors.primary.main }}>
-                    {tag}
-                  </Typography>
-                </Box>
-              ))}
+          {/* Bottom Row - Tags + Status */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+            {/* Tags */}
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', flex: 1 }}>
+              {activist.tags && activist.tags.length > 0 ? (
+                activist.tags.slice(0, 2).map((tag, index) => (
+                  <Chip
+                    key={index}
+                    label={tag}
+                    size="small"
+                    sx={{
+                      fontSize: '0.7rem',
+                      height: 24,
+                      bgcolor: colors.pastel.blueLight,
+                      color: colors.primary.main,
+                      border: `1px solid ${colors.primary.main}30`,
+                      fontWeight: 600,
+                    }}
+                  />
+                ))
+              ) : (
+                <Typography variant="caption" sx={{ color: colors.neutral[400] }}>
+                  {isRTL ? 'ללא תגיות' : 'No tags'}
+                </Typography>
+              )}
             </Box>
-          )}
+
+            {/* Status Chip - Visual Only (no inline toggle on mobile for simplicity) */}
+            <Chip
+              label={activist.isActive !== false ? (isRTL ? 'פעיל' : 'Active') : (isRTL ? 'לא פעיל' : 'Inactive')}
+              size="small"
+              sx={{
+                bgcolor: activist.isActive !== false ? colors.pastel.greenLight : colors.neutral[200],
+                color: activist.isActive !== false ? colors.pastel.green : colors.neutral[700],
+                fontWeight: 600,
+                fontSize: '0.75rem',
+              }}
+            />
+          </Box>
+
+          {/* Mobile Full Edit Button */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              justifyContent: 'center',
+              mt: 2,
+            }}
+          >
+            <Chip
+              label={isRTL ? 'ערוך הכל' : 'Full Edit'}
+              onClick={() => onEdit?.(activist.id)}
+              icon={<EditIcon />}
+              sx={{
+                bgcolor: colors.primary.main,
+                color: colors.neutral[0],
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: colors.primary.dark,
+                },
+              }}
+            />
+          </Box>
         </CardContent>
       </Card>
     </Box>

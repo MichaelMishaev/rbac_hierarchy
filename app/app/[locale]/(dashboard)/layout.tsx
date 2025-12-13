@@ -22,6 +22,11 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  // Map ACTIVIST_COORDINATOR to SUPERVISOR for navigation compatibility
+  const navRole = session.user.role === 'ACTIVIST_COORDINATOR'
+    ? 'SUPERVISOR'
+    : (session.user.role === 'CITY_COORDINATOR' ? 'MANAGER' : session.user.role);
+
   return (
     <QueryProvider>
       <ProgressBar />
@@ -30,7 +35,7 @@ export default async function DashboardLayout({
         {/* Desktop Sidebar - Hidden on mobile */}
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
           <NavigationV3
-            role={session.user.role as 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR'}
+            role={navRole as 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR'}
             stats={{
               pendingInvites: 0,  // TODO: Fetch from API
               activeWorkers: 0,   // TODO: Fetch from API
