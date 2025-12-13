@@ -34,6 +34,7 @@ export default async function DashboardContent() {
   // Fetch user's comprehensive role information from database
   const { getCurrentUser } = await import('@/lib/auth');
   const currentUserData = await getCurrentUser();
+  const { role } = session.user;
 
   // Build comprehensive role description
   let roleDescription: string = '';
@@ -83,7 +84,6 @@ export default async function DashboardContent() {
   }
 
   const stats = statsResult.stats;
-  const { role } = session.user;
 
   // Ensure stats exists
   if (!stats) {
