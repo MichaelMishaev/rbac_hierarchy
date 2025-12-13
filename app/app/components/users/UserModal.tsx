@@ -237,11 +237,11 @@ export default function UserModal({
     }
   };
 
-  // Filter cities for MANAGER role
+  // Filter cities based on current user's role
   const availableCorporations =
-    currentUserRole === 'SUPERADMIN'
-      ? cities
-      : cities.filter((corp) => corp.id === currentUserCityId);
+    currentUserRole === 'SUPERADMIN' || currentUserRole === 'AREA_MANAGER'
+      ? cities // SuperAdmin and Area Managers can see all cities
+      : cities.filter((corp) => corp.id === currentUserCityId); // City Coordinators see only their city
 
   // Role options based on current user
   const roleOptions =
@@ -252,10 +252,16 @@ export default function UserModal({
           { value: 'CITY_COORDINATOR', label: t('cityCoordinator') },
           { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
         ]
-      : [
+      : currentUserRole === 'AREA_MANAGER'
+      ? [
           { value: 'CITY_COORDINATOR', label: t('cityCoordinator') },
           { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
-        ];
+        ]
+      : currentUserRole === 'CITY_COORDINATOR'
+      ? [
+          { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
+        ]
+      : []; // Activist Coordinators cannot create users via this modal
 
   return (
     <Dialog
@@ -369,6 +375,16 @@ export default function UserModal({
             fullWidth
             required
             disabled={loading}
+            name="user-role-select"
+            autoComplete="off"
+            inputProps={{
+              autoComplete: 'off',
+              'data-form-type': 'other',
+            }}
+            SelectProps={{
+              native: false,
+              autoComplete: 'off',
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: borderRadius.md,
@@ -395,6 +411,16 @@ export default function UserModal({
               fullWidth
               required
               disabled={loading || availableCorporations.length === 0}
+              name="user-city-select"
+              autoComplete="off"
+              inputProps={{
+                autoComplete: 'off',
+                'data-form-type': 'other',
+              }}
+              SelectProps={{
+                native: false,
+                autoComplete: 'off',
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: borderRadius.md,
