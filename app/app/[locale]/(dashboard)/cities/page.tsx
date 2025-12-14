@@ -78,10 +78,14 @@ export default async function CorporationsPage() {
     ],
   });
 
-  // Transform null to undefined for optional relations (TypeScript compatibility)
+  // Transform to match expected type
   const cities = citiesData.map(city => ({
     ...city,
-    areaManager: city.areaManager || undefined,
+    areaManager: city.areaManager ? {
+      id: city.areaManager.id,
+      regionName: city.areaManager.regionName,
+      user: city.areaManager.user || { fullName: '', email: '' },
+    } : undefined,
   }));
 
   return (
