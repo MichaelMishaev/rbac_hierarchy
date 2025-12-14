@@ -71,7 +71,7 @@ type Supervisor = {
   user: {
     fullName: string;
     email: string;
-  };
+  } | null;
 };
 
 type Worker = {
@@ -151,8 +151,8 @@ export default function ActivistsClient({
     }
     return supervisors.map(supervisor => ({
       id: supervisor.id,
-      name: supervisor.user.fullName,
-      email: supervisor.user.email,
+      name: supervisor.user?.fullName || 'N/A',
+      email: supervisor.user?.email || 'N/A',
     }));
   }, [supervisors]);
 

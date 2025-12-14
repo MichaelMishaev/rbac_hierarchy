@@ -522,10 +522,10 @@ export default function AreasClient({ areas: initialAreas, userRole }: AreasClie
                     {area.user ? (
                       <>
                         <Typography variant="body2" sx={{ color: colors.neutral[900], mb: 0.5 }}>
-                          {area.user.fullName}
+                          {area.user?.fullName || 'N/A'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                          {area.user.email}
+                          {area.user?.email || 'N/A'}
                         </Typography>
                       </>
                     ) : (

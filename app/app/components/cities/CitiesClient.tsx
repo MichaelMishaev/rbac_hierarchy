@@ -50,7 +50,7 @@ type Corporation = {
     user: {
       fullName: string;
       email: string;
-    };
+    } | null;
   } | null;
   _count?: {
     coordinators: number;
@@ -510,7 +510,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                             display: 'block',
                           }}
                         >
-                          מנהל: {corp.areaManager.user.fullName}
+                          מנהל: {corp.areaManager.user?.fullName || 'N/A'}
                         </Typography>
                       </Box>
                     )}
