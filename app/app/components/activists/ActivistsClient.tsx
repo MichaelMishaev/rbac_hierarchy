@@ -219,9 +219,15 @@ export default function ActivistsClient({
       const worker = {
         ...result.activist,
         startDate: result.activist.startDate ? result.activist.startDate.toISOString() : null,
-        neighborhood: result.activist.neighborhood ? {
-          ...result.activist.neighborhood,
+        site: result.activist.neighborhood ? {
+          id: result.activist.neighborhood.id,
+          name: result.activist.neighborhood.name,
           cityId: result.activist.neighborhood.cityRelation?.id || '',
+          cityRelation: result.activist.neighborhood.cityRelation,
+        } : undefined,
+        supervisor: result.activist.activistCoordinator ? {
+          id: result.activist.activistCoordinator.id,
+          user: result.activist.activistCoordinator.user,
         } : undefined,
       };
       setWorkers((prev) => [worker, ...prev]);
@@ -277,9 +283,15 @@ export default function ActivistsClient({
       const updatedWorker = {
         ...result.activist,
         startDate: result.activist.startDate ? result.activist.startDate.toISOString() : null,
-        neighborhood: result.activist.neighborhood ? {
-          ...result.activist.neighborhood,
+        site: result.activist.neighborhood ? {
+          id: result.activist.neighborhood.id,
+          name: result.activist.neighborhood.name,
           cityId: result.activist.neighborhood.cityRelation?.id || '',
+          cityRelation: result.activist.neighborhood.cityRelation,
+        } : undefined,
+        supervisor: result.activist.activistCoordinator ? {
+          id: result.activist.activistCoordinator.id,
+          user: result.activist.activistCoordinator.user,
         } : undefined,
       };
       setWorkers((prev) =>

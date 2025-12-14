@@ -98,10 +98,10 @@ export async function GET() {
         },
         children: [
           {
-            name: areaManager.user.fullName,
+            name: areaManager.user?.fullName || 'N/A',
             type: 'areamanager',
             attributes: {
-              email: areaManager.user.email,
+              email: areaManager.user?.email || 'N/A',
               role: 'מנהל אזור',
             },
             children: (areaManager.cities || []).map((city: any) => ({
@@ -120,7 +120,7 @@ export async function GET() {
                         name: `רכזי עיר (${city.coordinators.length})`,
                         type: 'coordinators-group',
                         children: city.coordinators.map((coord: any) => ({
-                          name: coord.user.fullName,
+                          name: coord.user?.fullName || 'N/A',
                           type: 'coordinator',
                           attributes: {
                             role: 'רכז עיר',
@@ -136,7 +136,7 @@ export async function GET() {
                         name: `רכזי פעילים (${city.activistCoordinators.length})`,
                         type: 'activist-coordinators-group',
                         children: city.activistCoordinators.map((coord: any) => ({
-                          name: coord.user.fullName,
+                          name: coord.user?.fullName || 'N/A',
                           type: 'activistCoordinator',
                           attributes: {
                             role: 'רכז פעילים',
