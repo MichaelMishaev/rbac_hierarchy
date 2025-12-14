@@ -119,7 +119,7 @@ export async function validateActivistActivistCoordinatorAssignment(
     if (activistCoordinatorId) {
       return {
         valid: false,
-        error: 'Site has no activistCoordinators. Worker cannot be assigned to a activistCoordinator.',
+        error: 'השכונה אינה כוללת רכזי פעילים. לא ניתן לשייך פעיל לרכז פעילים.',
       };
     }
     return { valid: true };
@@ -129,7 +129,7 @@ export async function validateActivistActivistCoordinatorAssignment(
   if (!activistCoordinatorId) {
     return {
       valid: false,
-      error: 'Site has activistCoordinators. Worker must be assigned to a activistCoordinator.',
+      error: 'השכונה כוללת רכזי פעילים. יש לשייך את הפעיל לרכז פעילים.',
     };
   }
 
@@ -138,7 +138,7 @@ export async function validateActivistActivistCoordinatorAssignment(
   if (!isAssigned) {
     return {
       valid: false,
-      error: 'Supervisor is not assigned to this site.',
+      error: 'הרכז אינו משויך לשכונה זו.',
     };
   }
 

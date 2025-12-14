@@ -85,9 +85,11 @@ type NeighborhoodsClientProps = {
   neighborhoods: Site[];
   cities: City[];
   areas: Area[];
+  userRole: string;
+  userCityId?: string;
 };
 
-export default function NeighborhoodsClient({ neighborhoods: initialSites, cities, areas }: NeighborhoodsClientProps) {
+export default function NeighborhoodsClient({ neighborhoods: initialSites, cities, areas, userRole, userCityId }: NeighborhoodsClientProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -179,7 +181,8 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
 
   // Open create modal and fetch supervisors for first corporation
   const handleOpenCreateModal = async () => {
-    const corpId = filterCity !== 'all' ? filterCity : cities[0]?.id;
+    // For City Coordinators, use their city; otherwise use filter or first city
+    const corpId = userCityId || (filterCity !== 'all' ? filterCity : cities[0]?.id);
     if (corpId) {
       await fetchSupervisors(corpId);
     }
@@ -866,6 +869,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
         cities={cities}
         activistCoordinators={supervisors}
         onCityChange={fetchSupervisors}
+        userCityId={userCityId}
       />
 
       {/* Edit Modal */}
@@ -888,6 +892,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
           cities={cities}
           activistCoordinators={supervisors}
           onCityChange={fetchSupervisors}
+          userCityId={userCityId}
         />
       )}
 

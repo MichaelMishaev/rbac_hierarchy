@@ -964,3 +964,103 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
     };
   }
 }
+
+// ============================================
+// LIST COORDINATORS BY NEIGHBORHOOD
+// ============================================
+
+/**
+ * Get all active coordinators assigned to a specific neighborhood
+ * Used to populate coordinator dropdown when creating/editing activists
+ *
+ * Permissions:
+ * - Any authenticated user can list coordinators for a neighborhood they have access to
+ */
+export async function listActivistCoordinatorsByNeighborhood(neighborhoodId: string) {
+  try {
+    const currentUser = await getCurrentUser();
+
+    // Get neighborhood to validate access
+    const neighborhood = await prisma.neighborhood.findUnique({
+      where: { id: neighborhoodId },
+      select: { cityId: true },
+    });
+
+    if (!neighborhood) {
+      return {
+        success: false,
+        error: 'Neighborhood not found',
+        activistCoordinators: [],
+      };
+    }
+
+    // Validate access to neighborhood's city
+    if (currentUser.role !== 'SUPERADMIN') {
+      if (!hasAccessToCorporation(currentUser, neighborhood.cityId)) {
+        return {
+          success: false,
+          error: 'Cannot list coordinators from different city',
+          activistCoordinators: [],
+        };
+      }
+    }
+
+    // Fetch coordinators assigned to this neighborhood
+    const assignments = await prisma.activistCoordinatorNeighborhood.findMany({
+      where: {
+        neighborhoodId,
+        activistCoordinator: {
+          isActive: true,
+        },
+      },
+      include: {
+        activistCoordinator: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                avatarUrl: true,
+              },
+            },
+            _count: {
+              select: {
+                activists: {
+                  where: {
+                    neighborhoodId, // Only count activists in THIS neighborhood
+                    isActive: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        assignedAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      activistCoordinators: assignments.map(a => ({
+        id: a.activistCoordinator.id,
+        userId: a.activistCoordinator.user.id,
+        fullName: a.activistCoordinator.user.fullName,
+        email: a.activistCoordinator.user.email,
+        phone: a.activistCoordinator.user.phone,
+        avatarUrl: a.activistCoordinator.user.avatarUrl,
+        activistCount: a.activistCoordinator._count.activists,
+      })),
+    };
+  } catch (error) {
+    console.error('Error listing activistCoordinators for neighborhood:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list coordinators',
+      activistCoordinators: [],
+    };
+  }
+}

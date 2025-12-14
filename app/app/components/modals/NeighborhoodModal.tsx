@@ -73,6 +73,7 @@ type NeighborhoodModalProps = {
   cities: Corporation[];
   activistCoordinators: Supervisor[];
   onCityChange?: (cityId: string) => Promise<void>;
+  userCityId?: string; // For City Coordinators - auto-select and lock their city
 };
 
 export default function NeighborhoodModal({
@@ -85,6 +86,7 @@ export default function NeighborhoodModal({
   cities,
   activistCoordinators,
   onCityChange,
+  userCityId,
 }: NeighborhoodModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
@@ -141,24 +143,35 @@ export default function NeighborhoodModal({
     const justOpened = open && !prevOpenRef.current;
 
     if (justOpened) {
+      let cityToSelect = initialData?.cityId || '';
+      let areaToSelect = '';
+
+      // CITY COORDINATOR FIX: If userCityId is provided, auto-select that city
+      if (userCityId && mode === 'create') {
+        cityToSelect = userCityId;
+        const city = cities.find((c) => c.id === userCityId);
+        if (city?.areaManagerId) {
+          areaToSelect = city.areaManagerId;
+        }
+      }
       // If editing and has initial city, pre-select area
-      if (initialData?.cityId) {
+      else if (initialData?.cityId) {
         const city = cities.find((c) => c.id === initialData.cityId);
         if (city?.areaManagerId) {
-          setSelectedAreaId(city.areaManagerId);
+          areaToSelect = city.areaManagerId;
         }
-      } else if (areas.length === 1) {
-        // When creating new neighborhood with only 1 area, auto-select it
-        setSelectedAreaId(areas[0].id);
-      } else {
-        // Reset cascade for new neighborhood (multiple areas available)
-        setSelectedAreaId('');
       }
+      // When creating new neighborhood with only 1 area, auto-select it
+      else if (areas.length === 1) {
+        areaToSelect = areas[0].id;
+      }
+
+      setSelectedAreaId(areaToSelect);
 
       // Reset form data
       setFormData({
         name: initialData?.name || '',
-        cityId: initialData?.cityId || '',
+        cityId: cityToSelect,
         activistCoordinatorId: initialData?.activistCoordinatorId || '',
         isActive: initialData?.isActive ?? true,
       });
@@ -172,7 +185,7 @@ export default function NeighborhoodModal({
     // Update ref for next render
     prevOpenRef.current = open;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialData]);  // cities and areas intentionally excluded to prevent form reset
+  }, [open, initialData, userCityId, mode]);  // cities and areas intentionally excluded to prevent form reset
 
   // Auto-select first activist coordinator when loaded (but don't reset form!)
   // Track if we've just created a supervisor to prevent auto-selection override
@@ -200,11 +213,20 @@ export default function NeighborhoodModal({
       newErrors.name = isRTL ? 'שם השכונה נדרש' : 'Neighborhood name is required';
     }
 
-    if (!selectedAreaId) {
-      // Add area validation as a city error since area affects city selection
-      newErrors.cityId = isRTL ? 'יש לבחור אזור תחילה' : 'Please select an area first';
-    } else if (!formData.cityId) {
-      newErrors.cityId = isRTL ? 'יש לבחור עיר' : 'City is required';
+    // CITY COORDINATOR FIX: Skip area validation if user city is locked
+    if (userCityId && mode === 'create') {
+      // City is already set, no area validation needed
+      if (!formData.cityId) {
+        newErrors.cityId = isRTL ? 'יש לבחור עיר' : 'City is required';
+      }
+    } else {
+      // Normal flow: validate area first, then city
+      if (!selectedAreaId) {
+        // Add area validation as a city error since area affects city selection
+        newErrors.cityId = isRTL ? 'יש לבחור אזור תחילה' : 'Please select an area first';
+      } else if (!formData.cityId) {
+        newErrors.cityId = isRTL ? 'יש לבחור עיר' : 'City is required';
+      }
     }
 
     if (!formData.activistCoordinatorId) {
@@ -484,85 +506,113 @@ export default function NeighborhoodModal({
               />
 
               {/* HIERARCHICAL CASCADE: Area → City */}
-              <FormControl
-                fullWidth
-                required
-                error={!!errors.cityId && !selectedAreaId}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              >
-                <InputLabel>{isRTL ? 'אזור' : 'Area'}</InputLabel>
-                <Select
-                  value={selectedAreaId}
-                  onChange={handleAreaChange as any}
-                  label={isRTL ? 'אזור' : 'Area'}
-                  error={!!errors.cityId && !selectedAreaId}
-                >
-                  <MenuItem value="">
-                    <em>{isRTL ? 'בחר אזור' : 'Select Area'}</em>
-                  </MenuItem>
-                  {areas.map((area) => (
-                    <MenuItem key={area.id} value={area.id}>
-                      {area.regionName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl
-                fullWidth
-                required
-                error={!!errors.cityId}
-                disabled={!selectedAreaId}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              >
-                <InputLabel>{t('city')}</InputLabel>
-                <Select
-                  value={formData.cityId}
-                  onChange={(e) => handleChange('cityId')(e as any)}
+              {/* CITY COORDINATOR FIX: Hide area/city selection if user city is locked */}
+              {userCityId && mode === 'create' ? (
+                // For City Coordinators: Show city as read-only field
+                <TextField
                   label={t('city')}
-                >
-                  <MenuItem value="">
-                    <em>{isRTL ? 'בחר עיר' : 'Select City'}</em>
-                  </MenuItem>
-                  {filteredCities.map((city) => (
-                    <MenuItem key={city.id} value={city.id}>
-                      {city.name} ({city.code})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  value={cities.find(c => c.id === userCityId)?.name || ''}
+                  fullWidth
+                  disabled
+                  required
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  helperText={isRTL ? 'העיר שלך נבחרה אוטומטית' : 'Your city is automatically selected'}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      backgroundColor: '#F5F5F5',
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
+                  }}
+                />
+              ) : (
+                <>
+                  <FormControl
+                    fullWidth
+                    required
+                    error={!!errors.cityId && !selectedAreaId}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        backgroundColor: 'white',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                        },
+                        '&.Mui-focused': {
+                          boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
+                    }}
+                  >
+                    <InputLabel>{isRTL ? 'אזור' : 'Area'}</InputLabel>
+                    <Select
+                      value={selectedAreaId}
+                      onChange={handleAreaChange as any}
+                      label={isRTL ? 'אזור' : 'Area'}
+                      error={!!errors.cityId && !selectedAreaId}
+                    >
+                      <MenuItem value="">
+                        <em>{isRTL ? 'בחר אזור' : 'Select Area'}</em>
+                      </MenuItem>
+                      {areas.map((area) => (
+                        <MenuItem key={area.id} value={area.id}>
+                          {area.regionName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl
+                    fullWidth
+                    required
+                    error={!!errors.cityId}
+                    disabled={!selectedAreaId}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        backgroundColor: 'white',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                        },
+                        '&.Mui-focused': {
+                          boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                        },
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
+                    }}
+                  >
+                    <InputLabel>{t('city')}</InputLabel>
+                    <Select
+                      value={formData.cityId}
+                      onChange={(e) => handleChange('cityId')(e as any)}
+                      label={t('city')}
+                    >
+                      <MenuItem value="">
+                        <em>{isRTL ? 'בחר עיר' : 'Select City'}</em>
+                      </MenuItem>
+                      {filteredCities.map((city) => (
+                        <MenuItem key={city.id} value={city.id}>
+                          {city.name} ({city.code})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </>
+              )}
 
               <Autocomplete
                 value={activistCoordinators.find((ac) => ac.id === formData.activistCoordinatorId) || null}

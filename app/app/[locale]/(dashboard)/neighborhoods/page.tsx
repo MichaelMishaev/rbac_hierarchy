@@ -55,6 +55,15 @@ export default async function SitesPage() {
   const cities = citiesResult.cities || [];
   const areas = areasResult.areas || [];
 
+  // Get current user's city if they're a City Coordinator
+  let userCityId: string | undefined;
+  if (session.user.role === 'CITY_COORDINATOR') {
+    // Import getCurrentUser to get full user data
+    const { getCurrentUser } = await import('@/lib/auth');
+    const currentUser = await getCurrentUser();
+    userCityId = currentUser.coordinatorOf[0]?.cityId;
+  }
+
   return (
     <Box
       sx={{
@@ -96,6 +105,8 @@ export default async function SitesPage() {
         neighborhoods={neighborhoods}
         cities={cities.map(c => ({ id: c.id, name: c.name, code: c.code, areaManagerId: c.areaManagerId }))}
         areas={areas.map(a => ({ id: a.id, regionName: a.regionName, regionCode: a.regionCode }))}
+        userRole={session.user.role}
+        userCityId={userCityId}
       />
     </Box>
   );

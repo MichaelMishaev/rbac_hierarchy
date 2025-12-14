@@ -130,6 +130,10 @@ export default function ActivistModal({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof WorkerFormData, string>>>({});
 
+  // State for neighborhood-specific coordinators (filtered by selected neighborhood)
+  const [neighborhoodCoordinators, setNeighborhoodCoordinators] = useState<Supervisor[]>(activistCoordinators);
+  const [loadingCoordinators, setLoadingCoordinators] = useState(false);
+
   // Filtered cities based on selected area
   const filteredCities = selectedAreaId
     ? cities.filter((city) => city.areaManagerId === selectedAreaId)
@@ -197,6 +201,47 @@ export default function ActivistModal({
     prevOpenRef.current = open;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialData, defaultSiteId, defaultSupervisorId]);  // Removed neighborhoods, cities, areas, activistCoordinators to prevent form reset
+
+  // Fetch coordinators assigned to the selected neighborhood
+  useEffect(() => {
+    const fetchNeighborhoodCoordinators = async () => {
+      if (!formData.siteId || !open) {
+        setNeighborhoodCoordinators(activistCoordinators);
+        return;
+      }
+
+      setLoadingCoordinators(true);
+      try {
+        const { listActivistCoordinatorsByNeighborhood } = await import('@/app/actions/neighborhoods');
+        const result = await listActivistCoordinatorsByNeighborhood(formData.siteId);
+
+        if (result.success && result.activistCoordinators) {
+          // Transform to match the expected Supervisor format
+          const transformed = result.activistCoordinators.map((ac) => ({
+            id: ac.id,
+            name: ac.fullName,
+            email: ac.email,
+          }));
+          setNeighborhoodCoordinators(transformed);
+
+          // If current supervisorId is not in the filtered list, clear it
+          const isCurrentSupervisorValid = transformed.some((ac) => ac.id === formData.supervisorId);
+          if (!isCurrentSupervisorValid && formData.supervisorId) {
+            setFormData((prev) => ({ ...prev, supervisorId: '' }));
+          }
+        } else {
+          setNeighborhoodCoordinators([]);
+        }
+      } catch (error) {
+        console.error('Error fetching neighborhood coordinators:', error);
+        setNeighborhoodCoordinators([]);
+      } finally {
+        setLoadingCoordinators(false);
+      }
+    };
+
+    fetchNeighborhoodCoordinators();
+  }, [formData.siteId, open, activistCoordinators, formData.supervisorId]);
 
   // Handle area change - clear city and neighborhood
   const handleAreaChange = (e: React.ChangeEvent<{ value: unknown }>) => {
@@ -495,17 +540,25 @@ export default function ActivistModal({
                 {/* Activist Coordinator */}
                 <Box sx={{ flex: 1, minWidth: '200px' }}>
                   <Autocomplete
-                    value={activistCoordinators.find((ac) => ac.id === formData.supervisorId) || null}
+                    value={neighborhoodCoordinators.find((ac) => ac.id === formData.supervisorId) || null}
                     onChange={(event, newValue) => {
                       setFormData((prev) => ({ ...prev, supervisorId: newValue?.id || '' }));
                       if (errors.supervisorId) {
                         setErrors((prev) => ({ ...prev, supervisorId: undefined }));
                       }
                     }}
-                    options={activistCoordinators}
+                    options={neighborhoodCoordinators}
                     getOptionLabel={(option) => option.name}
                     isOptionEqualToValue={(option, value) => option.id === value.id}
-                    noOptionsText={isRTL ? 'אין רכזים זמינים' : 'No coordinators available'}
+                    noOptionsText={
+                      loadingCoordinators
+                        ? (isRTL ? 'טוען רכזים...' : 'Loading coordinators...')
+                        : !formData.siteId
+                        ? (isRTL ? 'נא לבחור שכונה תחילה' : 'Please select a neighborhood first')
+                        : (isRTL ? 'אין רכזים משוייכים לשכונה זו' : 'No coordinators assigned to this neighborhood')
+                    }
+                    loading={loadingCoordinators}
+                    disabled={!formData.siteId || loadingCoordinators}
                     fullWidth
                     renderInput={(params) => (
                       <TextField

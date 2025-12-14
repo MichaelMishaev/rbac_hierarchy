@@ -690,7 +690,7 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
       if (!isAssigned) {
         return {
           success: false,
-          error: 'Supervisor is not assigned to this site',
+          error: 'הרכז אינו משויך לשכונה זו',
         };
       }
     }
