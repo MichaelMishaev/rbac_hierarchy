@@ -240,6 +240,7 @@ export async function createNeighborhood(data: CreateNeighborhoodInput) {
 
     revalidatePath('/neighborhoods');
     revalidatePath('/dashboard');
+    revalidatePath('/activists');
 
     return {
       success: true,
@@ -560,6 +561,7 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
     revalidatePath('/neighborhoods');
     revalidatePath(`/neighborhoods/${neighborhoodId}`);
     revalidatePath('/dashboard');
+    revalidatePath('/activists');
 
     return {
       success: true,
@@ -655,6 +657,7 @@ export async function deleteNeighborhood(neighborhoodId: string) {
 
     revalidatePath('/neighborhoods');
     revalidatePath('/dashboard');
+    revalidatePath('/activists');
 
     return {
       success: true,
@@ -855,6 +858,7 @@ export async function toggleNeighborhoodStatus(neighborhoodId: string) {
     revalidatePath('/neighborhoods');
     revalidatePath(`/neighborhoods/${neighborhoodId}`);
     revalidatePath('/dashboard');
+    revalidatePath('/activists');
 
     return {
       success: true,

@@ -614,11 +614,17 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
         };
       }
 
-      // Supervisors cannot change site or supervisor
-      if (data.neighborhoodId || data.activistCoordinatorId) {
+      // Activist Coordinators CAN edit activists but CANNOT change neighborhood or coordinator assignment
+      if (data.neighborhoodId && data.neighborhoodId !== existingActivist.neighborhoodId) {
         return {
           success: false,
-          error: 'Supervisors cannot change worker site or supervisor',
+          error: 'Activist Coordinators cannot change activist neighborhood',
+        };
+      }
+      if (data.activistCoordinatorId && data.activistCoordinatorId !== existingActivist.activistCoordinatorId) {
+        return {
+          success: false,
+          error: 'Activist Coordinators cannot reassign activists to different coordinators',
         };
       }
     }

@@ -20,8 +20,8 @@ export default async function AreasPage() {
     redirect('/login');
   }
 
-  // Only SuperAdmin can access this page
-  if (session.user.role !== 'SUPERADMIN') {
+  // RBAC: Only SuperAdmin and Area Managers can access this page
+  if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'AREA_MANAGER') {
     return (
       <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
         <Typography variant="h5" color="error">
@@ -31,8 +31,20 @@ export default async function AreasPage() {
     );
   }
 
-  // Fetch all area managers with their associated data
+  // Build query based on role
+  let whereClause: any = {};
+
+  // Area Managers can only see their own area
+  if (session.user.role === 'AREA_MANAGER') {
+    whereClause = {
+      userId: session.user.id,
+    };
+  }
+  // SuperAdmin sees all areas (no filter)
+
+  // Fetch area managers with their associated data
   const areasData = await prisma.areaManager.findMany({
+    where: whereClause,
     include: {
       user: {
         select: {
@@ -109,7 +121,10 @@ export default async function AreasPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      <AreasClient areas={areas} />
+      <AreasClient
+        areas={areas}
+        userRole={session.user.role}
+      />
     </Box>
   );
 }

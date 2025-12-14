@@ -926,8 +926,8 @@ export async function getAreaManagers() {
         id: am.id,
         regionName: am.regionName,
         regionCode: am.regionCode,
-        fullName: am.user.fullName,
-        email: am.user.email,
+        fullName: am.user?.fullName || 'N/A',
+        email: am.user?.email || 'N/A',
         corporationCount: am._count.cities,
       })),
     };

@@ -69,9 +69,10 @@ type Area = {
 
 type AreasClientProps = {
   areas: Area[];
+  userRole: string;
 };
 
-export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
+export default function AreasClient({ areas: initialAreas, userRole }: AreasClientProps) {
   const t = useTranslations('areas');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -86,6 +87,9 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+
+  // Check if user is SuperAdmin (only SuperAdmin can create/edit/delete areas)
+  const isSuperAdmin = userRole === 'SUPERADMIN';
 
   // Fetch available users when opening create or edit modal
   useEffect(() => {
@@ -302,28 +306,31 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
           }}
         />
 
-        <RtlButton
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateModalOpen(true)}
-          sx={{
-            borderRadius: borderRadius.md,
-            px: 3,
-            py: 1.25,
-            background: colors.gradients.primary,
-            fontWeight: 600,
-            textTransform: 'none',
-            boxShadow: shadows.medium,
-            '&:hover': {
-              background: colors.primary.dark,
-              boxShadow: shadows.glowBlue,
-              transform: 'translateY(-2px)',
-            },
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
-          {t('newArea')}
-        </RtlButton>
+        {/* Only SuperAdmin can create areas */}
+        {isSuperAdmin && (
+          <RtlButton
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateModalOpen(true)}
+            sx={{
+              borderRadius: borderRadius.md,
+              px: 3,
+              py: 1.25,
+              background: colors.gradients.primary,
+              fontWeight: 600,
+              textTransform: 'none',
+              boxShadow: shadows.medium,
+              '&:hover': {
+                background: colors.primary.dark,
+                boxShadow: shadows.glowBlue,
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
+          >
+            {t('newArea')}
+          </RtlButton>
+        )}
       </Box>
 
       {/* Empty State */}
@@ -358,23 +365,27 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
             {t('noAreasYet')}
           </Typography>
           <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 3 }}>
-            צור את האזור הראשון כדי להתחיל לנהל ערים ופעילויות
+            {isSuperAdmin
+              ? 'צור את האזור הראשון כדי להתחיל לנהל ערים ופעילויות'
+              : 'אין אזורים להצגה כרגע'}
           </Typography>
-          <RtlButton
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateModalOpen(true)}
-            sx={{
-              background: colors.gradients.primary,
-              px: 4,
-              py: 1.5,
-              borderRadius: borderRadius.lg,
-              fontWeight: 600,
-              textTransform: 'none',
-            }}
-          >
-            {t('newArea')}
-          </RtlButton>
+          {isSuperAdmin && (
+            <RtlButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateModalOpen(true)}
+              sx={{
+                background: colors.gradients.primary,
+                px: 4,
+                py: 1.5,
+                borderRadius: borderRadius.lg,
+                fontWeight: 600,
+                textTransform: 'none',
+              }}
+            >
+              {t('newArea')}
+            </RtlButton>
+          )}
         </Box>
       )}
 
@@ -476,17 +487,20 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
                         }}
                       />
 
-                      <IconButton
-                        onClick={(e) => handleMenuOpen(e, area)}
-                        size="small"
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: colors.neutral[100],
-                          },
-                        }}
-                      >
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
+                      {/* Only SuperAdmin can edit/delete areas */}
+                      {isSuperAdmin && (
+                        <IconButton
+                          onClick={(e) => handleMenuOpen(e, area)}
+                          size="small"
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: colors.neutral[100],
+                            },
+                          }}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Box>
                   </Box>
 
