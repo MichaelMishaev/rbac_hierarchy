@@ -130,6 +130,7 @@ export default function ActivistsClient({
   const isRTL = locale === 'he';
 
   const [workers, setWorkers] = useState(initialWorkers);
+  const [neighborhoods, setNeighborhoods] = useState(sites);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSite, setFilterSite] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -158,17 +159,17 @@ export default function ActivistsClient({
   // Filtered workers based on search and filters
   const filteredWorkers = useMemo(() => {
     let filtered = workers;
-    
+
     if (filterSite !== 'all') {
       filtered = filtered.filter((worker) => worker.neighborhoodId === filterSite);
     }
 
     if (filterStatus !== 'all') {
-      filtered = filtered.filter((worker) => 
+      filtered = filtered.filter((worker) =>
         filterStatus === 'active' ? worker.isActive : !worker.isActive
       );
     }
-    
+
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -180,7 +181,7 @@ export default function ActivistsClient({
           worker.site?.name.toLowerCase().includes(query)
       );
     }
-    
+
     return filtered;
   }, [workers, searchQuery, filterSite, filterStatus]);
 
@@ -230,6 +231,23 @@ export default function ActivistsClient({
           user: result.activist.activistCoordinator.user,
         } : undefined,
       };
+
+      // Add neighborhood to neighborhoods state if not already there
+      if (result.activist.neighborhood) {
+        setNeighborhoods((prev) => {
+          const exists = prev.find(n => n.id === result.activist.neighborhood!.id);
+          if (!exists) {
+            return [...prev, {
+              id: result.activist.neighborhood!.id,
+              name: result.activist.neighborhood!.name,
+              cityId: result.activist.neighborhood!.cityRelation?.id || '',
+              cityRelation: result.activist.neighborhood!.cityRelation,
+            }];
+          }
+          return prev;
+        });
+      }
+
       setWorkers((prev) => [worker, ...prev]);
       setCreateModalOpen(false);
       router.refresh();
@@ -498,7 +516,7 @@ export default function ActivistsClient({
             }}
           >
             <MenuItem value="all">{isRTL ? 'כל האתרים' : 'All Sites'}</MenuItem>
-            {sites.map((site) => (
+            {neighborhoods.map((site) => (
               <MenuItem key={site.id} value={site.id}>
                 {site.name}
               </MenuItem>
@@ -606,7 +624,7 @@ export default function ActivistsClient({
                 variant="outlined"
                 startIcon={<TrendingUpIcon />}
                 onClick={() => setSmartAssignmentOpen(true)}
-                disabled={sites.length === 0}
+                disabled={neighborhoods.length === 0}
                 sx={{
                   borderColor: colors.status.orange,
                   color: colors.status.orange,
@@ -1006,7 +1024,7 @@ export default function ActivistsClient({
         mode="create"
         areas={areas}
         cities={cities}
-        neighborhoods={sites}
+        neighborhoods={neighborhoods}
         activistCoordinators={transformedSupervisors}
         defaultSupervisorId={defaultSupervisorId}
       />
@@ -1037,7 +1055,7 @@ export default function ActivistsClient({
           mode="edit"
           areas={areas}
           cities={cities}
-          neighborhoods={sites}
+          neighborhoods={neighborhoods}
           activistCoordinators={transformedSupervisors}
         />
       )}
@@ -1060,7 +1078,7 @@ export default function ActivistsClient({
       )}
 
       {/* Smart Assignment Dialog (Phase 3 UI/UX Update) */}
-      {sites.length > 0 && (
+      {neighborhoods.length > 0 && (
         <SmartAssignmentDialog
           open={smartAssignmentOpen}
           onClose={() => setSmartAssignmentOpen(false)}
@@ -1081,7 +1099,7 @@ export default function ActivistsClient({
             lat: 32.0853, // Tel Aviv center (mock location)
             lng: 34.7818,
           }}
-          neighborhoodId={sites[0]?.id || ''}
+          neighborhoodId={neighborhoods[0]?.id || ''}
           isRTL={isRTL}
         />
       )}

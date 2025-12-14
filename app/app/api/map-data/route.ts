@@ -194,8 +194,8 @@ export async function GET(request: Request) {
         },
         activistCoordinators: site.activistCoordinatorAssignments.map((sa: any) => ({
           id: sa.activistCoordinator.id,
-          name: sa.activistCoordinator.user.fullName,
-          email: sa.activistCoordinator.user.email,
+          name: sa.activistCoordinator.user?.fullName || 'N/A',
+          email: sa.activistCoordinator.user?.email || 'N/A',
         })),
       };
     });

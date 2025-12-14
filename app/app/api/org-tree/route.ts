@@ -151,7 +151,7 @@ export async function GET() {
                     count: {},
                     children: corp.coordinators.map((coordinator: any) => ({
                       id: coordinator.id,
-                      name: `${coordinator.user.fullName} - ${coordinator.title || ''}`,
+                      name: `${coordinator.user?.fullName || 'N/A'} - ${coordinator.title || ''}`,
                       type: 'coordinator' as const,
                       count: {},
                     })),
@@ -168,7 +168,7 @@ export async function GET() {
                     count: {},
                     children: corp.activistCoordinators.map((activistCoordinator: any) => ({
                       id: activistCoordinator.id,
-                      name: `${activistCoordinator.user.fullName} - ${activistCoordinator.title || ''}`,
+                      name: `${activistCoordinator.user?.fullName || 'N/A'} - ${activistCoordinator.title || ''}`,
                       type: 'activistCoordinator' as const,
                       count: {
                         neighborhoods: activistCoordinator.neighborhoodAssignments?.length || 0,
@@ -194,7 +194,7 @@ export async function GET() {
 
                 return {
                   id: `activistCoordinator-${activistCoordinatorId}-neighborhood-${neighborhood.id}`,
-                  name: `${assignment.activistCoordinator.user.fullName} - ${assignment.activistCoordinator.title || ''}`,
+                  name: `${assignment.activistCoordinator.user?.fullName || 'N/A'} - ${assignment.activistCoordinator.title || ''}`,
                   type: 'activistCoordinator' as const,
                   count: {
                     activists: assignedActivists.length,

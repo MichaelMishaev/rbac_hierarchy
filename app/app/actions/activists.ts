@@ -233,7 +233,14 @@ export async function createWorker(data: CreateWorkerInput) {
       include: {
         neighborhood: {
           include: {
-            cityRelation: true,
+            cityRelation: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                areaManagerId: true,
+              },
+            },
           },
         },
         activistCoordinator: {
@@ -721,7 +728,14 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
       include: {
         neighborhood: {
           include: {
-            cityRelation: true,
+            cityRelation: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                areaManagerId: true,
+              },
+            },
           },
         },
         activistCoordinator: {

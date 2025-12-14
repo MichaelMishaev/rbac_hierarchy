@@ -332,6 +332,7 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
             id: true,
             name: true,
             code: true,
+            areaManagerId: true,
           },
         },
         _count: { select: { activistCoordinatorAssignments: true,
