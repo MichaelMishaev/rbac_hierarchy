@@ -147,7 +147,10 @@
     "allAreas": "כל האזורים",
     "allCities": "כל הערים",
     "clearFilters": "נקה סינונים",
-    "filters": "סינונים"
+    "filters": "סינונים",
+    "deleteAllExceptAdmin": "מחק את כל המשתמשים (חוץ ממנהל מערכת)",
+    "deleteAllExceptAdminTitle": "מחיקת כל המשתמשים",
+    "deleteAllExceptAdminConfirm": "האם אתה בטוח שברצונך למחוק את כל המשתמשים במערכת? מנהל המערכת יישאר בלבד. פעולה זו אינה ניתנת לביטול."
   },
   "sites": {
     "title": "שכונות",

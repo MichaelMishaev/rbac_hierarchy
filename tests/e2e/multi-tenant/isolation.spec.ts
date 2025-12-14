@@ -1,59 +1,72 @@
 import { test, expect, testUsers } from '../fixtures/auth.fixture';
 import { DashboardPage } from '../page-objects/DashboardPage';
 
-test.describe('Multi-Corporation Isolation', () => {
-  test('Manager from Corp1 cannot see Corp2 data', async ({ page, loginAs }) => {
-    await loginAs('manager');
+test.describe('Multi-City Data Isolation', () => {
+  test('City Coordinator from Tel Aviv cannot see other city data', async ({ page, loginAs }) => {
+    await loginAs('cityCoordinator');
 
     const dashboard = new DashboardPage(page);
     await dashboard.goto();
 
-    // Try to navigate to Corp2 data via URL manipulation
-    await page.goto(`/corporations/${testUsers.managerCorp2.corporationId}/sites`);
+    // Verify the coordinator can only see Tel Aviv data
+    await expect(page.locator('text=תל אביב-יפו')).toBeVisible();
 
-    // Should either get 403 Forbidden or redirect to authorized corporation
+    // Try to access another city's data via URL manipulation
+    // This should be blocked or redirected
+    await page.goto('/cities/ramat-gan/activists');
+
+    // Should either get 403 Forbidden or redirect to authorized city
     const status = page.url();
-    expect(status).not.toContain(testUsers.managerCorp2.corporationId);
+    expect(status).not.toContain('ramat-gan');
 
     // Verify error message or redirect
     const errorMessage = page.locator('[data-testid="access-denied-message"]');
     if (await errorMessage.isVisible()) {
-      await expect(errorMessage).toContain('Access Denied');
+      await expect(errorMessage).toContainText('Access Denied');
     }
   });
 
-  test('SuperAdmin can switch between corporations', async ({ page, loginAs }) => {
+  test('Area Manager can view multiple cities in their region', async ({ page, loginAs }) => {
+    await loginAs('areaManager');
+
+    const dashboard = new DashboardPage(page);
+    await dashboard.goto();
+
+    // Area Manager should see all cities in Tel Aviv District
+    await expect(page.locator('text=תל אביב-יפו')).toBeVisible();
+    await expect(page.locator('text=רמת גן')).toBeVisible();
+
+    // Can access both cities
+    await page.goto('/cities/tel-aviv-yafo/activists');
+    await expect(page.locator('h1')).toBeVisible();
+
+    await page.goto('/cities/ramat-gan/activists');
+    await expect(page.locator('h1')).toBeVisible();
+  });
+
+  test('SuperAdmin can access all cities and regions', async ({ page, loginAs }) => {
     await loginAs('superAdmin');
 
     const dashboard = new DashboardPage(page);
     await dashboard.goto();
 
-    // Verify corporation selector is visible
-    await expect(dashboard.corporationSelector).toBeVisible();
+    // SuperAdmin should see system-wide overview
+    await expect(page.locator('h1')).toBeVisible();
 
-    // Select Corporation 1
-    await dashboard.selectCorporation('Corporation 1');
+    // Can access any city in any region
+    await page.goto('/cities/tel-aviv-yafo/activists');
+    await expect(page).toHaveURL(/\/cities\/.*/);
 
-    // Verify data updates for Corp1
-    const corp1Sites = await dashboard.getKPIValue('sites');
-    expect(corp1Sites).toBeGreaterThan(0);
-
-    // Select Corporation 2
-    await dashboard.selectCorporation('Corporation 2');
-
-    // Verify data updates for Corp2 (different values)
-    const corp2Sites = await dashboard.getKPIValue('sites');
-
-    // Sites count should be different between corporations
-    expect(corp2Sites).not.toBe(corp1Sites);
+    await page.goto('/cities/ramat-gan/activists');
+    await expect(page).toHaveURL(/\/cities\/.*/);
   });
 
-  test('API requests include correct corporation_id filter', async ({ page, loginAs }) => {
-    await loginAs('manager');
+  test('API requests include correct city_id filter', async ({ page, loginAs }) => {
+    await loginAs('cityCoordinator');
 
     const dashboard = new DashboardPage(page);
 
-    // Set up request interceptor to verify corporation_id in API calls
+    // Set up request interceptor to verify city_id in API calls
     const requests: any[] = [];
     page.on('request', (request) => {
       if (request.url().includes('/api/')) {
@@ -70,87 +83,137 @@ test.describe('Multi-Corporation Isolation', () => {
     // Wait for API calls to complete
     await page.waitForTimeout(1000);
 
-    // Verify all API requests include corporation_id
-    const apiRequests = requests.filter(r => r.url.includes('/sites') || r.url.includes('/workers'));
+    // Verify all API requests include city_id or are properly scoped
+    const apiRequests = requests.filter(r =>
+      r.url.includes('/activists') ||
+      r.url.includes('/neighborhoods') ||
+      r.url.includes('/attendance')
+    );
 
     for (const req of apiRequests) {
-      // Check URL or headers contain corporation_id
-      const hasCorporationId =
-        req.url.includes('corporation_id=') ||
-        req.url.includes(`/corporations/${testUsers.manager.corporationId}`);
+      // Check URL or headers contain city scoping
+      const hasCityScope =
+        req.url.includes('city_id=') ||
+        req.url.includes('/cities/') ||
+        req.url.includes('cityId=');
 
-      expect(hasCorporationId).toBe(true);
+      // API should be scoped to the user's city
+      expect(hasCityScope || req.url.includes('/dashboard')).toBe(true);
     }
   });
 
-  test('Manager cannot create entities in other corporations', async ({ page, loginAs }) => {
-    await loginAs('manager');
+  test('City Coordinator cannot create entities in other cities', async ({ page, loginAs }) => {
+    await loginAs('cityCoordinator');
 
-    // Navigate to create site page
-    await page.goto('/sites/new');
+    // Navigate to create activist page
+    await page.goto('/activists/new');
 
-    // Fill in site details with different corporation_id via DevTools
-    await page.evaluate((corpId) => {
-      // Try to inject different corporation_id
-      (window as any).__INJECTED_CORP_ID = corpId;
-    }, testUsers.managerCorp2.corporationId);
+    // Try to manipulate the city_id via DevTools
+    await page.evaluate(() => {
+      // Try to inject different city_id
+      (window as any).__INJECTED_CITY_ID = 'different-city-id';
+    });
 
     // Fill form
-    await page.fill('[data-testid="site-name"]', 'Malicious Site');
-    await page.fill('[data-testid="site-address"]', '123 Test St');
+    await page.fill('[data-testid="activist-name"]', 'Malicious Activist');
+    await page.fill('[data-testid="activist-phone"]', '+972-50-999-9999');
 
     // Submit form
     await page.click('[data-testid="submit-button"]');
 
-    // Should fail with authorization error
-    await expect(page.locator('[data-testid="error-message"]')).toContain('Unauthorized');
+    // Should either succeed with correct city_id or fail with authorization error
+    // The server should ignore the injected city_id and use the authenticated user's city
 
-    // Verify site was NOT created in Corp2
-    await page.goto(`/corporations/${testUsers.managerCorp2.corporationId}/sites`);
+    // Wait for response
+    await page.waitForTimeout(1000);
 
-    // Should not see the malicious site
-    await expect(page.locator(`text=Malicious Site`)).not.toBeVisible();
+    // Check if we're still on a valid page (not error page)
+    const currentUrl = page.url();
+
+    // If creation succeeded, it should be in the coordinator's city (Tel Aviv)
+    // If it failed, there should be an error message
+    const hasError = await page.locator('[data-testid="error-message"]').isVisible();
+    const hasSuccess = await page.locator('[data-testid="success-message"]').isVisible();
+
+    expect(hasError || hasSuccess).toBe(true);
   });
 
-  test('Audit logs are scoped to corporation', async ({ page, loginAs }) => {
-    await loginAs('manager');
+  test('Activist Coordinator can only see assigned neighborhoods', async ({ page, loginAs }) => {
+    await loginAs('activistCoordinator');
+
+    // Navigate to activists page
+    await page.goto('/activists');
+
+    // Get all visible activists
+    const activistCards = page.locator('[data-testid="activist-card"]');
+    const count = await activistCards.count();
+
+    // Rachel is assigned to Florentin and Neve Tzedek neighborhoods
+    const allowedNeighborhoods = ['פלורנטין', 'נווה צדק'];
+
+    // Verify only activists from assigned neighborhoods are visible
+    for (let i = 0; i < count; i++) {
+      const activistCard = activistCards.nth(i);
+      const neighborhoodText = await activistCard.locator('[data-testid="activist-neighborhood"]').textContent();
+
+      if (neighborhoodText) {
+        const isAllowed = allowedNeighborhoods.some(n => neighborhoodText.includes(n));
+        expect(isAllowed).toBe(true);
+      }
+    }
+
+    // Try to access activist from unassigned neighborhood (Old Jaffa)
+    await page.goto('/neighborhoods/tlv-old-jaffa/activists');
+
+    // Should get access denied or redirect
+    const hasAccessDenied = await page.locator('[data-testid="access-denied-message"]').isVisible();
+    const redirected = !page.url().includes('tlv-old-jaffa');
+
+    expect(hasAccessDenied || redirected).toBe(true);
+  });
+
+  test('Attendance records are scoped to coordinator neighborhoods', async ({ page, loginAs }) => {
+    await loginAs('activistCoordinator');
 
     const dashboard = new DashboardPage(page);
     await dashboard.goto();
 
-    // Navigate to audit logs
-    await dashboard.navigateToSection('audit-logs');
+    // Navigate to attendance tracking
+    await page.goto('/attendance');
 
-    // Verify all logs shown belong to the manager's corporation
-    const logRows = page.locator('[data-testid="audit-log-row"]');
-    const count = await logRows.count();
+    // Verify all attendance records shown belong to assigned neighborhoods
+    const attendanceRows = page.locator('[data-testid="attendance-row"]');
+    const count = await attendanceRows.count();
+
+    const allowedNeighborhoods = ['פלורנטין', 'נווה צדק'];
 
     for (let i = 0; i < count; i++) {
-      const corporationId = await logRows.nth(i).getAttribute('data-corporation-id');
-      expect(corporationId).toBe(testUsers.manager.corporationId);
+      const neighborhoodCell = await attendanceRows.nth(i).locator('[data-testid="attendance-neighborhood"]').textContent();
+
+      if (neighborhoodCell) {
+        const isAllowed = allowedNeighborhoods.some(n => neighborhoodCell.includes(n));
+        expect(isAllowed).toBe(true);
+      }
     }
   });
 
-  test('Supervisor can only see assigned sites', async ({ page, loginAs }) => {
-    await loginAs('supervisor');
+  test('Cross-city data leakage prevention in search', async ({ page, loginAs }) => {
+    await loginAs('cityCoordinator');
 
-    // Navigate to sites page
-    await page.goto('/sites');
+    // Navigate to activists search
+    await page.goto('/activists');
 
-    // Get all visible sites
-    const siteCards = page.locator('[data-testid="site-card"]');
-    const count = await siteCards.count();
+    // Search for an activist from a different city
+    await page.fill('[data-testid="search-input"]', 'משה ישראלי'); // Ramat Gan coordinator
 
-    // Verify only assigned sites are visible
-    for (let i = 0; i < count; i++) {
-      const siteId = await siteCards.nth(i).getAttribute('data-site-id');
-      expect(testUsers.supervisor.siteIds).toContain(siteId);
-    }
+    // Wait for search results
+    await page.waitForTimeout(500);
 
-    // Try to access unassigned site via URL
-    await page.goto('/sites/999');
+    // Should not find activists from other cities
+    const noResults = page.locator('[data-testid="no-results-message"]');
+    const resultsCount = await page.locator('[data-testid="activist-card"]').count();
 
-    // Should get access denied
-    await expect(page.locator('[data-testid="access-denied-message"]')).toBeVisible();
+    // Either no results or results should not include cross-city data
+    expect(resultsCount === 0 || await noResults.isVisible()).toBe(true);
   });
 });

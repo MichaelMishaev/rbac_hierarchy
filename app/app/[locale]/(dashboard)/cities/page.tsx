@@ -59,6 +59,7 @@ export default async function CorporationsPage() {
           user: {
             select: {
               fullName: true,
+              email: true,
             },
           },
         },

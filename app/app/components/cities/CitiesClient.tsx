@@ -43,13 +43,15 @@ type Corporation = {
   code: string;
   description: string | null;
   isActive: boolean;
+  areaManagerId?: string | null;
   areaManager?: {
     id: string;
     regionName: string;
     user: {
       fullName: string;
+      email: string;
     };
-  };
+  } | null;
   _count?: {
     coordinators: number;
     activistCoordinators: number;
@@ -474,28 +476,49 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                               height: 24,
                             }}
                           />
-                          {/* v1.4: Area Manager Badge */}
-                          {corp.areaManager && (
-                            <Chip
-                              label={`אזור: ${corp.areaManager.regionName}`}
-                              size="small"
-                              sx={{
-                                backgroundColor: colors.pastel.orangeLight,
-                                color: colors.pastel.orange,
-                                fontWeight: 600,
-                                fontSize: '0.75rem',
-                                height: 24,
-                              }}
-                            />
-                          )}
                         </Box>
                       </Box>
                     </Box>
+
+                    {/* Area Manager Info Row */}
+                    {corp.areaManager && (
+                      <Box
+                        sx={{
+                          mt: 2,
+                          p: 2,
+                          borderRadius: borderRadius.md,
+                          backgroundColor: colors.pastel.orangeLight,
+                          border: `1px solid ${colors.pastel.orange}30`,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: colors.pastel.orange,
+                            fontWeight: 700,
+                            display: 'block',
+                            mb: 0.5,
+                          }}
+                        >
+                          אזור: {corp.areaManager.regionName}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: colors.neutral[700],
+                            fontWeight: 600,
+                            display: 'block',
+                          }}
+                        >
+                          מנהל: {corp.areaManager.user.fullName}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
 
                   {/* Card Body */}
                   <Box sx={{ p: 3, pt: 2 }}>
-                    {/* Description */}
+                    {/* Restore the description and stats that were accidentally removed */}
                     {corp.description && (
                       <Typography
                         variant="body2"
@@ -513,7 +536,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                       </Typography>
                     )}
 
-                    {/* Stats Row */}
+                    {/* Stats Row - KEEP THIS */}
                     <Box
                       sx={{
                         display: 'flex',
@@ -571,7 +594,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
                     </Box>
                   </Box>
 
-                  {/* Card Footer - Status */}
+                  {/* Card Footer - Status - KEEP THIS TOO */}
                   <Box
                     sx={{
                       px: 3,
@@ -606,7 +629,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
         </Grid>
       )}
 
-      {/* Context Menu */}
+      {/* Context Menu - RESTORE THIS */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -657,7 +680,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
         </MenuItem>
       </Menu>
 
-      {/* Create Modal */}
+      {/* Create Modal - KEEP */}
       <CityModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -667,7 +690,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
         userRole={userRole}
       />
 
-      {/* Edit Modal */}
+      {/* Edit Modal - KEEP */}
       {selectedCorp && (
         <CityModal
           open={editModalOpen}
@@ -689,7 +712,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - KEEP */}
       {selectedCorp && (
         <DeleteConfirmationModal
           open={deleteModalOpen}

@@ -12,6 +12,8 @@ import PeopleIcon from '@mui/icons-material/People';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SecurityIcon from '@mui/icons-material/Security';
 import EditIcon from '@mui/icons-material/Edit';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import Link from 'next/link';
 
 export default async function SystemRulesPage() {
   const session = await auth();
@@ -378,25 +380,54 @@ export default async function SystemRulesPage() {
     >
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: colors.neutral[900],
-            mb: 1,
-          }}
-        >
-          {t('title')}
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: colors.neutral[600],
-            fontWeight: 500,
-          }}
-        >
-          {t('description')}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: colors.neutral[900],
+                mb: 1,
+              }}
+            >
+              {t('title')}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: colors.neutral[600],
+                fontWeight: 500,
+              }}
+            >
+              {t('description')}
+            </Typography>
+          </Box>
+          <Link href="/onboarding" passHref style={{ textDecoration: 'none' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 3,
+                py: 1.5,
+                background: colors.gradients.primary,
+                borderRadius: borderRadius.lg,
+                color: colors.neutral[0],
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  boxShadow: shadows.large,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <RocketLaunchIcon />
+              <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
+                מדריך אתחול מערכת
+              </Typography>
+            </Box>
+          </Link>
+        </Box>
       </Box>
 
       {/* 1. Worker Creation Permissions (keep as is) */}

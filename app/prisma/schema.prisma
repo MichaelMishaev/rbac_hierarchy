@@ -98,9 +98,9 @@ enum TokenType {
 model AreaManager {
   id String @id @default(uuid())
 
-  // Relationships
-  userId String @unique @map("user_id")
-  user   User   @relation("AreaManagerUser", fields: [userId], references: [id], onDelete: Cascade)
+  // Relationships - userId is OPTIONAL, areas persist even without a manager
+  userId String? @unique @map("user_id")
+  user   User?   @relation("AreaManagerUser", fields: [userId], references: [id], onDelete: SetNull)
 
   // v1.4: region_code is NOT NULL and UNIQUE
   regionCode String @unique @map("region_code") // e.g., "IL-CENTER", "US-WEST"
@@ -141,11 +141,6 @@ model City {
   // v2.0: Area Manager (optional for backwards compatibility with production)
   areaManagerId String?      @map("area_manager_id")
   areaManager   AreaManager? @relation(fields: [areaManagerId], references: [id], onDelete: Restrict)
-
-  // Contact info (v2.0 includes these fields)
-  email   String?
-  phone   String?
-  address String?
 
   // Settings
   isActive Boolean @default(true) @map("is_active")

@@ -1,32 +1,36 @@
 import { test as base, expect } from '@playwright/test';
 
 /**
- * User credentials for different roles
+ * User credentials for different roles (Production credentials)
+ * These match the production seed data
  */
 export const testUsers = {
   superAdmin: {
-    email: 'superadmin@hierarchy.test',
-    password: 'SuperAdmin123!',
-    role: 'SuperAdmin',
+    email: 'admin@election.test',
+    password: 'admin123',
+    role: 'SUPERADMIN',
+    displayName: 'מנהל מערכת ראשי',
   },
-  manager: {
-    email: 'manager@corp1.test',
-    password: 'Manager123!',
-    role: 'Manager',
-    corporationId: '1',
+  areaManager: {
+    email: 'sarah.cohen@telaviv-district.test',
+    password: 'area123',
+    role: 'AREA_MANAGER',
+    displayName: 'מנהלת אזור - שרה כהן',
+    regionName: 'מחוז תל אביב',
   },
-  supervisor: {
-    email: 'supervisor@corp1.test',
-    password: 'Supervisor123!',
-    role: 'Supervisor',
-    corporationId: '1',
-    siteIds: ['1', '2'],
+  cityCoordinator: {
+    email: 'david.levi@telaviv.test',
+    password: 'manager123',
+    role: 'CITY_COORDINATOR',
+    displayName: 'רכז עיר - דוד לוי (תל אביב)',
+    cityName: 'תל אביב-יפו',
   },
-  managerCorp2: {
-    email: 'manager@corp2.test',
-    password: 'Manager123!',
-    role: 'Manager',
-    corporationId: '2',
+  activistCoordinator: {
+    email: 'rachel.bendavid@telaviv.test',
+    password: 'supervisor123',
+    role: 'ACTIVIST_COORDINATOR',
+    displayName: 'רכזת פעילים - רחל בן-דוד',
+    neighborhoods: ['פלורנטין', 'נווה צדק'],
   },
 };
 
@@ -60,10 +64,10 @@ export const test = base.extend<AuthFixtures>({
       // Wait for navigation to dashboard
       await page.waitForURL('/dashboard');
 
-      // If user has multiple corporations (SuperAdmin), select the corporation
-      if (role === 'superAdmin' && user.role === 'SuperAdmin') {
-        // Corporation selector should be visible for SuperAdmin
-        await expect(page.locator('[data-testid="corporation-selector"]')).toBeVisible();
+      // SuperAdmin has access to all cities and regions
+      if (role === 'superAdmin' && user.role === 'SUPERADMIN') {
+        // Dashboard should show system-wide overview
+        await expect(page.locator('h1')).toBeVisible();
       }
     };
 

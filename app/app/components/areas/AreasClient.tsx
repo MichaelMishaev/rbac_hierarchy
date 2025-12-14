@@ -57,7 +57,7 @@ type Area = {
     email: string;
     phone: string | null;
     isActive: boolean;
-  };
+  } | null;
   cities?: {
     id: string;
     name: string;
@@ -115,8 +115,8 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
       (area) =>
         area.regionName.toLowerCase().includes(query) ||
         area.regionCode.toLowerCase().includes(query) ||
-        area.user.fullName.toLowerCase().includes(query) ||
-        area.user.email.toLowerCase().includes(query)
+        area.user?.fullName?.toLowerCase().includes(query) ||
+        area.user?.email?.toLowerCase().includes(query)
     );
   }, [areas, searchQuery]);
 
@@ -505,12 +505,20 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
                         מנהל אזור
                       </Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: colors.neutral[900], mb: 0.5 }}>
-                      {area.user.fullName}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                      {area.user.email}
-                    </Typography>
+                    {area.user ? (
+                      <>
+                        <Typography variant="body2" sx={{ color: colors.neutral[900], mb: 0.5 }}>
+                          {area.user.fullName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
+                          {area.user.email}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: colors.neutral[500], fontStyle: 'italic' }}>
+                        ללא מנהל מוקצה
+                      </Typography>
+                    )}
                   </Box>
 
                   {/* Stats */}
@@ -610,7 +618,7 @@ export default function AreasClient({ areas: initialAreas }: AreasClientProps) {
           initialData={{
             regionName: selectedArea.regionName,
             regionCode: selectedArea.regionCode,
-            userId: selectedArea.user.id,
+            userId: selectedArea.user?.id || '',
             description: selectedArea.metadata?.description || '',
             isActive: selectedArea.isActive,
           }}

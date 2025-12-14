@@ -834,6 +834,113 @@ export async function deleteUser(userId: string) {
 }
 
 // ============================================
+// DANGEROUS: DELETE ALL USERS EXCEPT SUPERADMIN
+// ============================================
+
+/**
+ * HARD DELETE all users except system admin(s).
+ *
+ * Safety rules:
+ * - SuperAdmin only
+ * - Keeps users where role === SUPERADMIN OR isSuperAdmin === true
+ * - Reassigns AttendanceRecord.checkedInById / lastEditedById to the remaining admin
+ *   because these FKs do not cascade and would otherwise block deletion.
+ */
+export async function deleteAllUsersExceptSystemAdmin() {
+  try {
+    const currentUser = await getCurrentUser();
+
+    if (currentUser.role !== 'SUPERADMIN' && !currentUser.isSuperAdmin) {
+      return {
+        success: false,
+        error: 'Forbidden: SuperAdmin only',
+      };
+    }
+
+    const adminsToKeep = await prisma.user.findMany({
+      where: {
+        OR: [{ role: 'SUPERADMIN' }, { isSuperAdmin: true }],
+      },
+      select: { id: true },
+    });
+
+    if (adminsToKeep.length === 0) {
+      return {
+        success: false,
+        error: 'No system admin user found to keep',
+      };
+    }
+
+    const keepIds = adminsToKeep.map((u) => u.id);
+    const keepAdminId = keepIds.includes(currentUser.id) ? currentUser.id : keepIds[0];
+
+    const usersToDelete = await prisma.user.findMany({
+      where: { id: { notIn: keepIds } },
+      select: { id: true },
+    });
+
+    if (usersToDelete.length === 0) {
+      return {
+        success: true,
+        deletedCount: 0,
+        message: 'No users to delete',
+      };
+    }
+
+    const deleteIds = usersToDelete.map((u) => u.id);
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Reassign attendance FKs that do NOT cascade on delete
+      await tx.attendanceRecord.updateMany({
+        where: { checkedInById: { in: deleteIds } },
+        data: { checkedInById: keepAdminId },
+      });
+
+      await tx.attendanceRecord.updateMany({
+        where: { lastEditedById: { in: deleteIds } },
+        data: { lastEditedById: keepAdminId },
+      });
+
+      // Now delete users (most related entities cascade)
+      const deleted = await tx.user.deleteMany({
+        where: { id: { in: deleteIds } },
+      });
+
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          action: 'DELETE_ALL_USERS_EXCEPT_SYSTEM_ADMIN',
+          entity: 'User',
+          entityId: 'bulk',
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+          userRole: currentUser.role,
+          before: { deletedUserIds: deleteIds },
+          after: { keptUserIds: keepIds },
+        },
+      });
+
+      return deleted;
+    });
+
+    revalidatePath('/users');
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      deletedCount: result.count,
+      keptCount: keepIds.length,
+    };
+  } catch (error) {
+    console.error('Error deleting all users except system admin:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete users',
+    };
+  }
+}
+
+// ============================================
 // GET EXISTING REGIONS
 // ============================================
 

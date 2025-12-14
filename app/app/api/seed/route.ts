@@ -76,9 +76,6 @@ export async function POST(request: Request) {
         name: 'טכנולוגיות אלקטרה בע"מ',
         code: 'TECH',
         description: 'חברת טכנולוגיה מובילה בתחום האלקטרוניקה',
-        email: 'info@electra-tech.co.il',
-        phone: '+972-3-500-0001',
-        address: 'רחוב הברזל 1, תל אביב',
         isActive: true,
         areaManagerId: areaManager.id, // v1.4: Required
       },
@@ -91,9 +88,6 @@ export async function POST(request: Request) {
         name: 'קבוצת בינוי ופיתוח בע"מ',
         code: 'BUILD',
         description: 'קבוצת בנייה ותשתיות מובילה',
-        email: 'info@binui.co.il',
-        phone: '+972-3-600-0002',
-        address: 'שדרות רוטשילד 50, תל אביב',
         isActive: true,
         areaManagerId: areaManager.id, // v1.4: Required
       },
@@ -106,9 +100,6 @@ export async function POST(request: Request) {
         name: 'רשת מזון טעים בע"מ',
         code: 'FOOD',
         description: 'רשת מסעדות וקייטרינג ארצית',
-        email: 'info@taim-food.co.il',
-        phone: '+972-9-700-0003',
-        address: 'דרך בגין 100, רמת גן',
         isActive: true,
         areaManagerId: areaManager.id, // v1.4: Required
       },

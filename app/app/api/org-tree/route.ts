@@ -126,7 +126,7 @@ export async function GET() {
           {
             // Level 3: Area Manager (Person who manages the area)
             id: areaManager.id,
-            name: areaManager.user.fullName,
+            name: areaManager.user?.fullName || `${areaManager.regionName} (ללא מנהל)`,
             type: 'areamanager' as const,
             count: {
               cities: areaManager.cities?.length || 0,

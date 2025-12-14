@@ -87,10 +87,8 @@ export default function AreaModal({
       newErrors.regionCode = 'שגיאה ביצירת קוד אזור';
     }
 
-    // Validate user selection
-    if (!formData.userId.trim()) {
-      newErrors.userId = 'בחירת משתמש היא חובה';
-    }
+    // User selection is OPTIONAL - areas can exist without managers
+    // No validation needed for userId
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -384,11 +382,10 @@ export default function AreaModal({
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="בחר משתמש"
+                    label="בחר משתמש (אופציונלי)"
                     placeholder="חפש לפי שם, אימייל או טלפון..."
                     error={!!errors.userId}
-                    helperText={errors.userId || 'רק משתמשים עם תפקיד "מנהל אזור" זמינים'}
-                    required
+                    helperText={errors.userId || 'אזור יכול להיות ללא מנהל. רק משתמשים עם תפקיד "מנהל אזור" זמינים'}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '12px',
@@ -454,8 +451,8 @@ export default function AreaModal({
               />
 
               {availableUsers.length === 0 && (
-                <Alert severity="warning" sx={{ mt: 1 }}>
-                  אין משתמשים זמינים עם תפקיד &quot;מנהל אזור&quot;. אנא צור משתמש חדש תחילה.
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  אין משתמשים זמינים עם תפקיד &quot;מנהל אזור&quot;. האזור יווצר ללא מנהל ותוכל להקצות מנהל מאוחר יותר.
                 </Alert>
               )}
             </Box>
@@ -584,7 +581,7 @@ export default function AreaModal({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || availableUsers.length === 0}
+          disabled={loading}
           size="large"
           sx={{
             borderRadius: '12px',

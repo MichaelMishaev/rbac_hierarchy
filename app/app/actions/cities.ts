@@ -131,6 +131,16 @@ export async function createCity(data: CreateCityInput) {
         areaManagerId: data.areaManagerId, // v1.4: Required field from user input
       },
       include: {
+        areaManager: {
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             coordinators: true,     // Counts CityCoordinator records
@@ -375,6 +385,12 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
       };
     }
 
+    // Normalize optional fields that might arrive as empty strings from forms
+    const normalizedAreaManagerId =
+      typeof data.areaManagerId === 'string' && data.areaManagerId.trim().length === 0
+        ? undefined
+        : data.areaManagerId;
+
     // Validate MANAGER and AREA_MANAGER constraints
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
       // Can only update corporations they have access to
@@ -409,9 +425,9 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
     }
 
     // v1.4: Validate Area Manager if areaManagerId is being updated
-    if (data.areaManagerId !== undefined) {
+    if (normalizedAreaManagerId !== undefined) {
       const areaManager = await prisma.areaManager.findUnique({
-        where: { id: data.areaManagerId },
+        where: { id: normalizedAreaManagerId },
       });
 
       if (!areaManager) {
@@ -438,9 +454,19 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
         description: data.description,
         logoUrl: data.logo,
         isActive: data.isActive,
-        areaManagerId: data.areaManagerId, // v1.4: Update Area Manager if provided
+        ...(normalizedAreaManagerId !== undefined && { areaManagerId: normalizedAreaManagerId }), // v1.4: Update Area Manager if provided
       },
       include: {
+        areaManager: {
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             coordinators: true,     // Counts CityCoordinator records
