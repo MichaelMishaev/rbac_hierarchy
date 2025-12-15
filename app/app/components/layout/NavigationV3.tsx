@@ -625,7 +625,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                 {role === 'SUPERADMIN'
                   ? 'מנהל על'
                   : role === 'AREA_MANAGER'
-                  ? 'מנהל אזור'
+                  ? 'מנהל מחוז'
                   : role === 'MANAGER'
                   ? 'מנהל'
                   : role === 'SUPERVISOR'

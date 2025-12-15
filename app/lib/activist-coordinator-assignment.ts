@@ -119,7 +119,7 @@ export async function validateActivistActivistCoordinatorAssignment(
     if (activistCoordinatorId) {
       return {
         valid: false,
-        error: 'השכונה אינה כוללת רכזי פעילים. לא ניתן לשייך פעיל לרכז פעילים.',
+        error: 'השכונה אינה כוללת רכזי שכונות. לא ניתן לשייך פעיל לרכז שכונתי.',
       };
     }
     return { valid: true };
@@ -129,7 +129,7 @@ export async function validateActivistActivistCoordinatorAssignment(
   if (!activistCoordinatorId) {
     return {
       valid: false,
-      error: 'השכונה כוללת רכזי פעילים. יש לשייך את הפעיל לרכז פעילים.',
+      error: 'השכונה כוללת רכזי שכונות. יש לשייך את הפעיל לרכז שכונתי.',
     };
   }
 

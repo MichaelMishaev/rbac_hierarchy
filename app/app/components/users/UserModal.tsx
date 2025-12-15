@@ -169,20 +169,30 @@ export default function UserModal({
     // AREA_MANAGER: No area assignment during user creation
     // Area assignment happens later in /areas page
 
-    // Corporation required for CITY_COORDINATOR/ACTIVIST_COORDINATOR (not for SUPERADMIN or AREA_MANAGER)
-    if (
-      formData.role !== 'SUPERADMIN' &&
-      formData.role !== 'AREA_MANAGER' &&
-      (formData.role === 'CITY_COORDINATOR' || formData.role === 'ACTIVIST_COORDINATOR') &&
-      !formData.cityId
-    ) {
-      setError('יש לבחור תאגיד עבור מנהל או מפקח');
+    // City required for CITY_COORDINATOR (always needs to select city)
+    if (formData.role === 'CITY_COORDINATOR' && !formData.cityId) {
+      setError('יש לבחור עיר עבור רכז עיר');
       return false;
     }
 
-    // Sites required for ACTIVIST_COORDINATOR
+    // City required for ACTIVIST_COORDINATOR
+    if (formData.role === 'ACTIVIST_COORDINATOR' && !formData.cityId) {
+      // For SuperAdmin/Area Manager: Must manually select city
+      if (currentUserRole === 'SUPERADMIN' || currentUserRole === 'AREA_MANAGER') {
+        setError('יש לבחור עיר עבור רכז פעילים');
+        return false;
+      }
+      // For City Coordinator: cityId should be auto-set from currentUserCityId
+      // If it's missing, it's a system integrity issue
+      if (currentUserRole === 'CITY_COORDINATOR') {
+        setError('שגיאת מערכת: לא נמצאה עיר עבור רכז העיר');
+        return false;
+      }
+    }
+
+    // Neighborhoods required for ACTIVIST_COORDINATOR
     if (formData.role === 'ACTIVIST_COORDINATOR' && formData.neighborhoodIds.length === 0) {
-      setError('יש לבחור לפחות אתר אחד עבור מפקח');
+      setError('יש לבחור לפחות שכונה אחת עבור רכז פעילים');
       return false;
     }
 
@@ -401,8 +411,14 @@ export default function UserModal({
           {/* AREA_MANAGER: No area assignment during user creation */}
           {/* Area assignment happens later in /areas page */}
 
-          {/* Corporation (for CITY_COORDINATOR/ACTIVIST_COORDINATOR) */}
-          {(formData.role === 'CITY_COORDINATOR' || formData.role === 'ACTIVIST_COORDINATOR') && (
+          {/* City dropdown - Show when:
+              1. Role is CITY_COORDINATOR (always)
+              2. Role is ACTIVIST_COORDINATOR AND creator is SuperAdmin/Area Manager (to select city for activist coordinator)
+              Hide when: Role is ACTIVIST_COORDINATOR AND creator is City Coordinator (cityId auto-set)
+          */}
+          {(formData.role === 'CITY_COORDINATOR' ||
+            (formData.role === 'ACTIVIST_COORDINATOR' &&
+              (currentUserRole === 'SUPERADMIN' || currentUserRole === 'AREA_MANAGER'))) && (
             <TextField
               label={t('corporation')}
               select
@@ -439,7 +455,7 @@ export default function UserModal({
             </TextField>
           )}
 
-          {/* Sites (for SUPERVISOR only) */}
+          {/* Neighborhoods (for ACTIVIST_COORDINATOR only) */}
           {formData.role === 'ACTIVIST_COORDINATOR' && formData.cityId && (
             <Box sx={{ direction: 'rtl' }}>
               <Autocomplete
@@ -449,7 +465,7 @@ export default function UserModal({
                 value={neighborhoods.filter((site) => formData.neighborhoodIds.includes(site.id))}
                 onChange={(_, newValue) => {
                   console.log('Autocomplete onChange called. New value:', newValue);
-                  console.log('Site IDs:', newValue.map((site) => site.id));
+                  console.log('Neighborhood IDs:', newValue.map((site) => site.id));
                   setFormData((prev) => ({
                     ...prev,
                     neighborhoodIds: newValue.map((site) => site.id),
@@ -461,9 +477,9 @@ export default function UserModal({
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="אתרים"
+                    label="שכונות"
                     required
-                    helperText="בחר את האתרים שהמפקח יהיה אחראי עליהם"
+                    helperText="בחר את השכונות שרכז הפעילים יהיה אחראי עליהן"
                     inputProps={{
                       ...params.inputProps,
                       dir: 'rtl',

@@ -120,10 +120,10 @@ test.describe('RBAC - Area City Coordinator Permissions', () => {
 
     const pageContent = await page.textContent('body');
 
-    // Should see "מנהל אזור" (Area City Coordinator in Hebrew)
-    expect(pageContent).toContain('מנהל אזור');
+    // Should see "מנהל מחוז" (Area City Coordinator in Hebrew)
+    expect(pageContent).toContain('מנהל מחוז');
 
-    console.log('✅ Area City Coordinator role badge shows "מנהל אזור"');
+    console.log('✅ Area City Coordinator role badge shows "מנהל מחוז"');
   });
 
   test('Area City Coordinator sees empty state when no corporations assigned', async ({ page }) => {

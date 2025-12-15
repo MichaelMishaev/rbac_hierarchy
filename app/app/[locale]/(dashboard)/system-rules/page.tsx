@@ -549,7 +549,7 @@ export default async function SystemRulesPage() {
                       Area Manager
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      מנהל אזור - מפקח על מספר ערים
+                      מנהל מחוז - מפקח על מספר ערים
                     </Typography>
                   </Box>
                 </Box>
@@ -637,7 +637,7 @@ export default async function SystemRulesPage() {
                       Activist Coordinator
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      רכז פעילים - מארגן שכונתי
+                      רכז שכונתי - מארגן שכונתי
                     </Typography>
                   </Box>
                 </Box>

@@ -88,7 +88,7 @@ async function main() {
       regionCode: 'NORTH',
       isActive: true,
       metadata: {
-        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז הצפון',
+        description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז הצפון',
       },
     },
   });
@@ -116,7 +116,7 @@ async function main() {
       regionCode: 'HAIFA',
       isActive: true,
       metadata: {
-        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז חיפה',
+        description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז חיפה',
       },
     },
   });
@@ -172,7 +172,7 @@ async function main() {
       regionCode: 'JERUSALEM',
       isActive: true,
       metadata: {
-        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז ירושלים',
+        description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז ירושלים',
       },
     },
   });

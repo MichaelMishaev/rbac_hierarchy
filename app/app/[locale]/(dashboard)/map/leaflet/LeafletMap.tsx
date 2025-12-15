@@ -371,7 +371,7 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <SupervisorAccount sx={{ color: colors.neutral[700] }} />
                 <Typography variant="subtitle2" fontWeight={600}>
-                  רכזי פעילים
+                  רכזי שכונות
                 </Typography>
               </Box>
               {selectedSite.activistCoordinators.map((activistCoordinator) => (
@@ -447,7 +447,7 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
             </Typography>
             {hoveredSite.activistCoordinators.length > 0 && (
               <Typography variant="caption" sx={{ color: colors.neutral[200], fontSize: '12px' }}>
-                👨‍💼 {hoveredSite.activistCoordinators.length} רכזי פעילים
+                👨‍💼 {hoveredSite.activistCoordinators.length} רכזי שכונות
               </Typography>
             )}
           </Box>

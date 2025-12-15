@@ -102,7 +102,7 @@ export async function GET() {
             type: 'areamanager',
             attributes: {
               email: areaManager.user?.email || 'N/A',
-              role: 'מנהל אזור',
+              role: 'מנהל מחוז',
             },
             children: (areaManager.cities || []).map((city: any) => ({
               name: city.name,
@@ -133,13 +133,13 @@ export async function GET() {
                 ...(city.activistCoordinators && city.activistCoordinators.length > 0
                   ? [
                       {
-                        name: `רכזי פעילים (${city.activistCoordinators.length})`,
+                        name: `רכזי שכונות (${city.activistCoordinators.length})`,
                         type: 'activist-coordinators-group',
                         children: city.activistCoordinators.map((coord: any) => ({
                           name: coord.user?.fullName || 'N/A',
                           type: 'activistCoordinator',
                           attributes: {
-                            role: 'רכז פעילים',
+                            role: 'רכז שכונתי',
                           },
                         })),
                       },

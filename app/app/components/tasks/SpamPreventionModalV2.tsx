@@ -323,7 +323,7 @@ export default function SpamPreventionModalV2({
                 )}
                 {recipientPreview.breakdown.by_role.activistCoordinator > 0 && (
                   <Chip
-                    label={`רכזי פעילים ${recipientPreview.breakdown.by_role.activistCoordinator}`}
+                    label={`רכזי שכונות ${recipientPreview.breakdown.by_role.activistCoordinator}`}
                     size="medium"
                     sx={{
                       backgroundColor: colors.success,

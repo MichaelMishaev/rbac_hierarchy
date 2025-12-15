@@ -43,7 +43,7 @@ export default async function DashboardContent() {
   } else if (currentUserData.role === 'AREA_MANAGER' && currentUserData.areaManager) {
     const regionName = currentUserData.areaManager.regionName;
     const cityCount = currentUserData.areaManager.cities.length;
-    roleDescription = `מנהל אזור ${regionName} (${cityCount} ערים)`;
+    roleDescription = `מנהל מחוז ${regionName} (${cityCount} ערים)`;
   } else if (currentUserData.role === 'CITY_COORDINATOR' && currentUserData.coordinatorOf.length > 0) {
     const coordinator = currentUserData.coordinatorOf[0];
     const cityName = coordinator.city.name;

@@ -724,7 +724,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                         borderTop: `1px solid ${colors.neutral[200]}`,
                       }}
                     >
-                      <Tooltip title={isRTL ? 'רכזי פעילים' : 'Activist Coordinators'}>
+                      <Tooltip title={isRTL ? 'רכזי שכונות' : 'Activist Coordinators'}>
                         <Box
                           sx={{
                             flex: 1,

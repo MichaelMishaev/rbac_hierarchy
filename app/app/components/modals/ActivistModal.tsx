@@ -570,7 +570,7 @@ export default function ActivistModal({
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label={isRTL ? 'רכז פעילים' : 'Activist Coordinator'}
+                        label={isRTL ? 'רכז שכונתי' : 'Activist Coordinator'}
                         placeholder={isRTL ? 'חפש לפי שם או אימייל...' : 'Search by name or email...'}
                         error={!!errors.supervisorId}
                         helperText={errors.supervisorId}

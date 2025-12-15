@@ -92,7 +92,7 @@ test.describe('Add New - Cities (ערים) with Scope Validation', () => {
     await page.getByLabel(/אימייל|Email/i).fill('newcity@test.com');
 
     // Select any area manager
-    const areaDropdown = page.getByLabel(/מנהל אזור/i);
+    const areaDropdown = page.getByLabel(/מנהל מחוז/i);
     await areaDropdown.click();
     await page.getByRole('option').first().click();
 
@@ -114,7 +114,7 @@ test.describe('Add New - Cities (ערים) with Scope Validation', () => {
     await addButton.click();
 
     // Area Manager dropdown should be disabled and pre-selected
-    const areaDropdown = page.getByLabel(/מנהל אזור/i);
+    const areaDropdown = page.getByLabel(/מנהל מחוז/i);
     await expect(areaDropdown).toBeDisabled();
 
     // Should show helper text
@@ -308,12 +308,12 @@ test.describe('Add New - Activists (פעילים) with M2M Validation', () => {
 
     await options.first().click();
 
-    await page.getByLabel(/שם מלא/i).fill('פעיל רכז פעילים');
+    await page.getByLabel(/שם מלא/i).fill('פעיל רכז שכונתי');
     await page.getByLabel(/טלפון/i).fill('0501234570');
     await page.getByLabel(/אימייל/i).fill('activist.coord@example.com');
 
     await page.getByRole('button', { name: /שמור/i }).click();
-    await expect(page.getByText('פעיל רכז פעילים')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('פעיל רכז שכונתי')).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -332,7 +332,7 @@ test.describe('Add New - Users (משתמשים) with Role-Based Creation', () =>
     await roleDropdown.click();
 
     // Should see Area Manager option
-    await expect(page.getByRole('option', { name: /מנהל אזור|Area Manager/i })).toBeVisible();
+    await expect(page.getByRole('option', { name: /מנהל מחוז|Area Manager/i })).toBeVisible();
 
     // Select City Coordinator
     await page.getByRole('option', { name: /רכז עיר|City Coordinator/i }).click();
@@ -378,7 +378,7 @@ test.describe('Add New - Users (משתמשים) with Role-Based Creation', () =>
     await roleDropdown.click();
 
     // Should NOT see Area Manager or SuperAdmin
-    await expect(page.getByRole('option', { name: /מנהל אזור/i })).not.toBeVisible();
+    await expect(page.getByRole('option', { name: /מנהל מחוז/i })).not.toBeVisible();
 
     // Select City Coordinator
     await page.getByRole('option', { name: /רכז עיר/i }).click();
@@ -415,24 +415,24 @@ test.describe('Add New - Users (משתמשים) with Role-Based Creation', () =>
     await roleDropdown.click();
 
     // Should ONLY see Activist Coordinator
-    await expect(page.getByRole('option', { name: /רכז פעילים|Activist Coordinator/i })).toBeVisible();
+    await expect(page.getByRole('option', { name: /רכז שכונתי|Activist Coordinator/i })).toBeVisible();
 
     // Should NOT see Area Manager or City Coordinator
-    await expect(page.getByRole('option', { name: /מנהל אזור/i })).not.toBeVisible();
+    await expect(page.getByRole('option', { name: /מנהל מחוז/i })).not.toBeVisible();
     await expect(page.getByRole('option', { name: /רכז עיר/i })).not.toBeVisible();
 
-    await page.getByRole('option', { name: /רכז פעילים/i }).click();
+    await page.getByRole('option', { name: /רכז שכונתי/i }).click();
 
     // City dropdown should be disabled and pre-selected
     const cityDropdown = page.getByLabel(/עיר/i);
     await expect(cityDropdown).toBeDisabled();
 
-    await page.getByLabel(/שם מלא/i).fill('רכז פעילים חדש');
+    await page.getByLabel(/שם מלא/i).fill('רכז שכונתי חדש');
     await page.getByLabel(/אימייל/i).fill('activistcoord.city@test.com');
     await page.getByLabel(/סיסמה/i).fill('SecurePass123!');
 
     await page.getByRole('button', { name: /שמור/i }).click();
-    await expect(page.getByText('רכז פעילים חדש')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('רכז שכונתי חדש')).toBeVisible({ timeout: 10000 });
   });
 
   test('Activist Coordinator CANNOT create users (no access to users page)', async ({ page }) => {

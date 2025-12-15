@@ -516,7 +516,7 @@ export default function AreasClient({ areas: initialAreas, userRole }: AreasClie
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                       <PersonIcon sx={{ fontSize: 18, color: colors.neutral[600] }} />
                       <Typography variant="body2" sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                        מנהל אזור
+                        מנהל מחוז
                       </Typography>
                     </Box>
                     {area.user ? (

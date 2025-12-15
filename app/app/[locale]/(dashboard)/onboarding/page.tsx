@@ -99,7 +99,7 @@ export default async function OnboardingPage() {
       icon: <VerifiedUserIcon />,
       color: colors.pastel.orange,
       tasks: [
-        'עבור דרך כל מנהל אזור שתשאיר',
+        'עבור דרך כל מנהל מחוז שתשאיר',
         'החלף אימייל, שם, טלפון בפרטים אמיתיים',
         'מחק מנהלי אזור שלא צריך (אם קמפיין קטן)',
         'צור מנהלי אזור חדשים אם נדרש',
@@ -149,8 +149,8 @@ export default async function OnboardingPage() {
       ],
     },
     {
-      label: 'שלב 6: יצירת רכזי פעילים',
-      description: 'הוסף רכזי פעילים והקצה שכונות',
+      label: 'שלב 6: יצירת רכזי שכונות',
+      description: 'הוסף רכזי שכונות והקצה שכונות',
       critical: false,
       icon: <GroupsIcon />,
       color: colors.pastel.purple,
@@ -158,7 +158,7 @@ export default async function OnboardingPage() {
         'התחבר כ-City Coordinator (או SuperAdmin)',
         'עבור ל: ניהול → משתמשים',
         'לחץ: + משתמש חדש',
-        'בחר תפקיד: רכז פעילים',
+        'בחר תפקיד: רכז שכונתי',
         'הקצה 1-5 שכונות לכל רכז',
         'צור מספיק רכזים לכיסוי כל השכונות',
       ],

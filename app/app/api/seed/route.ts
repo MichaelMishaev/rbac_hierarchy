@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       update: {},
       create: {
         email: 'areamanager@rbac.shop',
-        fullName: 'מנהל אזור מרכז',
+        fullName: 'מנהל מחוז מרכז',
         passwordHash: hashedPassword,
         role: 'AREA_MANAGER',
         phone: '+972-50-000-0001',

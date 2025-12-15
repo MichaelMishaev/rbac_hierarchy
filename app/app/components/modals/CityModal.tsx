@@ -134,7 +134,7 @@ export default function CityModal({
     }
 
     if (mode === 'create' && !formData.areaManagerId.trim()) {
-      newErrors.areaManagerId = 'מנהל אזור הוא שדה חובה';
+      newErrors.areaManagerId = 'מנהל מחוז הוא שדה חובה';
     }
 
     setErrors(newErrors);
@@ -331,7 +331,7 @@ export default function CityModal({
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="מנהל אזור"
+                    label="מנהל מחוז"
                     placeholder="חפש לפי אזור, שם או אימייל..."
                     error={!!errors.areaManagerId}
                     helperText={
@@ -431,10 +431,10 @@ export default function CityModal({
                       },
                     }}
                   >
-                    יצירת מנהל אזור חדש
+                    יצירת מנהל מחוז חדש
                   </Button>
                   <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                    אם אין מנהל אזור מתאים ברשימה
+                    אם אין מנהל מחוז מתאים ברשימה
                   </Typography>
                 </Box>
               )}

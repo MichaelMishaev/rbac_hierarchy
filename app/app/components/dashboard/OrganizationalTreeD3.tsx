@@ -543,16 +543,16 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     const typeLabels: Record<string, string> = {
       superadmin: 'מנהל מערכת',
       area: 'מחוז',
-      areamanager: 'מנהל אזור',
+      areamanager: 'מנהל מחוז',
       city: 'עיר',
       'coordinators-group': 'רכזי עיר',
       'managers-group': 'רכזי עיר', // Legacy support
       manager: 'רכז עיר',
       coordinator: 'רכז עיר',
-      'supervisors-group': 'רכזי פעילים',
-      'activist-coordinators-group': 'רכזי פעילים',
-      activistCoordinator: 'רכז פעילים',
-      supervisor: 'רכז פעילים', // Legacy support
+      'supervisors-group': 'רכזי שכונות',
+      'activist-coordinators-group': 'רכזי שכונות',
+      activistCoordinator: 'רכז שכונתי',
+      supervisor: 'רכז שכונתי', // Legacy support
       neighborhood: 'שכונה',
       site: 'שכונה', // Legacy support
       activist: 'פעיל',
@@ -565,13 +565,13 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const getStatLabel = useCallback((key: string) => {
     const statLabels: Record<string, string> = {
       cities: 'ערים',
-      areaManagers: 'מנהלי אזור',
+      areaManagers: 'מנהלי מחוז',
       neighborhoods: 'שכונות',
       activists: 'פעילים',
       managers: 'רכזי עיר', // Legacy support
       coordinators: 'רכזי עיר',
-      activistCoordinators: 'רכזי פעילים',
-      supervisors: 'רכזי פעילים', // Legacy support
+      activistCoordinators: 'רכזי שכונות',
+      supervisors: 'רכזי שכונות', // Legacy support
       orphanActivists: 'פעילים לא משויכים',
     };
     return statLabels[key] || key;
@@ -910,7 +910,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           <Box display="flex" alignItems="center" gap={0.75}>
             <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#2563EB' }} />
             <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
-              מנהל אזור
+              מנהל מחוז
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" gap={0.75}>
@@ -928,7 +928,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           <Box display="flex" alignItems="center" gap={0.75}>
             <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#F97316' }} />
             <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
-              רכז פעילים
+              רכז שכונתי
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" gap={0.75}>

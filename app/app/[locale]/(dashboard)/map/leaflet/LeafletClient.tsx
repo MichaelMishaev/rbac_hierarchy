@@ -477,7 +477,7 @@ export default function LeafletClient() {
             >
               <ManagerIcon sx={{ mr: 2, color: colors.pastel.orange }} />
               <ListItemText
-                primary={`רכזי פעילים (${data.activistCoordinators.length})`}
+                primary={`רכזי שכונות (${data.activistCoordinators.length})`}
                 primaryTypographyProps={{ fontWeight: 600 }}
               />
               {expandedSections.activistCoordinators ? <ExpandLess /> : <ExpandMore />}

@@ -21,7 +21,7 @@ const ISRAELI_DISTRICTS = [
     managerName: 'אבי הר-טוב',
     email: 'manager@jerusalem-district.prod',
     phone: '+972-54-200-0001',
-    description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז ירושלים',
+    description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז ירושלים',
     metadata: {
       capital: 'ירושלים',
       population: 1253900,
@@ -49,7 +49,7 @@ const ISRAELI_DISTRICTS = [
     managerName: 'מיכאל כרמל',
     email: 'manager@haifa-district.prod',
     phone: '+972-54-200-0003',
-    description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז חיפה',
+    description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז חיפה',
     metadata: {
       capital: 'חיפה',
       population: 1014500,

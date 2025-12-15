@@ -18,13 +18,13 @@ async function addIsraeliDistricts() {
         regionName: 'מחוז הצפון',
         regionCode: 'NORTH',
         email: 'manager@north-district.prod',
-        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז הצפון',
+        description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז הצפון',
       },
       {
         regionName: 'מחוז חיפה',
         regionCode: 'HAIFA',
         email: 'manager@haifa-district.prod',
-        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז חיפה',
+        description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז חיפה',
       },
       {
         regionName: 'מחוז המרכז',
@@ -36,7 +36,7 @@ async function addIsraeliDistricts() {
         regionName: 'מחוז ירושלים',
         regionCode: 'JERUSALEM',
         email: 'manager@jerusalem-district.prod',
-        description: 'מנהל אזורי אחראי על קמפיין הבחירות במחוז ירושלים',
+        description: 'מנהל מחוזי אחראי על קמפיין הבחירות במחוז ירושלים',
       },
       {
         regionName: 'מחוז הדרום',

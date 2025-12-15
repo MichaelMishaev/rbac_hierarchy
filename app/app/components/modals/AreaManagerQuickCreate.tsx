@@ -93,7 +93,7 @@ export default function AreaManagerQuickCreate({
 
         onClose();
       } else {
-        setError(result.error || 'שגיאה ביצירת מנהל אזור');
+        setError(result.error || 'שגיאה ביצירת מנהל מחוז');
       }
     } catch (err) {
       console.error('Error creating area manager:', err);
@@ -167,10 +167,10 @@ export default function AreaManagerQuickCreate({
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: colors.neutral[800] }}>
-              יצירת מנהל אזור חדש
+              יצירת מנהל מחוז חדש
             </Typography>
             <Typography variant="caption" sx={{ color: colors.neutral[600] }}>
-              צור מנהל אזור במהירות ושייך אותו לעיר
+              צור מנהל מחוז במהירות ושייך אותו לעיר
             </Typography>
           </Box>
         </Box>
@@ -249,7 +249,7 @@ export default function AreaManagerQuickCreate({
 
           <Alert severity="info" sx={{ borderRadius: borderRadius.md }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              ניתן לשייך מנהל אזור מאוחר יותר דרך עמוד האזורים
+              ניתן לשייך מנהל מחוז מאוחר יותר דרך עמוד האזורים
             </Typography>
           </Alert>
         </Box>
@@ -305,7 +305,7 @@ export default function AreaManagerQuickCreate({
             transition: 'all 0.2s ease-in-out',
           }}
         >
-          {loading ? <CircularProgress size={24} sx={{ color: colors.neutral[0] }} /> : 'צור מנהל אזור'}
+          {loading ? <CircularProgress size={24} sx={{ color: colors.neutral[0] }} /> : 'צור מנהל מחוז'}
         </Button>
       </DialogActions>
     </Dialog>

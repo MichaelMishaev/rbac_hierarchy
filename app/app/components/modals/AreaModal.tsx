@@ -359,7 +359,7 @@ export default function AreaModal({
                   background: 'linear-gradient(135deg, #00C875 0%, #00A661 100%)',
                 }}
               />
-              מנהל אזור
+              מנהל מחוז
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Autocomplete
@@ -385,7 +385,7 @@ export default function AreaModal({
                     label="בחר משתמש (אופציונלי)"
                     placeholder="חפש לפי שם, אימייל או טלפון..."
                     error={!!errors.userId}
-                    helperText={errors.userId || 'אזור יכול להיות ללא מנהל. רק משתמשים עם תפקיד "מנהל אזור" זמינים'}
+                    helperText={errors.userId || 'אזור יכול להיות ללא מנהל. רק משתמשים עם תפקיד "מנהל מחוז" זמינים'}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '12px',
@@ -452,7 +452,7 @@ export default function AreaModal({
 
               {availableUsers.length === 0 && (
                 <Alert severity="info" sx={{ mt: 1 }}>
-                  אין משתמשים זמינים עם תפקיד &quot;מנהל אזור&quot;. האזור יווצר ללא מנהל ותוכל להקצות מנהל מאוחר יותר.
+                  אין משתמשים זמינים עם תפקיד &quot;מנהל מחוז&quot;. האזור יווצר ללא מנהל ותוכל להקצות מנהל מאוחר יותר.
                 </Alert>
               )}
             </Box>
