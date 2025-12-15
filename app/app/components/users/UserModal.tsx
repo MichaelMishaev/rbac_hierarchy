@@ -175,22 +175,8 @@ export default function UserModal({
       return false;
     }
 
-    // City required for ACTIVIST_COORDINATOR
-    if (formData.role === 'ACTIVIST_COORDINATOR' && !formData.cityId) {
-      // For SuperAdmin/Area Manager: Must manually select city
-      if (currentUserRole === 'SUPERADMIN' || currentUserRole === 'AREA_MANAGER') {
-        setError('יש לבחור עיר עבור רכז פעילים');
-        return false;
-      }
-      // For City Coordinator: cityId should be auto-set from currentUserCityId
-      // If it's missing, it's a system integrity issue
-      if (currentUserRole === 'CITY_COORDINATOR') {
-        setError('שגיאת מערכת: לא נמצאה עיר עבור רכז העיר');
-        return false;
-      }
-    }
-
     // Neighborhoods required for ACTIVIST_COORDINATOR
+    // Note: cityId is NOT required here - it will be derived from neighborhoods on server
     if (formData.role === 'ACTIVIST_COORDINATOR' && formData.neighborhoodIds.length === 0) {
       setError('יש לבחור לפחות שכונה אחת עבור רכז פעילים');
       return false;
@@ -210,6 +196,15 @@ export default function UserModal({
     try {
       let result;
 
+      // For Activist Coordinators, derive cityId from first selected neighborhood
+      let effectiveCityId = formData.cityId;
+      if (formData.role === 'ACTIVIST_COORDINATOR' && formData.neighborhoodIds.length > 0) {
+        const firstNeighborhood = neighborhoods.find(n => n.id === formData.neighborhoodIds[0]);
+        if (firstNeighborhood) {
+          effectiveCityId = firstNeighborhood.cityId;
+        }
+      }
+
       if (isEdit) {
         // Update user
         result = await updateUser(user.id, {
@@ -217,7 +212,7 @@ export default function UserModal({
           email: formData.email,
           phone: formData.phone || undefined,
           role: formData.role,
-          cityId: formData.cityId || undefined,
+          cityId: effectiveCityId || undefined,
           ...(formData.password && { password: formData.password }),
         });
       } else {
@@ -228,7 +223,7 @@ export default function UserModal({
           phone: formData.phone || undefined,
           password: formData.password,
           role: formData.role,
-          cityId: formData.cityId || undefined,
+          cityId: effectiveCityId || undefined,
         });
       }
 
@@ -411,14 +406,10 @@ export default function UserModal({
           {/* AREA_MANAGER: No area assignment during user creation */}
           {/* Area assignment happens later in /areas page */}
 
-          {/* City dropdown - Show when:
-              1. Role is CITY_COORDINATOR (always)
-              2. Role is ACTIVIST_COORDINATOR AND creator is SuperAdmin/Area Manager (to select city for activist coordinator)
-              Hide when: Role is ACTIVIST_COORDINATOR AND creator is City Coordinator (cityId auto-set)
+          {/* City dropdown - Show ONLY when creating CITY_COORDINATOR
+              When creating ACTIVIST_COORDINATOR: NO city dropdown (cityId derived from neighborhoods)
           */}
-          {(formData.role === 'CITY_COORDINATOR' ||
-            (formData.role === 'ACTIVIST_COORDINATOR' &&
-              (currentUserRole === 'SUPERADMIN' || currentUserRole === 'AREA_MANAGER'))) && (
+          {formData.role === 'CITY_COORDINATOR' && (
             <TextField
               label={t('corporation')}
               select
@@ -456,11 +447,17 @@ export default function UserModal({
           )}
 
           {/* Neighborhoods (for ACTIVIST_COORDINATOR only) */}
-          {formData.role === 'ACTIVIST_COORDINATOR' && formData.cityId && (
+          {formData.role === 'ACTIVIST_COORDINATOR' && (
             <Box sx={{ direction: 'rtl' }}>
               <Autocomplete
                 multiple
-                options={neighborhoods.filter((site) => site.cityId === formData.cityId)}
+                options={
+                  // City Coordinator: Show only their city's neighborhoods
+                  currentUserRole === 'CITY_COORDINATOR' && currentUserCityId
+                    ? neighborhoods.filter((site) => site.cityId === currentUserCityId)
+                    // SuperAdmin/Area Manager: Show all available neighborhoods
+                    : neighborhoods
+                }
                 getOptionLabel={(option) => option.name}
                 value={neighborhoods.filter((site) => formData.neighborhoodIds.includes(site.id))}
                 onChange={(_, newValue) => {
