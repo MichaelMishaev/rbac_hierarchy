@@ -170,106 +170,89 @@ export async function GET() {
                   id: coordinator.id,
                   name: `${coordinator.user?.fullName || 'N/A'} - ${coordinator.title || ''}`,
                   type: 'coordinator' as const,
-                  count: {},
-                })),
-              },
-            ]
-          : []),
-        // Activist Coordinators branch
-        ...(corp.activistCoordinators.length > 0
-          ? [
-              {
-                id: `${corp.id}-activist-coordinators`,
-                name: `רכزי פעילים (${corp.activistCoordinators.length})`,
-                type: 'activist-coordinators-group' as const,
-                count: {},
-                children: corp.activistCoordinators.map((activistCoordinator: any) => ({
-                  id: activistCoordinator.id,
-                  name: `${activistCoordinator.user?.fullName || 'N/A'} - ${activistCoordinator.title || ''}`,
-                  type: 'activistCoordinator' as const,
                   count: {
-                    neighborhoods: activistCoordinator.neighborhoodAssignments?.length || 0,
+                    neighborhoods: corp.neighborhoods.length,
                   },
+                  // Neighborhoods under City Coordinator
+                  children: corp.neighborhoods.map((neighborhood: any) => {
+                    const activists = neighborhood.activists || [];
+                    const activistCoordinatorAssignments = neighborhood.activistCoordinatorAssignments || [];
+                    const hasActivistCoordinators = activistCoordinatorAssignments.length > 0;
+
+                    // Build activistCoordinator nodes with their assigned activists as children
+                    const activistCoordinatorNodes = activistCoordinatorAssignments.map((assignment: any) => {
+                      const activistCoordinatorId = assignment.activistCoordinator.id;
+
+                      // Find all activists assigned to this activistCoordinator
+                      const assignedActivists = activists.filter(
+                        (a: any) => a.activistCoordinatorId === activistCoordinatorId
+                      );
+
+                      return {
+                        id: `activistCoordinator-${activistCoordinatorId}-neighborhood-${neighborhood.id}`,
+                        name: `${assignment.activistCoordinator.user?.fullName || 'N/A'} - ${assignment.activistCoordinator.title || ''}`,
+                        type: 'activistCoordinator' as const,
+                        count: {
+                          activists: assignedActivists.length,
+                        },
+                        children: assignedActivists.map((activist: any) => ({
+                          id: activist.id,
+                          name: activist.fullName,
+                          type: 'activist' as const,
+                          count: {},
+                          attributes: {
+                            type: 'activist',
+                            phone: activist.phone,
+                            email: activist.email,
+                            position: activist.position,
+                          },
+                        })),
+                      };
+                    });
+
+                    // Find orphan activists (not assigned to any activistCoordinator)
+                    const orphanActivists = activists
+                      .filter((a: any) => !a.activistCoordinatorId)
+                      .map((activist: any) => ({
+                        id: activist.id,
+                        name: activist.fullName,
+                        type: 'activist' as const,
+                        count: {},
+                        attributes: {
+                          type: 'activist',
+                          phone: activist.phone,
+                          email: activist.email,
+                          position: activist.position,
+                        },
+                        // CRITICAL: Flag as error if neighborhood has activist coordinators but activist has none
+                        hasError: hasActivistCoordinators,
+                        errorMessage: hasActivistCoordinators ? 'Activist not assigned to activist coordinator (neighborhood has coordinators)' : undefined,
+                      }));
+
+                    return {
+                      id: neighborhood.id,
+                      name: neighborhood.name,
+                      type: 'neighborhood' as const,
+                      count: {
+                        activists: activists.length,
+                        activistCoordinators: activistCoordinatorAssignments.length,
+                        orphanActivists: orphanActivists.length,
+                      },
+                      // CRITICAL: Flag neighborhood as having data integrity issue if orphan activists exist with coordinators
+                      hasError: hasActivistCoordinators && orphanActivists.length > 0,
+                      errorMessage: hasActivistCoordinators && orphanActivists.length > 0
+                        ? `${orphanActivists.length} activist(s) not assigned to activist coordinator`
+                        : undefined,
+                      children: [
+                        ...activistCoordinatorNodes,  // Activist coordinators with their activists as children
+                        ...orphanActivists,           // Unassigned activists appear at neighborhood level
+                      ],
+                    };
+                  }),
                 })),
               },
             ]
           : []),
-        // Neighborhoods branch
-        ...corp.neighborhoods.map((neighborhood: any) => {
-          const activists = neighborhood.activists || [];
-          const activistCoordinatorAssignments = neighborhood.activistCoordinatorAssignments || [];
-          const hasActivistCoordinators = activistCoordinatorAssignments.length > 0;
-
-          // Build activistCoordinator nodes with their assigned activists as children
-          const activistCoordinatorNodes = activistCoordinatorAssignments.map((assignment: any) => {
-            const activistCoordinatorId = assignment.activistCoordinator.id;
-
-            // Find all activists assigned to this activistCoordinator
-            const assignedActivists = activists.filter(
-              (a: any) => a.activistCoordinatorId === activistCoordinatorId
-            );
-
-            return {
-              id: `activistCoordinator-${activistCoordinatorId}-neighborhood-${neighborhood.id}`,
-              name: `${assignment.activistCoordinator.user?.fullName || 'N/A'} - ${assignment.activistCoordinator.title || ''}`,
-              type: 'activistCoordinator' as const,
-              count: {
-                activists: assignedActivists.length,
-              },
-              children: assignedActivists.map((activist: any) => ({
-                id: activist.id,
-                name: activist.fullName,
-                type: 'activist' as const,
-                count: {},
-                attributes: {
-                  type: 'activist',
-                  phone: activist.phone,
-                  email: activist.email,
-                  position: activist.position,
-                },
-              })),
-            };
-          });
-
-          // Find orphan activists (not assigned to any activistCoordinator)
-          const orphanActivists = activists
-            .filter((a: any) => !a.activistCoordinatorId)
-            .map((activist: any) => ({
-              id: activist.id,
-              name: activist.fullName,
-              type: 'activist' as const,
-              count: {},
-              attributes: {
-                type: 'activist',
-                phone: activist.phone,
-                email: activist.email,
-                position: activist.position,
-              },
-              // CRITICAL: Flag as error if neighborhood has activist coordinators but activist has none
-              hasError: hasActivistCoordinators,
-              errorMessage: hasActivistCoordinators ? 'Activist not assigned to activist coordinator (neighborhood has coordinators)' : undefined,
-            }));
-
-          return {
-            id: neighborhood.id,
-            name: neighborhood.name,
-            type: 'neighborhood' as const,
-            count: {
-              activists: activists.length,
-              activistCoordinators: activistCoordinatorAssignments.length,
-              orphanActivists: orphanActivists.length,
-            },
-            // CRITICAL: Flag neighborhood as having data integrity issue if orphan activists exist with coordinators
-            hasError: hasActivistCoordinators && orphanActivists.length > 0,
-            errorMessage: hasActivistCoordinators && orphanActivists.length > 0
-              ? `${orphanActivists.length} activist(s) not assigned to activist coordinator`
-              : undefined,
-            children: [
-              ...activistCoordinatorNodes,  // Activist coordinators with their activists as children
-              ...orphanActivists,           // Unassigned activists appear at neighborhood level
-            ],
-          };
-        }),
       ],
     });
 
