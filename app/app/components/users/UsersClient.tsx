@@ -86,9 +86,10 @@ type UsersClientProps = {
   cities: City[];
   neighborhoods: Neighborhood[];
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
+  currentUserCityId: string | null;
 };
 
-export default function UsersClient({ users, cities, neighborhoods, currentUserRole }: UsersClientProps) {
+export default function UsersClient({ users, cities, neighborhoods, currentUserRole, currentUserCityId }: UsersClientProps) {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -169,10 +170,6 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
     setEditingUser(null);
     router.refresh();
   };
-
-  // Get current user corporation ID for filtering
-  // TODO: Derive from role tables (cityCoordinatorOf, activistCoordinatorOf, etc.)
-  const currentUserCityId: string | null = null;
 
   const getRoleColor = (role: string) => {
     switch (role) {

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { listUsers } from '@/app/actions/users';
 import { listCities } from '@/app/actions/cities';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
+import { getCurrentUser } from '@/lib/auth';
 import UsersClient from '@/app/components/users/UsersClient';
 
 // Enable route caching - revalidate every 30 seconds
@@ -13,6 +14,17 @@ export default async function UsersPage() {
 
   if (!session) {
     redirect('/login');
+  }
+
+  // Get current user with role relations to extract cityId
+  const currentUser = await getCurrentUser();
+
+  // Extract cityId based on role
+  let currentUserCityId: string | null = null;
+  if (currentUser.role === 'CITY_COORDINATOR' && currentUser.coordinatorOf.length > 0) {
+    currentUserCityId = currentUser.coordinatorOf[0].cityId;
+  } else if (currentUser.role === 'ACTIVIST_COORDINATOR' && currentUser.activistCoordinatorOf.length > 0) {
+    currentUserCityId = currentUser.activistCoordinatorOf[0].cityId;
   }
 
   // Fetch users, cities, and neighborhoods
@@ -36,6 +48,7 @@ export default async function UsersPage() {
       cities={citiesResult.success ? citiesResult.cities : []}
       neighborhoods={neighborhoodsResult.success ? neighborhoodsResult.neighborhoods : []}
       currentUserRole={session.user.role as 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR'}
+      currentUserCityId={currentUserCityId}
     />
   );
 }
