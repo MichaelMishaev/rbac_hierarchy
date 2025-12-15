@@ -52,10 +52,10 @@ test.describe('User Neighborhood Selection (RTL)', () => {
     );
     await nameField.first().fill('בודק טסט');
 
-    // Select role: Activist Coordinator (מפקח)
-    const roleSelect = page.locator('div[role="button"]').filter({ hasText: /תפקיד|מפקח/ }).first();
+    // Select role: Activist Coordinator (רכז שכונתי)
+    const roleSelect = page.locator('div[role="button"]').filter({ hasText: /תפקיד|רכז שכונתי/ }).first();
     await roleSelect.click();
-    await page.getByRole('option', { name: /מפקח/i }).click();
+    await page.getByRole('option', { name: /רכז שכונתי/i }).click();
 
     // Select corporation
     await page.waitForTimeout(500); // Wait for city field to appear
@@ -123,12 +123,12 @@ test.describe('User Neighborhood Selection (RTL)', () => {
     const nameField = page.locator('input').filter({ hasText: /שם/ }).or(
       page.locator('label:has-text("שם")').locator('..').locator('input')
     );
-    await nameField.first().fill('מפקח רב-אתרים');
+    await nameField.first().fill('רכז שכונתי רב-שכונות');
 
     // Select Activist Coordinator role
     const roleSelect = page.locator('div[role="button"]').filter({ hasText: /תפקיד/ }).first();
     await roleSelect.click();
-    await page.getByRole('option', { name: /מפקח/i }).click();
+    await page.getByRole('option', { name: /רכז שכונתי/i }).click();
 
     // Select corporation
     await page.waitForTimeout(500);
@@ -191,12 +191,12 @@ test.describe('User Neighborhood Selection (RTL)', () => {
     const nameField = page.locator('input').filter({ hasText: /שם/ }).or(
       page.locator('label:has-text("שם")').locator('..').locator('input')
     );
-    await nameField.first().fill('מפקח ללא אתר');
+    await nameField.first().fill('רכז שכונתי ללא שכונה');
 
     // Select Supervisor
     const roleSelect = page.locator('div[role="button"]').filter({ hasText: /תפקיד/ }).first();
     await roleSelect.click();
-    await page.getByRole('option', { name: /מפקח/i }).click();
+    await page.getByRole('option', { name: /רכז שכונתי/i }).click();
 
     // Select corporation
     await page.waitForTimeout(500);

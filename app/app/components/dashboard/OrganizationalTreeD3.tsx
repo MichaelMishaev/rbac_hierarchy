@@ -110,7 +110,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     neighborhoods: 'שכונות',
     activists: 'פעילים',
     managers: 'מנהלים',
-    activistCoordinators: 'מפקחים',
+    activistCoordinators: 'רכזי שכונות',
     searchPlaceholder: 'חפש צומת בעץ...',
     noMatch: 'לא נמצאו תוצאות',
     matchesFound: 'נמצאו',

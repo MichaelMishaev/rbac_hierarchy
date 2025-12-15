@@ -283,7 +283,7 @@ export default function ActivistModal({
     }
 
     if (!formData.supervisorId) {
-      newErrors.supervisorId = isRTL ? 'יש לבחור מפקח' : 'Supervisor is required';
+      newErrors.supervisorId = isRTL ? 'יש לבחור רכז שכונתי' : 'Supervisor is required';
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {

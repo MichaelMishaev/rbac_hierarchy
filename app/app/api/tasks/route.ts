@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // 2. Validate that user can send tasks
     if (userRole === 'ACTIVIST_COORDINATOR') {
       return NextResponse.json(
-        { error: 'מפקחים לא יכולים לשלוח משימות' },
+        { error: 'רכזי שכונות לא יכולים לשלוח משימות' },
         { status: 403 }
       );
     }

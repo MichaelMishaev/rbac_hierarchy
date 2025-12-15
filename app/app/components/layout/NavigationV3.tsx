@@ -629,7 +629,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                   : role === 'MANAGER'
                   ? 'מנהל'
                   : role === 'SUPERVISOR'
-                  ? 'מפקח'
+                  ? 'רכז שכונתי'
                   : role}
               </Typography>
               {userEmail && (

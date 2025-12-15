@@ -621,7 +621,7 @@ function NavigationV3Component({ role, stats }: NavigationV3Props) {
                   : role === 'MANAGER'
                   ? 'מנהל'
                   : role === 'SUPERVISOR'
-                  ? 'מפקח'
+                  ? 'רכז שכונתי'
                   : role}
               </Typography>
             </Box>

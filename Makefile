@@ -91,6 +91,13 @@ db-restore: ## Restore database from backup (usage: make db-restore FILE=backups
 	@docker-compose exec -T postgres pg_restore -U postgres -d hierarchy_platform -c < $(FILE)
 	@echo "✅ Database restored"
 
+db-sync-prod: ## Sync production database to local (⚠️  replaces all local data!)
+	@echo "⚠️  This will REPLACE ALL LOCAL DATA with production data!"
+	@echo "A backup of your current local database will be created first."
+	@echo ""
+	@echo "Continue? [y/N] " && read ans && [ $${ans:-N} = y ]
+	@./scripts/sync-prod-to-local.sh
+
 redis-cli: ## Connect to Redis CLI
 	@docker-compose exec redis redis-cli -a redis_dev_password
 

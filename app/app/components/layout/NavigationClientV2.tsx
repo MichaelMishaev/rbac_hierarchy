@@ -264,7 +264,7 @@ export default function NavigationClientV2({ role, stats = {} }: NavigationClien
                 : role === 'MANAGER'
                 ? 'מנהל'
                 : role === 'SUPERVISOR'
-                ? 'מפקח'
+                ? 'רכז שכונתי'
                 : role}
             </Box>
           </Box>

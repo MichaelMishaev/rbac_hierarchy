@@ -64,9 +64,9 @@ export default function NeighborhoodQuickPreview({
     },
     // Mock data for lists
     activistCoordinators: [
-      { id: '1', name: 'דוד משה', subtitle: 'מפקח בכיר', isActive: true },
-      { id: '2', name: 'רחל אברהם', subtitle: 'מפקחת משנה', isActive: true },
-      { id: '3', name: 'יוסי כהן', subtitle: 'מפקח', isActive: true },
+      { id: '1', name: 'דוד משה', subtitle: 'רכז שכונתי בכיר', isActive: true },
+      { id: '2', name: 'רחל אברהם', subtitle: 'רכזת שכונתית משנה', isActive: true },
+      { id: '3', name: 'יוסי כהן', subtitle: 'רכז שכונתי', isActive: true },
     ],
     activists: [
       { id: '1', name: 'מיכאל דוד', subtitle: '050-1234567', isActive: true },
@@ -125,11 +125,11 @@ export default function NeighborhoodQuickPreview({
               <Grid item xs={6}>
                 <StatChip
                   icon={<SupervisorAccountIcon />}
-                  label="מפקחים"
+                  label="רכזי שכונות"
                   value={data?._count.activistCoordinators || 0}
                   color="blue"
                   clickable={data?._count.activistCoordinators > 0}
-                  onClick={() => setListPreview({ type: 'activistCoordinators', title: 'מפקחים' })}
+                  onClick={() => setListPreview({ type: 'activistCoordinators', title: 'רכזי שכונות' })}
                 />
               </Grid>
               <Grid item xs={6}>

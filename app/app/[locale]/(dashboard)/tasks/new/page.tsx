@@ -39,7 +39,7 @@ export default async function NewTaskPage() {
           </Typography>
           <Typography variant="body2" sx={{ mt: 1 }}>
             {isRTL
-              ? 'רק מנהלים יכולים לשלוח משימות. מפקחים יכולים רק לקבל משימות בתיבת המשימות.'
+              ? 'רק מנהלים יכולים לשלוח משימות. רכזי שכונות יכולים רק לקבל משימות בתיבת המשימות.'
               : 'Only managers can send tasks. Supervisors can only receive tasks in their inbox.'}
           </Typography>
         </Alert>

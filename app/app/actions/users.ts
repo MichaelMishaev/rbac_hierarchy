@@ -7,6 +7,41 @@ import { revalidatePath } from 'next/cache';
 import { Role } from '@prisma/client';
 
 // ============================================
+// HIERARCHY HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Get hierarchy level for a role
+ * Lower number = higher in hierarchy
+ */
+function getHierarchyLevel(role: Role): number {
+  switch (role) {
+    case 'SUPERADMIN':
+      return 1;
+    case 'AREA_MANAGER':
+      return 2;
+    case 'CITY_COORDINATOR':
+      return 3;
+    case 'ACTIVIST_COORDINATOR':
+      return 4;
+    default:
+      return 999; // Unknown roles are lowest
+  }
+}
+
+/**
+ * Check if currentUser can manage targetUser based on hierarchy
+ * Rule: You can only manage users BELOW you in the hierarchy
+ */
+function canManageUser(currentUserRole: Role, targetUserRole: Role): boolean {
+  const currentLevel = getHierarchyLevel(currentUserRole);
+  const targetLevel = getHierarchyLevel(targetUserRole);
+
+  // Can only manage users at a LOWER level (higher number)
+  return targetLevel > currentLevel;
+}
+
+// ============================================
 // TYPE DEFINITIONS
 // ============================================
 
@@ -263,24 +298,65 @@ export async function createUser(data: CreateUserInput) {
 // ============================================
 
 /**
- * List users with proper filtering based on role
+ * List users with proper filtering based on role and hierarchy
  *
- * Permissions:
- * - SUPERADMIN: Can see all users across all corporations
- * - MANAGER: Can see users in their corporation only
- * - SUPERVISOR: Can see users in their assigned sites only
+ * HIERARCHY RULES (CRITICAL):
+ * - SUPERADMIN: Can see Area Managers, City Coordinators, Activist Coordinators (NOT other SuperAdmins)
+ * - AREA_MANAGER: Can see City Coordinators, Activist Coordinators (in their area ONLY)
+ * - CITY_COORDINATOR: Can see Activist Coordinators (in their city ONLY)
+ * - ACTIVIST_COORDINATOR: Cannot see any users (they manage activists, not users)
+ *
+ * Rule: "Each user sees only themselves and what's UNDER them in hierarchy"
  */
 export async function listUsers(filters: ListUsersFilters = {}) {
   try {
     const currentUser = await getCurrentUser();
 
+    // ACTIVIST_COORDINATOR cannot see any users
+    if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      return {
+        success: true,
+        users: [],
+        count: 0,
+      };
+    }
+
     // Build where clause based on role and filters
     const where: any = {};
 
-    // Role-based filtering
+    // CRITICAL: Hierarchy filtering - show only users BELOW current user
+    // Get roles that are below current user in hierarchy
+    const currentLevel = getHierarchyLevel(currentUser.role);
+    const allowedRoles: Role[] = [];
+
+    if (currentUser.role === 'SUPERADMIN') {
+      // SuperAdmin can see: Area Manager, City Coordinator, Activist Coordinator
+      // NOT other SuperAdmins
+      allowedRoles.push('AREA_MANAGER', 'CITY_COORDINATOR', 'ACTIVIST_COORDINATOR');
+    } else if (currentUser.role === 'AREA_MANAGER') {
+      // Area Manager can see: City Coordinator, Activist Coordinator
+      allowedRoles.push('CITY_COORDINATOR', 'ACTIVIST_COORDINATOR');
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      // City Coordinator can see: Activist Coordinator ONLY
+      allowedRoles.push('ACTIVIST_COORDINATOR');
+    }
+
+    // Filter by allowed roles
+    if (allowedRoles.length > 0) {
+      where.role = { in: allowedRoles };
+    } else {
+      // No allowed roles - return empty
+      return {
+        success: true,
+        users: [],
+        count: 0,
+      };
+    }
+
+    // Role-based city/area filtering
     const userCorps = getUserCorporations(currentUser);
     if (userCorps !== 'all') {
-      // Non-superadmins can only see users in their corporations
+      // Non-superadmins can only see users in their cities/area
       where.OR = [
         { coordinatorOf: { some: { cityId: { in: userCorps } } } },
         { activistCoordinatorOf: { some: { cityId: { in: userCorps } } } },
@@ -481,22 +557,25 @@ export async function getUserById(userId: string) {
 // ============================================
 
 /**
- * Update user information with role validation
+ * Update user information with role validation and hierarchy enforcement
  *
- * Permissions:
- * - SUPERADMIN: Can update any user
- * - MANAGER: Can update users in their corporation (except other managers' roles)
- * - SUPERVISOR: Cannot update users
+ * HIERARCHY RULES (CRITICAL):
+ * - SUPERADMIN: Can update Area Managers, City Coordinators, Activist Coordinators (NOT other SuperAdmins)
+ * - AREA_MANAGER: Can update City Coordinators, Activist Coordinators (in their area ONLY)
+ * - CITY_COORDINATOR: Can update Activist Coordinators (in their city ONLY)
+ * - ACTIVIST_COORDINATOR: Cannot update any users
+ *
+ * Rule: "You can only update users BELOW you in hierarchy"
  */
 export async function updateUser(userId: string, data: UpdateUserInput) {
   try {
     const currentUser = await getCurrentUser();
 
-    // SUPERVISOR cannot update users
+    // ACTIVIST_COORDINATOR cannot update users
     if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       return {
         success: false,
-        error: 'Supervisors cannot update users',
+        error: 'Activist Coordinators cannot update users',
       };
     }
 
@@ -509,6 +588,14 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
       return {
         success: false,
         error: 'User not found',
+      };
+    }
+
+    // CRITICAL: Hierarchy validation - can only update users BELOW you
+    if (!canManageUser(currentUser.role, existingUser.role)) {
+      return {
+        success: false,
+        error: 'Cannot update user: User is at same level or above you in hierarchy',
       };
     }
 
@@ -710,22 +797,25 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
 // ============================================
 
 /**
- * Delete a user (hard delete)
+ * Delete a user (hard delete) with hierarchy enforcement
  *
- * Permissions:
- * - SUPERADMIN: Can delete any user (except themselves)
- * - MANAGER: Can delete users in their corporation (except themselves and other managers)
- * - SUPERVISOR: Cannot delete users
+ * HIERARCHY RULES (CRITICAL):
+ * - SUPERADMIN: Can delete Area Managers, City Coordinators, Activist Coordinators (NOT other SuperAdmins or themselves)
+ * - AREA_MANAGER: Can delete City Coordinators, Activist Coordinators (in their area ONLY)
+ * - CITY_COORDINATOR: Can delete Activist Coordinators (in their city ONLY)
+ * - ACTIVIST_COORDINATOR: Cannot delete any users
+ *
+ * Rule: "You can only delete users BELOW you in hierarchy"
  */
 export async function deleteUser(userId: string) {
   try {
     const currentUser = await getCurrentUser();
 
-    // SUPERVISOR cannot delete users
+    // ACTIVIST_COORDINATOR cannot delete users
     if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       return {
         success: false,
-        error: 'Supervisors cannot delete users',
+        error: 'Activist Coordinators cannot delete users',
       };
     }
 
@@ -769,9 +859,17 @@ export async function deleteUser(userId: string) {
       };
     }
 
-    // Validate MANAGER/AREA_MANAGER constraints
+    // CRITICAL: Hierarchy validation - can only delete users BELOW you
+    if (!canManageUser(currentUser.role, userToDelete.role)) {
+      return {
+        success: false,
+        error: 'Cannot delete user: User is at same level or above you in hierarchy',
+      };
+    }
+
+    // Validate city/area scope for non-SuperAdmin users
     if (currentUser.role === 'CITY_COORDINATOR' || currentUser.role === 'AREA_MANAGER') {
-      // Check if current user has access to any of the target user's corporations
+      // Check if current user has access to any of the target user's cities/area
       const targetCorps = getUserCorporations(userToDelete);
       const hasAccess = targetCorps === 'all' ? false : Array.isArray(targetCorps) && targetCorps.some(corpId =>
         hasAccessToCorporation(currentUser, corpId)
@@ -780,15 +878,7 @@ export async function deleteUser(userId: string) {
       if (!hasAccess) {
         return {
           success: false,
-          error: 'Cannot delete user from different corporation',
-        };
-      }
-
-      // Cannot delete other managers, superadmins, or area managers
-      if (userToDelete.role === 'CITY_COORDINATOR' || userToDelete.role === 'SUPERADMIN' || userToDelete.role === 'AREA_MANAGER') {
-        return {
-          success: false,
-          error: 'Cannot delete managers, area managers, or superadmins',
+          error: 'Cannot delete user from different city/area',
         };
       }
     }

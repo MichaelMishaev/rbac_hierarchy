@@ -16,6 +16,7 @@ import {
   Typography,
   Autocomplete,
   Link,
+  Alert,
 } from '@mui/material';
 import { Business as BusinessIcon, Add as AddIcon } from '@mui/icons-material';
 import { useTranslations } from 'next-intl';
@@ -41,7 +42,7 @@ type AreaManager = {
 type CityModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CorporationFormData) => Promise<void>;
+  onSubmit: (data: CorporationFormData) => Promise<{ success: boolean; error?: string }>;
   initialData?: Partial<CorporationFormData>;
   mode: 'create' | 'edit';
   areaManagers: AreaManager[];
@@ -82,6 +83,7 @@ export default function CityModal({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CorporationFormData, string>>>({});
+  const [serverError, setServerError] = useState<string>(''); // Server-side error message
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [localAreaManagers, setLocalAreaManagers] = useState<AreaManager[]>(areaManagers);
 
@@ -145,11 +147,18 @@ export default function CityModal({
     if (!validate()) return;
 
     setLoading(true);
+    setServerError(''); // Clear previous server errors
     try {
-      await onSubmit(formData);
-      onClose();
+      const result = await onSubmit(formData);
+      if (result.success) {
+        onClose(); // Only close modal if submission was successful
+      } else {
+        // Display server error
+        setServerError(result.error || 'שגיאה לא ידועה התרחשה');
+      }
     } catch (error) {
       console.error('Error submitting city:', error);
+      setServerError('שגיאה בשרת - נסה שוב');
     } finally {
       setLoading(false);
     }
@@ -228,6 +237,23 @@ export default function CityModal({
       </DialogTitle>
 
       <DialogContent sx={{ pt: 4, pb: 3, px: 4 }}>
+        {/* Server Error Alert */}
+        {serverError && (
+          <Alert
+            severity="error"
+            onClose={() => setServerError('')}
+            sx={{
+              mb: 3,
+              borderRadius: borderRadius.lg,
+              '& .MuiAlert-message': {
+                fontWeight: 600,
+              }
+            }}
+          >
+            {serverError}
+          </Alert>
+        )}
+
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {/* Basic Information */}
           <Box

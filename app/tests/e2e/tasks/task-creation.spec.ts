@@ -190,7 +190,7 @@ test.describe('Task Creation - RBAC Permissions', () => {
     // Verify 403 Forbidden
     expect(createResponse.status()).toBe(403);
     const error = await createResponse.json();
-    expect(error.error).toContain('מפקחים לא יכולים לשלוח משימות');
+    expect(error.error).toContain('רכזי שכונות לא יכולים לשלוח משימות');
 
     await request.dispose();
   });

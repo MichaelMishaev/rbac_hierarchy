@@ -56,16 +56,16 @@ export default async function DashboardContent() {
 
     if (neighborhoodCount > 0) {
       const neighborhoodNames = neighborhoods.map(n => n.neighborhood.name).join(', ');
-      roleDescription = `מפקח - ${cityName} (${neighborhoodCount} שכונות: ${neighborhoodNames})`;
+      roleDescription = `רכז שכונתי - ${cityName} (${neighborhoodCount} שכונות: ${neighborhoodNames})`;
     } else {
-      roleDescription = `מפקח - ${cityName}`;
+      roleDescription = `רכז שכונתי - ${cityName}`;
     }
   } else {
     // Fallback to basic role labels
     roleDescription =
       role === 'MANAGER' ? 'מנהל עיר' :
-      role === 'SUPERVISOR' ? 'מפקח' :
-      role === 'ACTIVIST_COORDINATOR' ? 'מפקח' :
+      role === 'SUPERVISOR' ? 'רכז שכונתי' :
+      role === 'ACTIVIST_COORDINATOR' ? 'רכז שכונתי' :
       role === 'CITY_COORDINATOR' ? 'מנהל עיר' : role;
   }
 

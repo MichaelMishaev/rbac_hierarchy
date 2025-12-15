@@ -444,7 +444,7 @@ export default function ActivistsClient({
         <Box sx={{ display: 'flex', gap: 2, flex: 1, flexDirection: { xs: 'column', sm: 'row' }, flexWrap: 'wrap' }}>
           {/* Search Bar - Pill Shape per Style Guide */}
           <TextField
-            placeholder={isRTL ? 'חיפוש עובדים...' : 'Search workers...'}
+            placeholder={isRTL ? 'חיפוש פעילים...' : 'Search workers...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             size="small"
@@ -515,7 +515,7 @@ export default function ActivistsClient({
               },
             }}
           >
-            <MenuItem value="all">{isRTL ? 'כל האתרים' : 'All Sites'}</MenuItem>
+            <MenuItem value="all">{isRTL ? 'כל השכונות' : 'All Sites'}</MenuItem>
             {neighborhoods.map((site) => (
               <MenuItem key={site.id} value={site.id}>
                 {site.name}

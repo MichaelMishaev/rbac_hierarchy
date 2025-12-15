@@ -7,7 +7,7 @@ export async function GET() {
     const session = await auth();
 
     // Only SuperAdmin can export organizational tree
-    if (!session?.user || session.user.role !== 'SUPERADMIN') {
+    if (!session?.user || !session.user.isSuperAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized: SuperAdmin access required' },
         { status: 403 }

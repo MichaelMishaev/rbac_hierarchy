@@ -264,13 +264,13 @@ export async function POST(request: Request) {
         },
       },
       update: {
-        title: 'מפקח אתר',
+        title: 'רכז שכונתי',
         isActive: true,
       },
       create: {
         cityId: corp1.id,
         userId: supervisor1_1.id,
-        title: 'מפקח אתר',
+        title: 'רכז שכונתי',
         isActive: true,
       },
     });
@@ -299,13 +299,13 @@ export async function POST(request: Request) {
         },
       },
       update: {
-        title: 'מפקח אתר',
+        title: 'רכז שכונתי',
         isActive: true,
       },
       create: {
         cityId: corp2.id,
         userId: supervisor2_1.id,
-        title: 'מפקח אתר',
+        title: 'רכז שכונתי',
         isActive: true,
       },
     });
@@ -334,13 +334,13 @@ export async function POST(request: Request) {
         },
       },
       update: {
-        title: 'מפקחת אתר',
+        title: 'רכזת שכונתית',
         isActive: true,
       },
       create: {
         cityId: corp3.id,
         userId: supervisor3_1.id,
-        title: 'מפקחת אתר',
+        title: 'רכזת שכונתית',
         isActive: true,
       },
     });

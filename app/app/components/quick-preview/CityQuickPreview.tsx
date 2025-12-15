@@ -137,11 +137,11 @@ export default function CityQuickPreview({
               <Grid item xs={6}>
                 <StatChip
                   icon={<SupervisorAccountIcon />}
-                  label="מפקחים"
+                  label="רכזי שכונות"
                   value={data?._count.activistCoordinators || 0}
                   color="blue"
                   clickable={data?._count.activistCoordinators > 0}
-                  onClick={() => setListPreview({ type: 'activistCoordinators', title: 'מפקחים' })}
+                  onClick={() => setListPreview({ type: 'activistCoordinators', title: 'רכזי שכונות' })}
                 />
               </Grid>
               <Grid item xs={6}>

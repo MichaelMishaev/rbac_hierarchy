@@ -549,7 +549,7 @@ export default async function SystemRulesPage() {
                       Area Manager
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      מנהל מחוז - מפקח על מספר ערים
+                      מנהל מחוז - מנהל של מספר ערים
                     </Typography>
                   </Box>
                 </Box>

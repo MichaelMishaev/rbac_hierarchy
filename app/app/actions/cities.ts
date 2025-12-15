@@ -66,6 +66,18 @@ export async function createCity(data: CreateCityInput) {
       };
     }
 
+    // Validate name uniqueness
+    const existingByName = await prisma.city.findFirst({
+      where: { name: data.name },
+    });
+
+    if (existingByName) {
+      return {
+        success: false,
+        error: 'עיר בשם זה כבר קיימת במערכת', // City with this name already exists in the system
+      };
+    }
+
     // Validate code uniqueness
     const existingCorp = await prisma.city.findUnique({
       where: { code: data.code },
@@ -74,7 +86,7 @@ export async function createCity(data: CreateCityInput) {
     if (existingCorp) {
       return {
         success: false,
-        error: 'Corporation code already exists',
+        error: 'קוד העיר כבר קיים במערכת', // City code already exists in the system
       };
     }
 

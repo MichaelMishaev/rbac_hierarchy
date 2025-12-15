@@ -54,7 +54,7 @@ type User = {
     regionName: string;
     regionCode: string | null;
   } | null;
-  cityCoordinatorOf?: {
+  coordinatorOf?: {
     city: { id: string; name: string; code: string };
   }[];
   activistCoordinatorOf?: {
@@ -88,6 +88,41 @@ type UsersClientProps = {
   currentUserRole: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
   currentUserCityId: string | null;
 };
+
+// ============================================
+// HIERARCHY HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Get hierarchy level for a role
+ * Lower number = higher in hierarchy
+ */
+function getHierarchyLevel(role: string): number {
+  switch (role) {
+    case 'SUPERADMIN':
+      return 1;
+    case 'AREA_MANAGER':
+      return 2;
+    case 'CITY_COORDINATOR':
+      return 3;
+    case 'ACTIVIST_COORDINATOR':
+      return 4;
+    default:
+      return 999;
+  }
+}
+
+/**
+ * Check if currentUser can manage targetUser based on hierarchy
+ * Rule: You can only manage users BELOW you in the hierarchy
+ */
+function canManageUser(currentUserRole: string, targetUserRole: string): boolean {
+  const currentLevel = getHierarchyLevel(currentUserRole);
+  const targetLevel = getHierarchyLevel(targetUserRole);
+
+  // Can only manage users at a LOWER level (higher number)
+  return targetLevel > currentLevel;
+}
 
 export default function UsersClient({ users, cities, neighborhoods, currentUserRole, currentUserCityId }: UsersClientProps) {
   const t = useTranslations('users');
@@ -134,7 +169,31 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   };
 
   const handleEditUser = () => {
-    setEditingUser(selectedUser);
+    if (!selectedUser) return;
+
+    // Extract role-specific data from relations
+    let cityId: string | null = null;
+    let regionName: string | null = null;
+
+    // Area Manager: Extract regionName
+    if (selectedUser.role === 'AREA_MANAGER' && selectedUser.areaManager) {
+      regionName = selectedUser.areaManager.regionName;
+    }
+    // City Coordinator: Extract cityId
+    else if (selectedUser.role === 'CITY_COORDINATOR' && selectedUser.coordinatorOf && selectedUser.coordinatorOf.length > 0) {
+      cityId = selectedUser.coordinatorOf[0].city.id;
+    }
+    // Activist Coordinator: Extract cityId
+    else if (selectedUser.role === 'ACTIVIST_COORDINATOR' && selectedUser.activistCoordinatorOf && selectedUser.activistCoordinatorOf.length > 0) {
+      cityId = selectedUser.activistCoordinatorOf[0].city.id;
+    }
+
+    // Pass user with extracted role-specific data to modal
+    setEditingUser({
+      ...selectedUser,
+      cityId,
+      regionName,
+    });
     setUserModalOpen(true);
     handleMenuClose();
   };
@@ -200,8 +259,8 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
       return user.areaManager.regionName || 'כל התאגידים';
     }
 
-    if (user.role === 'CITY_COORDINATOR' && user.cityCoordinatorOf && user.cityCoordinatorOf.length > 0) {
-      return user.cityCoordinatorOf.map(m => m.city.name).join(', ');
+    if (user.role === 'CITY_COORDINATOR' && user.coordinatorOf && user.coordinatorOf.length > 0) {
+      return user.coordinatorOf.map(m => m.city.name).join(', ');
     }
 
     if (user.role === 'ACTIVIST_COORDINATOR' && user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
@@ -221,8 +280,8 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
 
   // Get cities for user
   const getUserCities = (user: User): string[] => {
-    if (user.role === 'CITY_COORDINATOR' && user.cityCoordinatorOf) {
-      return user.cityCoordinatorOf.map(c => c.city.name);
+    if (user.role === 'CITY_COORDINATOR' && user.coordinatorOf) {
+      return user.coordinatorOf.map(c => c.city.name);
     }
     if (user.role === 'ACTIVIST_COORDINATOR' && user.activistCoordinatorOf) {
       return user.activistCoordinatorOf.map(c => c.city.name);
@@ -666,9 +725,11 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
 
                   {/* Actions */}
                   <TableCell align="right">
-                    <IconButton onClick={(e) => handleMenuOpen(e, user)} size="small">
-                      <MoreVertIcon />
-                    </IconButton>
+                    {canManageUser(currentUserRole, user.role) && (
+                      <IconButton onClick={(e) => handleMenuOpen(e, user)} size="small">
+                        <MoreVertIcon />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -689,14 +750,17 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
           },
         }}
       >
-        <MenuItem onClick={handleEditUser}>
+        <MenuItem
+          onClick={handleEditUser}
+          disabled={selectedUser ? !canManageUser(currentUserRole, selectedUser.role) : true}
+        >
           <EditIcon sx={{ mr: 1, fontSize: 20 }} />
           {tCommon('edit')}
         </MenuItem>
         <MenuItem
           onClick={handleDeleteClick}
           sx={{ color: colors.error }}
-          disabled={selectedUser?.role === 'SUPERADMIN'}
+          disabled={selectedUser ? !canManageUser(currentUserRole, selectedUser.role) : true}
         >
           <DeleteIcon sx={{ mr: 1, fontSize: 20 }} />
           {tCommon('delete')}

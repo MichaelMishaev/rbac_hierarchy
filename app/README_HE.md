@@ -19,7 +19,7 @@
 משתמשים (Users):
   - מנהל על (SUPERADMIN) - ניהול כל המערכת
   - מנהל (MANAGER) - ניהול תאגיד
-  - מפקח (SUPERVISOR) - ניהול אתר
+  - רכז שכונתי (SUPERVISOR) - ניהול אתר
 ```
 
 ---
@@ -176,7 +176,7 @@ export default async function Page() {
 enum Role {
   SUPERADMIN  // מנהל על - גישה מלאה
   MANAGER     // מנהל תאגיד
-  SUPERVISOR  // מפקח אתר
+  SUPERVISOR  // רכז שכונתי
 }
 ```
 

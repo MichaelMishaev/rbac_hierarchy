@@ -230,7 +230,7 @@ export default function NeighborhoodModal({
     }
 
     if (!formData.activistCoordinatorId) {
-      newErrors.activistCoordinatorId = isRTL ? 'יש לבחור מפקח' : 'Supervisor is required';
+      newErrors.activistCoordinatorId = isRTL ? 'יש לבחור רכז שכונתי' : 'Supervisor is required';
     }
 
     setErrors(newErrors);
@@ -625,13 +625,13 @@ export default function NeighborhoodModal({
                 options={activistCoordinators}
                 getOptionLabel={(option) => option.fullName}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                noOptionsText={isRTL ? 'אין מפקחים זמינים' : 'No supervisors available'}
+                noOptionsText={isRTL ? 'אין רכזי שכונות זמינים' : 'No supervisors available'}
                 disabled={activistCoordinators.length === 0}
                 fullWidth
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label={isRTL ? 'מפקח' : 'Supervisor'}
+                    label={isRTL ? 'רכז שכונתי' : 'Supervisor'}
                     placeholder={isRTL ? 'חפש לפי שם או אימייל...' : 'Search by name or email...'}
                     error={!!errors.activistCoordinatorId}
                     helperText={errors.activistCoordinatorId}
@@ -712,13 +712,13 @@ export default function NeighborhoodModal({
                           onClick={() => setShowCreateSupervisor(true)}
                           sx={{ textTransform: 'none' }}
                         >
-                          {isRTL ? 'צור מפקח' : 'Create Supervisor'}
+                          {isRTL ? 'צור רכז שכונתי' : 'Create Supervisor'}
                         </RtlButton>
                       )
                     }
                   >
                     {isRTL
-                      ? 'לא נמצאו מפקחים לעיר זו. יש ליצור מפקח חדש כדי להמשיך.'
+                      ? 'לא נמצאו רכזי שכונות לעיר זו. יש ליצור רכז שכונתי חדש כדי להמשיך.'
                       : 'No supervisors found for this city. Create a new supervisor to continue.'}
                   </Alert>
 
@@ -735,7 +735,7 @@ export default function NeighborhoodModal({
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {isRTL ? 'יצירת מפקח חדש' : 'Create New Supervisor'}
+                          {isRTL ? 'יצירת רכז שכונתי חדש' : 'Create New Supervisor'}
                         </Typography>
                         <IconButton size="small" onClick={() => setShowCreateSupervisor(false)}>
                           <CloseIcon fontSize="small" />
@@ -789,7 +789,7 @@ export default function NeighborhoodModal({
                           onChange={(e) =>
                             setSupervisorFormData((prev) => ({ ...prev, title: e.target.value }))
                           }
-                          placeholder={isRTL ? 'מפקח' : 'Supervisor'}
+                          placeholder={isRTL ? 'רכז שכונתי' : 'Supervisor'}
                           fullWidth
                           size="small"
                         />
@@ -814,7 +814,7 @@ export default function NeighborhoodModal({
                           {creatingSupervisor ? (
                             <CircularProgress size={24} />
                           ) : isRTL ? (
-                            'צור מפקח'
+                            'צור רכז שכונתי'
                           ) : (
                             'Create Supervisor'
                           )}
@@ -837,7 +837,7 @@ export default function NeighborhoodModal({
                   }
                 >
                   <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    {isRTL ? 'מפקח נוצר בהצלחה!' : 'Supervisor created successfully!'}
+                    {isRTL ? 'רכז שכונתי נוצר בהצלחה!' : 'Supervisor created successfully!'}
                   </Typography>
                   <Typography variant="body2">
                     {isRTL ? 'סיסמה זמנית: ' : 'Temporary password: '}
@@ -857,7 +857,7 @@ export default function NeighborhoodModal({
                   </Typography>
                   <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
                     {isRTL
-                      ? 'שמור את הסיסמה במקום בטוח. המפקח יתבקש לשנות אותה בכניסה הראשונה.'
+                      ? 'שמור את הסיסמה במקום בטוח. הרכז השכונתי יתבקש לשנות אותה בכניסה הראשונה.'
                       : 'Save this password in a safe place. The supervisor will be asked to change it on first login.'}
                   </Typography>
                 </Alert>

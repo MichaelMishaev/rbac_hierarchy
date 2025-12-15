@@ -163,7 +163,7 @@ export default function NavigationClient({ role }: NavigationClientProps) {
             >
               {role === 'SUPERADMIN' ? 'מנהל על' :
                role === 'MANAGER' ? 'מנהל' :
-               role === 'SUPERVISOR' ? 'מפקח' : role}
+               role === 'SUPERVISOR' ? 'רכז שכונתי' : role}
             </Box>
           </Box>
         </Box>

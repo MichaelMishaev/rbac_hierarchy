@@ -141,6 +141,11 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
       setCreateModalOpen(false);
       router.refresh();
     }
+    // Return result so modal can handle errors
+    return {
+      success: result.success,
+      error: result.error,
+    };
   };
 
   const handleEditClick = () => {
@@ -149,7 +154,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   };
 
   const handleEditCorporation = async (data: CorporationFormData) => {
-    if (!selectedCorp) return;
+    if (!selectedCorp) return { success: false, error: 'No city selected' };
 
     const result = await updateCity(selectedCorp.id, data);
     if (result.success && result.city) {
@@ -160,6 +165,11 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
       setSelectedCorp(null);
       router.refresh();
     }
+    // Return result so modal can handle errors
+    return {
+      success: result.success,
+      error: result.error,
+    };
   };
 
   const handleDeleteClick = () => {
@@ -259,7 +269,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
         }}
       >
         <TextField
-          placeholder={isRTL ? 'חיפוש תאגידים...' : 'Search corporations...'}
+          placeholder={isRTL ? 'חיפוש שכונות...' : 'Search corporations...'}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           size="small"
