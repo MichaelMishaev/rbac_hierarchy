@@ -127,7 +127,7 @@ const NavItemComponent = memo(
               primary={item.label}
               primaryTypographyProps={{
                 fontSize: isSubItem ? '13px' : '14px',
-                fontWeight: isActive ? 700 : 500,
+                fontWeight: isActive ? 700 : 600,
                 color: isActive ? colors.primary.main : colors.neutral[700],
                 textAlign: isRTL ? 'right' : 'left',
               }}
@@ -419,18 +419,20 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
               alignItems: 'center',
               justifyContent: 'space-between',
               px: 2,
-              py: 1,
+              py: 1.5,
               cursor: 'pointer',
               borderRadius: borderRadius.md,
               direction: isRTL ? 'rtl' : 'ltr',
-              transition: 'background-color 0.2s ease',
-              borderRight: isRTL ? `3px solid ${sectionColors.tasks}` : 'none',
-              borderLeft: isRTL ? 'none' : `3px solid ${sectionColors.tasks}`,
+              transition: 'all 0.2s ease',
+              borderRight: isRTL ? `4px solid ${sectionColors.tasks}` : 'none',
+              borderLeft: isRTL ? 'none' : `4px solid ${sectionColors.tasks}`,
+              backgroundColor: `${sectionColors.tasks}08`,
               position: 'relative',
               zIndex: 1,
               pointerEvents: 'auto',
+              mb: 1,
               '&:hover': {
-                backgroundColor: colors.neutral[50],
+                backgroundColor: `${sectionColors.tasks}12`,
               },
             }}
           >
@@ -438,13 +440,14 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
               <Typography
                 variant="caption"
                 sx={{
-                  fontWeight: 700,
-                  fontSize: '11px',
+                  fontWeight: 800,
+                  fontSize: '12px',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
+                  letterSpacing: '1px',
                   color: sectionColors.tasks,
                   textAlign: isRTL ? 'right' : 'left',
                   pointerEvents: 'none',
+                  opacity: 0.95,
                 }}
               >
                 משימות
@@ -538,31 +541,34 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 px: 2,
-                py: 1,
+                py: 1.5,
                 cursor: 'pointer',
                 borderRadius: borderRadius.md,
                 direction: isRTL ? 'rtl' : 'ltr',
-                transition: 'background-color 0.2s ease',
-                borderRight: isRTL ? `3px solid ${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}` : 'none',
-                borderLeft: isRTL ? 'none' : `3px solid ${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}`,
+                transition: 'all 0.2s ease',
+                borderRight: isRTL ? `4px solid ${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}` : 'none',
+                borderLeft: isRTL ? 'none' : `4px solid ${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}`,
+                backgroundColor: `${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}08`,
                 position: 'relative',
                 zIndex: 1,
                 pointerEvents: 'auto',
+                mb: 1,
                 '&:hover': {
-                  backgroundColor: colors.neutral[50],
+                  backgroundColor: `${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}12`,
                 },
               }}
             >
               <Typography
                 variant="caption"
                 sx={{
-                  fontWeight: 700,
-                  fontSize: '11px',
+                  fontWeight: 800,
+                  fontSize: '12px',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[500],
+                  letterSpacing: '1px',
+                  color: sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[700],
                   textAlign: isRTL ? 'right' : 'left',
                   pointerEvents: 'none',
+                  opacity: 0.95,
                 }}
               >
                 {group.label}
