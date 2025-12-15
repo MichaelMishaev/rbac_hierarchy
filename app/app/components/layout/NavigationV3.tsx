@@ -20,6 +20,7 @@ import {
   useMediaQuery,
   useTheme,
   Fade,
+  Tooltip,
 } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 
@@ -140,25 +141,36 @@ const NavItemComponent = memo(
               }}
             >
               {item.badge !== undefined && item.badge > 0 ? (
-                <Badge
-                  badgeContent={item.badge}
-                  color="error"
-                  max={99}
-                  sx={{
-                    '& .MuiBadge-badge': {
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      minWidth: '18px',
-                      height: '18px',
-                      ...(hasUnreadTasks && {
-                        animation: 'badge-pulse 2s ease-in-out infinite',
-                        boxShadow: `0 0 0 0 ${colors.error}`,
-                      }),
-                    },
-                  }}
+                <Tooltip
+                  title={
+                    isTaskInbox
+                      ? `${item.badge} משימות חדשות`
+                      : `${item.badge} פריטים פעילים`
+                  }
+                  arrow
+                  placement="left"
                 >
-                  {item.icon}
-                </Badge>
+                  <Badge
+                    badgeContent={item.badge}
+                    color="error"
+                    max={99}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        minWidth: '18px',
+                        height: '18px',
+                        transition: 'transform 0.2s ease',
+                        ...(hasUnreadTasks && {
+                          animation: 'badge-pulse 2s ease-in-out infinite',
+                          boxShadow: `0 0 0 0 ${colors.error}`,
+                        }),
+                      },
+                    }}
+                  >
+                    {item.icon}
+                  </Badge>
+                </Tooltip>
               ) : (
                 item.icon
               )}
@@ -224,6 +236,14 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   // PERFORMANCE OPTIMIZATION: Memoize navigation groups
   // These only rebuild when translations or stats change
   // ============================================
+  // Define section colors for visual hierarchy
+  const sectionColors = {
+    primary: '#2196F3',      // Blue
+    tasks: '#FF9800',        // Orange
+    management: '#9C27B0',   // Purple
+    system: '#757575',       // Gray
+  };
+
   const superAdminGroups = useMemo<NavGroup[]>(
     () => [
       {
@@ -391,99 +411,126 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
 
       return (
         <Box sx={{ mb: 1 }}>
-          {/* Parent Tasks Button */}
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={() => handleSectionToggle('tasks')}
-              sx={{
-                borderRadius: borderRadius.md,
-                backgroundColor: hasTasksActive ? `${colors.primary}05` : 'transparent',
-                border: hasTasksActive ? `1px solid ${colors.primary}30` : '1px solid transparent',
-                direction: isRTL ? 'rtl' : 'ltr',
-                py: 1.2,
-                px: 2,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  backgroundColor: hasTasksActive ? `${colors.primary}10` : colors.neutral[50],
-                },
-              }}
-            >
-              <ListItemText
-                primary="משימות"
-                primaryTypographyProps={{
-                  fontSize: '14px',
-                  fontWeight: hasTasksActive ? 700 : 600,
-                  color: hasTasksActive ? colors.primary.main : colors.neutral[700],
+          {/* Parent Tasks Button with Color Coding - Styled like other group headers */}
+          <Box
+            onClick={() => handleSectionToggle('tasks')}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1,
+              cursor: 'pointer',
+              borderRadius: borderRadius.md,
+              direction: isRTL ? 'rtl' : 'ltr',
+              transition: 'background-color 0.2s ease',
+              borderRight: isRTL ? `3px solid ${sectionColors.tasks}` : 'none',
+              borderLeft: isRTL ? 'none' : `3px solid ${sectionColors.tasks}`,
+              position: 'relative',
+              zIndex: 1,
+              pointerEvents: 'auto',
+              '&:hover': {
+                backgroundColor: colors.neutral[50],
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  color: sectionColors.tasks,
                   textAlign: isRTL ? 'right' : 'left',
+                  pointerEvents: 'none',
                 }}
-              />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {totalTaskBadges > 0 && (
+              >
+                משימות
+              </Typography>
+              {totalTaskBadges > 0 && (
+                <Tooltip title={`${totalTaskBadges} משימות חדשות`} arrow placement="left">
                   <Badge
                     badgeContent={totalTaskBadges}
                     color="error"
                     max={99}
                     sx={{
                       '& .MuiBadge-badge': {
-                        fontSize: '10px',
+                        fontSize: '9px',
                         fontWeight: 700,
-                        position: 'static',
-                        transform: 'none',
+                        height: '16px',
+                        minWidth: '16px',
                       },
                     }}
                   />
-                )}
-                <ListItemIcon
-                  sx={{
-                    minWidth: 'auto',
-                    color: hasTasksActive ? colors.primary.main : colors.neutral[600],
-                    marginLeft: isRTL ? 0 : 0,
-                    marginRight: isRTL ? 0 : 0,
-                  }}
-                >
-                  <AssignmentIcon />
-                </ListItemIcon>
-                <IconButton
-                  size="small"
-                  sx={{
-                    p: 0,
-                    marginLeft: isRTL ? 'auto' : 0,
-                    marginRight: isRTL ? 0 : 'auto',
-                  }}
-                >
-                  {expandedSections['tasks'] ? (
-                    <ExpandLessIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
-                  ) : (
-                    <ExpandMoreIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
-                  )}
-                </IconButton>
-              </Box>
-            </ListItemButton>
-          </ListItem>
+                </Tooltip>
+              )}
+            </Box>
+            <IconButton size="small" sx={{ p: 0, pointerEvents: 'none' }}>
+              <ExpandMoreIcon
+                fontSize="small"
+                sx={{
+                  color: colors.neutral[400],
+                  transform: expandedSections['tasks'] ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+            </IconButton>
+          </Box>
 
           {/* Submenu Items */}
           <Collapse in={expandedSections['tasks']} timeout="auto">
             <List sx={{ pt: 0.5, pb: 0 }}>
               {tasksSubmenu.map((item) => renderNavItem(item, closeDrawerOnClick, true))}
+
+              {/* Empty State when no unread tasks */}
+              {unreadCount === 0 && (
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 2,
+                    mx: 1,
+                    mt: 0.5,
+                    textAlign: 'center',
+                    backgroundColor: colors.neutral[50],
+                    borderRadius: borderRadius.md,
+                  }}
+                >
+                  <CheckCircleIcon
+                    sx={{
+                      fontSize: 32,
+                      color: colors.success,
+                      opacity: 0.4,
+                      mb: 0.5,
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: colors.neutral[500],
+                      display: 'block',
+                      fontSize: '11px',
+                    }}
+                  >
+                    כל המשימות טופלו ✓
+                  </Typography>
+                </Box>
+              )}
             </List>
           </Collapse>
         </Box>
       );
     },
-    [currentPath, unreadCount, isRTL, expandedSections, tasksSubmenu, renderNavItem, handleSectionToggle]
+    [currentPath, unreadCount, isRTL, expandedSections, tasksSubmenu, renderNavItem, handleSectionToggle, sectionColors]
   );
 
   const renderGroupedNav = useCallback(
     (groups: NavGroup[], closeDrawerOnClick = false) => (
       <>
-        {/* Tasks submenu at the very top */}
-        <Box sx={{ mb: 2, px: 0 }}>{renderTasksSubmenu(closeDrawerOnClick)}</Box>
-
-        <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
-
         {groups.map((group, groupIndex) => (
           <Box key={group.id} sx={{ mb: 2 }}>
-            {/* Section Header */}
+            {/* Section Header with Color Coding */}
             <Box
               onClick={() => handleSectionToggle(group.id)}
               sx={{
@@ -496,6 +543,8 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                 borderRadius: borderRadius.md,
                 direction: isRTL ? 'rtl' : 'ltr',
                 transition: 'background-color 0.2s ease',
+                borderRight: isRTL ? `3px solid ${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}` : 'none',
+                borderLeft: isRTL ? 'none' : `3px solid ${sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[300]}`,
                 position: 'relative',
                 zIndex: 1,
                 pointerEvents: 'auto',
@@ -511,7 +560,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                   fontSize: '11px',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
-                  color: colors.neutral[500],
+                  color: sectionColors[group.id as keyof typeof sectionColors] || colors.neutral[500],
                   textAlign: isRTL ? 'right' : 'left',
                   pointerEvents: 'none',
                 }}
@@ -519,11 +568,14 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                 {group.label}
               </Typography>
               <IconButton size="small" sx={{ p: 0, pointerEvents: 'none' }}>
-                {expandedSections[group.id] ? (
-                  <ExpandLessIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
-                ) : (
-                  <ExpandMoreIcon fontSize="small" sx={{ color: colors.neutral[400] }} />
-                )}
+                <ExpandMoreIcon
+                  fontSize="small"
+                  sx={{
+                    color: colors.neutral[400],
+                    transform: expandedSections[group.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                />
               </IconButton>
             </Box>
 
@@ -534,27 +586,58 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
               </List>
             </Collapse>
 
-            {/* Divider between groups */}
-            {groupIndex < groups.length - 1 && (
+            {/* Insert Tasks submenu AFTER primary section */}
+            {group.id === 'primary' && (
+              <>
+                <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
+                <Box sx={{ mb: 0, px: 0 }}>{renderTasksSubmenu(closeDrawerOnClick)}</Box>
+              </>
+            )}
+
+            {/* Divider between groups (except after primary since tasks has divider) */}
+            {groupIndex < groups.length - 1 && group.id !== 'primary' && (
               <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
             )}
           </Box>
         ))}
       </>
     ),
-    [renderTasksSubmenu, isRTL, expandedSections, renderNavItem, handleSectionToggle]
+    [renderTasksSubmenu, isRTL, expandedSections, renderNavItem, handleSectionToggle, sectionColors]
   );
 
   const renderFlatNav = useCallback(
-    (items: NavItem[], closeDrawerOnClick = false) => (
-      <List sx={{ py: 1 }}>
-        {/* Tasks submenu at the top */}
-        {renderTasksSubmenu(closeDrawerOnClick)}
+    (items: NavItem[], closeDrawerOnClick = false) => {
+      // Find index of map or attendance item to insert tasks after it
+      const mapIndex = items.findIndex((item) => item.path === '/map');
+      const attendanceIndex = items.findIndex((item) => item.path === '/attendance');
+      const insertAfterIndex = mapIndex >= 0 ? mapIndex : attendanceIndex;
+      const shouldInsertTasks = insertAfterIndex >= 0;
 
-        {/* Other navigation items */}
-        {items.map((item) => renderNavItem(item, closeDrawerOnClick))}
-      </List>
-    ),
+      return (
+        <List sx={{ py: 1 }}>
+          {/* Render items up to and including map/attendance */}
+          {items.slice(0, shouldInsertTasks ? insertAfterIndex + 1 : items.length).map((item) =>
+            renderNavItem(item, closeDrawerOnClick)
+          )}
+
+          {/* Tasks submenu after map/attendance */}
+          {shouldInsertTasks && (
+            <>
+              <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
+              {renderTasksSubmenu(closeDrawerOnClick)}
+              <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
+            </>
+          )}
+
+          {/* Render remaining items after map/attendance */}
+          {shouldInsertTasks &&
+            items.slice(insertAfterIndex + 1).map((item) => renderNavItem(item, closeDrawerOnClick))}
+
+          {/* If no map/attendance item exists, render tasks at the top (fallback) */}
+          {!shouldInsertTasks && renderTasksSubmenu(closeDrawerOnClick)}
+        </List>
+      );
+    },
     [renderTasksSubmenu, renderNavItem]
   );
 
