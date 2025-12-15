@@ -12,7 +12,6 @@ import MonthlyTrendsChart from '@/app/components/dashboard/MonthlyTrendsChart';
 import StatusDistributionChart from '@/app/components/dashboard/StatusDistributionChart';
 import CollapsibleCard from '@/app/components/ui/CollapsibleCard';
 import EmptyState from '@/app/components/ui/EmptyState';
-import LiveActivityFeed from '@/app/components/dashboard/LiveActivityFeed';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -221,7 +220,7 @@ export default async function DashboardContent() {
       );
     }
 
-    if (role === 'MANAGER') {
+    if (role === 'MANAGER' || role === 'CITY_COORDINATOR' || role === 'AREA_MANAGER') {
       const managerCards = [
         {
           title: t('totalNeighborhoods'),
@@ -251,44 +250,37 @@ export default async function DashboardContent() {
 
       return (
         <>
-          {/* Manager KPIs and Live Feed - Two Column Layout */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {/* Left: KPI Cards */}
-            <Grid item xs={12} lg={8}>
-              <DashboardClient cards={managerCards} />
-            </Grid>
+          {/* Manager KPIs */}
+          <DashboardClient cards={managerCards} />
 
-            {/* Right: Live Activity Feed */}
-            <Grid item xs={12} lg={4}>
-              <Box
-                sx={{
-                  p: 3,
-                  background: colors.neutral[0],
-                  borderRadius: borderRadius.xl,
-                  boxShadow: shadows.medium,
-                  border: `1px solid ${colors.neutral[200]}`,
-                  height: '100%',
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    color: colors.neutral[800],
-                    mb: 2,
-                  }}
-                >
-                  {isRTL ? 'פעילות בזמן אמת' : 'Live Activity'}
-                </Typography>
-                <LiveActivityFeed />
-              </Box>
-            </Grid>
-          </Grid>
+          {/* Organizational Tree Visualization for Area Manager and City Coordinator */}
+          <Box
+            sx={{
+              mb: 4,
+              p: 3,
+              background: colors.neutral[0],
+              borderRadius: borderRadius.xl,
+              boxShadow: shadows.medium,
+              border: `1px solid ${colors.neutral[200]}`,
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: colors.neutral[800],
+                mb: 3,
+              }}
+            >
+              {isRTL ? 'היררכיית הקמפיין שלי' : 'My Campaign Hierarchy'}
+            </Typography>
+            <OrganizationalTreeD3 />
+          </Box>
         </>
       );
     }
 
-    if (role === 'SUPERVISOR') {
+    if (role === 'SUPERVISOR' || role === 'ACTIVIST_COORDINATOR') {
       const supervisorCards = [
         {
           title: t('totalActivists'),
@@ -310,39 +302,32 @@ export default async function DashboardContent() {
 
       return (
         <>
-          {/* Supervisor KPIs and Live Feed - Two Column Layout */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {/* Left: KPI Cards */}
-            <Grid item xs={12} md={8}>
-              <DashboardClient cards={supervisorCards} />
-            </Grid>
+          {/* Supervisor KPIs */}
+          <DashboardClient cards={supervisorCards} />
 
-            {/* Right: Live Activity Feed */}
-            <Grid item xs={12} md={4}>
-              <Box
-                sx={{
-                  p: 3,
-                  background: colors.neutral[0],
-                  borderRadius: borderRadius.xl,
-                  boxShadow: shadows.medium,
-                  border: `1px solid ${colors.neutral[200]}`,
-                  height: '100%',
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    color: colors.neutral[800],
-                    mb: 2,
-                  }}
-                >
-                  {isRTL ? 'פעילות בזמן אמת' : 'Live Activity'}
-                </Typography>
-                <LiveActivityFeed />
-              </Box>
-            </Grid>
-          </Grid>
+          {/* Organizational Tree Visualization for Activist Coordinator */}
+          <Box
+            sx={{
+              mb: 4,
+              p: 3,
+              background: colors.neutral[0],
+              borderRadius: borderRadius.xl,
+              boxShadow: shadows.medium,
+              border: `1px solid ${colors.neutral[200]}`,
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: colors.neutral[800],
+                mb: 3,
+              }}
+            >
+              {isRTL ? 'השכונות והפעילים שלי' : 'My Neighborhoods and Activists'}
+            </Typography>
+            <OrganizationalTreeD3 />
+          </Box>
         </>
       );
     }

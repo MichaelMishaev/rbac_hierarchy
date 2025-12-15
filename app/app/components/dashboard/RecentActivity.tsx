@@ -17,6 +17,8 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import GroupIcon from '@mui/icons-material/Group';
 import MailIcon from '@mui/icons-material/Mail';
 import { formatDistanceToNow } from 'date-fns';
+import { he } from 'date-fns/locale';
+import { useTranslations } from 'next-intl';
 
 export type ActivityItem = {
   id: string;
@@ -33,6 +35,8 @@ export type RecentActivityProps = {
 };
 
 export default function RecentActivity({ activities, maxItems = 10 }: RecentActivityProps) {
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
   const displayActivities = activities.slice(0, maxItems);
 
   // Get icon based on entity type
@@ -61,12 +65,40 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
     return colors.neutral[600];
   };
 
-  // Format action text
+  // Format action text in Hebrew
   const formatAction = (action: string) => {
-    return action
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const actionMap: Record<string, string> = {
+      'CREATE': 'יצירה',
+      'UPDATE': 'עדכון',
+      'DELETE': 'מחיקה',
+      'CREATE_WORKER': 'יצירת פעיל',
+      'UPDATE_WORKER': 'עדכון פעיל',
+      'DELETE_WORKER': 'מחיקת פעיל',
+      'CREATE_CITY': 'יצירת עיר',
+      'UPDATE_CITY': 'עדכון עיר',
+      'DELETE_CITY': 'מחיקת עיר',
+      'CREATE_NEIGHBORHOOD': 'יצירת שכונה',
+      'UPDATE_NEIGHBORHOOD': 'עדכון שכונה',
+      'DELETE_NEIGHBORHOOD': 'מחיקת שכונה',
+      'CREATE_USER': 'יצירת משתמש',
+      'UPDATE_USER': 'עדכון משתמש',
+      'DELETE_USER': 'מחיקת משתמש',
+    };
+    return actionMap[action] || action;
+  };
+
+  // Format entity type in Hebrew
+  const formatEntity = (entity: string) => {
+    const entityMap: Record<string, string> = {
+      'Worker': 'פעיל',
+      'City': 'עיר',
+      'Neighborhood': 'שכונה',
+      'User': 'משתמש',
+      'Invitation': 'הזמנה',
+      'Corporation': 'עיר',
+      'Site': 'שכונה',
+    };
+    return entityMap[entity] || entity;
   };
 
   return (
@@ -78,6 +110,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
         border: `1px solid ${colors.neutral[200]}`,
         p: 3,
         height: '100%',
+        direction: 'rtl',
       }}
     >
       <Typography
@@ -88,7 +121,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
           mb: 3,
         }}
       >
-        Recent Activity
+        {t('recentActivity')}
       </Typography>
 
       {displayActivities.length === 0 ? (
@@ -99,7 +132,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
             color: colors.neutral[400],
           }}
         >
-          <Typography variant="body2">No recent activity</Typography>
+          <Typography variant="body2">{t('noActivity')}</Typography>
         </Box>
       ) : (
         <List sx={{ p: 0 }}>
@@ -144,7 +177,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                       {formatAction(activity.action)}
                     </Typography>
                     <Chip
-                      label={activity.entity}
+                      label={formatEntity(activity.entity)}
                       size="small"
                       sx={{
                         height: 20,
@@ -165,7 +198,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                         color: colors.neutral[500],
                       }}
                     >
-                      by {activity.userEmail || 'System'}
+                      {activity.userEmail || 'מערכת'}
                     </Typography>
                     <Typography
                       component="span"
@@ -183,7 +216,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                         color: colors.neutral[500],
                       }}
                     >
-                      {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: he })}
                     </Typography>
                   </Box>
                 }

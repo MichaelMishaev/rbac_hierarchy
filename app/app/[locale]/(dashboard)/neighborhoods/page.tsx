@@ -23,17 +23,7 @@ export default async function SitesPage() {
     redirect('/login');
   }
 
-  // Only SuperAdmin and Manager can access this page
-  if (session.user.role === 'SUPERVISOR') {
-    return (
-      <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
-        <Typography variant="h5" color="error">
-          {isRTL ? 'גישה נדחתה. רק מנהלים יכולים לצפות באתרים.' : 'Access denied. Only managers can view sites.'}
-        </Typography>
-      </Box>
-    );
-  }
-
+  // ALL roles can access - data filtering happens in listNeighborhoods() action
   // Fetch neighborhoods, cities, and areas
   const [sitesResult, citiesResult, areasResult] = await Promise.all([
     listNeighborhoods({}),

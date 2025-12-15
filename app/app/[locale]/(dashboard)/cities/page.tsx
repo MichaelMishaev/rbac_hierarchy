@@ -20,22 +20,36 @@ export default async function CorporationsPage() {
     redirect('/login');
   }
 
-  // SuperAdmin and AreaManager can access this page
+  // ============================================
+  // ⚠️ LOCKED LOGIC - DO NOT MODIFY WITHOUT APPROVAL
+  // ============================================
+  // Cities page is LOCKED to SuperAdmin and Area Manager ONLY
+  //
+  // REASON: Cities are top-level organizational units
+  // - City Coordinators manage ONE city (they don't need to see the list)
+  // - Activist Coordinators work within neighborhoods (cities are out of scope)
+  //
+  // CHANGING THIS LOGIC WILL CAUSE REGRESSION BUGS
+  // Date Locked: 2025-12-15
+  // Approved By: User requirement
+  // ============================================
   if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'AREA_MANAGER') {
     return (
       <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
         <Typography variant="h5" color="error">
-          {t('accessDenied')}
+          {isRTL ? 'גישה נדחתה. רק מנהל על ומנהלי אזור יכולים לצפות בערים.' : 'Access denied. Only SuperAdmin and Area Managers can view cities.'}
         </Typography>
       </Box>
     );
   }
 
-  // Build query filter based on role
+  // ============================================
+  // LOCKED DATA FILTERING LOGIC
+  // ============================================
   const whereClause: any = {};
 
-  // AREA_MANAGER: Only see corporations assigned to them
   if (session.user.role === 'AREA_MANAGER') {
+    // AREA_MANAGER: Only see cities assigned to their area
     const areaManagerRecord = await prisma.areaManager.findUnique({
       where: { userId: session.user.id },
       select: { id: true },
@@ -48,7 +62,7 @@ export default async function CorporationsPage() {
       whereClause.id = 'non-existent';
     }
   }
-  // SUPERADMIN: See all corporations (no filter needed)
+  // SUPERADMIN: See all cities (no filter needed)
 
   // v1.4: Fetch cities with areaManager relation
   const citiesData = await prisma.city.findMany({

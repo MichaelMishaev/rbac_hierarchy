@@ -148,40 +148,47 @@ export default function ActivistModal({
   // Track previous open state to only reset on open transition
   const prevOpenRef = useRef(open);
 
+  // Separate useEffect for area/city pre-selection based on neighborhood
+  // This runs when modal opens OR when data (neighborhoods/cities) updates
+  useEffect(() => {
+    if (!open) return;
+
+    // If editing and has initial neighborhood, pre-select area and city
+    if (initialData?.siteId && neighborhoods.length > 0 && cities.length > 0) {
+      const neighborhood = neighborhoods.find((n) => n.id === initialData.siteId);
+      if (neighborhood) {
+        const city = cities.find((c) => c.id === neighborhood.cityId);
+        if (city && city.areaManagerId) {
+          setSelectedAreaId(city.areaManagerId);
+          setSelectedCityId(city.id);
+        }
+      }
+    } else if (!initialData?.siteId && areas.length > 0 && cities.length > 0) {
+      // When creating new activist:
+      // If user only has access to 1 area (e.g., Area Manager), auto-select it
+      if (areas.length === 1) {
+        setSelectedAreaId(areas[0].id);
+        // If only 1 city in that area, auto-select it too
+        const areaCities = cities.filter((c) => c.areaManagerId === areas[0].id);
+        if (areaCities.length === 1) {
+          setSelectedCityId(areaCities[0].id);
+        } else {
+          setSelectedCityId('');
+        }
+      } else {
+        // Reset cascade for new activist (multiple areas available)
+        setSelectedAreaId('');
+        setSelectedCityId('');
+      }
+    }
+  }, [open, initialData?.siteId, neighborhoods, cities, areas]);
+
+  // Reset form data when modal opens
   useEffect(() => {
     // Only reset form when modal transitions from closed to open
     const justOpened = open && !prevOpenRef.current;
 
     if (justOpened) {
-      // If editing and has initial neighborhood, pre-select area and city
-      if (initialData?.siteId) {
-        const neighborhood = neighborhoods.find((n) => n.id === initialData.siteId);
-        if (neighborhood) {
-          const city = cities.find((c) => c.id === neighborhood.cityId);
-          if (city) {
-            setSelectedAreaId(city.areaManagerId);
-            setSelectedCityId(city.id);
-          }
-        }
-      } else {
-        // When creating new activist:
-        // If user only has access to 1 area (e.g., Area Manager), auto-select it
-        if (areas.length === 1) {
-          setSelectedAreaId(areas[0].id);
-          // If only 1 city in that area, auto-select it too
-          const areaCities = cities.filter((c) => c.areaManagerId === areas[0].id);
-          if (areaCities.length === 1) {
-            setSelectedCityId(areaCities[0].id);
-          } else {
-            setSelectedCityId('');
-          }
-        } else {
-          // Reset cascade for new activist (multiple areas available)
-          setSelectedAreaId('');
-          setSelectedCityId('');
-        }
-      }
-
       setFormData({
         name: initialData?.name || '',
         phone: initialData?.phone || '',
@@ -200,7 +207,7 @@ export default function ActivistModal({
     // Update ref for next render
     prevOpenRef.current = open;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialData, defaultSiteId, defaultSupervisorId]);  // Removed neighborhoods, cities, areas, activistCoordinators to prevent form reset
+  }, [open, initialData, defaultSiteId, defaultSupervisorId]);
 
   // Fetch coordinators assigned to the selected neighborhood
   useEffect(() => {

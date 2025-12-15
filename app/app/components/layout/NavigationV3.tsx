@@ -344,13 +344,19 @@ function NavigationV3Component({ role, stats }: NavigationV3Props) {
       { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
       { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
       {
+        path: '/neighborhoods',
+        label: t('sites'),
+        icon: <LocationOnIcon />,
+        badge: stats?.activeSites,
+      },
+      {
         path: '/activists',
         label: t('workers'),
         icon: <GroupIcon />,
         badge: stats?.activeWorkers,
       },
     ],
-    [t, stats?.activeWorkers]
+    [t, stats?.activeSites, stats?.activeWorkers]
   );
 
   // Remove locale from pathname for comparison

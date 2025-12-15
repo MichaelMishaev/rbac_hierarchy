@@ -101,13 +101,14 @@ export async function getDashboardStats(): Promise<{
         stats.manager = await getCachedManagerStats(coordinator.cityId);
       }
     } else if (currentUser.role === 'AREA_MANAGER') {
-      // Get first city ID for area manager
+      // Get ALL cities for area manager and aggregate stats
       const areaManager = await prisma.areaManager.findFirst({
         where: { userId: currentUser.id },
-        include: { cities: { select: { id: true }, take: 1 } },
+        include: { cities: { select: { id: true } } },
       });
-      if (areaManager && areaManager.cities[0]) {
-        stats.manager = await getCachedManagerStats(areaManager.cities[0].id);
+      if (areaManager && areaManager.cities.length > 0) {
+        const cityIds = areaManager.cities.map(c => c.id);
+        stats.manager = await getCachedAreaManagerStats(cityIds);
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       stats.supervisor = await getCachedSupervisorStats(currentUser.id);
@@ -169,6 +170,19 @@ const getCachedSupervisorStats = unstable_cache(
   {
     revalidate: 30,
     tags: ['dashboard', 'supervisor-stats']
+  }
+);
+
+/**
+ * Cached version of Area Manager stats - revalidates every 30 seconds
+ * Aggregates stats across multiple cities
+ */
+const getCachedAreaManagerStats = unstable_cache(
+  async (cityIds: string[]) => getAreaManagerStatsUncached(cityIds),
+  ['dashboard-area-manager-stats'],
+  {
+    revalidate: 30,
+    tags: ['dashboard', 'area-manager-stats']
   }
 );
 
@@ -336,6 +350,117 @@ async function getManagerStatsUncached(cityId: string): Promise<ManagerStats> {
 
   return {
     cityRelation: corporation,
+    totalManagers,
+    totalSupervisors,
+    totalNeighborhoods,
+    activeNeighborhoods,
+    totalActivists,
+    activeActivists,
+    pendingInvitations,
+    recentNeighborhoods,
+    topNeighborhoodsByActivists,
+  };
+}
+
+// ============================================
+// AREA MANAGER STATS (AGGREGATED ACROSS CITIES)
+// ============================================
+
+async function getAreaManagerStatsUncached(cityIds: string[]): Promise<ManagerStats> {
+  const [
+    totalManagers,
+    totalSupervisors,
+    totalNeighborhoods,
+    activeNeighborhoods,
+    totalActivists,
+    activeActivists,
+    pendingInvitations,
+    recentNeighborhoods,
+    topNeighborhoodsByActivists,
+  ] = await Promise.all([
+    prisma.cityCoordinator.count({
+      where: {
+        cityId: { in: cityIds },
+      },
+    }),
+    prisma.activistCoordinator.count({
+      where: {
+        cityId: { in: cityIds },
+      },
+    }),
+    prisma.neighborhood.count({
+      where: { cityId: { in: cityIds } },
+    }),
+    prisma.neighborhood.count({
+      where: {
+        cityId: { in: cityIds },
+        isActive: true,
+      },
+    }),
+    prisma.activist.count({
+      where: {
+        neighborhood: {
+          cityId: { in: cityIds },
+        },
+      },
+    }),
+    prisma.activist.count({
+      where: {
+        isActive: true,
+        neighborhood: {
+          cityId: { in: cityIds },
+        },
+      },
+    }),
+    prisma.invitation.count({
+      where: {
+        cityId: { in: cityIds },
+        status: 'PENDING',
+      },
+    }),
+    prisma.neighborhood.findMany({
+      where: { cityId: { in: cityIds } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: {
+        cityRelation: {
+          select: {
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            activistCoordinatorAssignments: true,
+            activists: true,
+          },
+        },
+      },
+    }),
+    prisma.neighborhood.findMany({
+      where: { cityId: { in: cityIds } },
+      orderBy: {
+        activists: {
+          _count: 'desc',
+        },
+      },
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        isActive: true,
+        _count: {
+          select: {
+            activists: true,
+            activistCoordinatorAssignments: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    cityRelation: null, // Area Manager doesn't have a single city
     totalManagers,
     totalSupervisors,
     totalNeighborhoods,

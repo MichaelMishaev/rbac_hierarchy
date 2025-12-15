@@ -266,6 +266,104 @@ SuperAdmin (Platform Administrator - system-wide access)
 - Use Prisma middleware or API middleware to enforce data filters
 - Test cross-city and cross-area isolation thoroughly
 
+**Organization Tree Visibility (CRITICAL)**:
+⚠️ **EACH USER SEES ONLY THEMSELVES AND WHAT'S UNDER THEM**
+
+- **SuperAdmin**: Sees full hierarchy starting from SuperAdmin root
+  ```
+  Super Admin (ROOT)
+  └── All Areas
+      └── All Area Managers
+          └── All Cities
+              └── All Neighborhoods
+                  └── All Activists
+  ```
+
+- **Area Manager**: Sees ONLY their area as ROOT (NO SuperAdmin visible!)
+  ```
+  [Their Area Name] (ROOT - e.g., "מחוז הצפון")
+  └── [Their Name] (Area Manager)
+      └── [Their Cities Only]
+          └── Neighborhoods
+              └── Activists
+  ```
+
+- **City Coordinator**: Sees ONLY their city as ROOT (NO SuperAdmin, NO Area Manager!)
+  ```
+  [Their City Name] (ROOT - e.g., "טבריה")
+  └── Coordinators Group
+  └── Activist Coordinators Group
+  └── [Their Neighborhoods Only]
+      └── Activists
+  ```
+
+- **Activist Coordinator**: Sees ONLY their city as ROOT (with assigned neighborhoods only)
+  ```
+  [Their City Name] (ROOT - e.g., "שפרעם")
+  └── [Only Assigned Neighborhoods]
+      └── [Only Their Activists]
+  ```
+
+**IMPLEMENTATION RULES**:
+- ❌ Lower users NEVER see SuperAdmin node in tree
+- ❌ Area Managers NEVER see other areas or SuperAdmin
+- ❌ City Coordinators NEVER see SuperAdmin, Area Manager, or other cities
+- ❌ Activist Coordinators NEVER see neighborhoods they don't manage
+- ✅ Tree root changes based on role (not just data filtering)
+- ✅ API endpoint: `GET /api/org-tree` enforces role-based tree root
+- ✅ File: `app/app/api/org-tree/route.ts` - implements role-specific tree building
+
+**Navigation & Data Filtering (CRITICAL)**:
+⚠️ **NAVIGATION TABS SHOW BASED ON ROLE - DATA FILTERING HAPPENS IN EACH PAGE**
+
+**Navigation Rules by Role:**
+- **SuperAdmin**: Dashboard, Attendance, Map, Areas, Cities, Neighborhoods, Activists, Users, System Rules
+- **Area Manager**: Dashboard, Attendance, Map, Areas, Cities, Neighborhoods, Activists, Users, System Rules
+- **City Coordinator**: Dashboard, Attendance, Neighborhoods, Activists, Users (NO Cities tab)
+- **Activist Coordinator**: Dashboard, Attendance, Neighborhoods, Activists (NO Cities, NO Users)
+
+**🔒 LOCKED PAGES (DO NOT MODIFY - REGRESSION PROTECTION):**
+
+### Cities Page - LOCKED to SuperAdmin & Area Manager ONLY
+**File:** `app/app/[locale]/(dashboard)/cities/page.tsx`
+**Access:** SuperAdmin, Area Manager ONLY
+**Lock Date:** 2025-12-15
+**Reason:** Cities are top-level organizational units
+- City Coordinators manage ONE city (don't need to see list)
+- Activist Coordinators work within neighborhoods (cities out of scope)
+
+**LOCKED LOGIC:**
+```typescript
+// ⚠️ DO NOT MODIFY - LOCKED LOGIC
+if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'AREA_MANAGER') {
+  return <AccessDenied />;
+}
+```
+
+**Navigation:**
+- Cities tab REMOVED from City Coordinator navigation
+- Cities tab REMOVED from Activist Coordinator navigation
+- Cities tab VISIBLE for SuperAdmin and Area Manager only
+
+**Data Filtering:**
+- **SuperAdmin**: Sees ALL cities
+- **Area Manager**: Sees ONLY cities in their area (`whereClause.areaManagerId`)
+
+**⚠️ CHANGING THIS LOGIC WILL CAUSE REGRESSION BUGS**
+
+---
+
+**Other Pages (Not Locked):**
+- **Neighborhoods**: ALL roles can access, data filtered by assigned scope
+- **Activists**: ALL roles can access, data filtered by assigned scope
+- **Users**: SuperAdmin, Area Manager, City Coordinator only
+
+**Files:**
+- Navigation: `app/app/components/layout/NavigationV3.tsx`
+- Cities Page: `app/app/[locale]/(dashboard)/cities/page.tsx` (LOCKED)
+- Neighborhoods Page: `app/app/[locale]/(dashboard)/neighborhoods/page.tsx`
+- Data filtering: Each page component + API routes MUST enforce scope filtering
+
 **Campaign Management Features**:
 - **Activist Attendance Tracking**: Monitor field volunteer check-ins/outs, track hours worked, GPS location verification
 - **Campaign Task Management**: Assign canvassing routes, phone banking shifts, event coordination tasks with priority and deadlines
