@@ -533,12 +533,16 @@ export default function UserModal({
                         },
                       },
                       '& .MuiInputLabel-root': {
-                        right: 0,
+                        right: 14,
                         left: 'auto',
                         transformOrigin: 'top right',
+                        backgroundColor: colors.secondary.white,
+                        paddingLeft: '4px',
+                        paddingRight: '4px',
                         '&.MuiInputLabel-shrink': {
-                          right: 0,
+                          right: 14,
                           left: 'auto',
+                          backgroundColor: colors.secondary.white,
                         },
                       },
                       '& .MuiAutocomplete-endAdornment': {
