@@ -513,12 +513,12 @@ export default function UserModal({
                         borderRadius: borderRadius.md,
                       },
                       '& .MuiInputLabel-root': {
-                        right: 14,
-                        left: 'auto',
-                        transformOrigin: 'top right',
+                        left: 14,
+                        right: 'auto',
+                        transformOrigin: 'top left',
                         '&.MuiInputLabel-shrink': {
-                          right: 14,
-                          left: 'auto',
+                          left: 14,
+                          right: 'auto',
                         },
                       },
                       '& .MuiAutocomplete-endAdornment': {
