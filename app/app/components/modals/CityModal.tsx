@@ -15,10 +15,13 @@ import {
   MenuItem,
   Typography,
   Autocomplete,
+  Link,
 } from '@mui/material';
-import { Business as BusinessIcon } from '@mui/icons-material';
+import { Business as BusinessIcon, Add as AddIcon } from '@mui/icons-material';
 import { useTranslations } from 'next-intl';
 import { generateCityCode } from '@/lib/transliteration';
+import { colors, borderRadius } from '@/lib/design-system';
+import AreaManagerQuickCreate from './AreaManagerQuickCreate';
 
 export type CorporationFormData = {
   name: string;
@@ -42,7 +45,13 @@ type CityModalProps = {
   initialData?: Partial<CorporationFormData>;
   mode: 'create' | 'edit';
   areaManagers: AreaManager[];
-  userRole?: string; // To determine if area dropdown should be disabled
+  userRole?: string;
+  currentUserAreaManager?: {
+    id: string;
+    regionName: string;
+    fullName: string;
+    email: string;
+  } | null;
 };
 
 export default function CityModal({
@@ -53,24 +62,33 @@ export default function CityModal({
   mode,
   areaManagers,
   userRole = 'SUPERADMIN',
+  currentUserAreaManager,
 }: CityModalProps) {
   const t = useTranslations('citys');
   const tCommon = useTranslations('common');
 
-  // Area Managers can only create cities in their own area (dropdown disabled)
-  const isAreaManagerRestricted = userRole === 'AREA_MANAGER' && mode === 'create';
+  // Area Managers can only create cities in their own area
+  const isAreaManager = userRole === 'AREA_MANAGER';
 
   const [formData, setFormData] = useState<CorporationFormData>({
     name: initialData?.name || '',
     code: initialData?.code || '',
     description: initialData?.description || '',
     isActive: initialData?.isActive ?? true,
-    // For Area Managers creating cities: auto-select their area if only one available
-    areaManagerId: initialData?.areaManagerId || (isAreaManagerRestricted && areaManagers.length === 1 ? areaManagers[0].id : ''),
+    // For Area Managers: auto-set to their own area ID
+    // For SuperAdmin: use initialData or empty
+    areaManagerId: initialData?.areaManagerId || (isAreaManager && currentUserAreaManager ? currentUserAreaManager.id : ''),
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CorporationFormData, string>>>({});
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [localAreaManagers, setLocalAreaManagers] = useState<AreaManager[]>(areaManagers);
+
+  // Sync prop areaManagers with local state
+  useEffect(() => {
+    setLocalAreaManagers(areaManagers);
+  }, [areaManagers]);
 
   // Auto-generate code from city name when creating a new city
   useEffect(() => {
@@ -80,21 +98,43 @@ export default function CityModal({
     }
   }, [formData.name, mode]);
 
+  // Handler for when a new area manager is created via quick create
+  const handleAreaManagerCreated = (newAreaManager: { id: string; regionName: string; fullName: string; email: string }) => {
+    // Add to local list
+    setLocalAreaManagers((prev) => [
+      ...prev,
+      {
+        id: newAreaManager.id,
+        regionName: newAreaManager.regionName,
+        fullName: newAreaManager.fullName,
+        email: newAreaManager.email,
+      },
+    ]);
+
+    // Auto-select the newly created area manager
+    setFormData((prev) => ({ ...prev, areaManagerId: newAreaManager.id }));
+
+    // Clear any validation errors on areaManagerId
+    if (errors.areaManagerId) {
+      setErrors((prev) => ({ ...prev, areaManagerId: undefined }));
+    }
+  };
+
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof CorporationFormData, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'שם העיר הוא שדה חובה';
     }
 
     // Code is auto-generated, no need to validate user input
     // Just ensure it exists before submit
     if (!formData.code.trim()) {
-      newErrors.code = 'Code generation failed';
+      newErrors.code = 'יצירת הקוד נכשלה';
     }
 
     if (mode === 'create' && !formData.areaManagerId.trim()) {
-      newErrors.areaManagerId = 'Area Manager is required';
+      newErrors.areaManagerId = 'מנהל אזור הוא שדה חובה';
     }
 
     setErrors(newErrors);
@@ -254,20 +294,40 @@ export default function CityModal({
                 }}
               />
 
-              <Autocomplete
-                value={areaManagers.find((am) => am.id === formData.areaManagerId) || null}
-                onChange={(event, newValue) => {
-                  setFormData((prev) => ({ ...prev, areaManagerId: newValue?.id || '' }));
-                  if (errors.areaManagerId) {
-                    setErrors((prev) => ({ ...prev, areaManagerId: undefined }));
-                  }
-                }}
-                options={areaManagers}
-                getOptionLabel={(option) => `${option.regionName} - ${option.fullName}`}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                noOptionsText="אין מנהלי אזור זמינים"
-                disabled={isAreaManagerRestricted}
-                fullWidth
+              {/* Show dropdown for SuperAdmin, show text for Area Manager */}
+              {isAreaManager && currentUserAreaManager ? (
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: borderRadius.lg,
+                    backgroundColor: colors.pastel.orangeLight,
+                    border: `2px solid ${colors.pastel.orange}`,
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: colors.pastel.orange, fontWeight: 700, display: 'block', mb: 0.5 }}>
+                    אזור
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 600 }}>
+                    {currentUserAreaManager.regionName}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: colors.neutral[600], display: 'block', mt: 1 }}>
+                    העיר תשתייך לאזור שלך אוטומטית
+                  </Typography>
+                </Box>
+              ) : (
+                <Autocomplete
+                  value={localAreaManagers.find((am) => am.id === formData.areaManagerId) || null}
+                  onChange={(event, newValue) => {
+                    setFormData((prev) => ({ ...prev, areaManagerId: newValue?.id || '' }));
+                    if (errors.areaManagerId) {
+                      setErrors((prev) => ({ ...prev, areaManagerId: undefined }));
+                    }
+                  }}
+                  options={localAreaManagers}
+                  getOptionLabel={(option) => `${option.regionName} - ${option.fullName}`}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  noOptionsText="אין מנהלי אזור זמינים - צור חדש למטה"
+                  fullWidth
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -342,7 +402,42 @@ export default function CityModal({
                     color: 'primary.main',
                   },
                 }}
-              />
+                />
+              )}
+
+              {/* Quick Create Area Manager Button - SuperAdmin ONLY */}
+              {mode === 'create' && userRole === 'SUPERADMIN' && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    gap: 1,
+                  }}
+                >
+                  <Button
+                    variant="text"
+                    startIcon={<AddIcon />}
+                    onClick={() => setQuickCreateOpen(true)}
+                    sx={{
+                      color: colors.primary.main,
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      px: 2,
+                      py: 1,
+                      borderRadius: borderRadius.md,
+                      '&:hover': {
+                        backgroundColor: colors.pastel.blueLight,
+                      },
+                    }}
+                  >
+                    יצירת מנהל אזור חדש
+                  </Button>
+                  <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
+                    אם אין מנהל אזור מתאים ברשימה
+                  </Typography>
+                </Box>
+              )}
 
               {mode === 'create' && formData.code && (
                 <Box
@@ -527,6 +622,13 @@ export default function CityModal({
           {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : tCommon('save')}
         </Button>
       </DialogActions>
+
+      {/* Nested Dialog for Quick Create Area Manager */}
+      <AreaManagerQuickCreate
+        open={quickCreateOpen}
+        onClose={() => setQuickCreateOpen(false)}
+        onSuccess={handleAreaManagerCreated}
+      />
     </Dialog>
   );
 }

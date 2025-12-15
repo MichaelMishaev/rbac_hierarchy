@@ -47,16 +47,32 @@ export default async function CorporationsPage() {
   // LOCKED DATA FILTERING LOGIC
   // ============================================
   const whereClause: any = {};
+  let currentUserAreaManager = null;
 
   if (session.user.role === 'AREA_MANAGER') {
     // AREA_MANAGER: Only see cities assigned to their area
     const areaManagerRecord = await prisma.areaManager.findUnique({
       where: { userId: session.user.id },
-      select: { id: true },
+      select: {
+        id: true,
+        regionName: true,
+        user: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+      },
     });
 
     if (areaManagerRecord) {
       whereClause.areaManagerId = areaManagerRecord.id;
+      currentUserAreaManager = {
+        id: areaManagerRecord.id,
+        regionName: areaManagerRecord.regionName,
+        fullName: areaManagerRecord.user?.fullName || '',
+        email: areaManagerRecord.user?.email || '',
+      };
     } else {
       // Area Manager record not found - show empty list
       whereClause.id = 'non-existent';
@@ -142,6 +158,7 @@ export default async function CorporationsPage() {
       <CitiesClient
         cities={cities}
         userRole={session.user.role}
+        currentUserAreaManager={currentUserAreaManager}
       />
     </Box>
   );

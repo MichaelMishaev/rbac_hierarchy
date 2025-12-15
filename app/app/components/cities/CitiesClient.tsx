@@ -70,9 +70,15 @@ type AreaManager = {
 type CitiesClientProps = {
   cities: Corporation[];
   userRole: string;
+  currentUserAreaManager?: {
+    id: string;
+    regionName: string;
+    fullName: string;
+    email: string;
+  } | null;
 };
 
-export default function CitiesClient({ cities: initialCorporations, userRole }: CitiesClientProps) {
+export default function CitiesClient({ cities: initialCorporations, userRole, currentUserAreaManager }: CitiesClientProps) {
   const t = useTranslations('citys');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -688,6 +694,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole }: 
         mode="create"
         areaManagers={areaManagers}
         userRole={userRole}
+        currentUserAreaManager={currentUserAreaManager}
       />
 
       {/* Edit Modal - KEEP */}
