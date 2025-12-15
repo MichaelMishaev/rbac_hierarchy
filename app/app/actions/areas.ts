@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 export type CreateAreaInput = {
   regionName: string;
   regionCode: string;
-  userId: string; // User with AREA_MANAGER role
+  userId?: string; // OPTIONAL - User with AREA_MANAGER role
   description?: string;
   isActive?: boolean;
 };
@@ -35,8 +35,9 @@ export type UpdateAreaInput = {
  * 1. Current user MUST be SuperAdmin
  * 2. regionName MUST be unique
  * 3. regionCode MUST be unique
- * 4. User must be selected (userId) with role AREA_MANAGER
- * 5. User cannot already be an Area Manager
+ * 4. User is OPTIONAL - areas can exist without a manager
+ * 5. If user is provided (userId), they must have AREA_MANAGER role
+ * 6. User cannot already be an Area Manager (if provided)
  *
  * Permissions:
  * - SUPERADMIN: Can create Area Managers
@@ -73,49 +74,52 @@ export async function createArea(data: CreateAreaInput) {
       };
     }
 
-    // RULE 4: User must exist and have AREA_MANAGER role
-    const user = await prisma.user.findUnique({
-      where: { id: data.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        fullName: true,
-        isActive: true,
-      },
-    });
+    // RULE 4 & 5: Validate user IF provided (userId is optional)
+    let user = null;
+    if (data.userId && data.userId.trim() !== '') {
+      user = await prisma.user.findUnique({
+        where: { id: data.userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          fullName: true,
+          isActive: true,
+        },
+      });
 
-    if (!user) {
-      return {
-        success: false,
-        error: 'Selected user not found.',
-      };
-    }
+      if (!user) {
+        return {
+          success: false,
+          error: 'Selected user not found.',
+        };
+      }
 
-    if (user.role !== 'AREA_MANAGER') {
-      return {
-        success: false,
-        error: 'Selected user must have AREA_MANAGER role.',
-      };
-    }
+      if (user.role !== 'AREA_MANAGER') {
+        return {
+          success: false,
+          error: 'Selected user must have AREA_MANAGER role.',
+        };
+      }
 
-    if (!user.isActive) {
-      return {
-        success: false,
-        error: 'Selected user is not active.',
-      };
-    }
+      if (!user.isActive) {
+        return {
+          success: false,
+          error: 'Selected user is not active.',
+        };
+      }
 
-    // RULE 5: User cannot already be an Area Manager
-    const existingAreaManager = await prisma.areaManager.findFirst({
-      where: { userId: data.userId },
-    });
+      // Check if user is already an Area Manager
+      const existingAreaManager = await prisma.areaManager.findFirst({
+        where: { userId: data.userId },
+      });
 
-    if (existingAreaManager) {
-      return {
-        success: false,
-        error: 'User is already assigned as an Area Manager.',
-      };
+      if (existingAreaManager) {
+        return {
+          success: false,
+          error: 'User is already assigned as an Area Manager.',
+        };
+      }
     }
 
     // Create Area Manager in database
@@ -123,7 +127,7 @@ export async function createArea(data: CreateAreaInput) {
       data: {
         regionName: data.regionName.trim(),
         regionCode: data.regionCode.trim().toUpperCase(),
-        userId: data.userId,
+        userId: data.userId && data.userId.trim() !== '' ? data.userId : null,
         metadata: data.description ? { description: data.description } : {},
         isActive: data.isActive ?? true,
       },
@@ -160,7 +164,7 @@ export async function createArea(data: CreateAreaInput) {
           regionName: newAreaManager.regionName,
           regionCode: newAreaManager.regionCode,
           userId: newAreaManager.userId,
-          userEmail: user.email,
+          userEmail: user?.email || 'N/A (No manager assigned)',
           isActive: newAreaManager.isActive,
         },
       },

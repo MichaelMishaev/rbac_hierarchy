@@ -49,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.fullName,
           role: user.role,
           avatar: user.avatarUrl,
+          isSuperAdmin: user.isSuperAdmin, // ADDED: Include isSuperAdmin flag
         };
       },
     }),
@@ -60,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.name = user.name;
         token.role = user.role;
         token.avatar = user.avatar;
+        token.isSuperAdmin = user.isSuperAdmin; // ADDED: Include isSuperAdmin flag
       }
       return token;
     },
@@ -69,6 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.name = token.name as string;
         session.user.role = token.role as string;
         session.user.avatar = token.avatar as string | null;
+        session.user.isSuperAdmin = token.isSuperAdmin as boolean; // ADDED: Include isSuperAdmin flag
       }
       return session;
     },

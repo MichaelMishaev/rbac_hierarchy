@@ -336,7 +336,7 @@ export default function CityModal({
                     error={!!errors.areaManagerId}
                     helperText={
                       errors.areaManagerId ||
-                      (isAreaManagerRestricted
+                      (isAreaManager
                         ? 'מנהלי אזור יכולים ליצור ערים רק באזור שלהם'
                         : undefined)
                     }

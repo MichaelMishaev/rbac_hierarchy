@@ -17,6 +17,9 @@ export async function GET() {
     const userRole = session.user.role;
     const userId = session.user.id;
 
+    // DEBUG: Log user role and ID for troubleshooting org-tree visibility
+    console.log('🔍 [ORG-TREE API] User Role:', userRole, '| User ID:', userId, '| Email:', session.user.email);
+
     // Build where clause based on user role
     let areaManagerWhere: any = { isActive: true };
     let cityWhere: any = { isActive: true };

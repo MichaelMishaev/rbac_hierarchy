@@ -430,6 +430,267 @@ export default async function SystemRulesPage() {
         </Box>
       </Box>
 
+      {/* Campaign Organizational Hierarchy - Visual Flow */}
+      <Card
+        sx={{
+          borderRadius: borderRadius.xl,
+          boxShadow: shadows.medium,
+          border: `1px solid ${colors.neutral[200]}`,
+          overflow: 'hidden',
+          mb: 3,
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            p: 3,
+            color: colors.neutral[0],
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <Box sx={{ fontSize: 32 }}>
+            <AccountTreeIcon />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+              📊 מבנה ארגוני של מערכת הבחירות
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.95 }}>
+              היררכיה ארגונית מלאה - מאדמין ראשי ועד פעילים בשטח
+            </Typography>
+          </Box>
+        </Box>
+
+        <CardContent sx={{ p: { xs: 3, md: 5 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+              maxWidth: '800px',
+              mx: 'auto',
+            }}
+          >
+            {/* SuperAdmin */}
+            <Card
+              sx={{
+                borderRadius: borderRadius.lg,
+                border: `3px solid ${colors.pastel.purple}`,
+                boxShadow: shadows.large,
+                background: `linear-gradient(135deg, ${colors.pastel.purple}15 0%, ${colors.pastel.purple}05 100%)`,
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: colors.pastel.purple,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '20px',
+                    }}
+                  >
+                    SA
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
+                      SuperAdmin
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
+                      מנהל פלטפורמה
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Arrow Down */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: -1 }}>
+              <Typography sx={{ fontSize: '32px', color: colors.neutral[400] }}>↓</Typography>
+            </Box>
+
+            {/* Area Manager */}
+            <Card
+              sx={{
+                borderRadius: borderRadius.lg,
+                border: `3px solid ${colors.pastel.orange}`,
+                boxShadow: shadows.large,
+                background: `linear-gradient(135deg, ${colors.pastel.orange}15 0%, ${colors.pastel.orange}05 100%)`,
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: colors.pastel.orange,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '20px',
+                    }}
+                  >
+                    AM
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
+                      Area Manager
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
+                      מנהל אזור - מפקח על מספר ערים
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Arrow Down */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: -1 }}>
+              <Typography sx={{ fontSize: '32px', color: colors.neutral[400] }}>↓</Typography>
+            </Box>
+
+            {/* City Coordinator */}
+            <Card
+              sx={{
+                borderRadius: borderRadius.lg,
+                border: `3px solid ${colors.pastel.blue}`,
+                boxShadow: shadows.large,
+                background: `linear-gradient(135deg, ${colors.pastel.blue}15 0%, ${colors.pastel.blue}05 100%)`,
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: colors.pastel.blue,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '20px',
+                    }}
+                  >
+                    CC
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
+                      City Coordinator
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
+                      רכז עיר - מנהל עיר אחת
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Arrow Down */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: -1 }}>
+              <Typography sx={{ fontSize: '32px', color: colors.neutral[400] }}>↓</Typography>
+            </Box>
+
+            {/* Activist Coordinator */}
+            <Card
+              sx={{
+                borderRadius: borderRadius.lg,
+                border: `3px solid ${colors.pastel.green}`,
+                boxShadow: shadows.large,
+                background: `linear-gradient(135deg, ${colors.pastel.green}15 0%, ${colors.pastel.green}05 100%)`,
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: colors.pastel.green,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '20px',
+                    }}
+                  >
+                    AC
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
+                      Activist Coordinator
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
+                      רכז פעילים - מארגן שכונתי
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Arrow Down */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: -1 }}>
+              <Typography sx={{ fontSize: '32px', color: colors.neutral[400] }}>↓</Typography>
+            </Box>
+
+            {/* Activists */}
+            <Card
+              sx={{
+                borderRadius: borderRadius.lg,
+                border: `3px solid ${colors.neutral[400]}`,
+                boxShadow: shadows.large,
+                background: `linear-gradient(135deg, ${colors.neutral[200]}15 0%, ${colors.neutral[100]}05 100%)`,
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      background: colors.neutral[400],
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '20px',
+                    }}
+                  >
+                    A
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
+                      Activists
+                    </Typography>
+                    <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
+                      פעילים בשטח - מתנדבים
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        </CardContent>
+      </Card>
+
       {/* 1. Worker Creation Permissions (keep as is) */}
       <Card
         sx={{

@@ -72,7 +72,7 @@ export default function AreaManagerQuickCreate({
         regionCode: formData.regionCode,
         description: formData.description || undefined,
         isActive: true,
-        // NO userId - creating an area without assigning a manager initially
+        userId: undefined, // Explicitly undefined - creating an area without assigning a manager initially
       });
 
       if (result.success && result.area) {

@@ -2,6 +2,39 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚀 Quick Start for New Developers
+
+**TL;DR - Get running in 5 minutes:**
+
+```bash
+# 1. Start Docker services (from project root)
+make up && make health
+
+# 2. Setup database (from app/ directory)
+cd app
+npm install
+npm run db:generate && npm run db:push && npm run db:seed
+
+# 3. Start dev server
+npm run dev  # → http://localhost:3200
+
+# 4. Login as SuperAdmin
+# Email: superadmin@election.test
+# Password: admin123
+```
+
+**What you're building:** Election Campaign Management System for politicians to coordinate field activists across cities and neighborhoods. Think "Monday.com meets political campaign field operations" with Hebrew UI and strict RBAC.
+
+**Key facts:**
+- 🇮🇱 **Hebrew-only, RTL-only** (no English support)
+- 🎯 **Work in `/app` directory** (repository root is historical)
+- 🗄️ **PostgreSQL + Redis** via Docker (use PgBouncer port 6433 for app)
+- 🔐 **4 roles:** SuperAdmin → Area Manager → City Coordinator → Activist Coordinator
+- 🧪 **Dev server:** Port 3200, **Tests:** Port 3000
+- 📝 **Log all bugs** to `docs/localDev/bugs.md` (bug + solution)
+
+---
+
 ## 🇮🇱 CRITICAL: HEBREW-FIRST SYSTEM
 
 **THIS IS A HEBREW-ONLY APPLICATION**
@@ -785,6 +818,126 @@ Documentation is in `docs/syAnalyse/`:
 - **Icons**: Lucide React (RTL-compatible)
 - **Animations**: Framer Motion for smooth transitions
 
+## 🔧 Troubleshooting
+
+### Common Issues & Solutions
+
+**Port Conflicts**
+```bash
+# Problem: "Port 3200 already in use"
+# Solution: Kill existing process
+lsof -ti:3200 | xargs kill -9
+npm run dev
+
+# Or use different port
+PORT=3201 npm run dev
+```
+
+**Database Connection Errors**
+```bash
+# Problem: "Can't reach database server"
+# Solution: Check Docker services
+make health                    # Check all services
+make logs-postgres             # View PostgreSQL logs
+docker-compose restart postgres pgbouncer
+
+# Problem: "Prisma Client not generated"
+# Solution: Regenerate Prisma Client
+cd app
+npm run db:generate
+```
+
+**Prisma Schema Changes Not Reflecting**
+```bash
+# Always run this sequence after schema changes:
+cd app
+npm run db:generate            # Generate new Prisma Client
+npm run db:push                # Push schema to database
+npm run db:check-integrity     # Verify data integrity
+```
+
+**Test Failures**
+```bash
+# Problem: Tests failing with "Element not found"
+# Check if it's a test issue (selectors, timing) vs actual bug
+
+# Problem: "Port 3000 expected but dev server on 3200"
+# Tests expect port 3000, dev server uses 3200
+# Playwright auto-starts test server on 3000
+
+# Run tests with UI for debugging
+npm run test:e2e:ui
+```
+
+**Worker-Supervisor Integrity Issues**
+```bash
+# Problem: Workers not showing up for supervisors
+cd app
+npm run db:check-integrity      # Check for issues
+npm run db:fix-integrity --fix  # Auto-repair relationships
+```
+
+**Redis Connection Issues**
+```bash
+# Problem: Redis connection refused
+make redis-cli                  # Test Redis connection
+make logs-redis                 # Check Redis logs
+
+# Flush Redis if needed
+make redis-flush
+```
+
+**Build Errors**
+```bash
+# Problem: "Module not found" after pulling changes
+cd app
+npm install                     # Reinstall dependencies
+npm run db:generate             # Regenerate Prisma Client
+rm -rf .next                    # Clear Next.js cache
+npm run build                   # Rebuild
+```
+
+**Hebrew/RTL Not Working**
+```typescript
+// Always include these in components:
+<Box dir="rtl" lang="he">
+  {/* Hebrew content */}
+</Box>
+
+// Use logical properties:
+marginInlineStart  // NOT marginLeft
+marginInlineEnd    // NOT marginRight
+```
+
+**Cross-City Data Leakage**
+```typescript
+// WRONG - Missing city filter
+const activists = await prisma.activist.findMany({
+  where: { is_active: true }
+});
+
+// CORRECT - Always filter by scope
+const activists = await prisma.activist.findMany({
+  where: {
+    is_active: true,
+    neighborhood: {
+      city_id: session.user.cityId  // RBAC filter
+    }
+  }
+});
+```
+
+### Getting Help
+
+1. **Check Logs**: `make logs` or `make logs-postgres`
+2. **Verify Services**: `make health`
+3. **Database GUI**: Adminer at http://localhost:8081
+4. **Prisma Studio**: `npm run db:studio`
+5. **Review Documentation**: `docs/syAnalyse/` directory
+6. **Check Bug Log**: `docs/localDev/bugs.md` for known issues
+
+---
+
 ## Important Reminders
 
 ### ✅ ALWAYS DO
@@ -797,6 +950,7 @@ Documentation is in `docs/syAnalyse/`:
 - **Use Hebrew labels** - this is a Hebrew-first, RTL-only application
 - **Test data isolation** - verify cross-city/area data cannot leak
 - **Run integrity checks** after database changes: `npm run db:check-integrity`
+- **Log all bugs** to `docs/localDev/bugs.md` with bug description AND final solution
 
 ### ❌ NEVER DO
 
