@@ -21,6 +21,7 @@ import {
   useTheme,
   Fade,
   Tooltip,
+  Chip,
 } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 
@@ -42,10 +43,13 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PublicIcon from '@mui/icons-material/Public';
+import AddIcon from '@mui/icons-material/Add';
+import HistoryIcon from '@mui/icons-material/History';
 
 import LanguageSwitcher from './LanguageSwitcher';
 import { signOut } from 'next-auth/react';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
+import { useRecentPages } from '@/app/hooks/useRecentPages';
 
 export type NavigationV3Props = {
   role: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
@@ -213,6 +217,11 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   // ============================================
   const { data: unreadData } = useUnreadTaskCount();
   const unreadCount = unreadData?.unread_count || 0;
+
+  // ============================================
+  // RECENT PAGES TRACKING
+  // ============================================
+  const { recentPages } = useRecentPages();
 
   // ============================================
   // PERFORMANCE OPTIMIZATION: Memoize callbacks
@@ -756,6 +765,90 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           <LanguageSwitcher />
         </Box>
 
+        {/* Recent Pages */}
+        {recentPages.length > 0 && (
+          <Box sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.neutral[100]}` }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 1.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <HistoryIcon
+                  sx={{ fontSize: '14px', color: colors.neutral[500] }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: colors.neutral[500],
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  אחרונים
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: colors.neutral[400],
+                  fontSize: '10px',
+                }}
+              >
+                {recentPages.length} עמודים
+              </Typography>
+            </Box>
+            <List sx={{ p: 0 }}>
+              {recentPages.slice(0, 5).map((page) => (
+                <ListItem key={page.path} disablePadding sx={{ mb: 0.5 }}>
+                  <Link
+                    href={`/${locale}${page.path}`}
+                    style={{ textDecoration: 'none', width: '100%' }}
+                    onClick={isMobile ? handleDrawerToggle : undefined}
+                  >
+                    <ListItemButton
+                      sx={{
+                        borderRadius: borderRadius.sm,
+                        py: 0.8,
+                        px: 1.5,
+                        backgroundColor: 'transparent',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: colors.neutral[50],
+                          transform: 'translateX(-2px)',
+                        },
+                      }}
+                    >
+                      <ListItemText
+                        primary={page.label}
+                        primaryTypographyProps={{
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          color: colors.neutral[700],
+                          textAlign: isRTL ? 'right' : 'left',
+                        }}
+                      />
+                      <HistoryIcon
+                        sx={{
+                          fontSize: '14px',
+                          color: colors.neutral[400],
+                          marginLeft: isRTL ? 0 : 1,
+                          marginRight: isRTL ? 1 : 0,
+                        }}
+                      />
+                    </ListItemButton>
+                  </Link>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        )}
+
         {/* Navigation Links */}
         <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2 }}>
           {role === 'SUPERADMIN' && renderGroupedNav(superAdminGroups, isMobile)}
@@ -814,6 +907,9 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       role,
       userEmail,
       isMobile,
+      locale,
+      sectionColors,
+      recentPages,
       handleDrawerToggle,
       renderGroupedNav,
       superAdminGroups,

@@ -31,7 +31,7 @@ npm run dev  # → http://localhost:3200
 - 🗄️ **PostgreSQL + Redis** via Docker (use PgBouncer port 6433 for app)
 - 🔐 **4 roles:** SuperAdmin → Area Manager → City Coordinator → Activist Coordinator
 - 🧪 **Dev server:** Port 3200, **Tests:** Port 3000
-- 📝 **Log all bugs** to `docs/localDev/bugs.md` (bug + solution)
+- 📝 **Follow Bug Fix Protocol** (see Development Guidelines) - includes regression tests + prevention rules
 
 ---
 
@@ -660,7 +660,67 @@ Activist Coordinator:
 - Implement CSRF protection (NextAuth handles this)
 - Enable CORS only for trusted origins in production
 
+### ⚠️ When I Must Stop and Ask
+
+I must **STOP and explicitly ask** before proceeding if:
+
+- ❌ A required file/command doesn't exist
+- ❌ Package versions or APIs are uncertain
+- ❌ Schema change is implied but not specified
+- ❌ More than 3 files need large edits (high regression risk)
+- ❌ The request conflicts with existing decisions in CLAUDE.md
+
+**Never guess or hallucinate**. When in doubt, ask first.
+
 ## Development Guidelines
+
+### 🔄 Standard Task Flow (Follow This Pattern)
+
+For every task, follow this workflow:
+
+1. **Read relevant files FIRST** - Never guess file contents or APIs
+2. **Provide short plan** (bullet points, no code yet)
+3. **Implement with minimal diffs** - Change only what's necessary
+4. **Run smallest relevant tests** - Expand if risk is high
+5. **Summarize results**: Files touched + why + commands run
+
+### 📝 Code Output Format
+
+When showing code changes:
+- ✅ **PREFERRED**: Show patch/diff format
+- ✅ **ACCEPTABLE**: Show only changed functions/blocks
+- ❌ **AVOID**: Showing entire files (wastes context)
+- ✅ **ALWAYS**: List commands run + results
+
+### 🚫 No Silent Refactors
+
+**Refactor ONLY if:**
+- Explicitly requested by user, OR
+- Required for the fix to work
+
+**If refactoring, explain WHY in the response.**
+
+Do not "improve" code that wasn't part of the task scope.
+
+### 🐛 Bug Fix Protocol (Regression-Proof)
+
+Every bug fix MUST include these 5 steps:
+
+1. **Root Cause Identification** (1-3 bullet points explaining WHY it happened)
+2. **Regression Test** (test that FAILS before fix, PASSES after)
+3. **Minimal Fix Implementation** (diff-first, change only what's necessary)
+4. **Run Relevant Tests** (not entire suite, just affected areas)
+5. **Document in `docs/localDev/bugs.md`**:
+   - Bug description
+   - Root cause
+   - **Prevention rule** (how to avoid this pattern in future)
+
+**Output Format for Bug Fixes:**
+- Root cause explanation
+- Test that failed before fix
+- Minimal diff showing fix
+- Test results (before/after)
+- Entry added to bugs.md
 
 ### When Implementing Backend
 
@@ -950,7 +1010,7 @@ const activists = await prisma.activist.findMany({
 - **Use Hebrew labels** - this is a Hebrew-first, RTL-only application
 - **Test data isolation** - verify cross-city/area data cannot leak
 - **Run integrity checks** after database changes: `npm run db:check-integrity`
-- **Log all bugs** to `docs/localDev/bugs.md` with bug description AND final solution
+- **Follow Bug Fix Protocol** - root cause + regression test + minimal fix + document prevention rule
 
 ### ❌ NEVER DO
 
@@ -961,6 +1021,9 @@ const activists = await prisma.activist.findMany({
 - **Use LTR CSS** - always use RTL-compatible properties
 - **Put .md files in root** - organize in `docs/mdFiles/`
 - **Delete production data** - use soft deletes (`is_active = false`)
+- **Refactor code silently** - only refactor if explicitly requested or required for the fix
+- **Guess file contents or APIs** - if uncertain, stop and ask first
+- **Show entire files in responses** - use diffs/patches or changed blocks only
 
 ### 🔍 Testing & Debugging
 
