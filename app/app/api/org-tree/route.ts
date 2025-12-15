@@ -115,7 +115,6 @@ export async function GET() {
                     position: true,
                     phone: true,
                     email: true,
-                    dateOfBirth: true,
                     activistCoordinatorId: true, // CRITICAL: Include supervisorId for hierarchy
                   },
                 },
@@ -224,7 +223,6 @@ export async function GET() {
                   phone: activist.phone,
                   email: activist.email,
                   position: activist.position,
-                  dateOfBirth: activist.dateOfBirth,
                 },
               })),
             };
@@ -243,7 +241,6 @@ export async function GET() {
                 phone: activist.phone,
                 email: activist.email,
                 position: activist.position,
-                dateOfBirth: activist.dateOfBirth,
               },
               // CRITICAL: Flag as error if neighborhood has activist coordinators but activist has none
               hasError: hasActivistCoordinators,
@@ -304,7 +301,6 @@ export async function GET() {
               phone: activist.phone,
               email: activist.email,
               position: activist.position,
-              dateOfBirth: activist.dateOfBirth,
             },
           })),
         };

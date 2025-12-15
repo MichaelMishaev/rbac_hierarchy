@@ -42,7 +42,6 @@ import {
   Person as PersonIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import dynamic from 'next/dynamic';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
@@ -1344,16 +1343,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                                           }}
                                         >
                                           {child.attributes.email}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                    {child.attributes?.dateOfBirth && (
-                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <CalendarIcon sx={{ fontSize: '14px', color: colors.neutral[500] }} />
-                                        <Typography sx={{ fontSize: '12px', color: colors.neutral[700] }}>
-                                          {new Date(child.attributes.dateOfBirth).toLocaleDateString('he-IL')}
-                                          {' '}
-                                          (גיל {Math.floor((Date.now() - new Date(child.attributes.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))})
                                         </Typography>
                                       </Box>
                                     )}
