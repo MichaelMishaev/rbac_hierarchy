@@ -501,18 +501,9 @@ export default function UserModal({
                   <TextField
                     {...params}
                     label="שכונות"
-                    placeholder="חפש ובחר שכונות..."
+                    placeholder={formData.neighborhoodIds.length === 0 ? "חפש ובחר שכונות..." : ""}
                     required
                     helperText="בחר את השכונות שרכז הפעילים יהיה אחראי עליהן"
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <SearchIcon sx={{ color: colors.neutral[400], marginLeft: 1 }} />
-                          {params.InputProps.startAdornment}
-                        </>
-                      ),
-                    }}
                     inputProps={{
                       ...params.inputProps,
                       dir: 'rtl',
@@ -520,29 +511,14 @@ export default function UserModal({
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: borderRadius.md,
-                        flexDirection: 'row-reverse',
-                        paddingRight: '14px',
-                        backgroundColor: colors.neutral[50],
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor: colors.neutral[100],
-                        },
-                        '&.Mui-focused': {
-                          backgroundColor: colors.secondary.white,
-                          boxShadow: `0 0 0 2px ${colors.primary.light}40`,
-                        },
                       },
                       '& .MuiInputLabel-root': {
                         right: 14,
                         left: 'auto',
                         transformOrigin: 'top right',
-                        backgroundColor: colors.secondary.white,
-                        paddingLeft: '4px',
-                        paddingRight: '4px',
                         '&.MuiInputLabel-shrink': {
                           right: 14,
                           left: 'auto',
-                          backgroundColor: colors.secondary.white,
                         },
                       },
                       '& .MuiAutocomplete-endAdornment': {
