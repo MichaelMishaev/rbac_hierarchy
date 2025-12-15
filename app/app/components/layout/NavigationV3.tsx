@@ -48,6 +48,7 @@ import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 
 export type NavigationV3Props = {
   role: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
+  userEmail?: string;
   stats?: {
     pendingInvites?: number;
     activeWorkers?: number;
@@ -175,7 +176,7 @@ NavItemComponent.displayName = 'NavItemComponent';
 // Main Navigation Component (Memoized)
 // ============================================
 
-function NavigationV3Component({ role, stats }: NavigationV3Props) {
+function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   const t = useTranslations('navigation');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -355,6 +356,7 @@ function NavigationV3Component({ role, stats }: NavigationV3Props) {
         icon: <GroupIcon />,
         badge: stats?.activeWorkers,
       },
+      { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
     [t, stats?.activeSites, stats?.activeWorkers]
   );
@@ -600,7 +602,7 @@ function NavigationV3Component({ role, stats }: NavigationV3Props) {
                 boxShadow: shadows.medium,
               }}
             >
-              ת
+              <BusinessIcon sx={{ fontSize: '24px' }} />
             </Box>
             <Box>
               <Typography
@@ -630,6 +632,18 @@ function NavigationV3Component({ role, stats }: NavigationV3Props) {
                   ? 'מפקח'
                   : role}
               </Typography>
+              {userEmail && (
+                <Typography
+                  sx={{
+                    fontSize: '11px',
+                    color: colors.neutral[400],
+                    fontWeight: 400,
+                    mt: 0.5,
+                  }}
+                >
+                  {userEmail}
+                </Typography>
+              )}
             </Box>
 
             {/* Close button for mobile */}
@@ -709,6 +723,7 @@ function NavigationV3Component({ role, stats }: NavigationV3Props) {
     [
       isRTL,
       role,
+      userEmail,
       isMobile,
       handleDrawerToggle,
       renderGroupedNav,
@@ -824,6 +839,7 @@ export default memo(NavigationV3Component, (prevProps, nextProps) => {
   // Custom comparison function - only re-render if these change
   return (
     prevProps.role === nextProps.role &&
+    prevProps.userEmail === nextProps.userEmail &&
     prevProps.stats?.pendingInvites === nextProps.stats?.pendingInvites &&
     prevProps.stats?.activeWorkers === nextProps.stats?.activeWorkers &&
     prevProps.stats?.activeSites === nextProps.stats?.activeSites

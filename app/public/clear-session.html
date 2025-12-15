@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Session - ניקוי סשן</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            direction: rtl;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { margin-bottom: 20px; }
+        .status {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 ניקוי סשן</h1>
+        <p>דף זה ינקה את כל נתוני ההתחברות השמורים בדפדפן</p>
+
+        <div id="status"></div>
+
+        <button onclick="clearEverything()">נקה הכל וחזור להתחברות</button>
+
+        <div style="margin-top: 30px; font-size: 12px; color: #666;">
+            <p><strong>משתמשי בדיקה זמינים:</strong></p>
+            <div class="code">
+                admin@election.test / admin123<br>
+                sarah.cohen@telaviv-district.test / area123<br>
+                david.levi@telaviv.test / manager123<br>
+                rachel.bendavid@telaviv.test / supervisor123
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function clearEverything() {
+            const status = document.getElementById('status');
+            const results = [];
+
+            try {
+                // Clear all cookies
+                const cookies = document.cookie.split(";");
+                for (let cookie of cookies) {
+                    const eqPos = cookie.indexOf("=");
+                    const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                }
+                results.push('✅ Cookies cleared');
+
+                // Clear localStorage
+                localStorage.clear();
+                results.push('✅ localStorage cleared');
+
+                // Clear sessionStorage
+                sessionStorage.clear();
+                results.push('✅ sessionStorage cleared');
+
+                // Clear IndexedDB
+                if (window.indexedDB) {
+                    indexedDB.databases().then(dbs => {
+                        dbs.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                        });
+                    });
+                    results.push('✅ IndexedDB cleared');
+                }
+
+                status.className = 'status success';
+                status.innerHTML = results.join('<br>') + '<br><br>מנקה כעת...';
+
+                // Wait a moment then redirect
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = '❌ שגיאה: ' + error.message;
+            }
+        }
+
+        // Auto-clear on load
+        window.onload = function() {
+            document.getElementById('status').innerHTML = 'לחץ על הכפתור כדי לנקות את הסשן';
+        };
+    </script>
+</body>
+</html>

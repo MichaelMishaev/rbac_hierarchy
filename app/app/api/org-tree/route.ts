@@ -113,6 +113,9 @@ export async function GET() {
                     id: true,
                     fullName: true,
                     position: true,
+                    phone: true,
+                    email: true,
+                    dateOfBirth: true,
                     activistCoordinatorId: true, // CRITICAL: Include supervisorId for hierarchy
                   },
                 },
@@ -142,7 +145,7 @@ export async function GET() {
     // Build hierarchical tree structure - ROOT depends on user role
     let tree: any;
 
-    // Helper function to build city tree structure
+    // Helper function to build city tree structure for SuperAdmin, Area Manager, City Coordinator
     const buildCityTree = (corp: any) => ({
       id: corp.id,
       name: corp.name,
@@ -213,9 +216,16 @@ export async function GET() {
               },
               children: assignedActivists.map((activist: any) => ({
                 id: activist.id,
-                name: `${activist.fullName} - ${activist.position || ''}`,
+                name: activist.fullName,
                 type: 'activist' as const,
                 count: {},
+                attributes: {
+                  type: 'activist',
+                  phone: activist.phone,
+                  email: activist.email,
+                  position: activist.position,
+                  dateOfBirth: activist.dateOfBirth,
+                },
               })),
             };
           });
@@ -225,9 +235,16 @@ export async function GET() {
             .filter((a: any) => !a.activistCoordinatorId)
             .map((activist: any) => ({
               id: activist.id,
-              name: `${activist.fullName} - ${activist.position || ''}`,
+              name: activist.fullName,
               type: 'activist' as const,
               count: {},
+              attributes: {
+                type: 'activist',
+                phone: activist.phone,
+                email: activist.email,
+                position: activist.position,
+                dateOfBirth: activist.dateOfBirth,
+              },
               // CRITICAL: Flag as error if neighborhood has activist coordinators but activist has none
               hasError: hasActivistCoordinators,
               errorMessage: hasActivistCoordinators ? 'Activist not assigned to activist coordinator (neighborhood has coordinators)' : undefined,
@@ -254,6 +271,44 @@ export async function GET() {
           };
         }),
       ],
+    });
+
+    // Helper function to build simplified city tree for Activist Coordinator
+    // Shows ONLY assigned neighborhoods with activists (no coordinator/activist coordinator groups)
+    const buildActivistCoordinatorTree = (corp: any) => ({
+      id: corp.id,
+      name: corp.name,
+      type: 'city' as const,
+      count: {
+        neighborhoods: corp.neighborhoods.length,
+        activists: corp.neighborhoods.reduce((sum: number, n: any) => sum + (n.activists?.length || 0), 0),
+      },
+      children: corp.neighborhoods.map((neighborhood: any) => {
+        const activists = neighborhood.activists || [];
+
+        return {
+          id: neighborhood.id,
+          name: neighborhood.name,
+          type: 'neighborhood' as const,
+          count: {
+            activists: activists.length,
+          },
+          // Show activists directly (no activist coordinator intermediary node) with full details
+          children: activists.map((activist: any) => ({
+            id: activist.id,
+            name: activist.fullName,
+            type: 'activist' as const,
+            count: {},
+            attributes: {
+              type: 'activist',
+              phone: activist.phone,
+              email: activist.email,
+              position: activist.position,
+              dateOfBirth: activist.dateOfBirth,
+            },
+          })),
+        };
+      }),
     });
 
     // Build tree based on user role
@@ -327,12 +382,12 @@ export async function GET() {
         return NextResponse.json({ error: 'City not found for coordinator' }, { status: 404 });
       }
     } else if (userRole === 'ACTIVIST_COORDINATOR') {
-      // Activist Coordinator: Root is their City with only assigned neighborhoods
+      // Activist Coordinator: Root is their City with ONLY assigned neighborhoods (no coordinator groups)
       // Find the area manager that has cities (after filtering)
       const areaManagerWithCity = areaManagers.find(am => am.cities.length > 0);
       if (areaManagerWithCity && areaManagerWithCity.cities.length > 0) {
         const city = areaManagerWithCity.cities[0]; // Should only be one due to filtering
-        tree = buildCityTree(city);
+        tree = buildActivistCoordinatorTree(city); // Use simplified tree builder (no coordinator/activist coordinator groups)
       } else {
         return NextResponse.json({ error: 'City/Neighborhoods not found for activist coordinator' }, { status: 404 });
       }

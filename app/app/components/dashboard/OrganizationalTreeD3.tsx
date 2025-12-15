@@ -14,6 +14,14 @@ import {
   IconButton,
   TextField,
   InputAdornment,
+  Drawer,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Divider,
+  Slide,
+  Fade,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
@@ -30,6 +38,11 @@ import {
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
   Download as DownloadIcon,
+  Close as CloseIcon,
+  Person as PersonIcon,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
+  CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import dynamic from 'next/dynamic';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
@@ -70,6 +83,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [matchedNodePaths, setMatchedNodePaths] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [drillDownOpen, setDrillDownOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
   const treeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -429,6 +444,39 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Handle node click for drill-down
+  const handleNodeClick = useCallback((nodeDatum: any) => {
+    console.log('🖱️ Node clicked:', nodeDatum.name);
+    console.log('📊 Node data:', nodeDatum);
+    console.log('👶 Has children:', nodeDatum.children?.length || 0);
+
+    // Only allow drill-down for nodes with children (clickable cards)
+    if (nodeDatum.children && nodeDatum.children.length > 0) {
+      console.log('✅ Opening drawer with', nodeDatum.children.length, 'children');
+      setSelectedNode(nodeDatum);
+      setDrillDownOpen(true);
+    } else {
+      console.log('❌ Node has no children, not opening drawer');
+    }
+  }, []);
+
+  // Close drill-down drawer
+  const handleCloseDrillDown = useCallback(() => {
+    setDrillDownOpen(false);
+  }, []);
+
+  // Close on ESC key
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && drillDownOpen) {
+        handleCloseDrillDown();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [drillDownOpen, handleCloseDrillDown]);
+
   // Get node color based on type - Election Campaign Color Scheme
   const getNodeColor = (type: string) => {
     switch (type) {
@@ -557,10 +605,14 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       const isMatched = searchTerm.trim() &&
         nodeDatum.name.toLowerCase().trim().includes(searchTerm.toLowerCase().trim());
 
+      const hasChildren = nodeDatum.children && nodeDatum.children.length > 0;
+      const isClickable = hasChildren;
+
       return (
         <g>
           <foreignObject width="240" height="200" x="-120" y="-100">
             <div
+              onClick={() => isClickable && handleNodeClick(nodeDatum)}
               style={{
                 width: '220px',
                 minHeight: '180px',
@@ -586,10 +638,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                 transition: 'all 0.3s ease',
                 direction: 'rtl', // Hebrew-first system
                 transform: isMatched ? 'scale(1.05)' : 'scale(1)',
+                cursor: isClickable ? 'pointer' : 'default',
               }}
               onMouseEnter={(e) => {
                 if (!isMatched) {
-                  e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                  e.currentTarget.style.transform = isClickable ? 'translateY(-4px) scale(1.05)' : 'translateY(-4px) scale(1.02)';
                   e.currentTarget.style.boxShadow = hasError
                     ? '0 0 20px 5px rgba(239, 68, 68, 0.7), 0 8px 24px rgba(0,0,0,0.3)'
                     : '0 8px 24px rgba(0,0,0,0.35)';
@@ -603,7 +656,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                     : '0 4px 16px rgba(0,0,0,0.25)';
                 }
               }}
-              title={hasError ? errorMessage : undefined}
+              title={hasError ? errorMessage : (isClickable ? 'לחץ לצפייה בפרטים' : undefined)}
             >
               {/* Header with icon */}
               <div
@@ -715,7 +768,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         </g>
       );
     },
-    [getNodeTypeLabel, getStatLabel, searchTerm]
+    [getNodeTypeLabel, getStatLabel, searchTerm, handleNodeClick]
   );
 
   // Note: Zoom controls are built into react-d3-tree and work via mouse/trackpad
@@ -1110,6 +1163,262 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           pointer-events: all;
         }
       `}</style>
+
+      {/* 🚀 2025 UX: Modern Drill-Down Drawer with Glass Morphism */}
+      <Drawer
+        anchor="right"
+        open={drillDownOpen}
+        onClose={handleCloseDrillDown}
+        SlideProps={{
+          direction: 'left',
+        }}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: { xs: '100%', sm: '480px' },
+            maxWidth: '100vw',
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderLeft: `1px solid rgba(0, 0, 0, 0.05)`,
+            boxShadow: '-4px 0 40px rgba(0, 0, 0, 0.15)',
+            direction: 'rtl',
+          },
+        }}
+      >
+        <Fade in={drillDownOpen} timeout={400}>
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Header with Glass Morphism */}
+            <Box
+              sx={{
+                p: 3,
+                background: selectedNode?.attributes?.type
+                  ? `linear-gradient(135deg, ${getNodeColor(selectedNode.attributes.type)}15 0%, ${getNodeColor(selectedNode.attributes.type)}05 100%)`
+                  : 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
+                borderBottom: `1px solid rgba(0, 0, 0, 0.08)`,
+                backdropFilter: 'blur(10px)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+              }}
+            >
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box flex={1}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: colors.neutral[900], mb: 0.5 }}>
+                    {selectedNode?.name || ''}
+                  </Typography>
+                  <Chip
+                    label={getNodeTypeLabel(selectedNode?.attributes?.type || '')}
+                    size="small"
+                    sx={{
+                      backgroundColor: selectedNode?.attributes?.type
+                        ? `${getNodeColor(selectedNode.attributes.type)}20`
+                        : colors.neutral[200],
+                      color: selectedNode?.attributes?.type
+                        ? getNodeColor(selectedNode.attributes.type)
+                        : colors.neutral[700],
+                      fontWeight: 600,
+                      fontSize: '11px',
+                    }}
+                  />
+                </Box>
+                <IconButton
+                  onClick={handleCloseDrillDown}
+                  sx={{
+                    color: colors.neutral[600],
+                    '&:hover': {
+                      backgroundColor: colors.pastel.redLight,
+                      color: colors.error,
+                    },
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            </Box>
+
+            {/* Content - Scrollable List */}
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+              {selectedNode?.children && selectedNode.children.length > 0 ? (
+                <List sx={{ px: 1 }}>
+                  {selectedNode.children.map((child: any, index: number) => {
+                    const childType = child.attributes?.type || 'unknown';
+                    const childColor = getNodeColor(childType);
+
+                    return (
+                      <Box key={index}>
+                        <ListItem
+                          sx={{
+                            borderRadius: borderRadius.lg,
+                            mb: 1.5,
+                            p: 2,
+                            background: `linear-gradient(135deg, ${childColor}08 0%, ${childColor}03 100%)`,
+                            border: `1px solid ${childColor}20`,
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              background: `linear-gradient(135deg, ${childColor}15 0%, ${childColor}08 100%)`,
+                              transform: 'translateX(-4px)',
+                              boxShadow: shadows.soft,
+                            },
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Avatar
+                              sx={{
+                                background: `linear-gradient(135deg, ${childColor} 0%, ${childColor}dd 100%)`,
+                                boxShadow: shadows.soft,
+                              }}
+                            >
+                              {childType === 'activist' || childType === 'worker' ? (
+                                <PersonIcon />
+                              ) : childType === 'neighborhood' || childType === 'site' ? (
+                                <LocationOnIcon />
+                              ) : childType === 'city' ? (
+                                <BusinessIcon />
+                              ) : (
+                                <TeamIcon />
+                              )}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography sx={{ fontWeight: 600, color: colors.neutral[900], fontSize: '14px' }}>
+                                {child.name}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box sx={{ mt: 0.5 }}>
+                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                                  <Chip
+                                    label={getNodeTypeLabel(childType)}
+                                    size="small"
+                                    sx={{
+                                      height: '20px',
+                                      fontSize: '10px',
+                                      fontWeight: 600,
+                                      backgroundColor: `${childColor}15`,
+                                      color: childColor,
+                                    }}
+                                  />
+                                  {/* Position badge for activists */}
+                                  {(childType === 'activist' || childType === 'worker') && child.attributes?.position && (
+                                    <Chip
+                                      label={child.attributes.position}
+                                      size="small"
+                                      sx={{
+                                        height: '20px',
+                                        fontSize: '10px',
+                                        fontWeight: 600,
+                                        backgroundColor: colors.pastel.blueLight,
+                                        color: colors.primary,
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+
+                                {/* Activist contact details */}
+                                {(childType === 'activist' || childType === 'worker') && (
+                                  <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    {child.attributes?.phone && (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <PhoneIcon sx={{ fontSize: '14px', color: colors.neutral[500] }} />
+                                        <Typography
+                                          sx={{
+                                            fontSize: '12px',
+                                            color: colors.neutral[700],
+                                            direction: 'ltr',
+                                            textAlign: 'left',
+                                          }}
+                                        >
+                                          {child.attributes.phone}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {child.attributes?.email && (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <EmailIcon sx={{ fontSize: '14px', color: colors.neutral[500] }} />
+                                        <Typography
+                                          sx={{
+                                            fontSize: '12px',
+                                            color: colors.neutral[700],
+                                            direction: 'ltr',
+                                            textAlign: 'left',
+                                          }}
+                                        >
+                                          {child.attributes.email}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {child.attributes?.dateOfBirth && (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <CalendarIcon sx={{ fontSize: '14px', color: colors.neutral[500] }} />
+                                        <Typography sx={{ fontSize: '12px', color: colors.neutral[700] }}>
+                                          {new Date(child.attributes.dateOfBirth).toLocaleDateString('he-IL')}
+                                          {' '}
+                                          (גיל {Math.floor((Date.now() - new Date(child.attributes.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))})
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                )}
+
+                                {/* Count attributes for non-activists */}
+                                {child.attributes?.count && Object.keys(child.attributes.count).length > 0 && (
+                                  <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    {Object.entries(child.attributes.count).map(([key, value]: [string, any]) => (
+                                      <Chip
+                                        key={key}
+                                        label={`${getStatLabel(key)}: ${value}`}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{
+                                          height: '22px',
+                                          fontSize: '11px',
+                                          borderColor: `${childColor}40`,
+                                          color: childColor,
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {index < selectedNode.children.length - 1 && (
+                          <Divider sx={{ my: 0.5, borderColor: colors.neutral[100] }} />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </List>
+              ) : (
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 8,
+                    color: colors.neutral[500],
+                  }}
+                >
+                  <Typography variant="body2">אין פריטים להצגה</Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* Footer - Summary */}
+            <Box
+              sx={{
+                p: 2,
+                background: 'rgba(243, 244, 246, 0.8)',
+                backdropFilter: 'blur(10px)',
+                borderTop: `1px solid rgba(0, 0, 0, 0.08)`,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: colors.neutral[600], display: 'block', textAlign: 'center' }}>
+                סה"כ: {selectedNode?.children?.length || 0} פריטים
+              </Typography>
+            </Box>
+          </Box>
+        </Fade>
+      </Drawer>
     </Box>
   );
 }

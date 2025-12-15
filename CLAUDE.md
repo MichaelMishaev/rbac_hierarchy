@@ -320,7 +320,7 @@ SuperAdmin (Platform Administrator - system-wide access)
 - **SuperAdmin**: Dashboard, Attendance, Map, Areas, Cities, Neighborhoods, Activists, Users, System Rules
 - **Area Manager**: Dashboard, Attendance, Map, Areas, Cities, Neighborhoods, Activists, Users, System Rules
 - **City Coordinator**: Dashboard, Attendance, Neighborhoods, Activists, Users (NO Cities tab)
-- **Activist Coordinator**: Dashboard, Attendance, Neighborhoods, Activists (NO Cities, NO Users)
+- **Activist Coordinator**: Dashboard, Attendance, Neighborhoods, Activists, Users (NO Cities tab)
 
 **🔒 LOCKED PAGES (DO NOT MODIFY - REGRESSION PROTECTION):**
 

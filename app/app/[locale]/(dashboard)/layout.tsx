@@ -36,6 +36,7 @@ export default async function DashboardLayout({
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
           <NavigationV3
             role={navRole as 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR'}
+            userEmail={session.user.email}
             stats={{
               pendingInvites: 0,  // TODO: Fetch from API
               activeWorkers: 0,   // TODO: Fetch from API
