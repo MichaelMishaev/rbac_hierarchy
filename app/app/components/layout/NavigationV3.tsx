@@ -268,6 +268,13 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         id: 'management',
         label: t('groupManagement'),
         items: [
+          {
+            path: '/tasks/inbox',
+            label: t('taskInbox'),
+            icon: <AssignmentIcon />,
+            badge: unreadCount,
+          },
+          { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
           { path: '/areas', label: t('areas'), icon: <PublicIcon /> },
           { path: '/cities', label: t('citys'), icon: <BusinessIcon /> },
           {
@@ -291,7 +298,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         items: [{ path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> }],
       },
     ],
-    [t, stats?.activeSites, stats?.activeWorkers]
+    [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
   );
 
   const areaManagerGroups = useMemo<NavGroup[]>(
@@ -309,6 +316,13 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         id: 'management',
         label: t('groupManagement'),
         items: [
+          {
+            path: '/tasks/inbox',
+            label: t('taskInbox'),
+            icon: <AssignmentIcon />,
+            badge: unreadCount,
+          },
+          { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
           { path: '/areas', label: t('areas'), icon: <PublicIcon /> },
           { path: '/cities', label: t('citys'), icon: <BusinessIcon /> },
           {
@@ -332,20 +346,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         items: [{ path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> }],
       },
     ],
-    [t, stats?.activeSites, stats?.activeWorkers]
-  );
-
-  const tasksSubmenu = useMemo<NavItem[]>(
-    () => [
-      {
-        path: '/tasks/inbox',
-        label: t('taskInbox'),
-        icon: <AssignmentIcon />,
-        badge: unreadCount,
-      },
-      { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
-    ],
-    [t, unreadCount]
+    [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
   );
 
   const managerItems = useMemo<NavItem[]>(
@@ -353,6 +354,13 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
       { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
       {
+        path: '/tasks/inbox',
+        label: t('taskInbox'),
+        icon: <AssignmentIcon />,
+        badge: unreadCount,
+      },
+      { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+      {
         path: '/neighborhoods',
         label: t('sites'),
         icon: <LocationOnIcon />,
@@ -366,7 +374,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       },
       { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
-    [t, stats?.activeSites, stats?.activeWorkers]
+    [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
   );
 
   const supervisorItems = useMemo<NavItem[]>(
@@ -374,6 +382,13 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       { path: '/dashboard', label: t('dashboard'), icon: <DashboardIcon /> },
       { path: '/attendance', label: 'נוכחות', icon: <CheckCircleIcon /> },
       {
+        path: '/tasks/inbox',
+        label: t('taskInbox'),
+        icon: <AssignmentIcon />,
+        badge: unreadCount,
+      },
+      { path: '/tasks/new', label: t('newTask'), icon: <AddTaskIcon /> },
+      {
         path: '/neighborhoods',
         label: t('sites'),
         icon: <LocationOnIcon />,
@@ -387,7 +402,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       },
       { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
-    [t, stats?.activeSites, stats?.activeWorkers]
+    [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
   );
 
   // Remove locale from pathname for comparison
@@ -411,130 +426,6 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       );
     },
     [currentPath, isRTL]
-  );
-
-  const renderTasksSubmenu = useCallback(
-    (closeDrawerOnClick = false) => {
-      const hasTasksActive = currentPath.startsWith('/tasks');
-      const totalTaskBadges = unreadCount;
-
-      return (
-        <Box sx={{ mb: 1 }}>
-          {/* Parent Tasks Button with Color Coding - Styled like other group headers */}
-          <Box
-            onClick={() => handleSectionToggle('tasks')}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 2,
-              py: 1.5,
-              cursor: 'pointer',
-              borderRadius: borderRadius.md,
-              direction: isRTL ? 'rtl' : 'ltr',
-              transition: 'all 0.2s ease',
-              borderRight: isRTL ? `4px solid ${sectionColors.tasks}` : 'none',
-              borderLeft: isRTL ? 'none' : `4px solid ${sectionColors.tasks}`,
-              backgroundColor: `${sectionColors.tasks}08`,
-              position: 'relative',
-              zIndex: 1,
-              pointerEvents: 'auto',
-              mb: 1,
-              '&:hover': {
-                backgroundColor: `${sectionColors.tasks}12`,
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  color: sectionColors.tasks,
-                  textAlign: isRTL ? 'right' : 'left',
-                  pointerEvents: 'none',
-                  opacity: 0.95,
-                }}
-              >
-                משימות
-              </Typography>
-              {totalTaskBadges > 0 && (
-                <Tooltip title={`${totalTaskBadges} משימות חדשות`} arrow placement="left">
-                  <Badge
-                    badgeContent={totalTaskBadges}
-                    color="error"
-                    max={99}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        fontSize: '9px',
-                        fontWeight: 700,
-                        height: '16px',
-                        minWidth: '16px',
-                      },
-                    }}
-                  />
-                </Tooltip>
-              )}
-            </Box>
-            <IconButton size="small" sx={{ p: 0, pointerEvents: 'none' }}>
-              <ExpandMoreIcon
-                fontSize="small"
-                sx={{
-                  color: colors.neutral[400],
-                  transform: expandedSections['tasks'] ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              />
-            </IconButton>
-          </Box>
-
-          {/* Submenu Items */}
-          <Collapse in={expandedSections['tasks']} timeout="auto">
-            <List sx={{ pt: 0.5, pb: 0 }}>
-              {tasksSubmenu.map((item) => renderNavItem(item, closeDrawerOnClick, true))}
-
-              {/* Empty State when no unread tasks */}
-              {unreadCount === 0 && (
-                <Box
-                  sx={{
-                    px: 3,
-                    py: 2,
-                    mx: 1,
-                    mt: 0.5,
-                    textAlign: 'center',
-                    backgroundColor: colors.neutral[50],
-                    borderRadius: borderRadius.md,
-                  }}
-                >
-                  <CheckCircleIcon
-                    sx={{
-                      fontSize: 32,
-                      color: colors.success,
-                      opacity: 0.4,
-                      mb: 0.5,
-                    }}
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: colors.neutral[500],
-                      display: 'block',
-                      fontSize: '11px',
-                    }}
-                  >
-                    כל המשימות טופלו ✓
-                  </Typography>
-                </Box>
-              )}
-            </List>
-          </Collapse>
-        </Box>
-      );
-    },
-    [currentPath, unreadCount, isRTL, expandedSections, tasksSubmenu, renderNavItem, handleSectionToggle, sectionColors]
   );
 
   const renderGroupedNav = useCallback(
@@ -601,59 +492,26 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
               </List>
             </Collapse>
 
-            {/* Insert Tasks submenu AFTER primary section */}
-            {group.id === 'primary' && (
-              <>
-                <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
-                <Box sx={{ mb: 0, px: 0 }}>{renderTasksSubmenu(closeDrawerOnClick)}</Box>
-              </>
-            )}
-
-            {/* Divider between groups (except after primary since tasks has divider) */}
-            {groupIndex < groups.length - 1 && group.id !== 'primary' && (
+            {/* Divider between groups */}
+            {groupIndex < groups.length - 1 && (
               <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
             )}
           </Box>
         ))}
       </>
     ),
-    [renderTasksSubmenu, isRTL, expandedSections, renderNavItem, handleSectionToggle, sectionColors]
+    [isRTL, expandedSections, renderNavItem, handleSectionToggle, sectionColors]
   );
 
   const renderFlatNav = useCallback(
     (items: NavItem[], closeDrawerOnClick = false) => {
-      // Find index of map or attendance item to insert tasks after it
-      const mapIndex = items.findIndex((item) => item.path === '/map');
-      const attendanceIndex = items.findIndex((item) => item.path === '/attendance');
-      const insertAfterIndex = mapIndex >= 0 ? mapIndex : attendanceIndex;
-      const shouldInsertTasks = insertAfterIndex >= 0;
-
       return (
         <List sx={{ py: 1 }}>
-          {/* Render items up to and including map/attendance */}
-          {items.slice(0, shouldInsertTasks ? insertAfterIndex + 1 : items.length).map((item) =>
-            renderNavItem(item, closeDrawerOnClick)
-          )}
-
-          {/* Tasks submenu after map/attendance */}
-          {shouldInsertTasks && (
-            <>
-              <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
-              {renderTasksSubmenu(closeDrawerOnClick)}
-              <Divider sx={{ my: 2, borderColor: colors.neutral[100] }} />
-            </>
-          )}
-
-          {/* Render remaining items after map/attendance */}
-          {shouldInsertTasks &&
-            items.slice(insertAfterIndex + 1).map((item) => renderNavItem(item, closeDrawerOnClick))}
-
-          {/* If no map/attendance item exists, render tasks at the top (fallback) */}
-          {!shouldInsertTasks && renderTasksSubmenu(closeDrawerOnClick)}
+          {items.map((item) => renderNavItem(item, closeDrawerOnClick))}
         </List>
       );
     },
-    [renderTasksSubmenu, renderNavItem]
+    [renderNavItem]
   );
 
   // ============================================
