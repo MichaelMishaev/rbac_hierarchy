@@ -41,6 +41,26 @@ export async function GET() {
                     fullName: true,
                   },
                 },
+                neighborhoods: {
+                  where: {
+                    isActive: true,
+                  },
+                  include: {
+                    activists: {
+                      where: {
+                        isActive: true,
+                      },
+                      select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        email: true,
+                        position: true,
+                        activistCoordinatorId: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             activistCoordinators: {
@@ -53,16 +73,9 @@ export async function GET() {
                     fullName: true,
                   },
                 },
-              },
-            },
-            neighborhoods: {
-              where: {
-                isActive: true,
-              },
-              include: {
-                activists: {
-                  where: {
-                    isActive: true,
+                neighborhoodAssignments: {
+                  select: {
+                    neighborhoodId: true,
                   },
                 },
               },
@@ -89,9 +102,15 @@ export async function GET() {
           type: 'מחוז',
           count: {
             cities: areaManager.cities.length,
-            neighborhoods: areaManager.cities.reduce((sum, c) => sum + c.neighborhoods.length, 0),
+            neighborhoods: areaManager.cities.reduce(
+              (sum, c) => sum + c.coordinators.reduce((s: number, coord: any) => s + (coord.neighborhoods?.length || 0), 0),
+              0
+            ),
             activists: areaManager.cities.reduce(
-              (sum, c) => sum + c.neighborhoods.reduce((s, n) => s + n.activists.length, 0),
+              (sum, c) => sum + c.coordinators.reduce(
+                (s: number, coord: any) => s + coord.neighborhoods.reduce((a: number, n: any) => a + (n.activists?.length || 0), 0),
+                0
+              ),
               0
             ),
           },
@@ -104,65 +123,120 @@ export async function GET() {
               email: areaManager.user?.email || 'N/A',
               role: 'מנהל מחוז',
             },
-            children: (areaManager.cities || []).map((city: any) => ({
-              name: city.name,
-              type: 'city',
-              attributes: {
-                code: city.code,
-                neighborhoods: city.neighborhoods?.length || 0,
-                activists: city.neighborhoods?.reduce((sum: number, n: any) => sum + (n.activists?.length || 0), 0) || 0,
-              },
-              children: [
-                // City Coordinators Group
-                ...(city.coordinators && city.coordinators.length > 0
-                  ? [
-                      {
-                        name: `רכזי עיר (${city.coordinators.length})`,
-                        type: 'coordinators-group',
-                        children: city.coordinators.map((coord: any) => ({
-                          name: coord.user?.fullName || 'N/A',
-                          type: 'coordinator',
-                          attributes: {
-                            role: 'רכז עיר',
-                          },
-                        })),
+            children: (areaManager.cities || []).map((city: any) => {
+              // Build proper hierarchy: City → City Coordinators → Neighborhoods → Activist Coordinators → Activists
+
+              // Helper: Build neighborhood tree with activist coordinators and activists
+              const buildNeighborhoodTree = (neighborhood: any) => {
+                const activists = neighborhood.activists || [];
+
+                // Group activists by their activist coordinator
+                const activistsByCoordinator = new Map<string, any[]>();
+                const orphanActivists: any[] = [];
+
+                activists.forEach((activist: any) => {
+                  if (activist.activistCoordinatorId) {
+                    const coordId = activist.activistCoordinatorId;
+                    if (!activistsByCoordinator.has(coordId)) {
+                      activistsByCoordinator.set(coordId, []);
+                    }
+                    activistsByCoordinator.get(coordId)?.push(activist);
+                  } else {
+                    orphanActivists.push(activist);
+                  }
+                });
+
+                // Build activist coordinator nodes with their activists as children
+                const activistCoordinatorNodes = city.activistCoordinators
+                  ?.filter((coord: any) =>
+                    coord.neighborhoodAssignments?.some((na: any) => na.neighborhoodId === neighborhood.id)
+                  )
+                  .map((coord: any) => {
+                    const coordActivists = activistsByCoordinator.get(coord.id) || [];
+
+                    return {
+                      name: coord.user?.fullName || 'N/A',
+                      type: 'activistCoordinator',
+                      attributes: {
+                        role: 'רכז שכונתי',
+                        activists: coordActivists.length,
                       },
-                    ]
-                  : []),
-                // Activist Coordinators Group
-                ...(city.activistCoordinators && city.activistCoordinators.length > 0
-                  ? [
-                      {
-                        name: `רכזי שכונות (${city.activistCoordinators.length})`,
-                        type: 'activist-coordinators-group',
-                        children: city.activistCoordinators.map((coord: any) => ({
-                          name: coord.user?.fullName || 'N/A',
-                          type: 'activistCoordinator',
-                          attributes: {
-                            role: 'רכז שכונתי',
-                          },
-                        })),
-                      },
-                    ]
-                  : []),
-                // Neighborhoods
-                ...(city.neighborhoods || []).map((neighborhood: any) => ({
+                      children: coordActivists.map((activist: any) => ({
+                        name: activist.fullName,
+                        type: 'activist',
+                        attributes: {
+                          phone: activist.phone,
+                          email: activist.email,
+                          position: activist.position,
+                          role: 'פעיל',
+                        },
+                      })),
+                    };
+                  }) || [];
+
+                return {
                   name: neighborhood.name,
                   type: 'neighborhood',
                   attributes: {
-                    activists: neighborhood.activists?.length || 0,
+                    activists: activists.length,
+                    activistCoordinators: activistCoordinatorNodes.length,
                   },
-                  children: (neighborhood.activists || []).map((activist: any) => ({
-                    name: activist.fullName,
-                    type: 'activist',
-                    attributes: {
-                      phone: activist.phone,
-                      role: 'פעיל',
-                    },
-                  })),
-                })),
-              ],
-            })),
+                  children: [
+                    ...activistCoordinatorNodes,
+                    // Orphan activists (not assigned to any coordinator) appear at neighborhood level
+                    ...orphanActivists.map((activist: any) => ({
+                      name: activist.fullName,
+                      type: 'activist',
+                      attributes: {
+                        phone: activist.phone,
+                        email: activist.email,
+                        position: activist.position,
+                        role: 'פעיל (לא משויך)',
+                      },
+                    })),
+                  ],
+                };
+              };
+
+              // Count total neighborhoods across all coordinators
+              const totalNeighborhoods = city.coordinators.reduce(
+                (sum: number, coord: any) => sum + (coord.neighborhoods?.length || 0),
+                0
+              );
+              const totalActivists = city.coordinators.reduce(
+                (sum: number, coord: any) => sum + coord.neighborhoods.reduce(
+                  (s: number, n: any) => s + (n.activists?.length || 0),
+                  0
+                ),
+                0
+              );
+
+              return {
+                name: city.name,
+                type: 'city',
+                attributes: {
+                  code: city.code,
+                  neighborhoods: totalNeighborhoods,
+                  activists: totalActivists,
+                  coordinators: city.coordinators?.length || 0,
+                },
+                children: [
+                  // City Coordinators with their neighborhoods as children
+                  ...(city.coordinators && city.coordinators.length > 0
+                    ? city.coordinators.map((coord: any) => ({
+                        name: coord.user?.fullName || 'N/A',
+                        type: 'coordinator',
+                        attributes: {
+                          role: 'רכז עיר',
+                          neighborhoods: coord.neighborhoods?.length || 0,
+                        },
+                        // ✅ FIX: Each coordinator shows ONLY their neighborhoods
+                        children: (coord.neighborhoods || []).map(buildNeighborhoodTree),
+                      }))
+                    : []),
+                ],
+              };
+            }),
           },
         ],
       })),
