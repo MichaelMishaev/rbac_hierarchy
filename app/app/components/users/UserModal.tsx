@@ -20,6 +20,8 @@ import {
 import { useTranslations } from 'next-intl';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import CloseIcon from '@mui/icons-material/Close';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import SearchIcon from '@mui/icons-material/Search';
 import { createUser, updateUser } from '@/app/actions/users';
 
 type User = {
@@ -446,7 +448,7 @@ export default function UserModal({
             </TextField>
           )}
 
-          {/* Neighborhoods (for ACTIVIST_COORDINATOR only) */}
+          {/* Neighborhoods (for ACTIVIST_COORDINATOR only) - 2025 UX Best Practices */}
           {formData.role === 'ACTIVIST_COORDINATOR' && (
             <Box sx={{ direction: 'rtl' }}>
               <Autocomplete
@@ -458,11 +460,14 @@ export default function UserModal({
                     // SuperAdmin/Area Manager: Show all available neighborhoods
                     : neighborhoods
                 }
+                groupBy={(option) => {
+                  // Group by city for better UX (2025 best practice)
+                  const city = cities.find(c => c.id === option.cityId);
+                  return city ? city.name : 'אחר';
+                }}
                 getOptionLabel={(option) => option.name}
                 value={neighborhoods.filter((site) => formData.neighborhoodIds.includes(site.id))}
                 onChange={(_, newValue) => {
-                  console.log('Autocomplete onChange called. New value:', newValue);
-                  console.log('Neighborhood IDs:', newValue.map((site) => site.id));
                   setFormData((prev) => ({
                     ...prev,
                     neighborhoodIds: newValue.map((site) => site.id),
@@ -471,12 +476,43 @@ export default function UserModal({
                 }}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 disabled={loading}
+                loading={loading}
+                noOptionsText="אין שכונות זמינות"
+                loadingText="טוען שכונות..."
+                renderOption={(props, option) => (
+                  <Box
+                    component="li"
+                    {...props}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      padding: '8px 12px !important',
+                      '&:hover': {
+                        backgroundColor: `${colors.primary.light}20 !important`,
+                      },
+                    }}
+                  >
+                    <LocationOnIcon sx={{ fontSize: 18, color: colors.primary.main }} />
+                    <Typography variant="body2">{option.name}</Typography>
+                  </Box>
+                )}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     label="שכונות"
+                    placeholder="חפש ובחר שכונות..."
                     required
                     helperText="בחר את השכונות שרכז הפעילים יהיה אחראי עליהן"
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: (
+                        <>
+                          <SearchIcon sx={{ color: colors.neutral[400], marginLeft: 1 }} />
+                          {params.InputProps.startAdornment}
+                        </>
+                      ),
+                    }}
                     inputProps={{
                       ...params.inputProps,
                       dir: 'rtl',
@@ -486,6 +522,15 @@ export default function UserModal({
                         borderRadius: borderRadius.md,
                         flexDirection: 'row-reverse',
                         paddingRight: '14px',
+                        backgroundColor: colors.neutral[50],
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: colors.neutral[100],
+                        },
+                        '&.Mui-focused': {
+                          backgroundColor: colors.secondary.white,
+                          boxShadow: `0 0 0 2px ${colors.primary.light}40`,
+                        },
                       },
                       '& .MuiInputLabel-root': {
                         right: 0,
@@ -506,50 +551,57 @@ export default function UserModal({
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => {
                     const handleDelete = (event: any) => {
-                      console.log('🔴 CHIP ONDELETE FIRED!', option.name);
                       event.stopPropagation();
                       event.preventDefault();
                       const newSiteIds = formData.neighborhoodIds.filter(id => id !== option.id);
-                      console.log('Removing ID:', option.id);
-                      console.log('New site IDs:', newSiteIds);
                       setFormData((prev) => ({
                         ...prev,
                         neighborhoodIds: newSiteIds,
                       }));
                     };
 
+                    const city = cities.find(c => c.id === option.cityId);
+
                     return (
                       <Chip
                         key={option.id}
-                        label={option.name}
+                        icon={<LocationOnIcon sx={{ fontSize: 16 }} />}
+                        label={`${option.name}${city ? ` (${city.name})` : ''}`}
                         onDelete={handleDelete}
-                        deleteIcon={
-                          <CloseIcon
-                            onClick={(e) => {
-                              console.log('🟢 DELETE ICON CLICKED!');
-                              handleDelete(e);
-                            }}
-                            sx={{
-                              fontSize: 18,
-                              cursor: 'pointer !important',
-                              pointerEvents: 'all !important',
-                            }}
-                          />
-                        }
+                        size="medium"
                         sx={{
-                          backgroundColor: colors.neutral[100],
-                          color: colors.neutral[900],
+                          backgroundColor: colors.primary.light,
+                          color: colors.primary.dark,
                           fontWeight: 600,
-                          margin: '2px',
-                          border: `1px solid ${colors.neutral[300]}`,
+                          margin: '4px 2px',
+                          border: `1px solid ${colors.primary.main}30`,
+                          borderRadius: borderRadius.md,
+                          fontSize: '0.875rem',
+                          height: '32px',
+                          '& .MuiChip-icon': {
+                            color: colors.primary.main,
+                            marginRight: '4px',
+                            marginLeft: '-4px',
+                          },
                           '& .MuiChip-deleteIcon': {
-                            color: colors.neutral[600],
+                            color: colors.primary.main,
                             marginRight: '5px',
                             marginLeft: '-6px',
-                            pointerEvents: 'all !important',
+                            fontSize: 18,
+                            transition: 'all 0.2s ease',
                             '&:hover': {
-                              color: colors.neutral[900],
-                              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                              color: colors.status.red,
+                              transform: 'scale(1.1)',
+                            },
+                          },
+                          '&:hover': {
+                            backgroundColor: colors.primary.main,
+                            color: colors.secondary.white,
+                            '& .MuiChip-icon': {
+                              color: colors.secondary.white,
+                            },
+                            '& .MuiChip-deleteIcon': {
+                              color: colors.secondary.white,
                             },
                           },
                         }}
@@ -562,9 +614,23 @@ export default function UserModal({
                   '& .MuiAutocomplete-inputRoot': {
                     flexDirection: 'row-reverse',
                     gap: '4px',
+                    padding: '8px !important',
                   },
                   '& .MuiAutocomplete-tag': {
                     margin: '2px',
+                  },
+                  '& .MuiAutocomplete-groupLabel': {
+                    backgroundColor: colors.neutral[100],
+                    color: colors.neutral[700],
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    padding: '8px 12px',
+                    borderRadius: borderRadius.sm,
+                    margin: '4px 8px',
+                    textAlign: 'right',
+                  },
+                  '& .MuiAutocomplete-listbox': {
+                    padding: '8px',
                   },
                 }}
                 data-testid="neighborhoods-autocomplete"
