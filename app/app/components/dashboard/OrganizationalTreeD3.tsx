@@ -1413,7 +1413,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
               }}
             >
               <Typography variant="caption" sx={{ color: colors.neutral[600], display: 'block', textAlign: 'center' }}>
-                סה"כ: {selectedNode?.children?.length || 0} פריטים
+                סה&quot;כ: {selectedNode?.children?.length || 0} פריטים
               </Typography>
             </Box>
           </Box>
