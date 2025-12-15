@@ -191,7 +191,11 @@ model CityCoordinator {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // Relations
+  neighborhoods Neighborhood[] // v2.0.1: Neighborhoods managed by this City Coordinator
+
   @@unique([cityId, userId]) // User can be coordinator once per city
+  @@unique([id, cityId])     // v2.0.1: Composite FK support for neighborhoods relation
   @@index([cityId])
   @@index([userId])
   @@index([isActive])
@@ -264,6 +268,10 @@ model Neighborhood {
   cityId String @map("city_id")
   cityRelation City @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
+  // v2.0.1: City Coordinator assignment (each neighborhood belongs to one City Coordinator)
+  cityCoordinatorId String?          @map("city_coordinator_id")
+  cityCoordinator   CityCoordinator? @relation(fields: [cityCoordinatorId, cityId], references: [id, cityId], onDelete: SetNull)
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -275,6 +283,7 @@ model Neighborhood {
 
   @@unique([id, cityId]) // v2.0 compliance: composite FK support
   @@index([cityId])
+  @@index([cityCoordinatorId])
   @@index([isActive])
   @@map("neighborhoods")
 }
