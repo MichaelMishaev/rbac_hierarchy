@@ -46,6 +46,7 @@
     "node_modules",
     "tests/**/*",
     "scripts/**/*",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "verify-org-tree.ts"
   ]
 }
