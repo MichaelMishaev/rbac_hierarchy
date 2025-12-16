@@ -2,7 +2,7 @@
 # Forces Node.js 20 for production builds
 
 [phases.setup]
-nixPkgs = ["nodejs-20_x"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
 cmds = ["cd app && npm ci"]
