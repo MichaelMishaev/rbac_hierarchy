@@ -17,7 +17,7 @@
     "db:seed": "cd app && npx tsx prisma/seed.ts",
     "db:studio": "cd app && npx prisma studio",
     "db:reset": "cd app && npx prisma db push --force-reset && npm run db:seed",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

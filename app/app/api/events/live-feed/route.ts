@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 /**
  * Fetch recent events based on user role and permissions
  */
-async function fetchRecentEvents(userId: string, role: string): Promise<LiveEvent[]> {
+async function fetchRecentEvents(_userId: string, _role: string): Promise<LiveEvent[]> {
   const events: LiveEvent[] = [];
   const fiveSecondsAgo = new Date(Date.now() - 5000);
 

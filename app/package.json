@@ -9,7 +9,7 @@
     "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
