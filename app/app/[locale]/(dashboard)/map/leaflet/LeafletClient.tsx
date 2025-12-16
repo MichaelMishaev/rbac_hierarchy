@@ -15,7 +15,6 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
-  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -40,12 +39,49 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
   ),
 });
 
+interface AreaManager {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  cities: Array<{ id: string; name: string }>;
+  latitude: number;
+  longitude: number;
+  type: 'area_manager';
+}
+
+interface CityCoordinator {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  city: { id: string; name: string };
+  latitude: number;
+  longitude: number;
+  type: 'city_coordinator';
+}
+
+interface ActivistCoordinator {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  city: { id: string; name: string };
+  neighborhoods: Array<{ id: string; name: string; address: string | null }>;
+  latitude: number;
+  longitude: number;
+  type: 'activist_coordinator';
+}
+
 interface MapData {
   neighborhoods: any[];
   cities: any[];
-  areaManagers: any[];
-  managers: any[];
-  activistCoordinators: any[];
+  areaManagers: AreaManager[];
+  managers: CityCoordinator[];
+  activistCoordinators: ActivistCoordinator[];
   stats: any;
   user: any;
 }
@@ -55,7 +91,10 @@ export default function LeafletClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<{
+    id: string;
+    type: 'neighborhood' | 'area_manager' | 'city_coordinator' | 'activist_coordinator';
+  } | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     cities: true,
     neighborhoods: false,
@@ -115,8 +154,11 @@ export default function LeafletClient() {
     }));
   };
 
-  const handleSiteClick = (siteId: string) => {
-    setSelectedSiteId(siteId);
+  const handleEntityClick = (
+    id: string,
+    type: 'neighborhood' | 'area_manager' | 'city_coordinator' | 'activist_coordinator'
+  ) => {
+    setSelectedEntity({ id, type });
     // Auto-close sidebar on mobile after selection
     if (window.innerWidth < 600) {
       setSidebarOpen(false);
@@ -341,7 +383,7 @@ export default function LeafletClient() {
                   <ListItem
                     key={neighborhood.id}
                     component="button"
-                    onClick={() => handleSiteClick(neighborhood.id)}
+                    onClick={() => handleEntityClick(neighborhood.id, 'neighborhood')}
                     disabled={!neighborhood.latitude || !neighborhood.longitude}
                     sx={{
                       pl: 2,
@@ -352,11 +394,17 @@ export default function LeafletClient() {
                       mx: 1,
                       cursor: neighborhood.latitude && neighborhood.longitude ? 'pointer' : 'not-allowed',
                       opacity: neighborhood.latitude && neighborhood.longitude ? 1 : 0.5,
-                      background: selectedSiteId === neighborhood.id ? colors.pastel.blueLight : 'transparent',
-                      border: selectedSiteId === neighborhood.id ? `2px solid ${colors.primary}` : '2px solid transparent',
+                      background:
+                        selectedEntity?.id === neighborhood.id && selectedEntity?.type === 'neighborhood'
+                          ? colors.pastel.blueLight
+                          : 'transparent',
+                      border:
+                        selectedEntity?.id === neighborhood.id && selectedEntity?.type === 'neighborhood'
+                          ? `2px solid ${colors.primary}`
+                          : '2px solid transparent',
                       '&:hover': {
                         background: neighborhood.latitude && neighborhood.longitude
-                          ? selectedSiteId === neighborhood.id
+                          ? selectedEntity?.id === neighborhood.id && selectedEntity?.type === 'neighborhood'
                             ? colors.pastel.blue
                             : colors.neutral[50]
                           : 'transparent',
@@ -422,33 +470,47 @@ export default function LeafletClient() {
             <Collapse in={expandedSections.managers} timeout="auto" unmountOnExit>
               <List component="div" disablePadding sx={{ mt: 1 }}>
                 {data.managers.map((manager: any) => (
-                  <ListItem 
-                    key={manager.id} 
-                    sx={{ 
-                      pl: 2, 
+                  <ListItem
+                    key={manager.id}
+                    component="button"
+                    onClick={() => handleEntityClick(manager.id, 'city_coordinator')}
+                    sx={{
+                      pl: 2,
                       pr: 1,
                       py: 1.5,
                       transition: 'all 0.2s ease',
                       borderRadius: '8px',
                       mx: 1,
+                      cursor: 'pointer',
+                      background:
+                        selectedEntity?.id === manager.id && selectedEntity?.type === 'city_coordinator'
+                          ? colors.pastel.purpleLight
+                          : 'transparent',
+                      border:
+                        selectedEntity?.id === manager.id && selectedEntity?.type === 'city_coordinator'
+                          ? `2px solid ${colors.pastel.purple}`
+                          : '2px solid transparent',
                       '&:hover': {
-                        background: colors.neutral[50],
+                        background:
+                          selectedEntity?.id === manager.id && selectedEntity?.type === 'city_coordinator'
+                            ? colors.pastel.purple
+                            : colors.neutral[50],
                         transform: 'translateX(-2px)',
                       },
                     }}
                   >
-                    <Avatar sx={{ 
-                      width: 32, 
-                      height: 32, 
-                      mr: 1.5, 
+                    <Avatar sx={{
+                      width: 32,
+                      height: 32,
+                      mr: 1.5,
                       background: colors.pastel.purple,
                       fontWeight: 600,
                       fontSize: '12px',
                     }}>
-                      {manager.user.fullName.charAt(0)}
+                      {manager.fullName.charAt(0)}
                     </Avatar>
                     <ListItemText
-                      primary={manager.user.fullName}
+                      primary={manager.fullName}
                       secondary={manager.city.name}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                       secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
@@ -486,33 +548,50 @@ export default function LeafletClient() {
               <List component="div" disablePadding sx={{ mt: 1 }}>
                 {data.activistCoordinators.map((activistCoordinator: any) => (
                   <ListItem
-                    key={activistCoordinator.id} 
-                    sx={{ 
-                      pl: 2, 
+                    key={activistCoordinator.id}
+                    component="button"
+                    onClick={() => handleEntityClick(activistCoordinator.id, 'activist_coordinator')}
+                    sx={{
+                      pl: 2,
                       pr: 1,
                       py: 1.5,
                       transition: 'all 0.2s ease',
                       borderRadius: '8px',
                       mx: 1,
+                      cursor: 'pointer',
+                      background:
+                        selectedEntity?.id === activistCoordinator.id &&
+                        selectedEntity?.type === 'activist_coordinator'
+                          ? colors.pastel.orangeLight
+                          : 'transparent',
+                      border:
+                        selectedEntity?.id === activistCoordinator.id &&
+                        selectedEntity?.type === 'activist_coordinator'
+                          ? `2px solid ${colors.pastel.orange}`
+                          : '2px solid transparent',
                       '&:hover': {
-                        background: colors.neutral[50],
+                        background:
+                          selectedEntity?.id === activistCoordinator.id &&
+                          selectedEntity?.type === 'activist_coordinator'
+                            ? colors.pastel.orange
+                            : colors.neutral[50],
                         transform: 'translateX(-2px)',
                       },
                     }}
                   >
-                    <Avatar sx={{ 
-                      width: 32, 
-                      height: 32, 
-                      mr: 1.5, 
+                    <Avatar sx={{
+                      width: 32,
+                      height: 32,
+                      mr: 1.5,
                       background: colors.pastel.orange,
                       fontWeight: 600,
                       fontSize: '12px',
                     }}>
-                      {activistCoordinator.user.fullName.charAt(0)}
+                      {activistCoordinator.fullName.charAt(0)}
                     </Avatar>
                     <ListItemText
-                      primary={activistCoordinator.user.fullName}
-                      secondary={`${activistCoordinator.neighborhoodAssignments.length} שכונות`}
+                      primary={activistCoordinator.fullName}
+                      secondary={`${activistCoordinator.neighborhoods.length} שכונות`}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                       secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
                     />
@@ -550,33 +629,47 @@ export default function LeafletClient() {
                 <Collapse in={expandedSections.areaManagers} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding sx={{ mt: 1 }}>
                     {data.areaManagers.map((am: any) => (
-                      <ListItem 
-                        key={am.id} 
-                        sx={{ 
-                          pl: 2, 
+                      <ListItem
+                        key={am.id}
+                        component="button"
+                        onClick={() => handleEntityClick(am.id, 'area_manager')}
+                        sx={{
+                          pl: 2,
                           pr: 1,
                           py: 1.5,
                           transition: 'all 0.2s ease',
                           borderRadius: '8px',
                           mx: 1,
+                          cursor: 'pointer',
+                          background:
+                            selectedEntity?.id === am.id && selectedEntity?.type === 'area_manager'
+                              ? colors.pastel.blueLight
+                              : 'transparent',
+                          border:
+                            selectedEntity?.id === am.id && selectedEntity?.type === 'area_manager'
+                              ? `2px solid ${colors.primary}`
+                              : '2px solid transparent',
                           '&:hover': {
-                            background: colors.neutral[50],
+                            background:
+                              selectedEntity?.id === am.id && selectedEntity?.type === 'area_manager'
+                                ? colors.pastel.blue
+                                : colors.neutral[50],
                             transform: 'translateX(-2px)',
                           },
                         }}
                       >
-                        <Avatar sx={{ 
-                          width: 32, 
-                          height: 32, 
-                          mr: 1.5, 
+                        <Avatar sx={{
+                          width: 32,
+                          height: 32,
+                          mr: 1.5,
                           background: colors.primary,
                           fontWeight: 600,
                           fontSize: '12px',
                         }}>
-                          {am.user.fullName.charAt(0)}
+                          {am.fullName.charAt(0)}
                         </Avatar>
                         <ListItemText
-                          primary={am.user.fullName}
+                          primary={am.fullName}
                           secondary={`${am.cities.length} ערים`}
                           primaryTypographyProps={{ fontWeight: 600, fontSize: '14px' }}
                           secondaryTypographyProps={{ fontSize: '12px', color: colors.neutral[600] }}
@@ -663,8 +756,11 @@ export default function LeafletClient() {
       >
         <LeafletMap
           neighborhoods={sitesWithGPS}
-          selectedSiteId={selectedSiteId}
-          onSiteSelect={setSelectedSiteId}
+          areaManagers={data.areaManagers}
+          cityCoordinators={data.managers}
+          activistCoordinators={data.activistCoordinators}
+          selectedEntity={selectedEntity}
+          onEntitySelect={setSelectedEntity}
         />
       </Box>
     </Box>

@@ -1,6 +1,6 @@
 ---
 name: project-manager
-description: Senior project manager for Election Campaign Management System. Use PROACTIVELY to coordinate campaign feature development, track progress, prioritize for campaign season, and ensure quality gates.
+description: 🟡 Project Manager - Senior project manager for Election Campaign Management System. Use PROACTIVELY to coordinate campaign feature development, track progress, prioritize for campaign season, and ensure quality gates.
 tools: Read, Write, Bash, Grep, Glob
 model: sonnet
 ---

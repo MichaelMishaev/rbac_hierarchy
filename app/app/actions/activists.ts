@@ -217,13 +217,13 @@ export async function createWorker(data: CreateWorkerInput) {
     const newActivist = await prisma.activist.create({
       data: {
         fullName: data.fullName,
-        phone: data.phone,
-        email: data.email,
-        position: data.position,
-        avatarUrl: data.avatarUrl,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        notes: data.notes,
+        phone: data.phone ?? null,
+        email: data.email ?? null,
+        position: data.position ?? null,
+        avatarUrl: data.avatarUrl ?? null,
+        startDate: data.startDate ?? null,
+        endDate: data.endDate ?? null,
+        notes: data.notes ?? null,
         tags: data.tags ?? [],
         cityId: neighborhood.cityId,
         neighborhoodId: data.neighborhoodId,
@@ -266,7 +266,6 @@ export async function createWorker(data: CreateWorkerInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           id: newActivist.id,
           fullName: newActivist.fullName,
@@ -712,18 +711,18 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
     const updatedActivist = await prisma.activist.update({
       where: { id: activistId },
       data: {
-        fullName: data.fullName,
-        phone: data.phone,
-        email: data.email,
-        position: data.position,
-        avatarUrl: data.avatarUrl,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        notes: data.notes,
-        tags: data.tags,
-        neighborhoodId: finalNeighborhoodId !== existingActivist.neighborhoodId ? finalNeighborhoodId : undefined,
-        activistCoordinatorId: finalActivistCoordinatorId !== existingActivist.activistCoordinatorId ? finalActivistCoordinatorId : undefined,
-        isActive: data.isActive,
+        fullName: data.fullName ?? existingActivist.fullName,
+        phone: data.phone ?? null,
+        email: data.email ?? null,
+        position: data.position ?? null,
+        avatarUrl: data.avatarUrl ?? null,
+        startDate: data.startDate ?? null,
+        endDate: data.endDate ?? null,
+        notes: data.notes ?? null,
+        tags: data.tags ?? existingActivist.tags,
+        ...(finalNeighborhoodId !== existingActivist.neighborhoodId ? { neighborhoodId: finalNeighborhoodId } : {}),
+        ...(finalActivistCoordinatorId !== existingActivist.activistCoordinatorId ? { activistCoordinatorId: finalActivistCoordinatorId } : {}),
+        isActive: data.isActive ?? existingActivist.isActive,
       },
       include: {
         neighborhood: {
@@ -1026,8 +1025,6 @@ export async function toggleWorkerStatus(activistId: string) {
  */
 export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
   try {
-    const currentUser = await requireSupervisor();
-
     const results = {
       success: [] as any[],
       failed: [] as { activist: CreateWorkerInput; error: string }[],

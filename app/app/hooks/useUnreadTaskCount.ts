@@ -1,6 +1,11 @@
 /**
  * Hook to fetch and poll unread task count for navigation badge
  * Uses React Query for caching and automatic refetching
+ *
+ * 🚀 PERFORMANCE OPTIMIZATIONS:
+ * - Reduced polling from 30s → 60s (50% less API calls)
+ * - Disabled refetchOnWindowFocus (less network noise)
+ * - Increased staleTime from 10s → 30s (better caching)
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -23,8 +28,8 @@ export function useUnreadTaskCount() {
 
       return response.json();
     },
-    refetchInterval: 30000, // Poll every 30 seconds for real-time updates
-    refetchOnWindowFocus: true, // Refetch when user returns to tab
-    staleTime: 10000, // Consider data fresh for 10 seconds
+    refetchInterval: 60000, // 🚀 Optimized: 30s → 60s (50% reduction in API calls)
+    refetchOnWindowFocus: false, // 🚀 Optimized: Disabled to reduce network noise
+    staleTime: 30000, // 🚀 Optimized: 10s → 30s (better caching, less refetching)
   });
 }

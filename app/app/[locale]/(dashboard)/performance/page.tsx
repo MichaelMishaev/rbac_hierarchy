@@ -8,13 +8,12 @@
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
-import { getTranslations, getLocale } from 'next-intl/server';
+import { getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
 import PerformanceDashboardClient from '@/app/components/performance/PerformanceDashboardClient';
 
 export default async function PerformanceDashboard() {
   const session = await auth();
-  const t = await getTranslations('performance');
   const locale = await getLocale();
   const isRTL = locale === 'he';
 

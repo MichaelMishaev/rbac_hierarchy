@@ -1,6 +1,6 @@
 ---
 name: qa-tester
-description: Expert QA engineer for Election Campaign Management System. Use PROACTIVELY for campaign RBAC testing, cross-city data isolation verification, mobile testing, and Hebrew/RTL validation after any code changes.
+description: 🔴 QA Tester - Expert QA engineer for Election Campaign Management System. Use PROACTIVELY for campaign RBAC testing, cross-city data isolation verification, mobile testing, and Hebrew/RTL validation after any code changes.
 tools: Read, Bash, Grep, Glob
 model: sonnet
 ---

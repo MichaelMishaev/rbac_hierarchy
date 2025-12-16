@@ -1,6 +1,6 @@
 ---
 name: campaign-analyst
-description: Campaign analytics and reporting specialist for Election Campaign Management System. Use PROACTIVELY for campaign metrics, activist engagement analysis, performance dashboards, and data-driven insights for politicians and campaign managers.
+description: 🟠 Campaign Analyst - Campaign analytics and reporting specialist for Election Campaign Management System. Use PROACTIVELY for campaign metrics, activist engagement analysis, performance dashboards, and data-driven insights for politicians and campaign managers.
 tools: Read, Write, Bash, Grep, Glob
 model: sonnet
 ---

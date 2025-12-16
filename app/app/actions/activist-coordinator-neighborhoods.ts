@@ -82,7 +82,7 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
       data: {
         email: data.email,
         fullName: data.fullName,
-        phone: data.phone,
+        phone: data.phone ?? null,
         passwordHash: hashedPassword,
         role: 'ACTIVIST_COORDINATOR',
       },
@@ -106,7 +106,6 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           activistCoordinatorId: newActivistCoordinator.id,
           userId: newUser.id,
@@ -260,7 +259,6 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           activistCoordinatorId,
           neighborhoodId,
@@ -397,7 +395,6 @@ export async function removeSupervisorFromSite(activistCoordinatorId: string, ne
           neighborhoodName: neighborhood.name,
           coordinatorName: assignment.activistCoordinator.user.fullName,
         },
-        after: undefined,
       },
     });
 

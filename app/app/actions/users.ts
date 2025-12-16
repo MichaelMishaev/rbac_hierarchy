@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireRole, getUserCorporations, hasAccessToCorporation } from '@/lib/auth';
+import { getCurrentUser, getUserCorporations, hasAccessToCorporation } from '@/lib/auth';
 import { hash } from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { Role } from '@prisma/client';
@@ -266,7 +266,6 @@ export async function createUser(data: CreateUserInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           id: newUser.id,
           email: newUser.email,
@@ -326,7 +325,6 @@ export async function listUsers(filters: ListUsersFilters = {}) {
 
     // CRITICAL: Hierarchy filtering - show only users BELOW current user
     // Get roles that are below current user in hierarchy
-    const currentLevel = getHierarchyLevel(currentUser.role);
     const allowedRoles: Role[] = [];
 
     if (currentUser.role === 'SUPERADMIN') {
@@ -903,7 +901,6 @@ export async function deleteUser(userId: string) {
           fullName: userToDelete.fullName,
           role: userToDelete.role,
         },
-        after: undefined,
       },
     });
 

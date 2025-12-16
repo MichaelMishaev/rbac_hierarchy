@@ -6,8 +6,15 @@ import NavigationV3 from '@/app/components/layout/NavigationV3';
 import MobileBottomNav from '@/app/components/layout/BottomNavigation';
 import ContextAwareFAB from '@/app/components/layout/FloatingActionButton';
 import QueryProvider from '@/app/providers/QueryProvider';
-import CommandPalette from '@/app/components/ui/CommandPalette';
 import ProgressBar from '@/app/components/ui/ProgressBar';
+
+// 🚀 PERFORMANCE: Lazy load non-critical components
+// CommandPalette is not immediately needed, load it dynamically
+import dynamic from 'next/dynamic';
+
+const CommandPalette = dynamic(
+  () => import('@/app/components/ui/CommandPalette')
+);
 
 export default async function DashboardLayout({
   children,

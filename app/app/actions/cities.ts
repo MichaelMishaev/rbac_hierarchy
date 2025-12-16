@@ -137,8 +137,8 @@ export async function createCity(data: CreateCityInput) {
       data: {
         name: data.name,
         code: data.code,
-        description: data.description,
-        logoUrl: data.logo,
+        description: data.description ?? null,
+        logoUrl: data.logo ?? null,
         isActive: data.isActive ?? true,
         areaManagerId: data.areaManagerId, // v1.4: Required field from user input
       },
@@ -173,7 +173,6 @@ export async function createCity(data: CreateCityInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           id: newCorporation.id,
           name: newCorporation.name,
@@ -457,17 +456,18 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
       }
     }
 
-    // Update corporation
+    // Update corporation - build data object conditionally
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.code !== undefined) updateData.code = data.code;
+    if (data.description !== undefined) updateData.description = data.description ?? null;
+    if (data.logo !== undefined) updateData.logoUrl = data.logo ?? null;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (normalizedAreaManagerId !== undefined) updateData.areaManagerId = normalizedAreaManagerId; // v1.4: Update Area Manager if provided
+
     const updatedCorporation = await prisma.city.update({
       where: { id: cityId },
-      data: {
-        name: data.name,
-        code: data.code,
-        description: data.description,
-        logoUrl: data.logo,
-        isActive: data.isActive,
-        ...(normalizedAreaManagerId !== undefined && { areaManagerId: normalizedAreaManagerId }), // v1.4: Update Area Manager if provided
-      },
+      data: updateData,
       include: {
         areaManager: {
           include: {
@@ -600,7 +600,6 @@ export async function deleteCity(cityId: string) {
           coordinatorCount: corpToDelete._count.coordinators,
           neighborhoodCount: corpToDelete._count.neighborhoods,
         },
-        after: undefined,
       },
     });
 

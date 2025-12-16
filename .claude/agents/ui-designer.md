@@ -1,6 +1,6 @@
 ---
 name: ui-designer
-description: World-class UI/UX designer for Election Campaign Management System. Use PROACTIVELY for Hebrew/RTL design, mobile-first campaign interfaces, and ensuring visual consistency for politicians and field activists.
+description: 🟣 UI Designer - World-class UI/UX designer for Election Campaign Management System. Use PROACTIVELY for Hebrew/RTL design, mobile-first campaign interfaces, and ensuring visual consistency for politicians and field activists.
 tools: Read, Bash, Grep, Glob
 model: sonnet
 ---

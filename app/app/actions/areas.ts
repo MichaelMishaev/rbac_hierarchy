@@ -158,7 +158,6 @@ export async function createArea(data: CreateAreaInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           id: newAreaManager.id,
           regionName: newAreaManager.regionName,
@@ -311,16 +310,17 @@ export async function updateArea(areaId: string, data: UpdateAreaInput) {
       }
     }
 
-    // Update area manager
+    // Update area manager - build data object conditionally
+    const updateData: any = {};
+    if (data.regionName !== undefined) updateData.regionName = data.regionName.trim();
+    if (data.regionCode !== undefined) updateData.regionCode = data.regionCode.trim().toUpperCase();
+    if (data.userId !== undefined) updateData.userId = data.userId;
+    if (data.description) updateData.metadata = { description: data.description };
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
     const updatedArea = await prisma.areaManager.update({
       where: { id: areaId },
-      data: {
-        regionName: data.regionName?.trim(),
-        regionCode: data.regionCode?.trim().toUpperCase(),
-        userId: data.userId,
-        metadata: data.description ? { description: data.description } : undefined,
-        isActive: data.isActive,
-      },
+      data: updateData,
       include: {
         user: {
           select: {
@@ -458,7 +458,6 @@ export async function deleteArea(areaId: string) {
           userEmail: areaToDelete.user?.email || 'N/A',
           cityCount: areaToDelete._count.cities,
         },
-        after: undefined,
       },
     });
 
@@ -511,17 +510,18 @@ export async function getAvailableAreaManagerUsers(currentAreaId?: string) {
     });
 
     // Get IDs of users who are already area managers
-    const assignedUsers = await prisma.areaManager.findMany({
-      where: currentAreaId
-        ? {
-            // When editing, exclude users assigned to OTHER areas
-            id: { not: currentAreaId },
-          }
-        : undefined,
+    const findManyOptions: any = {
       select: {
         userId: true,
       },
-    });
+    };
+    if (currentAreaId) {
+      findManyOptions.where = {
+        // When editing, exclude users assigned to OTHER areas
+        id: { not: currentAreaId },
+      };
+    }
+    const assignedUsers = await prisma.areaManager.findMany(findManyOptions);
 
     const assignedUserIds = new Set(assignedUsers.map((am) => am.userId));
 

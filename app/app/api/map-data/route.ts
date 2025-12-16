@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, getUserCorporations } from '@/lib/auth';
+import {
+  geocodeLocation,
+  calculateCentroid,
+  offsetCoordinates,
+  getIsraelCenter,
+  isValidIsraelCoordinate,
+  getCityFallbackCoordinates,
+} from '@/lib/geocoding';
 
 export async function GET(request: Request) {
   try {
@@ -140,6 +148,8 @@ export async function GET(request: Request) {
                   id: true,
                   name: true,
                   address: true,
+                  latitude: true,
+                  longitude: true,
                   cityRelation: true,
                 },
               },
@@ -158,47 +168,201 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    // Calculate worker counts per site
-    const workerCountsBySite = workers.reduce((acc, group) => {
-      if (!acc[group.neighborhoodId]) {
-        acc[group.neighborhoodId] = { active: 0, inactive: 0 };
-      }
-      if (group.isActive) {
-        acc[group.neighborhoodId].active = group._count;
-      } else {
-        acc[group.neighborhoodId].inactive = group._count;
-      }
-      return acc;
-    }, {} as Record<string, { active: number; inactive: number }>);
+    // Step 1: Geocode cities (for city coordinators positioning)
+    const cityCoordsMap = new Map<string, { latitude: number; longitude: number }>();
 
-    // Format sites for map display
-    const formattedSites = sites.map((site) => {
-      const activeCount = site.activists.filter(a => a.isActive).length;
-      const inactiveCount = site.activists.filter(a => !a.isActive).length;
+    for (const city of corporations) {
+      let coords = await geocodeLocation(city.name, 'IL');
 
-      return {
-        id: site.id,
-        name: site.name,
-        address: site.address,
-        country: site.country,
-        latitude: site.latitude,
-        longitude: site.longitude,
-        phone: site.phone,
-        email: site.email,
-        isActive: site.isActive,
-        city: site.cityRelation,
-        activists: {
-          active: activeCount,
-          inactive: inactiveCount,
-          total: site.activists.length,
-        },
-        activistCoordinators: site.activistCoordinatorAssignments.map((sa: any) => ({
-          id: sa.activistCoordinator.id,
-          name: sa.activistCoordinator.user?.fullName || 'N/A',
-          email: sa.activistCoordinator.user?.email || 'N/A',
-        })),
-      };
-    });
+      // Validate coordinates are not in the sea
+      if (coords && !isValidIsraelCoordinate(coords)) {
+        console.warn(
+          `[Map API] Invalid coordinates for city "${city.name}": ${coords.latitude}, ${coords.longitude} (likely in sea)`
+        );
+        coords = null; // Force fallback
+      }
+
+      // Fallback to known city centers
+      if (!coords) {
+        coords = getCityFallbackCoordinates(city.name);
+        console.log(`[Map API] Using fallback coordinates for city "${city.name}"`);
+      }
+
+      cityCoordsMap.set(city.id, coords);
+    }
+
+    // Step 2: Geocode neighborhoods (if they don't have coordinates)
+    const neighborhoodCoordsMap = new Map<string, { latitude: number; longitude: number }>();
+
+    for (const site of sites) {
+      let coords: { latitude: number; longitude: number } | null = null;
+
+      // Check existing coordinates
+      if (site.latitude && site.longitude) {
+        const existingCoords = {
+          latitude: site.latitude,
+          longitude: site.longitude,
+        };
+
+        // Validate existing coordinates
+        if (isValidIsraelCoordinate(existingCoords)) {
+          coords = existingCoords;
+        } else {
+          console.warn(
+            `[Map API] Invalid existing coordinates for neighborhood "${site.name}": ${site.latitude}, ${site.longitude} (likely in sea)`
+          );
+        }
+      }
+
+      // Geocode if no valid coords yet
+      if (!coords) {
+        const geocoded = await geocodeLocation(`${site.name}, ${site.cityRelation.name}`, 'IL');
+
+        if (geocoded && isValidIsraelCoordinate(geocoded)) {
+          coords = geocoded;
+        } else if (geocoded) {
+          console.warn(
+            `[Map API] Invalid geocoded coordinates for neighborhood "${site.name}": ${geocoded.latitude}, ${geocoded.longitude} (likely in sea)`
+          );
+        }
+      }
+
+      // Fallback to city center with offset
+      if (!coords) {
+        const cityCoords = cityCoordsMap.get(site.cityId);
+        if (cityCoords) {
+          const offsetIndex = Array.from(neighborhoodCoordsMap.values()).filter(
+            (c) => c.latitude === cityCoords.latitude && c.longitude === cityCoords.longitude
+          ).length;
+          coords = offsetCoordinates(cityCoords, offsetIndex, 1);
+          console.log(
+            `[Map API] Using city center offset for neighborhood "${site.name}" (offset ${offsetIndex})`
+          );
+        }
+      }
+
+      if (coords) {
+        neighborhoodCoordsMap.set(site.id, coords);
+      }
+    }
+
+    // Step 3: Format neighborhoods for map
+    const formattedSites = sites
+      .map((site) => {
+        const coords = neighborhoodCoordsMap.get(site.id);
+        if (!coords) return null;
+
+        const activeCount = site.activists.filter((a) => a.isActive).length;
+        const inactiveCount = site.activists.filter((a) => !a.isActive).length;
+
+        return {
+          id: site.id,
+          name: site.name,
+          address: site.address,
+          country: site.country,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          phone: site.phone,
+          email: site.email,
+          isActive: site.isActive,
+          city: site.cityRelation,
+          activists: {
+            active: activeCount,
+            inactive: inactiveCount,
+            total: site.activists.length,
+          },
+          activistCoordinators: site.activistCoordinatorAssignments.map((sa: any) => ({
+            id: sa.activistCoordinator.id,
+            name: sa.activistCoordinator.user?.fullName || 'N/A',
+            email: sa.activistCoordinator.user?.email || 'N/A',
+          })),
+        };
+      })
+      .filter(Boolean);
+
+    // Step 4: Format city coordinators with city center coordinates
+    const formattedManagers = managers
+      .map((manager) => {
+        const cityCoords = cityCoordsMap.get(manager.cityId);
+        if (!cityCoords) return null;
+
+        // Offset slightly to avoid overlap with neighborhoods
+        const offsetIndex = managers.filter((m) => m.cityId === manager.cityId).indexOf(manager);
+
+        return {
+          id: manager.id,
+          userId: manager.userId,
+          fullName: manager.user.fullName,
+          email: manager.user.email,
+          phone: manager.user.phone,
+          city: manager.city,
+          latitude: cityCoords.latitude,
+          longitude: cityCoords.longitude + offsetIndex * 0.01, // Small offset
+          type: 'city_coordinator' as const,
+        };
+      })
+      .filter(Boolean);
+
+    // Step 5: Format activist coordinators with neighborhood coordinates
+    const formattedActivistCoordinators = supervisors
+      .map((supervisor) => {
+        const neighborhoods = supervisor.neighborhoodAssignments.map((na) => na.neighborhood);
+
+        // Use first assigned neighborhood's coordinates, or city center
+        let coords: { latitude: number; longitude: number } | null = null;
+
+        if (neighborhoods.length > 0) {
+          const firstNeighborhood = neighborhoods[0];
+          coords = neighborhoodCoordsMap.get(firstNeighborhood.id) || null;
+        }
+
+        if (!coords) {
+          // Fallback to city center with offset
+          coords = cityCoordsMap.get(supervisor.cityId) || null;
+        }
+
+        if (!coords) return null;
+
+        // Offset to avoid overlap with city coordinators
+        const offsetIndex = supervisors.filter((s) => s.cityId === supervisor.cityId).indexOf(supervisor);
+
+        return {
+          id: supervisor.id,
+          userId: supervisor.userId,
+          fullName: supervisor.user.fullName,
+          email: supervisor.user.email,
+          phone: supervisor.user.phone,
+          city: supervisor.city,
+          neighborhoods: neighborhoods.map((n) => ({ id: n.id, name: n.name, address: n.address })),
+          latitude: coords.latitude + offsetIndex * 0.008,
+          longitude: coords.longitude - offsetIndex * 0.008,
+          type: 'activist_coordinator' as const,
+        };
+      })
+      .filter(Boolean);
+
+    // Step 6: Format area managers with centroid of their cities
+    const formattedAreaManagers = areaManagers
+      .map((areaManager) => {
+        const cityCoords = areaManager.cities
+          .map((city) => cityCoordsMap.get(city.id))
+          .filter(Boolean) as Array<{ latitude: number; longitude: number }>;
+
+        const centroid = calculateCentroid(cityCoords) || getIsraelCenter();
+
+        return {
+          id: areaManager.id,
+          userId: areaManager.userId,
+          fullName: areaManager.user?.fullName || 'Unknown',
+          email: areaManager.user?.email || '',
+          phone: areaManager.user?.phone || null,
+          cities: areaManager.cities,
+          latitude: centroid.latitude,
+          longitude: centroid.longitude,
+          type: 'area_manager' as const,
+        };
+      })
+      .filter(Boolean);
 
     // Calculate stats
     const stats = {
@@ -209,22 +373,18 @@ export async function GET(request: Request) {
       totalManagers: managers.length,
       totalSupervisors: supervisors.length,
       totalAreaManagers: areaManagers.length,
-      totalWorkers: Object.values(workerCountsBySite).reduce(
-        (sum, counts) => sum + counts.active + counts.inactive,
-        0
-      ),
-      activeWorkers: Object.values(workerCountsBySite).reduce(
-        (sum, counts) => sum + counts.active,
-        0
-      ),
+      totalWorkers: workers.reduce((sum, group) => sum + group._count, 0),
+      activeWorkers: workers
+        .filter((group) => group.isActive)
+        .reduce((sum, group) => sum + group._count, 0),
     };
 
     return NextResponse.json({
       neighborhoods: formattedSites,
       cities: corporations,
-      areaManagers,
-      managers,
-      activistCoordinators: supervisors,
+      areaManagers: formattedAreaManagers,
+      managers: formattedManagers,
+      activistCoordinators: formattedActivistCoordinators,
       stats,
       user: {
         id: user.id,

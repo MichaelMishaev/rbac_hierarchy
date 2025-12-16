@@ -1,13 +1,12 @@
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
-import { Box, Typography, Grid, Button } from '@mui/material';
+import { Box, Typography, Grid, Button, Skeleton } from '@mui/material';
 import { signOut } from '@/auth.config';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import { getDashboardStats } from '@/app/actions/dashboard';
 import { getTranslations, getLocale } from 'next-intl/server';
 import DashboardClient from '@/app/components/dashboard/DashboardClient';
 import RecentActivity from '@/app/components/dashboard/RecentActivity';
-import OrganizationalTreeD3 from '@/app/components/dashboard/OrganizationalTreeD3';
 import MonthlyTrendsChart from '@/app/components/dashboard/MonthlyTrendsChart';
 import StatusDistributionChart from '@/app/components/dashboard/StatusDistributionChart';
 import CollapsibleCard from '@/app/components/ui/CollapsibleCard';
@@ -18,6 +17,24 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import GroupIcon from '@mui/icons-material/Group';
 import MailIcon from '@mui/icons-material/Mail';
 import InboxIcon from '@mui/icons-material/Inbox';
+
+// 🚀 PERFORMANCE: Lazy load heavy D3 Tree component (728 KB)
+// This component is large and not immediately critical for first paint
+import dynamic from 'next/dynamic';
+
+const OrganizationalTreeD3 = dynamic(
+  () => import('@/app/components/dashboard/OrganizationalTreeD3'),
+  {
+    loading: () => (
+      <Box sx={{ p: 3, borderRadius: borderRadius.lg, backgroundColor: colors.neutral[50] }}>
+        <Skeleton variant="rectangular" height={400} sx={{ borderRadius: borderRadius.md }} />
+        <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: colors.neutral[500] }}>
+          טוען תרשים ארגוני...
+        </Typography>
+      </Box>
+    ),
+  }
+);
 
 export default async function DashboardContent() {
   const session = await auth();
@@ -46,11 +63,11 @@ export default async function DashboardContent() {
     roleDescription = `מנהל מחוז ${regionName} (${cityCount} ערים)`;
   } else if (currentUserData.role === 'CITY_COORDINATOR' && currentUserData.coordinatorOf.length > 0) {
     const coordinator = currentUserData.coordinatorOf[0];
-    const cityName = coordinator.city.name;
+    const cityName = coordinator?.city?.name ?? '';
     roleDescription = `מנהל עיר - ${cityName}`;
   } else if (currentUserData.role === 'ACTIVIST_COORDINATOR' && currentUserData.activistCoordinatorOf.length > 0) {
     const coordinator = currentUserData.activistCoordinatorOf[0];
-    const cityName = coordinator.city.name;
+    const cityName = coordinator?.city?.name ?? '';
     const neighborhoods = currentUserData.activistCoordinatorNeighborhoods;
     const neighborhoodCount = neighborhoods.length;
 
@@ -331,6 +348,9 @@ export default async function DashboardContent() {
         </>
       );
     }
+
+    // Default fallback (should never reach here)
+    return null;
   };
 
   return (

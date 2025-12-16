@@ -12,7 +12,6 @@ export const revalidate = 30;
 export default async function AreasPage() {
   const session = await auth();
   const t = await getTranslations('areas');
-  const tCommon = await getTranslations('common');
   const locale = await getLocale();
   const isRTL = locale === 'he';
 

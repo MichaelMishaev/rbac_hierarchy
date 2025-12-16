@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   try {
     // Check authorization
     const authHeader = request.headers.get('authorization');
-    const expectedToken = process.env.ADMIN_API_TOKEN || 'change-this-in-production';
+    const expectedToken = process.env['ADMIN_API_TOKEN'] || 'change-this-in-production';
 
     if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json(

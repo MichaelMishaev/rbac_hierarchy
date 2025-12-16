@@ -225,7 +225,6 @@ export async function createNeighborhood(data: CreateNeighborhoodInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           id: newNeighborhood.id,
           name: newNeighborhood.name,
@@ -652,7 +651,6 @@ export async function deleteNeighborhood(neighborhoodId: string) {
           supervisorCount: neighborhoodToDelete._count.activistCoordinatorAssignments,
           workerCount: neighborhoodToDelete._count.activists,
         },
-        after: undefined,
       },
     });
 

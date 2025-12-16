@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Box,
@@ -22,6 +22,7 @@ import {
   Fade,
   Tooltip,
   Chip,
+  LinearProgress,
 } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 
@@ -47,9 +48,9 @@ import AddIcon from '@mui/icons-material/Add';
 import HistoryIcon from '@mui/icons-material/History';
 
 import LanguageSwitcher from './LanguageSwitcher';
-import { signOut } from 'next-auth/react';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 import { useRecentPages } from '@/app/hooks/useRecentPages';
+import { useLogout } from '@/app/hooks/useLogout';
 
 export type NavigationV3Props = {
   role: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
@@ -85,15 +86,25 @@ const NavItemComponent = memo(
     isRTL,
     closeDrawerOnClick,
     isSubItem = false,
+    onNavigate,
   }: {
     item: NavItem;
     isActive: boolean;
     isRTL: boolean;
     closeDrawerOnClick?: () => void;
     isSubItem?: boolean;
+    onNavigate?: (path: string) => void;
   }) => {
     const isTaskInbox = item.path === '/tasks/inbox';
     const hasUnreadTasks = isTaskInbox && item.badge && item.badge > 0;
+
+    const handleClick = (e: React.MouseEvent) => {
+      if (onNavigate) {
+        e.preventDefault();
+        onNavigate(item.path);
+      }
+      closeDrawerOnClick?.();
+    };
 
     return (
       <ListItem disablePadding sx={{ mb: 0.5 }}>
@@ -101,7 +112,7 @@ const NavItemComponent = memo(
           href={item.path}
           prefetch={true}
           style={{ textDecoration: 'none', width: '100%' }}
-          onClick={closeDrawerOnClick}
+          onClick={handleClick}
         >
           <ListItemButton
             data-testid={`nav-link-${item.path.replace('/', '')}`}
@@ -197,9 +208,13 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
   const isRTL = locale === 'he';
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // 🚀 REACT 19: useTransition for smooth navigation
+  const [isPending, startTransition] = useTransition();
 
   // Mobile drawer state
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -210,6 +225,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
     management: true,
     system: true,
     tasks: true,
+    recent: true, // Recent pages section
   });
 
   // ============================================
@@ -222,6 +238,11 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   // RECENT PAGES TRACKING
   // ============================================
   const { recentPages } = useRecentPages();
+
+  // ============================================
+  // CRITICAL: Secure logout that clears ALL caches
+  // ============================================
+  const { logout } = useLogout();
 
   // ============================================
   // PERFORMANCE OPTIMIZATION: Memoize callbacks
@@ -238,8 +259,8 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   }, []);
 
   const handleLogout = useCallback(() => {
-    signOut({ callbackUrl: '/login' });
-  }, []);
+    logout();
+  }, [logout]);
 
   // ============================================
   // PERFORMANCE OPTIMIZATION: Memoize navigation groups
@@ -409,6 +430,18 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   const currentPath = pathname.replace(/^\/(he|en)/, '') || '/';
 
   // ============================================
+  // REACT 19: Smooth navigation with transitions
+  // ============================================
+  const handleNavigate = useCallback(
+    (path: string) => {
+      startTransition(() => {
+        router.push(`/${locale}${path}`);
+      });
+    },
+    [router, locale]
+  );
+
+  // ============================================
   // PERFORMANCE OPTIMIZATION: Memoize render functions
   // ============================================
   const renderNavItem = useCallback(
@@ -422,10 +455,11 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           isRTL={isRTL}
           closeDrawerOnClick={closeDrawerOnClick ? () => setMobileOpen(false) : undefined}
           isSubItem={isSubItem}
+          onNavigate={handleNavigate}
         />
       );
     },
-    [currentPath, isRTL]
+    [currentPath, isRTL, handleNavigate]
   );
 
   const renderGroupedNav = useCallback(
@@ -623,87 +657,167 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           <LanguageSwitcher />
         </Box>
 
-        {/* Recent Pages */}
+        {/* Recent Pages - Redesigned with 2025 Best Practices */}
         {recentPages.length > 0 && (
-          <Box sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.neutral[100]}` }}>
+          <Box sx={{ px: 2, py: 2.5, borderBottom: `1px solid ${colors.neutral[100]}` }}>
+            {/* Card Container with distinct background */}
             <Box
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mb: 1.5,
+                backgroundColor: colors.neutral[50],
+                borderRadius: borderRadius.lg,
+                border: `1px solid ${colors.neutral[200]}`,
+                overflow: 'hidden',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <HistoryIcon
-                  sx={{ fontSize: '14px', color: colors.neutral[500] }}
-                />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: colors.neutral[500],
-                    fontWeight: 700,
-                    fontSize: '11px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  אחרונים
-                </Typography>
-              </Box>
-              <Typography
-                variant="caption"
+              {/* Prominent Section Header */}
+              <Box
+                onClick={() => handleSectionToggle('recent')}
                 sx={{
-                  color: colors.neutral[400],
-                  fontSize: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  px: 2,
+                  py: 1.5,
+                  cursor: 'pointer',
+                  backgroundColor: colors.neutral[100],
+                  borderBottom: `1px solid ${colors.neutral[200]}`,
+                  direction: isRTL ? 'rtl' : 'ltr',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: colors.neutral[100],
+                  },
                 }}
               >
-                {recentPages.length} עמודים
-              </Typography>
-            </Box>
-            <List sx={{ p: 0 }}>
-              {recentPages.slice(0, 5).map((page) => (
-                <ListItem key={page.path} disablePadding sx={{ mb: 0.5 }}>
-                  <Link
-                    href={`/${locale}${page.path}`}
-                    style={{ textDecoration: 'none', width: '100%' }}
-                    onClick={isMobile ? handleDrawerToggle : undefined}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: borderRadius.sm,
+                      backgroundColor: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: shadows.soft,
+                    }}
                   >
-                    <ListItemButton
+                    <HistoryIcon
+                      sx={{ fontSize: '16px', color: colors.neutral[600] }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="caption"
                       sx={{
-                        borderRadius: borderRadius.sm,
-                        py: 0.8,
-                        px: 1.5,
-                        backgroundColor: 'transparent',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor: colors.neutral[50],
-                          transform: 'translateX(-2px)',
-                        },
+                        color: colors.neutral[800],
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        display: 'block',
+                        lineHeight: 1.2,
                       }}
                     >
-                      <ListItemText
-                        primary={page.label}
-                        primaryTypographyProps={{
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          color: colors.neutral[700],
-                          textAlign: isRTL ? 'right' : 'left',
-                        }}
-                      />
-                      <HistoryIcon
-                        sx={{
-                          fontSize: '14px',
-                          color: colors.neutral[400],
-                          marginLeft: isRTL ? 0 : 1,
-                          marginRight: isRTL ? 1 : 0,
-                        }}
-                      />
-                    </ListItemButton>
-                  </Link>
-                </ListItem>
-              ))}
-            </List>
+                      עמודים אחרונים
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: colors.neutral[500],
+                        fontSize: '10px',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {recentPages.length} ביקורים אחרונים
+                    </Typography>
+                  </Box>
+                </Box>
+                <IconButton size="small" sx={{ p: 0 }}>
+                  <ExpandMoreIcon
+                    fontSize="small"
+                    sx={{
+                      color: colors.neutral[400],
+                      transform: expandedSections.recent ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  />
+                </IconButton>
+              </Box>
+
+              {/* Collapsible Recent Pages List */}
+              <Collapse in={expandedSections.recent} timeout="auto">
+                <List sx={{ p: 1.5, pt: 1 }}>
+                  {recentPages.slice(0, 5).map((page, index) => (
+                    <ListItem key={page.path} disablePadding sx={{ mb: 0.5 }}>
+                      <Link
+                        href={`/${locale}${page.path}`}
+                        style={{ textDecoration: 'none', width: '100%' }}
+                        onClick={isMobile ? handleDrawerToggle : undefined}
+                      >
+                        <ListItemButton
+                          sx={{
+                            borderRadius: borderRadius.md,
+                            py: 1,
+                            px: 1.5,
+                            backgroundColor: '#fff',
+                            border: `1px solid ${colors.neutral[200]}`,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              backgroundColor: '#fff',
+                              borderColor: colors.primary,
+                              transform: 'translateX(-2px)',
+                              boxShadow: shadows.soft,
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              backgroundColor: colors.neutral[100],
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginLeft: isRTL ? 0 : 1,
+                              marginRight: isRTL ? 1 : 0,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                color: colors.neutral[600],
+                              }}
+                            >
+                              {index + 1}
+                            </Typography>
+                          </Box>
+                          <ListItemText
+                            primary={page.label}
+                            primaryTypographyProps={{
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: colors.neutral[700],
+                              textAlign: isRTL ? 'right' : 'left',
+                              noWrap: true,
+                            }}
+                          />
+                          <HistoryIcon
+                            sx={{
+                              fontSize: '14px',
+                              color: colors.neutral[300],
+                              marginLeft: isRTL ? 0 : 1,
+                              marginRight: isRTL ? 1 : 0,
+                              flexShrink: 0,
+                            }}
+                          />
+                        </ListItemButton>
+                      </Link>
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            </Box>
           </Box>
         )}
 
@@ -796,6 +910,21 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           }
         }
       `}</style>
+
+      {/* 🚀 REACT 19: Navigation Loading Indicator */}
+      {isPending && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+          }}
+        >
+          <LinearProgress color="primary" />
+        </Box>
+      )}
 
       {/* Mobile Hamburger Button */}
       {isMobile && (

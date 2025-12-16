@@ -8,6 +8,8 @@
     "postbuild": "npx prisma db push --accept-data-loss || true && tsx scripts/add-israeli-districts.ts || true && tsx scripts/add-tlv-neighborhoods.ts || true",
     "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
     "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "prepare": "husky",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -88,6 +90,8 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9.14.0",
     "eslint-config-next": "^15.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prisma": "^5.22.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3"

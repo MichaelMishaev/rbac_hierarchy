@@ -1,6 +1,6 @@
 ---
 name: frontend-developer
-description: Expert frontend developer for Election Campaign Management System with Hebrew/RTL and mobile-first design. Use PROACTIVELY for all campaign UI components, forms, tables, animations, and responsive design implementation.
+description: 🟢 Frontend Developer - Expert frontend developer for Election Campaign Management System with Hebrew/RTL and mobile-first design. Use PROACTIVELY for all campaign UI components, forms, tables, animations, and responsive design implementation.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---

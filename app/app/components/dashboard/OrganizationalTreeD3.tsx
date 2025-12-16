@@ -22,6 +22,7 @@ import {
   Divider,
   Slide,
   Fade,
+  Snackbar,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
@@ -88,6 +89,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const isUpdatingRef = useRef(false); // Prevent infinite loops
+  const [errorSnackbar, setErrorSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'warning' | 'info' }>({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
 
   // HEBREW-ONLY labels (this is a Hebrew-first system)
   const labels = useMemo(() => ({
@@ -400,6 +406,16 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       const response = await fetch('/api/org-tree-export-html');
 
       if (!response.ok) {
+        // Check if unauthorized (403 Forbidden - non-admin user)
+        if (response.status === 403) {
+          setErrorSnackbar({
+            open: true,
+            message: 'תכונה זו זמינה למנהלי מערכת בלבד',
+            severity: 'warning',
+          });
+          return;
+        }
+
         throw new Error('Failed to download HTML file');
       }
 
@@ -420,7 +436,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error downloading HTML:', err);
-      alert('שגיאה בהורדת קובץ HTML');
+      setErrorSnackbar({
+        open: true,
+        message: 'שגיאה בהורדת קובץ HTML',
+        severity: 'error',
+      });
     } finally {
       setIsDownloading(false);
     }
@@ -1408,6 +1428,29 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           </Box>
         </Fade>
       </Drawer>
+
+      {/* Error/Warning Snackbar */}
+      <Snackbar
+        open={errorSnackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setErrorSnackbar({ ...errorSnackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setErrorSnackbar({ ...errorSnackbar, open: false })}
+          severity={errorSnackbar.severity}
+          variant="filled"
+          sx={{
+            width: '100%',
+            direction: 'rtl',
+            fontWeight: 600,
+            fontSize: '15px',
+            boxShadow: shadows.large,
+          }}
+        >
+          {errorSnackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

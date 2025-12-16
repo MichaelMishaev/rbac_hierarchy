@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getCurrentUser, requireManager, hasAccessToCorporation, getUserCorporations } from '@/lib/auth';
+import { requireManager, hasAccessToCorporation, getUserCorporations } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { Role, InvitationStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
@@ -53,7 +53,7 @@ async function sendInvitationEmail(
   corporationName: string,
   message?: string
 ) {
-  const invitationUrl = `${process.env.NEXTAUTH_URL}/invitation/accept?token=${token}`;
+  const invitationUrl = `${process.env['NEXTAUTH_URL']}/invitation/accept?token=${token}`;
 
   // In production, use a real email service
   // For MVP, just log to console (MailHog will capture it if configured)
@@ -202,7 +202,6 @@ export async function createInvitation(data: CreateInvitationInput) {
         userId: currentUser.id,
         userEmail: currentUser.email,
         userRole: currentUser.role,
-        before: undefined,
         after: {
           id: newInvitation.id,
           email: newInvitation.email,

@@ -11,7 +11,6 @@ export const revalidate = 30;
 export default async function NewTaskPage() {
   const session = await auth();
   const t = await getTranslations('tasks');
-  const tCommon = await getTranslations('common');
   const locale = await getLocale();
   const isRTL = locale === 'he';
 

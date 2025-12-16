@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 export interface RecentPage {
@@ -11,6 +11,7 @@ export interface RecentPage {
 
 const STORAGE_KEY = 'recentPages';
 const MAX_RECENT_PAGES = 5;
+const DEBOUNCE_DELAY = 500; // 500ms debounce for localStorage writes
 
 // Page labels mapping (Hebrew)
 const PAGE_LABELS: Record<string, string> = {
@@ -30,6 +31,32 @@ const PAGE_LABELS: Record<string, string> = {
 export function useRecentPages() {
   const pathname = usePathname();
   const [recentPages, setRecentPages] = useState<RecentPage[]>([]);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 🚀 PERFORMANCE: Debounced localStorage save function
+  // Prevents excessive writes during rapid tab switches
+  const debouncedSave = useCallback((pages: RecentPage[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(pages));
+      } catch (error) {
+        console.error('Failed to save recent pages:', error);
+      }
+    }, DEBOUNCE_DELAY);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Load recent pages from localStorage on mount
   useEffect(() => {
@@ -69,16 +96,13 @@ export function useRecentPages() {
       // Add new page at the beginning
       const updated = [page, ...filtered].slice(0, MAX_RECENT_PAGES);
 
-      // Save to localStorage
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (error) {
-        console.error('Failed to save recent pages:', error);
-      }
+      // 🚀 PERFORMANCE: Use debounced save instead of immediate write
+      // This prevents localStorage thrashing during rapid navigation
+      debouncedSave(updated);
 
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const clearRecentPages = useCallback(() => {
     setRecentPages([]);

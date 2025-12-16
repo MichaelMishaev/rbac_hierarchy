@@ -22,9 +22,9 @@ export default async function UsersPage() {
   // Extract cityId based on role
   let currentUserCityId: string | null = null;
   if (currentUser.role === 'CITY_COORDINATOR' && currentUser.coordinatorOf.length > 0) {
-    currentUserCityId = currentUser.coordinatorOf[0].cityId;
+    currentUserCityId = currentUser.coordinatorOf[0]?.cityId ?? null;
   } else if (currentUser.role === 'ACTIVIST_COORDINATOR' && currentUser.activistCoordinatorOf.length > 0) {
-    currentUserCityId = currentUser.activistCoordinatorOf[0].cityId;
+    currentUserCityId = currentUser.activistCoordinatorOf[0]?.cityId ?? null;
   }
 
   // Fetch users, cities, and neighborhoods

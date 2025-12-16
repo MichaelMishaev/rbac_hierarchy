@@ -52,7 +52,7 @@ export default function LoginPage() {
     }
   };
 
-  const quickLogin = (testEmail: string, testPassword: string, role: string) => {
+  const quickLogin = (testEmail: string, testPassword: string, _role: string) => {
     setEmail(testEmail);
     setPassword(testPassword);
   };

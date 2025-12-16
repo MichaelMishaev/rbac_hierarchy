@@ -1,6 +1,6 @@
 ---
 name: backend-developer
-description: Expert backend developer for Election Campaign Management System. Use PROACTIVELY for all campaign database schema, API routes, RBAC, authentication, and server-side campaign logic implementation.
+description: 🔵 Backend Developer - Expert backend developer for Election Campaign Management System. Use PROACTIVELY for all campaign database schema, API routes, RBAC, authentication, and server-side campaign logic implementation.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---

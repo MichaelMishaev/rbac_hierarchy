@@ -14,7 +14,6 @@ import {
   getTodayDateInIsrael,
   isToday,
   getTimeWindowErrorMessage,
-  ISRAEL_TZ,
 } from '@/lib/attendance';
 import { AttendanceStatus, Prisma } from '@prisma/client';
 
@@ -141,8 +140,8 @@ export async function checkInActivist(input: z.infer<typeof CheckInActivistSchem
         status: AttendanceStatus.PRESENT,
         lastEditedById: user.id,
         lastEditedAt: now,
-        editReason: validated.notes,
-        notes: validated.notes,
+        editReason: validated.notes ?? null,
+        notes: validated.notes ?? null,
       },
       create: {
         activistId: validated.activistId,
@@ -152,7 +151,7 @@ export async function checkInActivist(input: z.infer<typeof CheckInActivistSchem
         checkedInAt: now,
         status: AttendanceStatus.PRESENT,
         checkedInById: user.id,
-        notes: validated.notes,
+        notes: validated.notes ?? null,
       },
       include: {
         activist: {
@@ -206,7 +205,7 @@ export async function checkInActivist(input: z.infer<typeof CheckInActivistSchem
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.errors[0]?.message ?? 'שגיאת אימות',
       };
     }
 
@@ -499,7 +498,7 @@ export async function undoCheckIn(input: z.infer<typeof UndoCheckInSchema>) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.errors[0]?.message ?? 'שגיאת אימות',
       };
     }
 

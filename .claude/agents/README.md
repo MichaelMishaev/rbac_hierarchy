@@ -1,11 +1,28 @@
-# 🗳️ Election Campaign Management System - Specialized Agents
+# 🗳️ Election Campaign Management System - Color-Coded Specialized Agents
 
 This directory contains specialized AI agents for developing the Election Campaign Management System for politicians and campaign managers.
 
+## 🎨 Color-Coded Agent System
+
+Each agent has a unique color for easy identification:
+
+```
+🔵 BLUE   = Backend Developer (Infrastructure & APIs)
+🟢 GREEN  = Frontend Developer (UI & Components)
+🔴 RED    = QA Tester (Quality & Testing)
+🟣 PURPLE = UI Designer (Design & UX)
+🟡 YELLOW = Project Manager (Coordination & Planning)
+🟠 ORANGE = Campaign Analyst (Data & Analytics)
+🔷 LIGHT BLUE = RBAC Security Guard (Security & Permissions)
+🟦 DARK BLUE = Hebrew RTL Specialist (i18n & RTL)
+```
+
 ## 🤖 Available Agents
 
-### 1. Backend Developer (`backend-developer`)
-**Purpose:** Expert backend developer for campaign database, APIs, and authentication
+### 1. 🔵 Backend Developer (`backend-developer`)
+**Color:** Blue - Infrastructure, APIs, Database
+**Model:** Sonnet
+**Tools:** Read, Write, Edit, Bash, Grep, Glob
 
 **Responsibilities:**
 - Database schema and migrations (Prisma) - Election domain
@@ -15,9 +32,6 @@ This directory contains specialized AI agents for developing the Election Campai
 - Campaign data validation (Zod)
 - Security best practices for political campaigns
 
-**Tools:** Read, Write, Edit, Bash, Grep, Glob
-**Model:** Sonnet
-
 **Use for:**
 - Creating/updating Prisma schema for campaign entities
 - Building campaign APIs (activists, tasks, attendance)
@@ -25,10 +39,14 @@ This directory contains specialized AI agents for developing the Election Campai
 - Server-side campaign logic
 - Database queries for activists, neighborhoods, cities
 
+**Invoke:** `"Backend developer: [task]"` or just mention "backend"
+
 ---
 
-### 2. Frontend Developer (`frontend-developer`)
-**Purpose:** Expert frontend developer for campaign UI with Hebrew/RTL support
+### 2. 🟢 Frontend Developer (`frontend-developer`)
+**Color:** Green - UI, Components, Visual Elements
+**Model:** Sonnet
+**Tools:** Read, Write, Edit, Bash, Grep, Glob
 
 **Responsibilities:**
 - Campaign UI components (Material-UI v6) - Hebrew-first
@@ -39,9 +57,6 @@ This directory contains specialized AI agents for developing the Election Campai
 - Campaign maps (neighborhood visualization)
 - Real-time updates for campaign activity
 
-**Tools:** Read, Write, Edit, Bash, Grep, Glob
-**Model:** Sonnet
-
 **Use for:**
 - Building campaign dashboard UI
 - Creating activist management forms
@@ -50,10 +65,14 @@ This directory contains specialized AI agents for developing the Election Campai
 - Hebrew/RTL layouts
 - Map-based neighborhood views
 
+**Invoke:** `"Frontend developer: [task]"` or just mention "frontend"
+
 ---
 
-### 3. QA Tester (`qa-tester`)
-**Purpose:** Expert QA engineer for campaign system testing
+### 3. 🔴 QA Tester (`qa-tester`)
+**Color:** Red - Quality, Alerts, Testing, Bug Detection
+**Model:** Sonnet
+**Tools:** Read, Bash, Grep, Glob (read-only)
 
 **Responsibilities:**
 - Functional testing (all campaign workflows)
@@ -65,9 +84,6 @@ This directory contains specialized AI agents for developing the Election Campai
 - Performance testing (real-time updates)
 - Security testing (multi-tenant isolation)
 
-**Tools:** Read, Bash, Grep, Glob (read-only)
-**Model:** Sonnet
-
 **Use for:**
 - Testing campaign features
 - Verifying RBAC boundaries
@@ -76,10 +92,14 @@ This directory contains specialized AI agents for developing the Election Campai
 - Security audits for campaign data
 - Bug reporting
 
+**Invoke:** `"QA tester: [task]"` or just mention "qa" or "test"
+
 ---
 
-### 4. UI Designer (`ui-designer`)
-**Purpose:** World-class UI/UX designer for campaign interfaces
+### 4. 🟣 UI Designer (`ui-designer`)
+**Color:** Purple - Design, Creativity, User Experience
+**Model:** Sonnet
+**Tools:** Read, Bash, Grep, Glob (read-only)
 
 **Responsibilities:**
 - Campaign design system consistency
@@ -92,9 +112,6 @@ This directory contains specialized AI agents for developing the Election Campai
 - User flow validation (campaign workflows)
 - Monday.com-inspired design system
 
-**Tools:** Read, Bash, Grep, Glob (read-only)
-**Model:** Sonnet
-
 **Use for:**
 - Campaign UI design reviews
 - Hebrew/RTL validation
@@ -103,10 +120,14 @@ This directory contains specialized AI agents for developing the Election Campai
 - Map interface review
 - Accessibility audits
 
+**Invoke:** `"UI designer: [task]"` or just mention "design"
+
 ---
 
-### 5. Project Manager (`project-manager`)
-**Purpose:** Senior project manager for campaign system development
+### 5. 🟡 Project Manager (`project-manager`)
+**Color:** Yellow - Coordination, Organization, Planning
+**Model:** Sonnet
+**Tools:** Read, Write, Bash, Grep, Glob
 
 **Responsibilities:**
 - Development timeline management
@@ -118,9 +139,6 @@ This directory contains specialized AI agents for developing the Election Campai
 - Launch readiness for campaign season
 - Stakeholder communication
 
-**Tools:** Read, Write, Bash, Grep, Glob
-**Model:** Sonnet
-
 **Use for:**
 - Sprint planning
 - Progress tracking
@@ -130,10 +148,14 @@ This directory contains specialized AI agents for developing the Election Campai
 - Launch preparation
 - Coordinating other agents
 
+**Invoke:** `"Project manager: [task]"` or just mention "pm" or "manager"
+
 ---
 
-### 6. Campaign Analyst (`campaign-analyst`)
-**Purpose:** Campaign analytics and reporting specialist
+### 6. 🟠 Campaign Analyst (`campaign-analyst`)
+**Color:** Orange - Data, Analytics, Insights
+**Model:** Sonnet
+**Tools:** Read, Write, Bash, Grep, Glob
 
 **Responsibilities:**
 - Campaign metrics tracking
@@ -145,9 +167,6 @@ This directory contains specialized AI agents for developing the Election Campai
 - SQL queries for campaign data
 - Export campaign reports
 
-**Tools:** Read, Write, Bash, Grep, Glob
-**Model:** Sonnet
-
 **Use for:**
 - Building analytics dashboards
 - Creating campaign reports
@@ -156,38 +175,129 @@ This directory contains specialized AI agents for developing the Election Campai
 - Performance metrics for politicians
 - Data exports for campaign managers
 
+**Invoke:** `"Campaign analyst: [task]"` or just mention "analyst" or "analytics"
+
 ---
 
-## 🎯 Agent Coordination Pattern
+### 7. 🔷 RBAC Security Guard (`rbac-security-guard`)
+**Color:** Light Blue - Security, Permissions, Data Isolation
+**Model:** Sonnet
+**Tools:** Read, Grep, Glob, Bash (read-only)
 
-### Pattern 1: New Campaign Feature
+**Responsibilities:**
+- **RBAC enforcement validation** - Multi-role permission boundaries
+- **Data isolation audits** - Cross-city/area data leakage prevention
+- **Security vulnerability detection** - Campaign data exposure
+- **Permission boundary testing** - Role-based access verification
+- **Middleware validation** - Filter injection and scope checks
+- **Audit log verification** - Complete campaign operation tracking
+
+**Use for:**
+- Reviewing RBAC implementation
+- Auditing data isolation patterns
+- Validating security middleware
+- Testing permission boundaries
+- Security compliance checks
+- Multi-tenant isolation verification
+
+**Invoke:** `"RBAC security guard: [task]"` or just mention "rbac" or "security"
+
+---
+
+### 8. 🟦 Hebrew RTL Specialist (`hebrew-rtl-specialist`)
+**Color:** Dark Blue - Internationalization, RTL, Hebrew
+**Model:** Sonnet
+**Tools:** Read, Grep, Glob, Bash (read-only)
+
+**Responsibilities:**
+- **Hebrew-only validation** - No English fallbacks or bilingual support
+- **RTL layout verification** - Right-to-left text direction enforcement
+- **i18n compliance** - next-intl configuration and usage
+- **Typography validation** - Hebrew font rendering and spacing
+- **Form input validation** - Hebrew text fields with proper alignment
+- **Date/number formatting** - he-IL locale usage
+
+**Use for:**
+- Validating Hebrew-only UI text
+- Checking RTL layout implementation
+- Reviewing CSS logical properties usage
+- Testing MUI RTL theme configuration
+- Verifying Hebrew date/number formatting
+- Auditing i18n implementation
+
+**Invoke:** `"Hebrew RTL specialist: [task]"` or just mention "hebrew" or "rtl"
+
+---
+
+## 🎯 Quick Reference - When to Use Each Agent
+
+| Task Type | Agent | Color | Example |
+|-----------|-------|-------|---------|
+| Database schema, APIs | Backend Developer | 🔵 Blue | "Add attendance tracking table" |
+| UI components, forms | Frontend Developer | 🟢 Green | "Build activist registration form" |
+| Testing, bug detection | QA Tester | 🔴 Red | "Test cross-city data isolation" |
+| Design review, UX | UI Designer | 🟣 Purple | "Review dashboard layout" |
+| Planning, coordination | Project Manager | 🟡 Yellow | "What's our sprint progress?" |
+| Data analysis, reports | Campaign Analyst | 🟠 Orange | "Activist productivity report" |
+| Security, RBAC | RBAC Security Guard | 🔷 Light Blue | "Audit permission boundaries" |
+| Hebrew, RTL validation | Hebrew RTL Specialist | 🟦 Dark Blue | "Validate Hebrew layout" |
+
+---
+
+## 🔄 Agent Coordination Patterns
+
+### Pattern 1: New Campaign Feature (Full Stack)
 ```
-1. Project Manager: Define campaign feature scope, assign to Backend Developer
-2. Backend Developer: Build campaign API (e.g., attendance tracking), notify PM
-3. Project Manager: Assign UI to Frontend Developer
-4. Frontend Developer: Build Hebrew/RTL mobile-first UI, notify PM
-5. Project Manager: Assign review to UI Designer
-6. UI Designer: Review mobile design & RTL, provide feedback
-7. Project Manager: Assign testing to QA Tester
-8. QA Tester: Test RBAC & data isolation, report findings
-9. Project Manager: Coordinate fixes, verify completion
+1. 🟡 Project Manager: Define scope → assign to 🔵 Backend Developer
+2. 🔵 Backend Developer: Build API → notify 🟡 PM
+3. 🟡 Project Manager: Assign UI → 🟢 Frontend Developer
+4. 🟢 Frontend Developer: Build UI → notify 🟡 PM
+5. 🟡 Project Manager: Request review → 🟣 UI Designer
+6. 🟣 UI Designer: Review design → provide feedback
+7. 🟡 Project Manager: Request Hebrew validation → 🟦 Hebrew RTL Specialist
+8. 🟦 Hebrew RTL Specialist: Validate RTL → approve
+9. 🟡 Project Manager: Assign testing → 🔴 QA Tester
+10. 🔴 QA Tester: Test feature → report results
+11. 🟡 Project Manager: Verify completion
 ```
 
-### Pattern 2: Campaign Bug Fix
+### Pattern 2: Security-Critical Feature (RBAC + Data Isolation)
 ```
-1. QA Tester: Report bug with reproduction steps (e.g., cross-city data leak)
-2. Project Manager: Assess severity, assign to appropriate dev
-3. Backend/Frontend Developer: Fix bug
-4. QA Tester: Verify fix with RBAC testing, close bug
+1. 🟡 Project Manager: Define security requirements → assign to 🔷 RBAC Security Guard
+2. 🔷 RBAC Security Guard: Audit current RBAC → identify gaps
+3. 🔵 Backend Developer: Implement RBAC middleware → notify 🔷
+4. 🔷 RBAC Security Guard: Validate implementation → approve/reject
+5. 🔴 QA Tester: Test permission boundaries → verify isolation
+6. 🟡 Project Manager: Sign off on security
 ```
 
-### Pattern 3: Campaign Analytics Request
+### Pattern 3: Hebrew UI Component
 ```
-1. Campaign Analyst: Design analytics dashboard
-2. Backend Developer: Create analytics queries
-3. Frontend Developer: Build charts and visualizations
-4. UI Designer: Review data visualization design
-5. QA Tester: Test analytics accuracy
+1. 🟢 Frontend Developer: Build component → notify 🟦 Hebrew RTL Specialist
+2. 🟦 Hebrew RTL Specialist: Validate Hebrew/RTL → provide feedback
+3. 🟢 Frontend Developer: Fix RTL issues → resubmit
+4. 🟣 UI Designer: Review visual design → approve
+5. 🔴 QA Tester: Test on mobile → verify responsive
+```
+
+### Pattern 4: Campaign Analytics Dashboard
+```
+1. 🟠 Campaign Analyst: Design analytics → define metrics
+2. 🔵 Backend Developer: Create analytics queries → build API
+3. 🟢 Frontend Developer: Build charts/visualizations → integrate API
+4. 🟣 UI Designer: Review data visualization → provide feedback
+5. 🟦 Hebrew RTL Specialist: Validate Hebrew labels → approve
+6. 🔴 QA Tester: Test analytics accuracy → verify data
+```
+
+### Pattern 5: Bug Fix (Following Bug Fix Protocol)
+```
+1. 🔴 QA Tester: Report bug with reproduction → identify severity
+2. 🟡 Project Manager: Assess impact → assign to appropriate dev
+3. 🔵/🟢 Developer: Root cause analysis → write regression test
+4. 🔵/🟢 Developer: Implement minimal fix → run tests
+5. 🔴 QA Tester: Verify fix → confirm regression test passes
+6. 🟡 Project Manager: Document in bugs.md → close ticket
 ```
 
 ---
@@ -201,68 +311,35 @@ All agents reference the campaign system documentation:
 - **`/docs/syAnalyse/mvp/03_API_DESIGN.md`** - Campaign API patterns
 - **`/docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md`** - Campaign UI designs
 - **`/docs/syAnalyse/PRD_2025_Updated_Industry_Standards.md`** - Campaign requirements
+- **`/docs/localDev/bugs.md`** - Known bugs and prevention rules
 
 ---
 
 ## 🚀 Quick Start
 
-### Invoke an Agent
-When you need an agent, mention them by name in your request:
+### Invoke an Agent by Color
 
 **Examples:**
-- "Backend developer: Create the activist attendance tracking API"
-- "Frontend developer: Build the mobile-first activist dashboard in Hebrew"
-- "QA tester: Test cross-city data isolation for area managers"
-- "UI designer: Review the Hebrew/RTL neighborhood map interface"
-- "Project manager: What's our progress on campaign features?"
-- "Campaign analyst: Create a dashboard showing activist productivity by neighborhood"
+- 🔵 "Backend developer: Create the activist attendance tracking API"
+- 🟢 "Frontend developer: Build the mobile-first activist dashboard in Hebrew"
+- 🔴 "QA tester: Test cross-city data isolation for area managers"
+- 🟣 "UI designer: Review the Hebrew/RTL neighborhood map interface"
+- 🟡 "Project manager: What's our progress on campaign features?"
+- 🟠 "Campaign analyst: Create activist productivity dashboard"
+- 🔷 "RBAC security guard: Audit permission boundaries for city coordinators"
+- 🟦 "Hebrew RTL specialist: Validate activist registration form RTL layout"
 
-### Agent-Specific Guidelines
+### Multi-Agent Workflows
 
-**Backend Developer:**
-- Always use Prisma for campaign database operations
-- Always validate input with Zod
-- **Always implement RBAC** - Campaign data isolation is critical
-- **Always filter by city_id** - Except for SuperAdmin
-- Always hash passwords with bcryptjs
-- **Test multi-city isolation** - Prevent data leakage
+Invoke multiple agents in parallel or sequence:
 
-**Frontend Developer:**
-- Always use MUI components (Material-UI v6)
-- **Always design mobile-first** - Field activists use phones
-- **Always implement Hebrew/RTL** - Primary language
-- Always add loading/error/empty states
-- **Always test on mobile devices** - Campaign coordinators are mobile
-- Always use RTL-compatible CSS (`marginInlineStart`/`End`)
+```
+"Project manager: Coordinate backend developer and frontend developer to build the activist check-in feature with Hebrew UI"
+```
 
-**QA Tester:**
-- **Always test RBAC boundaries** - Cross-role access attempts
-- **Always test multi-city isolation** - Data leakage prevention
-- Always check all role dashboards (SuperAdmin, Area Manager, City Coordinator, Activist Coordinator)
-- **Always verify mobile responsive** - Field activists use mobile
-- Always test security (auth, RBAC, data isolation)
-
-**UI Designer:**
-- Always check design system consistency (Monday.com-inspired)
-- **Always validate Hebrew/RTL layouts** - Primary language
-- **Always review mobile-first design** - Field activists priority
-- Always validate all states (loading, error, empty)
-- Always test at all breakpoints (xs, md, lg)
-- Always verify WCAG AA compliance
-
-**Project Manager:**
-- Always prioritize campaign-critical features (P0)
-- Always track against development timeline
-- Always coordinate agents efficiently
-- Always make fast decisions
-- **Prioritize features for campaign season** - Time-sensitive
-
-**Campaign Analyst:**
-- Always focus on politician-facing insights
-- Always provide actionable campaign metrics
-- Always consider geographic dimensions (city, neighborhood)
-- Always optimize SQL queries for performance
-- Always create exportable reports
+```
+"RBAC security guard: Review the new neighborhoods API, then have QA tester verify cross-city isolation"
+```
 
 ---
 
@@ -289,28 +366,31 @@ When you need an agent, mention them by name in your request:
 
 ---
 
-## ✅ Development Workflow
+## ✅ Development Workflow by Phase
 
 ### Phase 1: Campaign Infrastructure
-- Backend Developer: Campaign schema, auth, RBAC APIs
-- Project Manager: Track progress
-- QA Tester: RBAC and data isolation testing
+- 🔵 Backend Developer: Campaign schema, auth, RBAC APIs
+- 🔷 RBAC Security Guard: Validate data isolation patterns
+- 🟡 Project Manager: Track progress
+- 🔴 QA Tester: RBAC and data isolation testing
 
 ### Phase 2: Campaign UI (Hebrew/RTL)
-- Frontend Developer: All campaign screens (mobile-first)
-- UI Designer: Hebrew/RTL design reviews
-- QA Tester: Mobile UI/UX testing
+- 🟢 Frontend Developer: All campaign screens (mobile-first)
+- 🟦 Hebrew RTL Specialist: Validate Hebrew/RTL implementation
+- 🟣 UI Designer: Hebrew/RTL design reviews
+- 🔴 QA Tester: Mobile UI/UX testing
 
 ### Phase 3: Campaign Analytics
-- Campaign Analyst: Analytics dashboard design
-- Backend Developer: Analytics queries and APIs
-- Frontend Developer: Data visualization charts
-- QA Tester: Analytics accuracy testing
+- 🟠 Campaign Analyst: Analytics dashboard design
+- 🔵 Backend Developer: Analytics queries and APIs
+- 🟢 Frontend Developer: Data visualization charts
+- 🔴 QA Tester: Analytics accuracy testing
 
 ### Phase 4: Launch Preparation
 - All Agents: Bug fixes, polish
-- QA Tester: Comprehensive RBAC and security testing
-- Project Manager: Campaign season readiness
+- 🔷 RBAC Security Guard: Final security audit
+- 🔴 QA Tester: Comprehensive RBAC and security testing
+- 🟡 Project Manager: Campaign season readiness
 
 ---
 
@@ -318,36 +398,14 @@ When you need an agent, mention them by name in your request:
 
 **Each agent is successful when:**
 
-- **Backend Developer:** All campaign APIs work, RBAC enforced, no cross-city data leaks, activist data secure
-- **Frontend Developer:** All campaign screens perfect, Hebrew/RTL flawless, mobile-optimized, real-time updates work
-- **QA Tester:** 0 P0 bugs, <5 P1 bugs, RBAC boundaries tested, cross-city isolation verified
-- **UI Designer:** Design system consistent, Hebrew/RTL validated, mobile-first optimized, WCAG AA compliant
-- **Project Manager:** Campaign features delivered on time, quality gates passed, ready for campaign season
-- **Campaign Analyst:** Politician dashboards insightful, analytics accurate, reports actionable
-
----
-
-## 📞 Agent Invocation Examples
-
-```markdown
-# Example 1: Start campaign backend work
-"Backend developer: Set up the Prisma schema for activists, neighborhoods, and attendance tracking following the election campaign database specification"
-
-# Example 2: Build campaign UI
-"Frontend developer: Build the mobile-first activist coordinator dashboard in Hebrew with RTL support, showing neighborhood map and active tasks"
-
-# Example 3: Test campaign RBAC
-"QA tester: Test that City Coordinators cannot access other cities' activist data and verify Area Managers can see cross-city analytics"
-
-# Example 4: Design review for campaign
-"UI designer: Review the activist registration form for Hebrew/RTL compliance and mobile usability for field coordinators"
-
-# Example 5: Track campaign progress
-"Project manager: Give me a status update on campaign core features (attendance, tasks, neighborhoods) and identify any RBAC risks"
-
-# Example 6: Campaign analytics
-"Campaign analyst: Create a dashboard showing activist engagement rates by neighborhood for politicians to review campaign coverage"
-```
+- 🔵 **Backend Developer:** All campaign APIs work, RBAC enforced, no cross-city data leaks, activist data secure
+- 🟢 **Frontend Developer:** All campaign screens perfect, Hebrew/RTL flawless, mobile-optimized, real-time updates work
+- 🔴 **QA Tester:** 0 P0 bugs, <5 P1 bugs, RBAC boundaries tested, cross-city isolation verified
+- 🟣 **UI Designer:** Design system consistent, Hebrew/RTL validated, mobile-first optimized, WCAG AA compliant
+- 🟡 **Project Manager:** Campaign features delivered on time, quality gates passed, ready for campaign season
+- 🟠 **Campaign Analyst:** Politician dashboards insightful, analytics accurate, reports actionable
+- 🔷 **RBAC Security Guard:** No permission leaks, data isolation verified, audit logs complete
+- 🟦 **Hebrew RTL Specialist:** 100% Hebrew UI, RTL layouts perfect, no English text found
 
 ---
 
@@ -387,4 +445,4 @@ SuperAdmin (Platform admin)
 
 ---
 
-**🗳️ Election Campaign Management System - Specialized agents for political campaign success! 🚀**
+**🗳️ Election Campaign Management System - Color-coded specialized agents for political campaign success! 🚀**

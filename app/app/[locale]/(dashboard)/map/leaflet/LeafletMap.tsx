@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { Box, Paper, Typography, Chip, IconButton, Tooltip, Fade } from '@mui/material';
+import { Box, Paper, Typography, Chip, IconButton } from '@mui/material';
 import { Close as CloseIcon, LocationOn, Person, SupervisorAccount } from '@mui/icons-material';
 import { colors } from '@/lib/design-system';
 
@@ -33,13 +33,66 @@ interface Site {
   isActive: boolean;
 }
 
-interface LeafletMapProps {
-  neighborhoods: Site[];
-  onSiteSelect?: (siteId: string | null) => void;
-  selectedSiteId?: string | null;
+interface AreaManager {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  cities: Array<{ id: string; name: string }>;
+  latitude: number;
+  longitude: number;
+  type: 'area_manager';
 }
 
-export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId }: LeafletMapProps) {
+interface CityCoordinator {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  city: { id: string; name: string };
+  latitude: number;
+  longitude: number;
+  type: 'city_coordinator';
+}
+
+interface ActivistCoordinator {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  city: { id: string; name: string };
+  neighborhoods: Array<{ id: string; name: string; address: string | null }>;
+  latitude: number;
+  longitude: number;
+  type: 'activist_coordinator';
+}
+
+interface LeafletMapProps {
+  neighborhoods: Site[];
+  areaManagers: AreaManager[];
+  cityCoordinators: CityCoordinator[];
+  activistCoordinators: ActivistCoordinator[];
+  onEntitySelect?: (entity: {
+    id: string;
+    type: 'neighborhood' | 'area_manager' | 'city_coordinator' | 'activist_coordinator';
+  } | null) => void;
+  selectedEntity?: {
+    id: string;
+    type: 'neighborhood' | 'area_manager' | 'city_coordinator' | 'activist_coordinator';
+  } | null;
+}
+
+export default function LeafletMap({
+  neighborhoods,
+  areaManagers,
+  cityCoordinators,
+  activistCoordinators,
+  onEntitySelect,
+  selectedEntity,
+}: LeafletMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markersLayer = useRef<L.MarkerClusterGroup | null>(null);
@@ -81,6 +134,12 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
       }, 100);
     };
 
+    // Click anywhere on map to dismiss hover tooltip
+    map.current.on('click', () => {
+      setHoveredSite(null);
+      setHoverPosition(null);
+    });
+
     window.addEventListener('resize', handleResize);
 
     return () => {
@@ -90,32 +149,102 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
     };
   }, []);
 
-  // Handle external site selection (from sidebar)
+  // Handle external entity selection (from sidebar)
   useEffect(() => {
-    if (!map.current || !selectedSiteId) return;
+    if (!map.current || !selectedEntity) return;
 
-    const site = neighborhoods.find((s) => s.id === selectedSiteId);
-    if (!site || !site.latitude || !site.longitude) return;
+    let latitude: number | undefined;
+    let longitude: number | undefined;
+    let markerKey: string | undefined;
 
-    // Focus on the site
-    map.current.setView([site.latitude, site.longitude], 15, {
-      animate: true,
-      duration: 1.5,
-    });
-
-    // Update selected site for details panel
-    setSelectedSite(site);
-
-    // Open the marker popup if it exists
-    const marker = markersRef.current.get(site.id);
-    if (marker) {
-      marker.openPopup();
+    // Find the entity based on type
+    switch (selectedEntity.type) {
+      case 'neighborhood': {
+        const site = neighborhoods.find((s) => s.id === selectedEntity.id);
+        if (site && site.latitude && site.longitude) {
+          latitude = site.latitude;
+          longitude = site.longitude;
+          markerKey = site.id;
+          setSelectedSite(site);
+        }
+        break;
+      }
+      case 'area_manager': {
+        const am = areaManagers.find((a) => a.id === selectedEntity.id);
+        if (am && am.latitude && am.longitude) {
+          latitude = am.latitude;
+          longitude = am.longitude;
+          markerKey = `am-${am.id}`;
+          setSelectedSite(null); // Clear neighborhood selection
+        }
+        break;
+      }
+      case 'city_coordinator': {
+        const cc = cityCoordinators.find((c) => c.id === selectedEntity.id);
+        if (cc && cc.latitude && cc.longitude) {
+          latitude = cc.latitude;
+          longitude = cc.longitude;
+          markerKey = `cc-${cc.id}`;
+          setSelectedSite(null); // Clear neighborhood selection
+        }
+        break;
+      }
+      case 'activist_coordinator': {
+        const ac = activistCoordinators.find((a) => a.id === selectedEntity.id);
+        if (ac && ac.latitude && ac.longitude) {
+          latitude = ac.latitude;
+          longitude = ac.longitude;
+          markerKey = `ac-${ac.id}`;
+          setSelectedSite(null); // Clear neighborhood selection
+        }
+        break;
+      }
     }
-  }, [selectedSiteId, neighborhoods]);
+
+    // Navigate to the entity if found
+    if (latitude && longitude) {
+      map.current.setView([latitude, longitude], 15, {
+        animate: true,
+        duration: 1.5,
+      });
+
+      // Open the marker popup if it exists
+      if (markerKey) {
+        const marker = markersRef.current.get(markerKey);
+        if (marker) {
+          marker.openPopup();
+        }
+      }
+    }
+  }, [selectedEntity, neighborhoods, areaManagers, cityCoordinators, activistCoordinators]);
+
+  // Handle Escape key to close details panel
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedSite) {
+        setSelectedSite(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedSite]);
 
   // State to track hover tooltip
   const [hoveredSite, setHoveredSite] = useState<Site | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // Auto-hide hover tooltip after 5 seconds
+  useEffect(() => {
+    if (!hoveredSite) return;
+
+    const timeout = setTimeout(() => {
+      setHoveredSite(null);
+      setHoverPosition(null);
+    }, 5000); // 5 seconds
+
+    return () => clearTimeout(timeout);
+  }, [hoveredSite]);
 
   useEffect(() => {
     if (!map.current || !markersLayer.current) return;
@@ -124,40 +253,28 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
     markersLayer.current.clearLayers();
     markersRef.current.clear();
 
-    // Create color map for corporations
-    const corpColors: Record<string, string> = {};
-    const colorPalette = [
-      colors.primary.main,
-      colors.status.green,
-      colors.pastel.purple,
-      colors.pastel.orange,
-      colors.pastel.pink,
-      colors.pastel.blue,
-    ];
+    // Define entity-specific colors (UX-optimized for clarity)
+    const entityColors = {
+      area_manager: '#3B82F6', // Blue - top-level leadership
+      city_coordinator: '#10B981', // Green - city-level management
+      activist_coordinator: '#F59E0B', // Orange - neighborhood organizers
+      neighborhood: '#A855F7', // Purple - locations
+    };
 
-    neighborhoods.forEach((site) => {
-      if (!site.latitude || !site.longitude) return;
-
-      // Assign color to city
-      if (!corpColors[site.city.id]) {
-        const colorIndex = Object.keys(corpColors).length % colorPalette.length;
-        corpColors[site.city.id] = colorPalette[colorIndex];
-      }
-
-      // Create custom icon
-      const markerColor = corpColors[site.city.id];
-      const customIcon = L.divIcon({
+    // Helper function to create custom marker icon
+    const createMarkerIcon = (color: string, emoji: string, size: number = 40) => {
+      return L.divIcon({
         className: 'custom-leaflet-marker',
         html: `
           <div style="
             position: relative;
-            width: 40px;
-            height: 40px;
+            width: ${size}px;
+            height: ${size}px;
           ">
             <div style="
               width: 100%;
               height: 100%;
-              background: ${markerColor};
+              background: ${color};
               border: 3px solid white;
               border-radius: 50% 50% 50% 0;
               transform: rotate(-45deg);
@@ -169,60 +286,179 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
             ">
               <div style="
                 transform: rotate(45deg);
-                font-size: 20px;
-              ">📍</div>
+                font-size: ${size * 0.5}px;
+              ">${emoji}</div>
             </div>
           </div>
         `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-        popupAnchor: [0, -40],
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size],
+        popupAnchor: [0, -size],
+      });
+    };
+
+    // 1. Add Area Managers (Blue)
+    areaManagers.forEach((am) => {
+      const marker = L.marker([am.latitude, am.longitude], {
+        icon: createMarkerIcon(entityColors.area_manager, '👔', 50),
       });
 
-      // Create marker
-      const marker = L.marker([site.latitude, site.longitude], {
-        icon: customIcon,
-      });
-
-      // Create popup content
+      const citiesList = am.cities.map((c) => `<li>${c.name}</li>`).join('');
       const popupContent = `
-        <div style="
-          font-family: 'Roboto', sans-serif;
-          direction: rtl;
-          min-width: 200px;
-        ">
-          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700;">
-            ${site.name}
+        <div style="font-family: 'Roboto', sans-serif; direction: rtl; min-width: 220px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 17px; font-weight: 700; color: ${entityColors.area_manager};">
+            👔 מנהל אזור
           </h3>
+          <p style="margin: 4px 0; font-size: 15px; font-weight: 600;">
+            ${am.fullName}
+          </p>
+          <p style="margin: 4px 0; font-size: 13px; color: #555;">
+            📧 ${am.email}
+          </p>
+          ${am.phone ? `<p style="margin: 4px 0; font-size: 13px; color: #555;">📞 ${am.phone}</p>` : ''}
+          <p style="margin: 8px 0 4px 0; font-size: 13px; font-weight: 600;">
+            ערים באחריות (${am.cities.length}):
+          </p>
+          <ul style="margin: 0; padding-inline-start: 20px; font-size: 12px;">
+            ${citiesList}
+          </ul>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+      markersRef.current.set(`am-${am.id}`, marker);
+      markersLayer.current?.addLayer(marker);
+    });
+
+    // 2. Add City Coordinators (Green)
+    cityCoordinators.forEach((cc) => {
+      const marker = L.marker([cc.latitude, cc.longitude], {
+        icon: createMarkerIcon(entityColors.city_coordinator, '🏛️', 45),
+      });
+
+      const popupContent = `
+        <div style="font-family: 'Roboto', sans-serif; direction: rtl; min-width: 220px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 17px; font-weight: 700; color: ${entityColors.city_coordinator};">
+            🏛️ רכז עיר
+          </h3>
+          <p style="margin: 4px 0; font-size: 15px; font-weight: 600;">
+            ${cc.fullName}
+          </p>
+          <p style="margin: 4px 0; font-size: 13px; color: #555;">
+            📧 ${cc.email}
+          </p>
+          ${cc.phone ? `<p style="margin: 4px 0; font-size: 13px; color: #555;">📞 ${cc.phone}</p>` : ''}
           <p style="
-            margin: 0 0 8px 0;
-            padding: 4px 8px;
-            background: ${colors.pastel.blue};
-            border-radius: 4px;
-            font-size: 12px;
-            display: inline-block;
+            margin: 8px 0 4px 0;
+            padding: 6px 10px;
+            background: ${entityColors.city_coordinator}20;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            border-right: 3px solid ${entityColors.city_coordinator};
           ">
-            ${site.city.name}
-          </p>
-          <p style="margin: 4px 0; font-size: 13px; color: #555;">
-            📍 ${site.address || 'אין כתובת'}
-          </p>
-          <p style="margin: 4px 0; font-size: 13px; color: #555;">
-            👥 ${site.activists.active} פעילים פעילים
+            🌆 ${cc.city.name}
           </p>
         </div>
       `;
 
       marker.bindPopup(popupContent);
+      markersRef.current.set(`cc-${cc.id}`, marker);
+      markersLayer.current?.addLayer(marker);
+    });
 
-      // Store marker reference
+    // 3. Add Activist Coordinators (Orange)
+    activistCoordinators.forEach((ac) => {
+      const marker = L.marker([ac.latitude, ac.longitude], {
+        icon: createMarkerIcon(entityColors.activist_coordinator, '👥', 42),
+      });
+
+      const neighborhoodsList = ac.neighborhoods
+        .map((n) => `<li>${n.name}${n.address ? ` - ${n.address}` : ''}</li>`)
+        .join('');
+
+      const popupContent = `
+        <div style="font-family: 'Roboto', sans-serif; direction: rtl; min-width: 220px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 17px; font-weight: 700; color: ${entityColors.activist_coordinator};">
+            👥 רכז שכונות
+          </h3>
+          <p style="margin: 4px 0; font-size: 15px; font-weight: 600;">
+            ${ac.fullName}
+          </p>
+          <p style="margin: 4px 0; font-size: 13px; color: #555;">
+            📧 ${ac.email}
+          </p>
+          ${ac.phone ? `<p style="margin: 4px 0; font-size: 13px; color: #555;">📞 ${ac.phone}</p>` : ''}
+          <p style="margin: 4px 0; font-size: 13px; color: #888;">
+            🌆 ${ac.city.name}
+          </p>
+          <p style="margin: 8px 0 4px 0; font-size: 13px; font-weight: 600;">
+            שכונות באחריות (${ac.neighborhoods.length}):
+          </p>
+          <ul style="margin: 0; padding-inline-start: 20px; font-size: 12px; max-height: 150px; overflow-y: auto;">
+            ${neighborhoodsList}
+          </ul>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+      markersRef.current.set(`ac-${ac.id}`, marker);
+      markersLayer.current?.addLayer(marker);
+    });
+
+    // 4. Add Neighborhoods (Purple)
+    neighborhoods.forEach((site) => {
+      if (!site.latitude || !site.longitude) return;
+
+      const marker = L.marker([site.latitude, site.longitude], {
+        icon: createMarkerIcon(entityColors.neighborhood, '📍', 38),
+      });
+
+      const popupContent = `
+        <div style="font-family: 'Roboto', sans-serif; direction: rtl; min-width: 220px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 17px; font-weight: 700; color: ${entityColors.neighborhood};">
+            📍 ${site.name}
+          </h3>
+          <p style="
+            margin: 0 0 8px 0;
+            padding: 6px 10px;
+            background: ${entityColors.neighborhood}20;
+            border-radius: 6px;
+            font-size: 13px;
+            display: inline-block;
+            font-weight: 600;
+          ">
+            🌆 ${site.city.name}
+          </p>
+          <p style="margin: 4px 0; font-size: 13px; color: #555;">
+            📍 ${site.address || 'אין כתובת'}
+          </p>
+          <p style="margin: 8px 0 4px 0; font-size: 13px; font-weight: 600;">
+            👥 פעילים: ${site.activists.active} פעילים (${site.activists.inactive} לא פעילים)
+          </p>
+          ${
+            site.activistCoordinators.length > 0
+              ? `
+            <p style="margin: 8px 0 4px 0; font-size: 13px; font-weight: 600;">
+              רכזי שכונות:
+            </p>
+            <ul style="margin: 0; padding-inline-start: 20px; font-size: 12px;">
+              ${site.activistCoordinators.map((ac) => `<li>${ac.name} (${ac.email})</li>`).join('')}
+            </ul>
+          `
+              : ''
+          }
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
       markersRef.current.set(site.id, marker);
 
       // Add click handler to show details panel
       marker.on('click', () => {
         setSelectedSite(site);
-        onSiteSelect?.(site.id);
-        map.current?.setView([site.latitude, site.longitude], 12, {
+        onEntitySelect?.({ id: site.id, type: 'neighborhood' });
+        map.current?.setView([site.latitude, site.longitude], 14, {
           animate: true,
           duration: 1.5,
         });
@@ -246,55 +482,88 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
         setHoverPosition(null);
       });
 
-      // Add to cluster layer
       markersLayer.current?.addLayer(marker);
     });
 
-    // Store city colors for legend
-    (window as any).__corpColors = corpColors;
-
     // Fit bounds to show all markers
-    if (neighborhoods.length > 0 && markersLayer.current.getBounds().isValid()) {
+    const allMarkers = [
+      ...areaManagers,
+      ...cityCoordinators,
+      ...activistCoordinators,
+      ...neighborhoods.filter((n) => n.latitude && n.longitude),
+    ];
+
+    if (allMarkers.length > 0 && markersLayer.current.getBounds().isValid()) {
       map.current.fitBounds(markersLayer.current.getBounds(), {
         padding: [50, 50],
         maxZoom: 12,
       });
     }
-  }, [neighborhoods]);
+  }, [neighborhoods, areaManagers, cityCoordinators, activistCoordinators]);
 
-  // Get unique corporations with their colors for legend
-  const corporationsWithColors = React.useMemo(() => {
-    const corpMap = new Map<string, { id: string; name: string; color: string }>();
-    const colorPalette = [
-      colors.primary.main,
-      colors.status.green,
-      colors.pastel.purple,
-      colors.pastel.orange,
-      colors.pastel.pink,
-      colors.pastel.blue,
-    ];
-
-    neighborhoods.forEach((site) => {
-      if (!corpMap.has(site.city.id)) {
-        const colorIndex = corpMap.size % colorPalette.length;
-        corpMap.set(site.city.id, {
-          id: site.city.id,
-          name: site.city.name,
-          color: colorPalette[colorIndex],
-        });
-      }
-    });
-
-    return Array.from(corpMap.values());
-  }, [neighborhoods]);
+  // Entity types for legend
+  const entityTypes = React.useMemo(
+    () => [
+      {
+        type: 'area_manager',
+        label: 'מנהלי אזור',
+        emoji: '👔',
+        color: '#3B82F6',
+        count: areaManagers.length,
+      },
+      {
+        type: 'city_coordinator',
+        label: 'רכזי עיר',
+        emoji: '🏛️',
+        color: '#10B981',
+        count: cityCoordinators.length,
+      },
+      {
+        type: 'activist_coordinator',
+        label: 'רכזי שכונות',
+        emoji: '👥',
+        color: '#F59E0B',
+        count: activistCoordinators.length,
+      },
+      {
+        type: 'neighborhood',
+        label: 'שכונות',
+        emoji: '📍',
+        color: '#A855F7',
+        count: neighborhoods.filter((n) => n.latitude && n.longitude).length,
+      },
+    ],
+    [areaManagers.length, cityCoordinators.length, activistCoordinators.length, neighborhoods]
+  );
 
   return (
     <Box sx={{ width: '100%', height: '100%', position: 'relative', margin: 0, padding: 0 }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, margin: 0 }} />
 
+      {/* Backdrop for closing details panel */}
+      {selectedSite && (
+        <Box
+          onClick={() => {
+            setSelectedSite(null);
+            onEntitySelect?.(null); // Clear parent state too
+          }}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.3)',
+            zIndex: 999,
+            cursor: 'pointer',
+          }}
+        />
+      )}
+
       {/* Site Details Panel - Modern 2025 Design */}
       {selectedSite && (
         <Paper
+          onClick={(e) => e.stopPropagation()}
           sx={{
             position: 'absolute',
             bottom: { xs: 16, sm: 32 },
@@ -321,16 +590,33 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
               <Chip
                 label={selectedSite.city.name}
                 size="small"
-                sx={{ 
-                  background: colors.pastel.blue, 
+                sx={{
+                  background: colors.pastel.blue,
                   color: colors.neutral[0],
                   fontWeight: 600,
-                  mb: 1 
+                  mb: 1
                 }}
               />
             </Box>
-            <IconButton onClick={() => setSelectedSite(null)} size="small">
-              <CloseIcon />
+            <IconButton
+              onClick={() => {
+                setSelectedSite(null);
+                onEntitySelect?.(null); // Clear parent state to prevent reopening
+              }}
+              size="large"
+              sx={{
+                background: colors.neutral[100],
+                border: `2px solid ${colors.neutral[300]}`,
+                width: 44,
+                height: 44,
+                '&:hover': {
+                  background: colors.neutral[200],
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <CloseIcon sx={{ fontSize: 24 }} />
             </IconButton>
           </Box>
 
@@ -397,15 +683,20 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
         </Paper>
       )}
 
-      {/* Hover Tooltip */}
-      {hoveredSite && hoverPosition && (
+      {/* Hover Tooltip - hide when details panel is showing */}
+      {hoveredSite && hoverPosition && !selectedSite && (
         <Paper
+          onClick={() => {
+            setHoveredSite(null);
+            setHoverPosition(null);
+          }}
           sx={{
             position: 'fixed',
             left: hoverPosition.x,
             top: hoverPosition.y - 10,
             transform: 'translate(-50%, -100%)',
             p: 2,
+            pt: 3,
             zIndex: 10000,
             background: 'rgba(0, 0, 0, 0.92)',
             backdropFilter: 'blur(12px)',
@@ -414,11 +705,42 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
             direction: 'rtl',
             minWidth: '220px',
             maxWidth: '320px',
-            pointerEvents: 'none',
             border: `2px solid ${colors.neutral[0]}`,
             animation: 'fadeIn 0.2s ease',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              background: 'rgba(0, 0, 0, 0.95)',
+              transform: 'translate(-50%, -100%) scale(1.02)',
+            },
           }}
         >
+          {/* Close button */}
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              setHoveredSite(null);
+              setHoverPosition(null);
+            }}
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              width: 24,
+              height: 24,
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: colors.neutral[0],
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.3)',
+                transform: 'scale(1.1)',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+
           <Typography
             variant="subtitle2"
             fontWeight={700}
@@ -461,7 +783,7 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
               fontStyle: 'italic',
             }}
           >
-            לחץ לפרטים מלאים
+            לחץ על הסמן לפרטים מלאים • לחץ כאן לסגירה
           </Typography>
         </Paper>
       )}
@@ -510,72 +832,74 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
             pb: 1,
           }}
         >
-          מקרא צבעים
+          מקרא סוגי גורמים
         </Typography>
 
-        {/* Corporation Colors */}
+        {/* Entity Types */}
         <Box mb={2}>
-          <Typography
-            variant="caption"
-            fontWeight={600}
-            sx={{
-              fontSize: { xs: '11px', sm: '12px' },
-              color: colors.neutral[700],
-              display: 'block',
-              mb: 1,
-            }}
-          >
-            ערים ({corporationsWithColors.length})
-          </Typography>
-          {corporationsWithColors.map((corp) => (
-            <Tooltip
-              key={corp.id}
-              title={`${neighborhoods.filter((s) => s.city.id === corp.id).length} שכונות`}
-              placement="left"
-              arrow
+          {entityTypes.map((entity) => (
+            <Box
+              key={entity.type}
+              display="flex"
+              alignItems="center"
+              gap={1.5}
+              mb={1.5}
+              sx={{
+                p: 1.5,
+                borderRadius: '10px',
+                transition: 'all 0.2s ease',
+                background: colors.neutral[50],
+                border: `2px solid ${entity.color}30`,
+                '&:hover': {
+                  background: `${entity.color}10`,
+                  transform: 'translateX(-3px)',
+                  boxShadow: `0 2px 8px ${entity.color}30`,
+                },
+              }}
             >
               <Box
-                display="flex"
-                alignItems="center"
-                gap={1.5}
-                mb={1}
                 sx={{
-                  p: 1,
-                  borderRadius: '8px',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    background: colors.neutral[50],
-                    transform: 'translateX(-2px)',
-                  },
+                  width: { xs: 36, sm: 40 },
+                  height: { xs: 36, sm: 40 },
+                  borderRadius: '50%',
+                  background: entity.color,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: { xs: '18px', sm: '20px' },
+                  boxShadow: `0 2px 8px ${entity.color}40`,
+                  border: `2px solid ${colors.neutral[0]}`,
                 }}
               >
-                <Box
-                  sx={{
-                    width: { xs: 16, sm: 18 },
-                    height: { xs: 16, sm: 18 },
-                    borderRadius: '50%',
-                    background: corp.color,
-                    flexShrink: 0,
-                    boxShadow: `0 2px 6px ${corp.color}40`,
-                    border: `2px solid ${colors.neutral[0]}`,
-                  }}
-                />
+                {entity.emoji}
+              </Box>
+              <Box flex={1}>
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: { xs: '12px', sm: '13px' },
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    fontWeight: 500,
-                    color: colors.neutral[800],
+                    fontSize: { xs: '13px', sm: '14px' },
+                    fontWeight: 600,
+                    color: colors.neutral[900],
+                    display: 'block',
+                    lineHeight: 1.2,
                   }}
                 >
-                  {corp.name}
+                  {entity.label}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: { xs: '11px', sm: '12px' },
+                    color: colors.neutral[600],
+                    display: 'block',
+                    mt: 0.3,
+                  }}
+                >
+                  {entity.count} ברשימה
                 </Typography>
               </Box>
-            </Tooltip>
+            </Box>
           ))}
         </Box>
 
@@ -664,14 +988,51 @@ export default function LeafletMap({ neighborhoods, onSiteSelect, selectedSiteId
         .leaflet-popup-content-wrapper {
           border-radius: 12px !important;
           padding: 0 !important;
+          padding-top: 32px !important;
+          position: relative !important;
+          overflow: visible !important;
         }
 
         .leaflet-popup-content {
           margin: 12px !important;
+          margin-top: 0 !important;
+          width: auto !important;
         }
 
         .leaflet-popup-tip {
           background: white !important;
+        }
+
+        /* Fix close button positioning - keep it inside popup */
+        .leaflet-popup-close-button {
+          position: absolute !important;
+          top: 8px !important;
+          right: 8px !important;
+          left: auto !important;
+          width: 24px !important;
+          height: 24px !important;
+          padding: 0 !important;
+          border-radius: 50% !important;
+          background: rgba(0, 0, 0, 0.05) !important;
+          color: #666 !important;
+          font-size: 18px !important;
+          line-height: 24px !important;
+          text-align: center !important;
+          border: none !important;
+          transition: all 0.2s ease !important;
+          z-index: 10 !important;
+        }
+
+        .leaflet-popup-close-button:hover {
+          background: rgba(0, 0, 0, 0.1) !important;
+          color: #333 !important;
+          transform: scale(1.1) !important;
+        }
+
+        /* RTL support for close button */
+        .leaflet-container[dir='rtl'] .leaflet-popup-close-button {
+          right: auto !important;
+          left: 8px !important;
         }
       `}</style>
     </Box>
