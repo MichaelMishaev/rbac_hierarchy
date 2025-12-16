@@ -87,8 +87,19 @@ export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUs
     return 'all';
   }
 
-  if (user.role === 'AREA_MANAGER' && user.areaManager) {
-    return user.areaManager.cities.map(c => c.id);
+  if (user.role === 'AREA_MANAGER') {
+    if (!user.areaManager) {
+      console.error('[getUserCorporations] CRITICAL: User has AREA_MANAGER role but no areaManager relation!');
+      console.error('[getUserCorporations] User ID:', user.id, 'Email:', user.email);
+      return []; // Deny access - something is wrong
+    }
+    console.log('[getUserCorporations] Area Manager detected');
+    console.log('[getUserCorporations] user.areaManager.id:', user.areaManager.id);
+    console.log('[getUserCorporations] user.areaManager.cities length:', user.areaManager.cities?.length);
+    console.log('[getUserCorporations] user.areaManager.cities:', user.areaManager.cities);
+    const cityIds = user.areaManager.cities.map(c => c.id);
+    console.log('[getUserCorporations] Returning city IDs:', cityIds);
+    return cityIds;
   }
 
   if (user.role === 'CITY_COORDINATOR') {

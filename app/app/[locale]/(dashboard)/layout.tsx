@@ -7,14 +7,7 @@ import MobileBottomNav from '@/app/components/layout/BottomNavigation';
 import ContextAwareFAB from '@/app/components/layout/FloatingActionButton';
 import QueryProvider from '@/app/providers/QueryProvider';
 import ProgressBar from '@/app/components/ui/ProgressBar';
-
-// 🚀 PERFORMANCE: Lazy load non-critical components
-// CommandPalette is not immediately needed, load it dynamically
-import dynamic from 'next/dynamic';
-
-const CommandPalette = dynamic(
-  () => import('@/app/components/ui/CommandPalette')
-);
+import CommandPaletteWrapper from '@/app/components/ui/CommandPaletteWrapper';
 
 export default async function DashboardLayout({
   children,
@@ -37,7 +30,7 @@ export default async function DashboardLayout({
   return (
     <QueryProvider>
       <ProgressBar />
-      <CommandPalette />
+      <CommandPaletteWrapper />
       <Box sx={{ display: 'flex', minHeight: '100vh', direction: isRTL ? 'rtl' : 'ltr' }}>
         {/* Desktop Sidebar - Hidden on mobile */}
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>

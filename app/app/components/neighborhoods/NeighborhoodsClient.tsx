@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -106,7 +106,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
-  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
+  const [_loadingSupervisors, _setLoadingSupervisors] = useState(false);
 
   // Filtered sites based on search and corporation filter
   const filteredSites = useMemo(() => {
@@ -450,33 +450,36 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
           />
         </Box>
 
-        <RtlButton
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreateModal}
-          sx={{
-            background: colors.gradients.primary,
-            color: colors.neutral[0],
-            px: 3,
-            py: 1.75, // 14px vertical padding per style guide
-            fontSize: '17px', // Slightly larger per style guide
-            borderRadius: borderRadius['2xl'], // 20px - style guide standard
-            fontWeight: 600,
-            textTransform: 'none',
-            boxShadow: shadows.soft,
-            transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover': {
-              background: colors.primary.dark,
-              boxShadow: shadows.glowBlue, // Colored glow on hover
-              transform: 'translateY(-2px)', // Lift 2px per style guide
-            },
-            '&:active': {
-              transform: 'translateY(0)', // Reset on click
-            },
-          }}
-        >
-          {t('newSite')}
-        </RtlButton>
+        {/* Only SuperAdmin, Area Manager, and City Coordinator can create neighborhoods */}
+        {(userRole === 'SUPERADMIN' || userRole === 'AREA_MANAGER' || userRole === 'CITY_COORDINATOR') && (
+          <RtlButton
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreateModal}
+            sx={{
+              background: colors.gradients.primary,
+              color: colors.neutral[0],
+              px: 3,
+              py: 1.75, // 14px vertical padding per style guide
+              fontSize: '17px', // Slightly larger per style guide
+              borderRadius: borderRadius['2xl'], // 20px - style guide standard
+              fontWeight: 600,
+              textTransform: 'none',
+              boxShadow: shadows.soft,
+              transition: 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                background: colors.primary.dark,
+                boxShadow: shadows.glowBlue, // Colored glow on hover
+                transform: 'translateY(-2px)', // Lift 2px per style guide
+              },
+              '&:active': {
+                transform: 'translateY(0)', // Reset on click
+              },
+            }}
+          >
+            {t('newSite')}
+          </RtlButton>
+        )}
       </Box>
 
       {/* Sites Grid */}
@@ -535,7 +538,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                 ? 'צור את האתר הראשון שלך כדי להתחיל'
                 : 'Create your first site to get started'}
           </Typography>
-          {!searchQuery && filterCity === 'all' && (
+          {!searchQuery && filterCity === 'all' && (userRole === 'SUPERADMIN' || userRole === 'AREA_MANAGER' || userRole === 'CITY_COORDINATOR') && (
             <RtlButton
               variant="contained"
               startIcon={<AddIcon />}
@@ -584,23 +587,25 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                       position: 'relative',
                     }}
                   >
-                    {/* Menu Button */}
-                    <IconButton
-                      onClick={(e) => handleMenuOpen(e, site)}
-                      sx={{
-                        position: 'absolute',
-                        top: 12,
-                        [isRTL ? 'left' : 'right']: 12,
-                        backgroundColor: colors.neutral[0],
-                        boxShadow: shadows.soft,
-                        '&:hover': {
-                          backgroundColor: colors.neutral[100],
-                        },
-                      }}
-                      size="small"
-                    >
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
+                    {/* Menu Button - Only for SuperAdmin, Area Manager, and City Coordinator */}
+                    {(userRole === 'SUPERADMIN' || userRole === 'AREA_MANAGER' || userRole === 'CITY_COORDINATOR') && (
+                      <IconButton
+                        onClick={(e) => handleMenuOpen(e, site)}
+                        sx={{
+                          position: 'absolute',
+                          top: 12,
+                          [isRTL ? 'left' : 'right']: 12,
+                          backgroundColor: colors.neutral[0],
+                          boxShadow: shadows.soft,
+                          '&:hover': {
+                            backgroundColor: colors.neutral[100],
+                          },
+                        }}
+                        size="small"
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    )}
 
                     {/* Avatar and Name */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
