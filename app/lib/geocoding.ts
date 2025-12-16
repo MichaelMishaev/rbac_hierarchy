@@ -58,8 +58,8 @@ export async function geocodeLocation(
     }
 
     const coords = {
-      latitude: results[0].lat,
-      longitude: results[0].lon,
+      latitude: Number(results[0].lat),
+      longitude: Number(results[0].lon),
     };
 
     // Cache the result
@@ -110,9 +110,13 @@ export function offsetCoordinates(
   // Distribute offsets in a circle pattern
   const angle = (offsetIndex * 2 * Math.PI) / 8; // 8 positions around circle
 
+  // Ensure numeric values (DB may return Decimal as string)
+  const lat = Number(baseCoords.latitude);
+  const lng = Number(baseCoords.longitude);
+
   return {
-    latitude: baseCoords.latitude + offsetDegrees * Math.cos(angle),
-    longitude: baseCoords.longitude + offsetDegrees * Math.sin(angle),
+    latitude: lat + offsetDegrees * Math.cos(angle),
+    longitude: lng + offsetDegrees * Math.sin(angle),
   };
 }
 
