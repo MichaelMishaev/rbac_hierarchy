@@ -36,7 +36,6 @@ export type RecentActivityProps = {
 
 export default function RecentActivity({ activities, maxItems = 10 }: RecentActivityProps) {
   const t = useTranslations('dashboard');
-  const tCommon = useTranslations('common');
   const displayActivities = activities.slice(0, maxItems);
 
   // Get icon based on entity type

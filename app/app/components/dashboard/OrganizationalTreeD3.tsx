@@ -70,7 +70,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [drillDownOpen, setDrillDownOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const isUpdatingRef = useRef(false); // Prevent infinite loops
   const [errorSnackbar, setErrorSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'warning' | 'info' }>({
     open: false,
@@ -168,7 +167,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
     // Tree configuration from Tree component props
     const depthFactor = 260;  // vertical spacing between levels
-    const nodeSize = { x: 280, y: 240 };  // horizontal spacing
 
     // Calculate Y position (vertical) based on depth
     const yPosition = depth * depthFactor;
@@ -209,14 +207,16 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
       // Center on the first matched node
       const firstMatch = matches[0];
-      const newTranslate = calculateNodePosition(firstMatch);
-      setTranslate(newTranslate);
+      if (firstMatch) {
+        const newTranslate = calculateNodePosition(firstMatch);
+        setTranslate(newTranslate);
 
-      // Optionally adjust zoom to ensure node is visible
-      if (firstMatch.length > 3) {
-        setZoom(0.7); // Zoom out for deeper nodes
-      } else {
-        setZoom(0.9); // Normal zoom for shallow nodes
+        // Optionally adjust zoom to ensure node is visible
+        if (firstMatch.length > 3) {
+          setZoom(0.7); // Zoom out for deeper nodes
+        } else {
+          setZoom(0.9); // Normal zoom for shallow nodes
+        }
       }
     } else {
       setMatchedNodePaths([]);
@@ -227,26 +227,13 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     fetchOrgTree();
   }, [fetchOrgTree]);
 
-  // Initialize center translation and measure dimensions
+  // Initialize center translation
   useEffect(() => {
     if (typeof window !== 'undefined' && !isUpdatingRef.current) {
-      const updateDimensions = () => {
-        // Get the container width (accounting for padding/margins)
-        const containerWidth = Math.min(window.innerWidth - 100, 1400); // Max width with padding
-        const containerHeight = 700;
-
-        setDimensions((prev) => {
-          // Only update if dimensions actually changed (prevent infinite loops)
-          const widthChanged = Math.abs(prev.width - containerWidth) > 5;
-          const heightChanged = Math.abs(prev.height - containerHeight) > 5;
-          if (widthChanged || heightChanged) {
-            return { width: containerWidth, height: containerHeight };
-          }
-          return prev;
-        });
-
+      const updateTranslate = () => {
         // Only update translate on initial load or when exiting fullscreen
         if (!searchTerm && !isFullscreen) {
+          const containerWidth = Math.min(window.innerWidth - 100, 1400); // Max width with padding
           setTranslate((prev) => {
             const newTranslate = { x: containerWidth / 2, y: 80 };
             // Prevent unnecessary updates with larger threshold
@@ -258,10 +245,11 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         }
       };
 
-      updateDimensions();
-      window.addEventListener('resize', updateDimensions);
-      return () => window.removeEventListener('resize', updateDimensions);
+      updateTranslate();
+      window.addEventListener('resize', updateTranslate);
+      return () => window.removeEventListener('resize', updateTranslate);
     }
+    return undefined; // Explicit return for all code paths
   }, [searchTerm, isFullscreen]);
 
   // Zoom controls with smooth increments
@@ -295,93 +283,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     }, 100);
   }, []);
 
-  const handleFitToScreen = useCallback(() => {
-    if (isUpdatingRef.current) return;
-    isUpdatingRef.current = true;
-
-    console.log('Resetting to default view');
-    setZoom(0.9);
-    setTranslate({
-      x: dimensions.width > 0 ? dimensions.width / 2 : window.innerWidth / 2,
-      y: 80
-    });
-
-    setTimeout(() => {
-      isUpdatingRef.current = false;
-    }, 100);
-  }, [dimensions]);
-
-  // Show All - Bird's Eye View (zoom out to see entire tree)
-  const handleShowAll = useCallback(() => {
-    if (isUpdatingRef.current) return;
-    isUpdatingRef.current = true;
-
-    console.log('Showing entire tree - Bird\'s Eye View');
-    // Zoom out significantly to show the whole tree
-    setZoom(0.3);
-    // Center the tree at the top
-    setTranslate({
-      x: dimensions.width > 0 ? dimensions.width / 2 : window.innerWidth / 2,
-      y: 50
-    });
-    // Clear search to show all nodes
-    setSearchTerm('');
-
-    setTimeout(() => {
-      isUpdatingRef.current = false;
-    }, 100);
-  }, [dimensions]);
-
-  // Fullscreen handler
-  const handleFullscreen = useCallback(async () => {
-    if (!containerRef.current) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.error('Error toggling fullscreen:', err);
-    }
-  }, []);
-
-  // Excel download handler
-  const handleDownloadExcel = useCallback(async () => {
-    try {
-      setIsDownloading(true);
-      const response = await fetch('/api/org-tree-export');
-
-      if (!response.ok) {
-        throw new Error('Failed to download Excel file');
-      }
-
-      // Get filename from Content-Disposition header or use default
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch ? filenameMatch[1] : `org-tree-${new Date().toISOString().split('T')[0]}.xlsx`;
-
-      // Download file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error downloading Excel:', err);
-      alert('שגיאה בהורדת קובץ אקסל');
-    } finally {
-      setIsDownloading(false);
-    }
-  }, []);
-
   // HTML download handler (standalone interactive tree)
   const handleDownloadHTML = useCallback(async () => {
     try {
@@ -405,7 +306,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       // Get filename from Content-Disposition header or use default
       const contentDisposition = response.headers.get('Content-Disposition');
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch ? filenameMatch[1] : `org-tree-${new Date().toISOString().split('T')[0]}.html`;
+      const filename: string = filenameMatch?.[1] ?? `org-tree-${new Date().toISOString().split('T')[0]}.html`;
 
       // Download file
       const blob = await response.blob();
@@ -578,20 +479,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       orphanActivists: 'פעילים לא משויכים',
     };
     return statLabels[key] || key;
-  }, []);
-
-  // Build node path from nodeDatum
-  const buildNodePath = useCallback((nodeDatum: any): string => {
-    const path: string[] = [];
-    let current = nodeDatum;
-
-    // Traverse up the tree to build the full path
-    while (current) {
-      path.unshift(current.name);
-      current = current.parent;
-    }
-
-    return path.join('->');
   }, []);
 
   // Custom node renderer with Material-UI components

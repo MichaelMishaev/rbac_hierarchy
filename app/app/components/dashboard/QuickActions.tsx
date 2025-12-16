@@ -4,7 +4,6 @@ import { Box, Stack } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import RtlButton from '@/app/components/ui/RtlButton';
 
