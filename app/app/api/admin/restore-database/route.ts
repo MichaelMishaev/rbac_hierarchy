@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Run the seed logic directly (copy from seed.ts)
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
-    const superAdmin = await prisma.user.upsert({
+    await prisma.user.upsert({
       where: { email: 'admin@election.test' },
       update: {},
       create: {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ All 6 Area Managers created');
 
     // Create Tel Aviv city with data (simplified - you can expand this)
-    const telAvivYafo = await prisma.city.upsert({
+    await prisma.city.upsert({
       where: { code: 'TLV-YAFO' },
       update: {},
       create: {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         code: 'TLV-YAFO',
         description: 'קמפיין בחירות תל אביב-יפו',
         isActive: true,
-        areaManagerId: createdAreaManagers[0].id, // Tel Aviv district
+        areaManagerId: createdAreaManagers[0]?.id ?? '', // Tel Aviv district
       },
     });
 
