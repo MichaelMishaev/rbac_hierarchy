@@ -106,7 +106,8 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
-  const [_loadingSupervisors, _setLoadingSupervisors] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
 
   // Filtered sites based on search and corporation filter
   const filteredSites = useMemo(() => {
