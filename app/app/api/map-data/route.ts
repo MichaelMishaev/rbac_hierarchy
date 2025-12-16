@@ -309,6 +309,19 @@ export async function GET(_request: Request) {
         // Offset slightly to avoid overlap with neighborhoods
         const offsetIndex = managers.filter((m) => m.cityId === manager.cityId).indexOf(manager);
 
+        // Calculate offset coordinates (east offset is safer than west)
+        const finalLatitude = Number(cityCoords.latitude);
+        const finalLongitude = Number(cityCoords.longitude) + offsetIndex * 0.01;
+
+        // Validate AFTER offset to ensure still within bounds
+        const finalCoords = { latitude: finalLatitude, longitude: finalLongitude };
+        if (!isValidIsraelCoordinate(finalCoords)) {
+          console.warn(
+            `[Map API] City coordinator ${manager.user.fullName} has invalid coordinates after offset: ${finalLatitude}, ${finalLongitude} (skipping)`
+          );
+          return null;
+        }
+
         return {
           id: manager.id,
           userId: manager.userId,
@@ -316,8 +329,8 @@ export async function GET(_request: Request) {
           email: manager.user.email,
           phone: manager.user.phone,
           city: manager.city,
-          latitude: Number(cityCoords.latitude),
-          longitude: Number(cityCoords.longitude) + offsetIndex * 0.01, // Small offset
+          latitude: finalLatitude,
+          longitude: finalLongitude,
           type: 'city_coordinator' as const,
         };
       })
@@ -358,6 +371,19 @@ export async function GET(_request: Request) {
         // Offset to avoid overlap with city coordinators
         const offsetIndex = supervisors.filter((s) => s.cityId === supervisor.cityId).indexOf(supervisor);
 
+        // Calculate offset coordinates
+        const finalLatitude = Number(coords.latitude) + offsetIndex * 0.008;
+        const finalLongitude = Number(coords.longitude) - offsetIndex * 0.008;
+
+        // Validate AFTER offset (coastal neighborhoods can move into sea after westward offset)
+        const finalCoords = { latitude: finalLatitude, longitude: finalLongitude };
+        if (!isValidIsraelCoordinate(finalCoords)) {
+          console.warn(
+            `[Map API] Activist coordinator ${supervisor.user.fullName} has invalid coordinates after offset: ${finalLatitude}, ${finalLongitude} (skipping)`
+          );
+          return null;
+        }
+
         return {
           id: supervisor.id,
           userId: supervisor.userId,
@@ -366,8 +392,8 @@ export async function GET(_request: Request) {
           phone: supervisor.user.phone,
           city: supervisor.city,
           neighborhoods: neighborhoods.map((n) => ({ id: n.id, name: n.name, address: n.address })),
-          latitude: Number(coords.latitude) + offsetIndex * 0.008,
-          longitude: Number(coords.longitude) - offsetIndex * 0.008,
+          latitude: finalLatitude,
+          longitude: finalLongitude,
           type: 'activist_coordinator' as const,
         };
       })
