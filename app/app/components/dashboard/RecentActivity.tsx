@@ -56,14 +56,6 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
     }
   };
 
-  // Get color based on action
-  const getActionColor = (action: string) => {
-    if (action.includes('CREATE')) return colors.success;
-    if (action.includes('UPDATE')) return colors.info;
-    if (action.includes('DELETE')) return colors.error;
-    return colors.neutral[600];
-  };
-
   // Format action text in Hebrew
   const formatAction = (action: string) => {
     const actionMap: Record<string, string> = {

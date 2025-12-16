@@ -12,14 +12,13 @@ import {
   Switch,
   FormControlLabel,
   CircularProgress,
-  MenuItem,
+  
   Typography,
   Alert,
   Autocomplete,
 } from '@mui/material';
 import {
   Public as PublicIcon,
-  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useTranslations, useLocale } from 'next-intl';
 

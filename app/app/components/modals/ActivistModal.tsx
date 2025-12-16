@@ -166,12 +166,14 @@ export default function ActivistModal({
     } else if (!initialData?.siteId && areas.length > 0 && cities.length > 0) {
       // When creating new activist:
       // If user only has access to 1 area (e.g., Area Manager), auto-select it
-      if (areas.length === 1) {
-        setSelectedAreaId(areas[0].id);
+      const firstArea = areas[0];
+      if (areas.length === 1 && firstArea) {
+        setSelectedAreaId(firstArea.id);
         // If only 1 city in that area, auto-select it too
-        const areaCities = cities.filter((c) => c.areaManagerId === areas[0].id);
-        if (areaCities.length === 1) {
-          setSelectedCityId(areaCities[0].id);
+        const areaCities = cities.filter((c) => c.areaManagerId === firstArea.id);
+        const firstCity = areaCities[0];
+        if (areaCities.length === 1 && firstCity) {
+          setSelectedCityId(firstCity.id);
         } else {
           setSelectedCityId('');
         }

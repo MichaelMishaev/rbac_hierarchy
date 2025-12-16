@@ -10,7 +10,7 @@ export default function LanguageSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleChange = (_event: React.MouseEvent<HTMLElement>, newLocale: string | null) => {
+  const handleChange = (event: React.MouseEvent<HTMLElement>, newLocale: string | null) => {
     if (!newLocale) return;
 
     // Remove current locale from pathname

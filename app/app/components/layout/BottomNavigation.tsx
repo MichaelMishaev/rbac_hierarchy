@@ -36,9 +36,9 @@ export default function MobileBottomNav() {
     return 4; // More
   };
 
-  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     const paths = ['/dashboard', '/activists', '/tasks', '/map', '/more'];
-    router.push(paths[newValue]);
+    router.push(paths[newValue] ?? '/dashboard');
   };
 
   return (

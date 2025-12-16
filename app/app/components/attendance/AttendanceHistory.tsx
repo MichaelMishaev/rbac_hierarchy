@@ -157,7 +157,7 @@ export default function AttendanceHistory({ user: _user }: AttendanceHistoryProp
   }, [data]);
 
   // Pagination handlers
-  const handleChangePage = (_event: unknown, newPage: number) => {
+  const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
 

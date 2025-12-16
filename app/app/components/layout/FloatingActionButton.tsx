@@ -10,12 +10,11 @@
 
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Fab, Zoom, Tooltip } from '@mui/material';
-import { colors, shadows } from '@/lib/design-system';
+import { shadows } from '@/lib/design-system';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
-import { useState } from 'react';
 
 interface FABConfig {
   icon: React.ReactNode;
@@ -26,8 +25,7 @@ interface FABConfig {
 
 export default function ContextAwareFAB() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isVisible, setIsVisible] = useState(true);
+  const isVisible = true; // Always visible
 
   // Remove locale from path
   const currentPath = pathname.replace(/^\/(he|en)/, '') || '/';

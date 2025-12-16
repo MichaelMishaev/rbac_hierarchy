@@ -1,7 +1,7 @@
 'use client';
 
-import { Box, Typography, useTheme } from '@mui/material';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Box, Typography } from '@mui/material';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
 
 interface DistributionData {
@@ -19,11 +19,9 @@ interface StatusDistributionChartProps {
 
 export default function StatusDistributionChart({
   data,
-  title,
+  title: _title,
   type = 'donut',
 }: StatusDistributionChartProps) {
-  const theme = useTheme();
-
   // Don't render labels on the chart - they overlap
   // We'll show percentages in the legend instead
 
@@ -71,7 +69,9 @@ export default function StatusDistributionChart({
         }}
       >
         {payload.map((entry: any, index: number) => {
-          const percent = total > 0 ? ((data[index].value / total) * 100).toFixed(0) : 0;
+          const dataPoint = data[index];
+          if (!dataPoint) return null;
+          const percent = total > 0 ? ((dataPoint.value / total) * 100).toFixed(0) : 0;
           return (
             <Box
               key={`item-${index}`}
@@ -102,7 +102,7 @@ export default function StatusDistributionChart({
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="body2" sx={{ fontSize: '18px', fontWeight: 700, color: colors.neutral[900] }}>
-                  {data[index].value}
+                  {dataPoint.value}
                 </Typography>
                 <Typography
                   variant="body2"

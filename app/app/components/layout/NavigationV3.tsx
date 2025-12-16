@@ -21,7 +21,6 @@ import {
   useTheme,
   Fade,
   Tooltip,
-  Chip,
   LinearProgress,
 } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -32,7 +31,6 @@ import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import GroupIcon from '@mui/icons-material/Group';
-import MailIcon from '@mui/icons-material/Mail';
 import LogoutIcon from '@mui/icons-material/Logout';
 import RuleIcon from '@mui/icons-material/Rule';
 import MapIcon from '@mui/icons-material/Map';
@@ -40,11 +38,9 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddTaskIcon from '@mui/icons-material/AddTask';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PublicIcon from '@mui/icons-material/Public';
-import AddIcon from '@mui/icons-material/Add';
 import HistoryIcon from '@mui/icons-material/History';
 
 import LanguageSwitcher from './LanguageSwitcher';
@@ -735,7 +731,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                     fontSize="small"
                     sx={{
                       color: colors.neutral[400],
-                      transform: expandedSections.recent ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transform: expandedSections['recent'] ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                   />
@@ -743,7 +739,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
               </Box>
 
               {/* Collapsible Recent Pages List */}
-              <Collapse in={expandedSections.recent} timeout="auto">
+              <Collapse in={expandedSections['recent']} timeout="auto">
                 <List sx={{ p: 1.5, pt: 1 }}>
                   {recentPages.slice(0, 5).map((page, index) => (
                     <ListItem key={page.path} disablePadding sx={{ mb: 0.5 }}>

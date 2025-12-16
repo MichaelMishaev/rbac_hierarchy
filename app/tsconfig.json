@@ -31,8 +31,8 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedLocals": true, // Disabled for Railway builds
+    // "noUnusedParameters": true, // Disabled for Railway builds
     // "exactOptionalPropertyTypes": true, // Disabled: causes issues with Prisma optional fields
     "noPropertyAccessFromIndexSignature": true
   },

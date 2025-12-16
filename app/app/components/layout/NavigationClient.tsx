@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -18,7 +18,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddTaskIcon from '@mui/icons-material/AddTask';
 import LanguageSwitcher from './LanguageSwitcher';
 import { signOut } from 'next-auth/react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useWorkerMutations } from '@/app/hooks/useWorkers';
 import { useSiteMutations } from '@/app/hooks/useSites';
 import { useDashboardMutations } from '@/app/hooks/useDashboardStats';

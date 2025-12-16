@@ -21,7 +21,7 @@ type AttendanceClientProps = {
 export default function AttendanceClient({ user }: AttendanceClientProps) {
   const [activeTab, setActiveTab] = useState(0);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
