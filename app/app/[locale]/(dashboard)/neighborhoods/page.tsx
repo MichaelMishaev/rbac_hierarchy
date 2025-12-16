@@ -90,7 +90,7 @@ export default async function SitesPage() {
       </Box>
 
       {/* Client Component with Modals */}
-      {/* @ts-ignore TODO Week 3: Fix type incompatibility with exactOptionalPropertyTypes for userCityId */}
+      {/* @ts-expect-error TODO Week 3: Fix type incompatibility with exactOptionalPropertyTypes for userCityId */}
       <NeighborhoodsClient
         neighborhoods={neighborhoods}
         cities={cities.map(c => ({ id: c.id, name: c.name, code: c.code, areaManagerId: c.areaManagerId }))}

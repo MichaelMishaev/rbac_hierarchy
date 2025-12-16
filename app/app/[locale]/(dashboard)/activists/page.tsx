@@ -110,7 +110,7 @@ export default async function WorkersPage() {
 
       {/* Client Component with Modals */}
       <ActivistsClient
-        // @ts-ignore TODO Week 3: Fix type incompatibility with exactOptionalPropertyTypes
+        // @ts-expect-error TODO Week 3: Fix type incompatibility with exactOptionalPropertyTypes
         activists={activists.map(a => ({
           ...a,
           // Map 'neighborhood' to 'site' for ActivistsClient (legacy naming)
