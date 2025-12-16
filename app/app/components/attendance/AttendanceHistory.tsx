@@ -12,7 +12,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  TextField,
   Grid,
   MenuItem,
   Select,
@@ -29,7 +28,7 @@ import {
   DialogActions,
   Button,
 } from '@mui/material';
-import { colors, borderRadius, shadows } from '@/lib/design-system';
+import { colors, borderRadius } from '@/lib/design-system';
 import RtlButton from '@/app/components/ui/RtlButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -54,7 +53,7 @@ type AttendanceHistoryProps = {
   };
 };
 
-export default function AttendanceHistory({ user }: AttendanceHistoryProps) {
+export default function AttendanceHistory({ user: _user }: AttendanceHistoryProps) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);

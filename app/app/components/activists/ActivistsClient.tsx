@@ -10,7 +10,6 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
-  Chip,
   Avatar,
   Tooltip,
   Select,
@@ -32,13 +31,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
-import PeopleIcon from '@mui/icons-material/People';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
 import WorkIcon from '@mui/icons-material/Work';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
+import PhoneIcon from '@mui/icons-material/Phone';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -120,7 +114,7 @@ export default function ActivistsClient({
   activistCoordinators: supervisors,
   areas,
   cities,
-  currentUserId,
+  currentUserId: _currentUserId,
   defaultActivistCoordinatorId: defaultSupervisorId,
 }: ActivistsClientProps) {
   const t = useTranslations('workers');
@@ -352,7 +346,7 @@ export default function ActivistsClient({
   };
 
   // Get random pastel color based on name
-  const getAvatarColor = (name: string) => {
+  const getAvatarColor = (name: string): { bg: string; text: string } => {
     const pastelColors = [
       { bg: colors.pastel.blueLight, text: colors.pastel.blue },
       { bg: colors.pastel.purpleLight, text: colors.pastel.purple },
@@ -362,7 +356,7 @@ export default function ActivistsClient({
       { bg: colors.pastel.yellowLight, text: colors.status.orange },
     ];
     const index = name.charCodeAt(0) % pastelColors.length;
-    return pastelColors[index];
+    return pastelColors[index]!; // Safe: index is always within bounds due to modulo
   };
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -875,8 +869,8 @@ export default function ActivistsClient({
                               sx={{
                                 width: 40,
                                 height: 40,
-                                backgroundColor: avatarColor.bg,
-                                color: avatarColor.text,
+                                backgroundColor: avatarColor?.bg ?? colors.primary.main ?? '#6366f1',
+                                color: avatarColor?.text || '#fff',
                                 fontWeight: 600,
                                 fontSize: '0.9rem',
                               }}

@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view') || 'received'; // received/sent
     const statusFilter = searchParams.get('status') || 'active'; // active/unread/read/acknowledged/archived/deleted
-    const includeDeleted = searchParams.get('include_deleted') !== 'false'; // default: true
     const sortBy = searchParams.get('sort_by') || 'created_at'; // created_at/execution_date (default: sent date desc)
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const offset = parseInt(searchParams.get('offset') || '0');

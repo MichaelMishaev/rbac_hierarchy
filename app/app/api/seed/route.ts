@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 // IMPORTANT: Only allow in non-production or with secret key
-const SEED_SECRET = process.env.SEED_SECRET || 'change-me-in-production';
+const SEED_SECRET = process.env['SEED_SECRET'] || 'change-me-in-production';
 
 export async function POST(request: Request) {
   try {

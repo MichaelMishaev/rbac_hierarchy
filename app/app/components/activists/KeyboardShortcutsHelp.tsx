@@ -6,7 +6,6 @@ import {
   Typography,
   IconButton,
   Chip,
-  Fade,
   Collapse,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';

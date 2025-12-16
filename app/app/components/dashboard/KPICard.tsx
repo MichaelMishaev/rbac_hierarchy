@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, Typography, Box, Chip } from '@mui/material';
+import { CardContent, Typography, Box, Chip } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';

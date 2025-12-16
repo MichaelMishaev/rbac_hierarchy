@@ -580,7 +580,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                     sx={{
                       p: 3,
                       pb: 4,
-                      background: `linear-gradient(135deg, ${avatarColor.bg} 0%, ${colors.neutral[50]} 100%)`,
+                      background: `linear-gradient(135deg, ${avatarColor?.bg || colors.primary.main} 0%, ${colors.neutral[50]} 100%)`,
                       position: 'relative',
                     }}
                   >
@@ -608,8 +608,8 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
                         sx={{
                           width: 56,
                           height: 56,
-                          backgroundColor: avatarColor.bg,
-                          color: avatarColor.text,
+                          backgroundColor: avatarColor?.bg || colors.primary.main,
+                          color: avatarColor?.text || '#fff',
                           fontWeight: 700,
                           fontSize: '1.25rem',
                           border: `3px solid ${colors.neutral[0]}`,

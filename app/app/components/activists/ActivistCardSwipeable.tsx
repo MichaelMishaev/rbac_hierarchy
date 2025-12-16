@@ -23,7 +23,7 @@
 import { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Box, Typography, IconButton, Avatar, Switch, Chip } from '@mui/material';
+import { Card, CardContent, Box, Typography, IconButton, Avatar, Chip } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';

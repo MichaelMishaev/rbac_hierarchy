@@ -352,52 +352,54 @@ export async function GET() {
       };
     } else if (userRole === 'AREA_MANAGER') {
       // Area Manager: Root is their Area (skip SuperAdmin level)
-      if (areaManagers.length > 0) {
-        const areaManager = areaManagers[0]; // Should only be one due to filtering
-        tree = {
-          // Root is the Area (Geographic entity)
-          id: `area-${areaManager.id}`,
-          name: areaManager.regionName,
-          type: 'area' as const,
-          count: {
-            cities: areaManager.cities?.length || 0,
-          },
-          children: [
-            {
-              // Area Manager (Person who manages the area)
-              id: areaManager.id,
-              name: areaManager.user?.fullName || `${areaManager.regionName} (ללא מנהל)`,
-              type: 'areamanager' as const,
-              count: {
-                cities: areaManager.cities?.length || 0,
-              },
-              children: (areaManager.cities || []).map((corp: any) => buildCityTree(corp)),
-            },
-          ],
-        };
-      } else {
+      const areaManager = areaManagers[0]; // Should only be one due to filtering
+      if (!areaManager) {
         return NextResponse.json({ error: 'Area Manager not found' }, { status: 404 });
       }
+
+      tree = {
+        // Root is the Area (Geographic entity)
+        id: `area-${areaManager.id}`,
+        name: areaManager.regionName,
+        type: 'area' as const,
+        count: {
+          cities: areaManager.cities?.length || 0,
+        },
+        children: [
+          {
+            // Area Manager (Person who manages the area)
+            id: areaManager.id,
+            name: areaManager.user?.fullName || `${areaManager.regionName} (ללא מנהל)`,
+            type: 'areamanager' as const,
+            count: {
+              cities: areaManager.cities?.length || 0,
+            },
+            children: (areaManager.cities || []).map((corp: any) => buildCityTree(corp)),
+          },
+        ],
+      };
     } else if (userRole === 'CITY_COORDINATOR') {
       // City Coordinator: Root is their City (skip SuperAdmin, Area, Area Manager levels)
       // Find the area manager that has cities (after filtering)
       const areaManagerWithCity = areaManagers.find(am => am.cities.length > 0);
-      if (areaManagerWithCity && areaManagerWithCity.cities.length > 0) {
-        const city = areaManagerWithCity.cities[0]; // Should only be one due to filtering
-        tree = buildCityTree(city);
-      } else {
+      const city = areaManagerWithCity?.cities[0];
+
+      if (!city) {
         return NextResponse.json({ error: 'City not found for coordinator' }, { status: 404 });
       }
+
+      tree = buildCityTree(city);
     } else if (userRole === 'ACTIVIST_COORDINATOR') {
       // Activist Coordinator: Root is their City with ONLY assigned neighborhoods (no coordinator groups)
       // Find the area manager that has cities (after filtering)
       const areaManagerWithCity = areaManagers.find(am => am.cities.length > 0);
-      if (areaManagerWithCity && areaManagerWithCity.cities.length > 0) {
-        const city = areaManagerWithCity.cities[0]; // Should only be one due to filtering
-        tree = buildActivistCoordinatorTree(city); // Use simplified tree builder (no coordinator/activist coordinator groups)
-      } else {
+      const city = areaManagerWithCity?.cities[0];
+
+      if (!city) {
         return NextResponse.json({ error: 'City/Neighborhoods not found for activist coordinator' }, { status: 404 });
       }
+
+      tree = buildActivistCoordinatorTree(city); // Use simplified tree builder (no coordinator/activist coordinator groups)
     } else {
       return NextResponse.json({ error: 'Unknown role' }, { status: 403 });
     }

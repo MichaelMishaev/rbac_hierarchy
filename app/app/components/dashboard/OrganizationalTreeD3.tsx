@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
-  Card,
   CardContent,
   Typography,
   Avatar,

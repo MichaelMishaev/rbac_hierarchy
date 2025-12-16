@@ -189,18 +189,8 @@ export default function AreasClient({ areas: initialAreas, userRole }: AreasClie
     }
   };
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   // Get avatar color
-  const getAvatarColor = (name: string) => {
+  const getAvatarColor = (name: string): { bg: string; text: string } => {
     const pastelColors = [
       { bg: colors.pastel.blueLight, text: colors.pastel.blue },
       { bg: colors.pastel.purpleLight, text: colors.pastel.purple },
@@ -209,7 +199,7 @@ export default function AreasClient({ areas: initialAreas, userRole }: AreasClie
       { bg: colors.pastel.orangeLight, text: colors.pastel.orange },
     ];
     const index = name.charCodeAt(0) % pastelColors.length;
-    return pastelColors[index];
+    return pastelColors[index]!; // Safe: index is always within bounds due to modulo
   };
 
   return (
@@ -437,8 +427,8 @@ export default function AreasClient({ areas: initialAreas, userRole }: AreasClie
                       sx={{
                         width: 56,
                         height: 56,
-                        bgcolor: avatarColor.bg,
-                        color: avatarColor.text,
+                        bgcolor: avatarColor?.bg || colors.primary.main,
+                        color: avatarColor?.text || '#fff',
                         fontSize: '1.25rem',
                         fontWeight: 700,
                       }}

@@ -1,7 +1,7 @@
 'use client';
 
-import { Box, Typography, useTheme } from '@mui/material';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Box, Typography } from '@mui/material';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
 
 interface MonthlyData {
@@ -23,9 +23,7 @@ interface MonthlyTrendsChartProps {
   }>;
 }
 
-export default function MonthlyTrendsChart({ data, title, dataKeys }: MonthlyTrendsChartProps) {
-  const theme = useTheme();
-
+export default function MonthlyTrendsChart({ data, title: _title, dataKeys }: MonthlyTrendsChartProps) {
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -67,7 +65,7 @@ export default function MonthlyTrendsChart({ data, title, dataKeys }: MonthlyTre
             margin={{ top: 10, right: 10, left: 50, bottom: 10 }}
           >
             <defs>
-              {dataKeys.map((item, index) => (
+              {dataKeys.map((item, _index) => (
                 <linearGradient key={item.key} id={`color${item.key}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={item.color} stopOpacity={0.3} />
                   <stop offset="95%" stopColor={item.color} stopOpacity={0} />

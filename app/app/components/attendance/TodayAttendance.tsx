@@ -20,7 +20,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
-import { colors, borderRadius, shadows } from '@/lib/design-system';
+import { colors, borderRadius } from '@/lib/design-system';
 import ActivistCard from './ActivistCard';
 import { getTodaysAttendance } from '@/actions/attendance';
 import { validateTimeWindow, getCurrentIsraelTime } from '@/lib/attendance';
@@ -35,7 +35,7 @@ type TodayAttendanceProps = {
   };
 };
 
-export default function TodayAttendance({ user }: TodayAttendanceProps) {
+export default function TodayAttendance({ user: _user }: TodayAttendanceProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
