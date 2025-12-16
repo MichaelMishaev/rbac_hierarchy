@@ -1,8 +1,0 @@
-error: unexpected argument '--detach' found
-
-  tip: to pass '--detach' as a value, use '-- --detach'
-
-Usage: railway run [OPTIONS] [ARGS]...
-
-For more information, try '--help'.
-
