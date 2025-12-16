@@ -25,6 +25,13 @@ export async function GET(_request: Request) {
 
     const userCorps = getUserCorporations(user);
 
+    // Debug logging for Area Manager filtering
+    console.log('[Map API] User role:', user.role);
+    console.log('[Map API] User corporations filter:', userCorps);
+    if (user.role === 'AREA_MANAGER') {
+      console.log('[Map API] Area Manager cities:', user.areaManager?.cities.map(c => c.name));
+    }
+
     // Fetch all entities based on user permissions
     const [sites, corporations, areaManagers, managers, supervisors, workers] = await Promise.all([
       // Sites with GPS coordinates
@@ -80,7 +87,7 @@ export async function GET(_request: Request) {
         },
       }),
 
-      // Area Managers
+      // Area Managers (SuperAdmin only - Area Managers should NOT see other Area Managers)
       user.isSuperAdmin
         ? prisma.areaManager.findMany({
             include: {
@@ -100,7 +107,7 @@ export async function GET(_request: Request) {
               },
             },
           })
-        : [],
+        : [], // Empty array for non-SuperAdmin (including Area Managers)
 
       // City Coordinators
       prisma.cityCoordinator.findMany({
@@ -281,6 +288,9 @@ export async function GET(_request: Request) {
       .filter(Boolean);
 
     // Step 4: Format city coordinators with city center coordinates
+    console.log(`[Map API] Formatting ${managers.length} city coordinators`);
+    console.log('[Map API] City coordinator city IDs:', managers.map(m => `${m.city.name} (${m.cityId})`));
+
     const formattedManagers = managers
       .map((manager) => {
         // Skip if user data is missing
@@ -290,7 +300,11 @@ export async function GET(_request: Request) {
         }
 
         const cityCoords = cityCoordsMap.get(manager.cityId);
-        if (!cityCoords) return null;
+        // Validate city coordinates before using (could be in sea)
+        if (!cityCoords || !isValidIsraelCoordinate(cityCoords)) {
+          console.warn(`[Map API] Invalid or missing city coordinates for manager ${manager.id} in city ${manager.cityId}`);
+          return null;
+        }
 
         // Offset slightly to avoid overlap with neighborhoods
         const offsetIndex = managers.filter((m) => m.cityId === manager.cityId).indexOf(manager);
@@ -308,6 +322,8 @@ export async function GET(_request: Request) {
         };
       })
       .filter(Boolean);
+
+    console.log(`[Map API] Formatted ${formattedManagers.length} city coordinators for response`);
 
     // Step 5: Format activist coordinators with neighborhood coordinates
     const formattedActivistCoordinators = supervisors
@@ -330,7 +346,11 @@ export async function GET(_request: Request) {
 
         if (!coords) {
           // Fallback to city center with offset
-          coords = cityCoordsMap.get(supervisor.cityId) || null;
+          const cityCoords = cityCoordsMap.get(supervisor.cityId);
+          // Validate city coordinates before using (could be in sea)
+          if (cityCoords && isValidIsraelCoordinate(cityCoords)) {
+            coords = cityCoords;
+          }
         }
 
         if (!coords) return null;
