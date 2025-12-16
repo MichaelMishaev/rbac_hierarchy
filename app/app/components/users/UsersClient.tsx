@@ -189,12 +189,12 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
     }
 
     // Pass user with extracted role-specific data to modal
-    // @ts-ignore TODO Week 3: Create proper type for user with role-specific data
+    // TODO Week 3: Create proper type for user with role-specific data
     setEditingUser({
       ...selectedUser,
       cityId,
       regionName,
-    });
+    } as any);
     setUserModalOpen(true);
     handleMenuClose();
   };
