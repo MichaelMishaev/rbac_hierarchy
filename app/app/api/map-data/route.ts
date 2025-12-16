@@ -302,8 +302,8 @@ export async function GET(_request: Request) {
           email: manager.user.email,
           phone: manager.user.phone,
           city: manager.city,
-          latitude: cityCoords.latitude,
-          longitude: cityCoords.longitude + offsetIndex * 0.01, // Small offset
+          latitude: Number(cityCoords.latitude),
+          longitude: Number(cityCoords.longitude) + offsetIndex * 0.01, // Small offset
           type: 'city_coordinator' as const,
         };
       })
@@ -346,8 +346,8 @@ export async function GET(_request: Request) {
           phone: supervisor.user.phone,
           city: supervisor.city,
           neighborhoods: neighborhoods.map((n) => ({ id: n.id, name: n.name, address: n.address })),
-          latitude: coords.latitude + offsetIndex * 0.008,
-          longitude: coords.longitude - offsetIndex * 0.008,
+          latitude: Number(coords.latitude) + offsetIndex * 0.008,
+          longitude: Number(coords.longitude) - offsetIndex * 0.008,
           type: 'activist_coordinator' as const,
         };
       })
