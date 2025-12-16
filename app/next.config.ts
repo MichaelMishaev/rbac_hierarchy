@@ -48,6 +48,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Ensure PWA icons are properly cached
+      {
+        source: '/:path(icon-.*\\.png|manifest\\.json)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
 };

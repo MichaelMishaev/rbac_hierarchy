@@ -299,6 +299,12 @@ export default function LeafletMap({
 
     // 1. Add Area Managers (Blue)
     areaManagers.forEach((am) => {
+      // Skip if coordinates are missing
+      if (!am.latitude || !am.longitude) {
+        console.warn(`[Leaflet] Skipping area manager ${am.fullName} - missing coordinates`);
+        return;
+      }
+
       const marker = L.marker([am.latitude, am.longitude], {
         icon: createMarkerIcon(entityColors.area_manager, '👔', 50),
       });
@@ -332,6 +338,12 @@ export default function LeafletMap({
 
     // 2. Add City Coordinators (Green)
     cityCoordinators.forEach((cc) => {
+      // Skip if coordinates are missing
+      if (!cc.latitude || !cc.longitude) {
+        console.warn(`[Leaflet] Skipping city coordinator ${cc.fullName} - missing coordinates`);
+        return;
+      }
+
       const marker = L.marker([cc.latitude, cc.longitude], {
         icon: createMarkerIcon(entityColors.city_coordinator, '🏛️', 45),
       });
@@ -369,6 +381,12 @@ export default function LeafletMap({
 
     // 3. Add Activist Coordinators (Orange)
     activistCoordinators.forEach((ac) => {
+      // Skip if coordinates are missing
+      if (!ac.latitude || !ac.longitude) {
+        console.warn(`[Leaflet] Skipping activist coordinator ${ac.fullName} - missing coordinates`);
+        return;
+      }
+
       const marker = L.marker([ac.latitude, ac.longitude], {
         icon: createMarkerIcon(entityColors.activist_coordinator, '👥', 42),
       });
