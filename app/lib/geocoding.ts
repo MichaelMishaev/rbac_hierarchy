@@ -58,8 +58,8 @@ export async function geocodeLocation(
     }
 
     const coords = {
-      latitude: parseFloat(results[0].lat),
-      longitude: parseFloat(results[0].lon),
+      latitude: results[0].lat,
+      longitude: results[0].lon,
     };
 
     // Cache the result

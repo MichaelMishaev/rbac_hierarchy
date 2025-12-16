@@ -155,7 +155,6 @@ export default async function CorporationsPage() {
 
       {/* Client Component with Modals */}
       <CitiesClient
-        // @ts-expect-error TODO Week 3: Fix type incompatibility with exactOptionalPropertyTypes
         cities={cities}
         userRole={session.user.role}
         currentUserAreaManager={currentUserAreaManager}
