@@ -283,6 +283,12 @@ export async function GET(_request: Request) {
     // Step 4: Format city coordinators with city center coordinates
     const formattedManagers = managers
       .map((manager) => {
+        // Skip if user data is missing
+        if (!manager.user) {
+          console.warn(`[Map API] Skipping city coordinator ${manager.id} - missing user data`);
+          return null;
+        }
+
         const cityCoords = cityCoordsMap.get(manager.cityId);
         if (!cityCoords) return null;
 
@@ -306,6 +312,12 @@ export async function GET(_request: Request) {
     // Step 5: Format activist coordinators with neighborhood coordinates
     const formattedActivistCoordinators = supervisors
       .map((supervisor) => {
+        // Skip if user data is missing
+        if (!supervisor.user) {
+          console.warn(`[Map API] Skipping activist coordinator ${supervisor.id} - missing user data`);
+          return null;
+        }
+
         const neighborhoods = supervisor.neighborhoodAssignments.map((na) => na.neighborhood);
 
         // Use first assigned neighborhood's coordinates, or city center
