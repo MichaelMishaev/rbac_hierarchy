@@ -11,10 +11,10 @@ import { Redis } from '@upstash/redis';
 // Initialize Redis client (if available)
 let redis: Redis | null = null;
 
-if (process.env.REDIS_URL) {
+if (process.env['REDIS_URL']) {
   redis = new Redis({
-    url: process.env.REDIS_URL,
-    token: process.env.REDIS_TOKEN || '',
+    url: process.env['REDIS_URL'],
+    token: process.env['REDIS_TOKEN'] || '',
   });
 }
 

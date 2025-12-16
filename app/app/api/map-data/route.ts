@@ -313,7 +313,7 @@ export async function GET(_request: Request) {
 
         if (neighborhoods.length > 0) {
           const firstNeighborhood = neighborhoods[0];
-          coords = neighborhoodCoordsMap.get(firstNeighborhood.id) || null;
+          coords = firstNeighborhood ? neighborhoodCoordsMap.get(firstNeighborhood.id) || null : null;
         }
 
         if (!coords) {

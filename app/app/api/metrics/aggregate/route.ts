@@ -11,10 +11,10 @@ import { Redis } from '@upstash/redis';
 // Initialize Redis client (if available)
 let redis: Redis | null = null;
 
-if (process.env.REDIS_URL) {
+if (process.env['REDIS_URL']) {
   redis = new Redis({
-    url: process.env.REDIS_URL,
-    token: process.env.REDIS_TOKEN || '',
+    url: process.env['REDIS_URL'],
+    token: process.env['REDIS_TOKEN'] || '',
   });
 }
 
@@ -144,15 +144,19 @@ async function getAllMetricsStats(
   const pattern = `metrics:${type}:*:stats`;
   const keys = await redis.keys(pattern);
 
-  const allStats = await Promise.all(
-    keys.map(async (key) => {
-      // Extract metric name from key
-      const parts = key.split(':');
-      const name = parts[2]; // metrics:type:NAME:stats
+  const allStats = (
+    await Promise.all(
+      keys.map(async (key) => {
+        // Extract metric name from key
+        const parts = key.split(':');
+        const name = parts[2]; // metrics:type:NAME:stats
 
-      return getMetricStats(redis, type, name, timeframe);
-    })
-  );
+        if (!name) return null;
+
+        return getMetricStats(redis, type, name, timeframe);
+      })
+    )
+  ).filter((stat): stat is NonNullable<typeof stat> => stat !== null);
 
   return allStats;
 }
