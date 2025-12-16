@@ -10,7 +10,7 @@ import {
   getCityFallbackCoordinates,
 } from '@/lib/geocoding';
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     let user;
     try {
