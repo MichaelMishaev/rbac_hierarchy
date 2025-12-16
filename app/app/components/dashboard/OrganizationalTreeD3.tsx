@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
-  CardContent,
   Typography,
   Avatar,
   Chip,
@@ -19,7 +18,6 @@ import {
   ListItemAvatar,
   ListItemText,
   Divider,
-  Slide,
   Fade,
   Snackbar,
 } from '@mui/material';
@@ -28,15 +26,11 @@ import {
   LocationOn as LocationOnIcon,
   SupervisorAccount as SupervisorIcon,
   AccountTree as DepartmentIcon,
-  AccountTree,
   Group as TeamIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
-  FitScreen as FitScreenIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
   Download as DownloadIcon,
   Close as CloseIcon,
   Person as PersonIcon,
@@ -55,15 +49,6 @@ const Tree = dynamic(() => import('react-d3-tree'), {
     </Box>
   ),
 });
-
-interface OrgNode {
-  name: string;
-  type: 'superadmin' | 'corporation' | 'site' | 'department' | 'team';
-  attributes?: {
-    [key: string]: any;
-  };
-  children?: OrgNode[];
-}
 
 interface TreeData {
   name: string;
@@ -84,7 +69,6 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [isDownloading, setIsDownloading] = useState(false);
   const [drillDownOpen, setDrillDownOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any>(null);
-  const treeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const isUpdatingRef = useRef(false); // Prevent infinite loops
