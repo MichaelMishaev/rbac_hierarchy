@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         {
           success: true,
           message: action === 'renew' ? 'מנוי חודש בהצלחה' : 'נרשמת להתראות בהצלחה',
-          subscriptionId: savedSubscription.id,
+          subscriptionId: savedSubscription.id.toString(),
         },
         { status: 200 }
       );

@@ -114,8 +114,16 @@ export default function PushNotificationPrompt() {
         TransitionComponent={SlideTransition}
         PaperProps={{
           sx: {
-            borderRadius: `${borderRadius.large}px`,
+            borderRadius: { xs: 0, sm: `${borderRadius.large}px` },
             direction: 'rtl',
+            m: { xs: 0, sm: 2 },
+            width: { xs: '100%', sm: 'auto' },
+            maxHeight: { xs: '100vh', sm: '90vh' },
+          },
+        }}
+        sx={{
+          '& .MuiDialog-container': {
+            alignItems: { xs: 'flex-end', sm: 'center' },
           },
         }}
       >
@@ -123,50 +131,119 @@ export default function PushNotificationPrompt() {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 2,
+            gap: { xs: 1.5, sm: 2 },
             pb: 1,
+            px: { xs: 2, sm: 3 },
+            pt: { xs: 2, sm: 3 },
           }}
         >
           <NotificationsActiveIcon
             sx={{
-              fontSize: 40,
+              fontSize: { xs: 32, sm: 40 },
               color: colors.primary,
+              flexShrink: 0,
             }}
           />
-          <Typography variant="h5" component="div" fontWeight="bold">
+          <Typography
+            variant="h5"
+            component="div"
+            fontWeight="bold"
+            sx={{
+              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+              lineHeight: 1.3,
+            }}
+          >
             קבל התראות על משימות חדשות
           </Typography>
         </DialogTitle>
 
-        <DialogContent>
-          <Typography variant="body1" paragraph>
+        <DialogContent
+          sx={{
+            px: { xs: 2, sm: 3 },
+            py: { xs: 2, sm: 2 },
+          }}
+        >
+          <Typography
+            variant="body1"
+            paragraph
+            sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}
+          >
             הפעל התראות דחיפה כדי לקבל עדכונים מיידיים כאשר:
           </Typography>
 
-          <Box component="ul" sx={{ mr: 3, mb: 2 }}>
-            <Typography component="li" variant="body1" sx={{ mb: 1 }}>
+          <Box component="ul" sx={{ mr: { xs: 2, sm: 3 }, mb: 2, pl: 0 }}>
+            <Typography
+              component="li"
+              variant="body1"
+              sx={{
+                mb: 1,
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                lineHeight: 1.5,
+              }}
+            >
               📋 <strong>משימה חדשה נשלחה אליך</strong>
             </Typography>
-            <Typography component="li" variant="body1" sx={{ mb: 1 }}>
+            <Typography
+              component="li"
+              variant="body1"
+              sx={{
+                mb: 1,
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                lineHeight: 1.5,
+              }}
+            >
               ⏰ <strong>תזכורת למשימה קרובה</strong>
             </Typography>
-            <Typography component="li" variant="body1" sx={{ mb: 1 }}>
+            <Typography
+              component="li"
+              variant="body1"
+              sx={{
+                mb: 1,
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                lineHeight: 1.5,
+              }}
+            >
               ✅ <strong>עדכונים חשובים מהמערכת</strong>
             </Typography>
           </Box>
 
-          <Alert severity="info" sx={{ borderRadius: `${borderRadius.medium}px` }}>
-            <Typography variant="body2">
+          <Alert
+            severity="info"
+            sx={{
+              borderRadius: `${borderRadius.medium}px`,
+              mb: 2,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ fontSize: { xs: '0.85rem', sm: '0.875rem' } }}
+            >
               💡 <strong>טיפ:</strong> ההתראות יופיעו גם כאשר האפליקציה סגורה!
             </Typography>
           </Alert>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mt: 1,
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+            }}
+          >
             🔒 אפשר להפסיק את ההתראות בכל עת דרך הגדרות המערכת
           </Typography>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1, flexDirection: 'row-reverse' }}>
+        <DialogActions
+          sx={{
+            px: { xs: 2, sm: 3 },
+            pb: { xs: 2, sm: 3 },
+            pt: { xs: 1, sm: 2 },
+            gap: { xs: 1, sm: 1 },
+            flexDirection: { xs: 'column', sm: 'row-reverse' },
+            alignItems: 'stretch',
+          }}
+        >
           <Button
             variant="contained"
             size="large"
@@ -174,11 +251,13 @@ export default function PushNotificationPrompt() {
             disabled={isLoading}
             startIcon={<NotificationsActiveIcon />}
             sx={{
-              flex: 1,
+              flex: { xs: 'none', sm: 1 },
+              width: { xs: '100%', sm: 'auto' },
               borderRadius: `${borderRadius.medium}px`,
               textTransform: 'none',
-              fontSize: '1rem',
+              fontSize: { xs: '1rem', sm: '1rem' },
               fontWeight: 'bold',
+              py: { xs: 1.5, sm: 1 },
             }}
           >
             {isLoading ? 'מפעיל...' : 'הפעל התראות'}
@@ -189,8 +268,10 @@ export default function PushNotificationPrompt() {
             size="large"
             onClick={handleRemindLater}
             sx={{
+              width: { xs: '100%', sm: 'auto' },
               borderRadius: `${borderRadius.medium}px`,
               textTransform: 'none',
+              py: { xs: 1.5, sm: 1 },
             }}
           >
             אחר כך
@@ -202,8 +283,11 @@ export default function PushNotificationPrompt() {
             onClick={handleDismiss}
             startIcon={<CloseIcon />}
             sx={{
+              width: { xs: '100%', sm: 'auto' },
               color: 'text.secondary',
               textTransform: 'none',
+              justifyContent: 'center',
+              py: { xs: 1, sm: 0.5 },
             }}
           >
             אל תציג שוב
