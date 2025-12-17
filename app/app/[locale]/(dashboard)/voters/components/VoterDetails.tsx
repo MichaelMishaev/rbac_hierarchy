@@ -343,7 +343,7 @@ export function VoterDetails({ voterId, onEdit }: VoterDetailsProps) {
 
                 <List sx={{ width: '100%' }}>
                   {voter.editHistory.map((edit, index) => (
-                    <Box key={edit.id.toString()}>
+                    <Box key={`edit-history-${voterId}-${index}`}>
                       <ListItem alignItems="flex-start" sx={{ flexDirection: 'column', gap: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                           <Typography variant="body2" fontWeight="medium">

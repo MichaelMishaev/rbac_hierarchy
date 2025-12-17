@@ -181,37 +181,36 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                   </Box>
                 }
                 secondary={
-                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                    <Typography
+                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box
                       component="span"
-                      variant="caption"
                       sx={{
+                        fontSize: '0.75rem',
                         color: colors.neutral[500],
                       }}
                     >
                       {activity.userEmail || 'מערכת'}
-                    </Typography>
-                    <Typography
+                    </Box>
+                    <Box
                       component="span"
-                      variant="caption"
                       sx={{
+                        fontSize: '0.75rem',
                         color: colors.neutral[400],
                       }}
                     >
                       •
-                    </Typography>
-                    <Typography
+                    </Box>
+                    <Box
                       component="span"
-                      variant="caption"
                       sx={{
+                        fontSize: '0.75rem',
                         color: colors.neutral[500],
                       }}
                     >
                       {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: he })}
-                    </Typography>
+                    </Box>
                   </Box>
                 }
-                secondaryTypographyProps={{ component: 'div' }}
               />
             </ListItem>
           ))}

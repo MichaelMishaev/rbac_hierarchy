@@ -36,7 +36,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import RtlButton from '@/app/components/ui/RtlButton';
 import UserModal from './UserModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
-import { deleteUser, deleteAllUsersExceptSystemAdmin, getExistingRegions } from '@/app/actions/users';
+import { deleteUser, getExistingRegions } from '@/app/actions/users';
 import { useRouter } from 'next/navigation';
 
 type User = {
@@ -133,7 +133,6 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
 
@@ -211,15 +210,6 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
 
     if (result.success) {
       setDeleteModalOpen(false);
-      setSelectedUser(null);
-      router.refresh();
-    }
-  };
-
-  const handleBulkDeleteConfirm = async () => {
-    const result = await deleteAllUsersExceptSystemAdmin();
-    if (result.success) {
-      setBulkDeleteModalOpen(false);
       setSelectedUser(null);
       router.refresh();
     }
@@ -380,29 +370,6 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         </Box>
 
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          {/* DANGEROUS: Bulk delete (SuperAdmin only) */}
-          {currentUserRole === 'SUPERADMIN' && (
-            <RtlButton
-              variant="outlined"
-              onClick={() => setBulkDeleteModalOpen(true)}
-              data-testid="users-bulk-delete"
-              sx={{
-                borderColor: colors.error,
-                color: colors.error,
-                px: 3,
-                py: 1.5,
-                borderRadius: borderRadius.md,
-                fontWeight: 700,
-                '&:hover': {
-                  borderColor: colors.error,
-                  backgroundColor: `${colors.error}10`,
-                },
-              }}
-            >
-              {t('deleteAllExceptAdmin')}
-            </RtlButton>
-          )}
-
           {/* Add User Button */}
           {currentUserRole !== 'ACTIVIST_COORDINATOR' && (
             <RtlButton
@@ -788,15 +755,6 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         onConfirm={handleDeleteConfirm}
         title={t('deleteUser')}
         message={t('deleteConfirm')}
-      />
-
-      {/* Bulk Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        open={bulkDeleteModalOpen}
-        onClose={() => setBulkDeleteModalOpen(false)}
-        onConfirm={handleBulkDeleteConfirm}
-        title={t('deleteAllExceptAdminTitle')}
-        message={t('deleteAllExceptAdminConfirm')}
       />
     </Box>
   );

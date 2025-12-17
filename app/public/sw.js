@@ -15,7 +15,7 @@
  * Version: 2.0.0 - PWA with Offline Support
  */
 
-const SW_VERSION = '2.0.0';
+const SW_VERSION = '2.1.0';
 const CACHE_NAME = `campaign-v${SW_VERSION}`;
 const OFFLINE_PAGE = '/offline.html';
 
@@ -90,32 +90,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests: Stale-While-Revalidate (show cached, update in background)
+  // API requests: Network First (fresh data priority)
+  // Only cache static/reference data, not dynamic voter/attendance data
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(async (cache) => {
-        const cached = await cache.match(request);
+    const isStaticApi =
+      url.pathname.includes('/api/neighborhoods') ||
+      url.pathname.includes('/api/cities') ||
+      url.pathname.includes('/api/areas');
 
-        const fetchPromise = fetch(request).then(response => {
-          // Only cache successful responses
-          if (response && response.status === 200) {
-            cache.put(request, response.clone());
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Cache static APIs only
+          if (isStaticApi && response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseClone);
+            });
           }
           return response;
-        }).catch(() => {
-          // Return cached version if network fails
-          return cached || new Response(
-            JSON.stringify({ error: 'Offline', offline: true }),
+        })
+        .catch(async () => {
+          // Fallback to cache only for static APIs when offline
+          if (isStaticApi) {
+            const cached = await caches.match(request);
+            if (cached) {
+              return cached;
+            }
+          }
+          // Return offline error for dynamic data
+          return new Response(
+            JSON.stringify({ error: 'Offline - נא להתחבר לאינטרנט', offline: true }),
             {
               status: 503,
               headers: { 'Content-Type': 'application/json' }
             }
           );
-        });
-
-        // Return cached immediately if available, otherwise wait for network
-        return cached || fetchPromise;
-      })
+        })
     );
     return;
   }

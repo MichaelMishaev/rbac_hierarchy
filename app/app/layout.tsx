@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Providers } from '@/lib/providers';
 import WebVitalsReporter from './components/WebVitalsReporter';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
@@ -31,13 +31,14 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#6161FF',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
 };
 
 export default async function RootLayout({
@@ -53,7 +54,7 @@ export default async function RootLayout({
 
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning>
         <WebVitalsReporter />
         <ServiceWorkerRegistration />
         <OfflineBanner />

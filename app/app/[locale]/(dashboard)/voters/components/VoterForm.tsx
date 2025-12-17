@@ -94,7 +94,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
           phone: voter.phone,
           idNumber: voter.idNumber || '',
           email: voter.email || '',
-          dateOfBirth: voter.dateOfBirth || null,
+          dateOfBirth: voter.dateOfBirth ?? null,
           gender: voter.gender || '',
           voterAddress: voter.voterAddress || '',
           voterCity: voter.voterCity || '',
@@ -104,7 +104,21 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
           priority: voter.priority || '',
           notes: voter.notes || '',
         } as any)
-      : {},
+      : {
+          fullName: '',
+          phone: '',
+          idNumber: '',
+          email: '',
+          dateOfBirth: null,
+          gender: '',
+          voterAddress: '',
+          voterCity: '',
+          voterNeighborhood: '',
+          supportLevel: '',
+          contactStatus: '',
+          priority: '',
+          notes: '',
+        },
   });
 
   // Auto-focus first field on mount using React Hook Form's setFocus
