@@ -109,6 +109,16 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
     }
   };
 
+  const getRoleInHebrew = (role: string) => {
+    const roleMap: Record<string, string> = {
+      'SUPERADMIN': 'מנהל מערכת',
+      'AREA_MANAGER': 'מנהל אזור',
+      'CITY_COORDINATOR': 'רכז עיר',
+      'ACTIVIST_COORDINATOR': 'רכז פעילים',
+    };
+    return roleMap[role] || role;
+  };
+
   const filteredVoters = voters.filter((voter) => {
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -256,7 +266,7 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
                       {voter.insertedByUserName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {voter.insertedByUserRole}
+                      {getRoleInHebrew(voter.insertedByUserRole)}
                     </Typography>
                   </TableCell>
 

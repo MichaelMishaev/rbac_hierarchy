@@ -63,7 +63,7 @@ export default function ImportantButton() {
           color: 'white',
           fontWeight: 'bold',
           textTransform: 'none',
-          borderRadius: `${borderRadius.medium}px`,
+          borderRadius: borderRadius.md,
           px: { xs: 2, sm: 3 },
           fontSize: { xs: '0.875rem', sm: '1rem' },
           animation: 'pulse 2s infinite',
@@ -99,7 +99,7 @@ export default function ImportantButton() {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: { xs: 0, sm: `${borderRadius.large}px` },
+            borderRadius: { xs: 0, sm: borderRadius['2xl'] },
             direction: 'rtl',
             m: { xs: 0, sm: 2 },
             width: { xs: '100%', sm: 'auto' },
@@ -111,7 +111,7 @@ export default function ImportantButton() {
             display: 'flex',
             alignItems: 'center',
             gap: 2,
-            bgcolor: colors.errorLight,
+            bgcolor: colors.pastel.redLight,
             color: colors.error,
           }}
         >
@@ -122,7 +122,7 @@ export default function ImportantButton() {
         </DialogTitle>
 
         <DialogContent sx={{ py: 3 }}>
-          <Alert severity="error" sx={{ mb: 3, borderRadius: `${borderRadius.medium}px` }}>
+          <Alert severity="error" sx={{ mb: 3, borderRadius: borderRadius.md }}>
             <Typography fontWeight="bold" gutterBottom>
               ⚠️ אתה עלול לפספס משימות חשובות!
             </Typography>
@@ -150,7 +150,7 @@ export default function ImportantButton() {
             </Typography>
           </Box>
 
-          <Alert severity="info" sx={{ borderRadius: `${borderRadius.medium}px` }}>
+          <Alert severity="info" sx={{ borderRadius: borderRadius.md }}>
             <Typography variant="body2">
               💡 <strong>טיפ:</strong> התראות עוזרות לך להישאר מעודכן ולא לפספס משימות חשובות.
               אפשר תמיד להפסיק בהגדרות.
@@ -178,7 +178,7 @@ export default function ImportantButton() {
               '&:hover': {
                 bgcolor: colors.errorDark,
               },
-              borderRadius: `${borderRadius.medium}px`,
+              borderRadius: borderRadius.md,
               textTransform: 'none',
               fontWeight: 'bold',
               py: 1.5,
@@ -194,7 +194,7 @@ export default function ImportantButton() {
             startIcon={<CloseIcon />}
             sx={{
               width: { xs: '100%', sm: 'auto' },
-              borderRadius: `${borderRadius.medium}px`,
+              borderRadius: borderRadius.md,
               textTransform: 'none',
             }}
           >
@@ -212,7 +212,7 @@ export default function ImportantButton() {
             bottom: 16,
             right: 16,
             zIndex: 9999,
-            borderRadius: `${borderRadius.medium}px`,
+            borderRadius: borderRadius.md,
           }}
         >
           {snackbarMessage}

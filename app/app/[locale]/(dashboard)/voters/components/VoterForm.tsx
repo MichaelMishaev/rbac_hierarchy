@@ -154,7 +154,10 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
       if (result.success) {
         setSuccess(true);
-        onSuccess?.();
+        // Delay closing dialog to let user see success message
+        setTimeout(() => {
+          onSuccess?.();
+        }, 1500);
       } else {
         setError(result.error);
       }
@@ -718,7 +721,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={isSubmitting}
+                disabled={isSubmitting || success}
                 startIcon={isSubmitting && <CircularProgress size={20} />}
                 sx={{
                   flex: { xs: 1, sm: 'none' },
@@ -735,6 +738,8 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
               >
                 {isSubmitting
                   ? 'שומר...'
+                  : success
+                  ? 'נשמר!'
                   : isEditMode
                   ? 'עדכן בוחר'
                   : 'הוסף בוחר'}
@@ -744,7 +749,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                 type="button"
                 variant="contained"
                 onClick={handleNext}
-                disabled={isSubmitting}
+                disabled={isSubmitting || success}
                 sx={{
                   flex: { xs: 1, sm: 'none' },
                   minWidth: { sm: 100 },

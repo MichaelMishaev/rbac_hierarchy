@@ -114,7 +114,7 @@ export default function PushNotificationPrompt() {
         TransitionComponent={SlideTransition}
         PaperProps={{
           sx: {
-            borderRadius: { xs: 0, sm: `${borderRadius.large}px` },
+            borderRadius: { xs: 0, sm: borderRadius['2xl'] },
             direction: 'rtl',
             m: { xs: 0, sm: 2 },
             width: { xs: '100%', sm: 'auto' },
@@ -210,7 +210,7 @@ export default function PushNotificationPrompt() {
           <Alert
             severity="info"
             sx={{
-              borderRadius: `${borderRadius.medium}px`,
+              borderRadius: borderRadius.md,
               mb: 2,
             }}
           >
@@ -253,7 +253,7 @@ export default function PushNotificationPrompt() {
             sx={{
               flex: { xs: 'none', sm: 1 },
               width: { xs: '100%', sm: 'auto' },
-              borderRadius: `${borderRadius.medium}px`,
+              borderRadius: borderRadius.md,
               textTransform: 'none',
               fontSize: { xs: '1rem', sm: '1rem' },
               fontWeight: 'bold',
@@ -269,7 +269,7 @@ export default function PushNotificationPrompt() {
             onClick={handleRemindLater}
             sx={{
               width: { xs: '100%', sm: 'auto' },
-              borderRadius: `${borderRadius.medium}px`,
+              borderRadius: borderRadius.md,
               textTransform: 'none',
               py: { xs: 1.5, sm: 1 },
             }}
@@ -307,7 +307,7 @@ export default function PushNotificationPrompt() {
           severity={snackbarSeverity}
           sx={{
             width: '100%',
-            borderRadius: `${borderRadius.medium}px`,
+            borderRadius: borderRadius.md,
             direction: 'rtl',
           }}
         >

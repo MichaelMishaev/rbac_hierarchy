@@ -125,7 +125,7 @@ export default function HeaderNotificationToggle() {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: `${borderRadius.large}px`,
+            borderRadius: borderRadius['2xl'],
             direction: 'rtl',
           },
         }}
@@ -179,7 +179,7 @@ export default function HeaderNotificationToggle() {
               onClick={handleToggle}
               disabled={isLoading}
               sx={{
-                borderRadius: `${borderRadius.medium}px`,
+                borderRadius: borderRadius.md,
                 textTransform: 'none',
               }}
             >
@@ -194,7 +194,7 @@ export default function HeaderNotificationToggle() {
             variant="outlined"
             onClick={() => setShowDialog(false)}
             sx={{
-              borderRadius: `${borderRadius.medium}px`,
+              borderRadius: borderRadius.md,
               textTransform: 'none',
             }}
           >

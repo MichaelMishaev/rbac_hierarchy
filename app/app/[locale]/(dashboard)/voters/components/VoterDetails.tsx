@@ -69,6 +69,16 @@ export function VoterDetails({ voterId, onEdit }: VoterDetailsProps) {
     setLoading(false);
   };
 
+  const getRoleInHebrew = (role: string) => {
+    const roleMap: Record<string, string> = {
+      'SUPERADMIN': 'מנהל מערכת',
+      'AREA_MANAGER': 'מנהל אזור',
+      'CITY_COORDINATOR': 'רכז עיר',
+      'ACTIVIST_COORDINATOR': 'רכז פעילים',
+    };
+    return roleMap[role] || role;
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -302,7 +312,7 @@ export function VoterDetails({ voterId, onEdit }: VoterDetailsProps) {
                     הוכנס על ידי:
                   </Typography>
                   <Typography variant="body1">
-                    {voter.insertedByUserName} ({voter.insertedByUserRole})
+                    {voter.insertedByUserName} ({getRoleInHebrew(voter.insertedByUserRole)})
                   </Typography>
                 </Grid>
 
@@ -337,7 +347,7 @@ export function VoterDetails({ voterId, onEdit }: VoterDetailsProps) {
                       <ListItem alignItems="flex-start" sx={{ flexDirection: 'column', gap: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                           <Typography variant="body2" fontWeight="medium">
-                            {edit.editedByUserName} ({edit.editedByUserRole})
+                            {edit.editedByUserName} ({getRoleInHebrew(edit.editedByUserRole)})
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {format(new Date(edit.editedAt), 'dd/MM/yyyy HH:mm', {
