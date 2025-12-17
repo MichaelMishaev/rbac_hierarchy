@@ -64,7 +64,7 @@ export default async function NotificationsPage() {
     include: {
       task: {
         include: {
-          sender: {
+          senderUser: {
             select: {
               fullName: true,
               email: true,
@@ -285,7 +285,7 @@ export default async function NotificationsPage() {
                         }}
                       >
                         <Typography variant="body2" color="text.secondary">
-                          👤 מאת: {task.sender.fullName || task.sender.email}
+                          👤 מאת: {task.senderUser.fullName || task.senderUser.email}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           📅 תאריך ביצוע:{' '}

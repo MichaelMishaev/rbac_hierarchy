@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -65,7 +65,6 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const firstFieldRef = useRef<HTMLInputElement>(null);
 
   const isEditMode = !!voter;
 
@@ -75,6 +74,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     control,
     formState: { errors, touchedFields },
     trigger,
+    setFocus,
   } = useForm<CreateVoterFormData>({
     resolver: zodResolver(createVoterSchema),
     mode: 'onTouched', // Only validate after user interacts
@@ -98,13 +98,13 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
       : {},
   });
 
-  // Auto-focus first field on mount
+  // Auto-focus first field on mount using React Hook Form's setFocus
   useEffect(() => {
     const timer = setTimeout(() => {
-      firstFieldRef.current?.focus();
+      setFocus('fullName');
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [setFocus]);
 
   const handleNext = async () => {
     // Validate current step fields before proceeding
@@ -196,7 +196,6 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
               <Grid item xs={12} sm={6}>
                 <TextField
                   {...register('fullName')}
-                  inputRef={firstFieldRef}
                   label="שם מלא"
                   fullWidth
                   required
@@ -284,17 +283,25 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                           sx: {
                             '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
-                              paddingInlineEnd: 0.5,
+                              paddingInlineStart: '14px',
+                              paddingInlineEnd: '14px',
+                            },
+                            '& .MuiOutlinedInput-input': {
+                              paddingInlineEnd: '48px !important',
                             },
                             '& .MuiInputAdornment-root': {
+                              position: 'absolute',
+                              left: 'auto',
+                              right: '8px',
                               marginInlineStart: 0,
-                              marginInlineEnd: 1,
+                              marginInlineEnd: 0,
                             },
                           },
                         },
                         openPickerButton: {
                           sx: {
-                            marginInlineEnd: 0.5,
+                            marginInlineStart: 0,
+                            marginInlineEnd: 0,
                           },
                         },
                       }}
