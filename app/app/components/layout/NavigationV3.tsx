@@ -43,8 +43,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PublicIcon from '@mui/icons-material/Public';
 import HistoryIcon from '@mui/icons-material/History';
+import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
 import LanguageSwitcher from './LanguageSwitcher';
+import HeaderNotificationToggle from './HeaderNotificationToggle';
+import ImportantButton from './ImportantButton';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 import { useRecentPages } from '@/app/hooks/useRecentPages';
 import { useLogout } from '@/app/hooks/useLogout';
@@ -307,6 +310,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
             icon: <GroupIcon />,
             badge: stats?.activeWorkers,
           },
+          { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
           { path: '/users', label: t('users'), icon: <PeopleIcon /> },
         ],
       },
@@ -355,6 +359,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
             icon: <GroupIcon />,
             badge: stats?.activeWorkers,
           },
+          { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
           { path: '/users', label: t('users'), icon: <PeopleIcon /> },
         ],
       },
@@ -390,6 +395,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         icon: <GroupIcon />,
         badge: stats?.activeWorkers,
       },
+      { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
       { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
     [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
@@ -418,6 +424,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         icon: <GroupIcon />,
         badge: stats?.activeWorkers,
       },
+      { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
       { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
     [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
@@ -647,6 +654,43 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                 <CloseIcon />
               </IconButton>
             )}
+          </Box>
+        </Box>
+
+        {/* Notification Controls & Important Button */}
+        <Box
+          sx={{
+            px: 2,
+            py: 2,
+            borderBottom: `1px solid ${colors.neutral[200]}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+          }}
+        >
+          {/* Important Button - Shows for users without push enabled */}
+          <ImportantButton />
+
+          {/* Notification Toggle */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              justifyContent: 'space-between',
+              px: 1,
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: colors.neutral[600],
+                fontWeight: 600,
+              }}
+            >
+              התראות דחיפה
+            </Typography>
+            <HeaderNotificationToggle />
           </Box>
         </Box>
 
