@@ -197,7 +197,7 @@ export default async function NotificationsPage() {
       </Typography>
 
       {taskAssignments.length === 0 ? (
-        <Alert severity="info" sx={{ borderRadius: `${borderRadius.medium}px` }}>
+        <Alert severity="info" sx={{ borderRadius: borderRadius.md }}>
           אין משימות חדשות בזמן האחרון
         </Alert>
       ) : (

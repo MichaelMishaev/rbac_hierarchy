@@ -68,6 +68,14 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
   const isEditMode = !!voter;
 
+  // Reset state when dialog opens/closes (voter prop changes)
+  useEffect(() => {
+    setSuccess(false);
+    setError(null);
+    setActiveStep(0);
+    setIsSubmitting(false);
+  }, [voter]);
+
   const {
     register,
     handleSubmit,
@@ -669,6 +677,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
               }}
             >
               <Button
+                type="button"
                 variant="outlined"
                 onClick={handleBack}
                 disabled={activeStep === 0 || isSubmitting}
@@ -686,6 +695,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
               {onCancel && (
                 <Button
+                  type="button"
                   variant="text"
                   onClick={onCancel}
                   disabled={isSubmitting}
@@ -731,6 +741,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
               </Button>
             ) : (
               <Button
+                type="button"
                 variant="contained"
                 onClick={handleNext}
                 disabled={isSubmitting}
