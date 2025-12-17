@@ -10,7 +10,7 @@
 
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Fab, Zoom, Tooltip } from '@mui/material';
 import { shadows } from '@/lib/design-system';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,6 +25,7 @@ interface FABConfig {
 
 export default function ContextAwareFAB() {
   const pathname = usePathname();
+  const router = useRouter();
   const isVisible = true; // Always visible
 
   // Remove locale from path
@@ -48,8 +49,7 @@ export default function ContextAwareFAB() {
         icon: <AddIcon />,
         label: 'צור משימה',
         action: () => {
-          // TODO: Open task creation modal
-          console.log('Create task');
+          router.push('/tasks/new');
         },
         color: 'primary',
       };
