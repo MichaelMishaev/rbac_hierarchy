@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, memo, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Box,
   List,
@@ -578,17 +579,18 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                 width: 44,
                 height: 44,
                 borderRadius: borderRadius.lg,
-                background: `linear-gradient(135deg, ${colors.primary} 0%, #1565c0 100%)`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '20px',
+                position: 'relative',
+                overflow: 'hidden',
                 boxShadow: shadows.medium,
               }}
             >
-              <BusinessIcon sx={{ fontSize: '24px' }} />
+              <Image
+                src="/logo.png"
+                alt="מערכת ניהול"
+                fill
+                style={{ objectFit: 'cover' }}
+                priority
+              />
             </Box>
             <Box>
               <Typography
