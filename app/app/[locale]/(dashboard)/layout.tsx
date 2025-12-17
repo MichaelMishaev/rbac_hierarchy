@@ -8,6 +8,7 @@ import ContextAwareFAB from '@/app/components/layout/FloatingActionButton';
 import QueryProvider from '@/app/providers/QueryProvider';
 import ProgressBar from '@/app/components/ui/ProgressBar';
 import CommandPaletteWrapper from '@/app/components/ui/CommandPaletteWrapper';
+import PushNotificationPrompt from '@/app/components/PushNotificationPrompt';
 
 export default async function DashboardLayout({
   children,
@@ -31,6 +32,7 @@ export default async function DashboardLayout({
     <QueryProvider>
       <ProgressBar />
       <CommandPaletteWrapper />
+      <PushNotificationPrompt />
       <Box sx={{ display: 'flex', minHeight: '100vh', direction: isRTL ? 'rtl' : 'ltr' }}>
         {/* Desktop Sidebar - Hidden on mobile */}
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
