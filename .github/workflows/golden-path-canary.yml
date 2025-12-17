@@ -1,0 +1,104 @@
+name: 🐤 Golden Path Canary
+
+# CRITICAL: Runs hourly in production to catch issues immediately
+# These tests verify system health with real data
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:      # Manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/tests/canary/**'
+      - '.github/workflows/golden-path-canary.yml'
+
+jobs:
+  canary:
+    name: Golden Path Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'app/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./app
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Golden Path Canary Tests
+        working-directory: ./app
+        run: npx playwright test tests/canary/ --reporter=list --project=chromium
+        env:
+          # Production canary credentials (read-only accounts)
+          CANARY_USER_EMAIL: ${{ secrets.CANARY_USER_EMAIL }}
+          CANARY_PASSWORD: ${{ secrets.CANARY_PASSWORD }}
+          CANARY_CITY_COORDINATOR_EMAIL: ${{ secrets.CANARY_CITY_COORDINATOR_EMAIL }}
+          CANARY_ACTIVIST_COORDINATOR_EMAIL: ${{ secrets.CANARY_ACTIVIST_COORDINATOR_EMAIL }}
+          CANARY_CITY_NAME: ${{ secrets.CANARY_CITY_NAME }}
+          CANARY_FORBIDDEN_CITY: ${{ secrets.CANARY_FORBIDDEN_CITY }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-test-results
+          path: |
+            app/playwright-report/
+            app/test-results/
+
+      - name: Notify on failure (Slack)
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: alerts
+          SLACK_COLOR: danger
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: '🚨 CRITICAL: Golden Path Canary FAILED - Production may be broken!'
+          SLACK_TITLE: Production Health Check Failed
+          SLACK_USERNAME: Canary Bot
+
+      - name: Create GitHub Issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 CRITICAL: Golden Path Canary Failed',
+              body: `## Production Health Check Failed
+
+            **Time:** ${new Date().toISOString()}
+            **Workflow:** ${context.workflow}
+            **Run:** ${context.runNumber}
+
+            The hourly production health check has failed. This indicates a potential issue in production.
+
+            ### Immediate Actions Required:
+            1. Check production logs
+            2. Verify recent deployments
+            3. Run manual tests
+            4. Check infrastructure status
+
+            ### Test Results:
+            [View Details](${context.payload.repository.html_url}/actions/runs/${context.runId})
+
+            **Priority:** 🔴 CRITICAL
+            **Status:** 🚨 Production Alert`,
+              labels: ['bug', 'critical', 'production', 'canary-failure']
+            })

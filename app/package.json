@@ -35,7 +35,17 @@
     "test:perf": "playwright test tests/e2e/performance --reporter=list",
     "test:perf:ui": "playwright test tests/e2e/performance --ui",
     "test:perf:report": "playwright test tests/e2e/performance --reporter=html",
-    "test:perf:ci": "playwright test tests/e2e/performance --reporter=json --reporter=html"
+    "test:perf:ci": "playwright test tests/e2e/performance --reporter=json --reporter=html",
+    "test:mobile": "playwright test tests/e2e/responsive --reporter=list",
+    "test:mobile:ui": "playwright test tests/e2e/responsive --ui",
+    "test:mobile:breakpoints": "playwright test tests/e2e/responsive/breakpoints.spec.ts",
+    "test:mobile:visual": "playwright test tests/e2e/responsive/visual-regression.spec.ts",
+    "test:mobile:specific": "playwright test tests/e2e/responsive/mobile-specific.spec.ts",
+    "test:mobile:update-snapshots": "playwright test tests/e2e/responsive/visual-regression.spec.ts --update-snapshots",
+    "test:mobile:iphone": "playwright test --project=mobile-iphone-14",
+    "test:mobile:pixel": "playwright test --project=mobile-pixel-7",
+    "test:mobile:ipad": "playwright test --project=tablet-ipad-air",
+    "test:mobile:all-devices": "playwright test --project=mobile-iphone-14 --project=mobile-pixel-7 --project=tablet-ipad-air --project=chromium-desktop"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

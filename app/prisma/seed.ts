@@ -695,6 +695,170 @@ async function main() {
 
   console.log('✅ City 2: רמת גן - Campaign hierarchy created');
 
+  // ========================
+  // VOTERS: Seed voter data for demonstrating visibility chain
+  // ========================
+  console.log('\n📋 Seeding voter data...');
+
+  // Voters inserted by Activist Coordinator Rachel (Florentin)
+  const rachelFlorentinVoters = [
+    {
+      fullName: 'דוד כהן',
+      phone: '0501234567',
+      supportLevel: 'תומך',
+      contactStatus: 'נוצר קשר',
+      priority: 'גבוה',
+      notes: 'מעוניין מאוד בנושא חינוך',
+    },
+    {
+      fullName: 'שרה לוי',
+      phone: '0529876543',
+      supportLevel: 'מהסס',
+      contactStatus: 'נקבע פגישה',
+      priority: 'בינוני',
+      voterAddress: 'רחוב לבונטין 15, תל אביב',
+    },
+    {
+      fullName: 'מיכאל אבני',
+      phone: '0531112222',
+      supportLevel: 'תומך',
+      contactStatus: 'הצביע',
+      priority: 'גבוה',
+      notes: 'הצביע מראש',
+    },
+  ];
+
+  for (const voter of rachelFlorentinVoters) {
+    await prisma.voter.create({
+      data: {
+        ...voter,
+        insertedByUserId: rachelBenDavidUser.id,
+        insertedByUserName: rachelBenDavidUser.fullName,
+        insertedByUserRole: 'רכז פעילים',
+        insertedByNeighborhoodName: 'פלורנטין',
+        insertedByCityName: telAvivYafo.name,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`✅ Added ${rachelFlorentinVoters.length} voters for activist coordinator: ${rachelBenDavidUser.fullName} (Florentin)`);
+
+  // Voters inserted by Activist Coordinator Yael (Jaffa)
+  const yaelJaffaVoters = [
+    {
+      fullName: 'רחל גולן',
+      phone: '0542223333',
+      supportLevel: 'לא ענה',
+      contactStatus: 'לא זמין',
+      priority: 'נמוך',
+    },
+    {
+      fullName: 'יוסי בן-דוד',
+      phone: '0553334444',
+      supportLevel: 'מתנגד',
+      contactStatus: 'נוצר קשר',
+      priority: 'נמוך',
+      notes: 'לא מעוניין בשיחה',
+    },
+  ];
+
+  for (const voter of yaelJaffaVoters) {
+    await prisma.voter.create({
+      data: {
+        ...voter,
+        insertedByUserId: yaelCohenUser.id,
+        insertedByUserName: yaelCohenUser.fullName,
+        insertedByUserRole: 'רכז פעילים',
+        insertedByNeighborhoodName: 'יפו העתיקה',
+        insertedByCityName: telAvivYafo.name,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`✅ Added ${yaelJaffaVoters.length} voters for activist coordinator: ${yaelCohenUser.fullName} (Jaffa)`)
+
+  // Voter inserted by Activist Coordinator (Rachel Ben-David)
+  await prisma.voter.create({
+    data: {
+      fullName: 'אליה מור',
+      phone: '0544445555',
+      supportLevel: 'תומך',
+      contactStatus: 'נקבע פגישה',
+      priority: 'גבוה',
+      notes: 'תאום פגישה באירוע קמפיין',
+      insertedByUserId: rachelBenDavidUser.id,
+      insertedByUserName: rachelBenDavidUser.fullName,
+      insertedByUserRole: 'רכז פעילים',
+      insertedByNeighborhoodName: 'פלורנטין + נווה צדק',
+      insertedByCityName: telAvivYafo.name,
+      isActive: true,
+    },
+  });
+  console.log('✅ Added 1 voter for activist coordinator: רחל בן-דוד');
+
+  // Voter inserted by City Coordinator (David Levi)
+  await prisma.voter.create({
+    data: {
+      fullName: 'נועה שמיר',
+      phone: '0555556666',
+      supportLevel: 'תומך',
+      contactStatus: 'נוצר קשר',
+      priority: 'גבוה',
+      notes: 'מתנדבת פוטנציאלית לקמפיין',
+      insertedByUserId: davidLeviUser.id,
+      insertedByUserName: davidLeviUser.fullName,
+      insertedByUserRole: 'רכז עיר',
+      insertedByCityName: telAvivYafo.name,
+      isActive: true,
+    },
+  });
+  console.log('✅ Added 1 voter for city coordinator: דוד לוי');
+
+  // Voter inserted by Area Manager (Sarah Cohen) - assigned to Tel Aviv for reporting
+  await prisma.voter.create({
+    data: {
+      fullName: 'דני ארד',
+      phone: '0566667777',
+      supportLevel: 'תומך',
+      contactStatus: 'נוצר קשר',
+      priority: 'גבוה',
+      notes: 'תורם גדול לקמפיין ברמה המחוזית',
+      insertedByUserId: areaManagerUser.id,
+      insertedByUserName: areaManagerUser.fullName,
+      insertedByUserRole: 'מנהל אזור',
+      insertedByCityName: null,
+      assignedCityId: telAvivYafo.id,
+      assignedCityName: telAvivYafo.name,
+      isActive: true,
+    },
+  });
+  console.log('✅ Added 1 voter for area manager: שרה כהן (assigned to Tel Aviv)');
+
+  // Duplicate phone example (to demonstrate duplicate detection)
+  await prisma.voter.create({
+    data: {
+      fullName: 'דוד כהן',
+      phone: '0501234567', // DUPLICATE!
+      supportLevel: 'תומך',
+      contactStatus: 'נוצר קשר',
+      priority: 'בינוני',
+      notes: 'הכנסה כפולה מרכז אחר',
+      insertedByUserId: yaelCohenUser.id,
+      insertedByUserName: yaelCohenUser.fullName,
+      insertedByUserRole: 'רכז פעילים',
+      insertedByNeighborhoodName: 'יפו העתיקה',
+      insertedByCityName: telAvivYafo.name,
+      isActive: true,
+    },
+  });
+  console.log('✅ Added 1 duplicate voter (for duplicate detection demo)');
+
+  const totalVoters = await prisma.voter.count({ where: { isActive: true } });
+  console.log(`\n📊 Total voters seeded: ${totalVoters}`);
+  console.log('   - Demonstrates upward visibility chain');
+  console.log('   - Includes 1 duplicate phone number (0501234567)');
+  console.log('   - Voters from different hierarchy levels');
+
   console.log('\n🎉 Election Campaign System seed completed successfully!');
   console.log('\n📝 Test credentials:');
   console.log('SuperAdmin:           admin@election.test / admin123');

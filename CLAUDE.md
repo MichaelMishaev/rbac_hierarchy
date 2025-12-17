@@ -156,7 +156,7 @@ activistCoordinator: 'activist.coordinator@telaviv.test'
 2. Regression test (fails before, passes after)
 3. Minimal fix (diff-first)
 4. Run relevant tests
-5. Document in `docs/localDev/bugs.md` with prevention rule
+5. Document in `docs/infrastructure/bugs.md` with prevention rule
 
 ### Backend Guidelines
 1. Prisma schema first

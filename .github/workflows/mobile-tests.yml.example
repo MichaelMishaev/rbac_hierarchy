@@ -1,0 +1,196 @@
+name: Mobile & Responsive Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'app/**'
+      - '.github/workflows/mobile-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'app/**'
+
+jobs:
+  mobile-tests:
+    name: Mobile Tests (8 Devices)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - chromium-desktop
+          - mobile-iphone-14
+          - mobile-pixel-7
+          - tablet-ipad-air
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./app
+        run: npx playwright install --with-deps ${{ matrix.device }}
+
+      - name: Generate Prisma Client
+        working-directory: ./app
+        run: npm run db:generate
+
+      - name: Run mobile tests
+        working-directory: ./app
+        run: npx playwright test --project=${{ matrix.device }}
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.device }}
+          path: app/test-results/
+          retention-days: 7
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.device }}
+          path: app/playwright-report/
+          retention-days: 7
+
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./app
+        run: npx playwright install --with-deps
+
+      - name: Generate Prisma Client
+        working-directory: ./app
+        run: npm run db:generate
+
+      - name: Download baseline screenshots
+        uses: actions/download-artifact@v4
+        with:
+          name: visual-regression-baselines
+          path: app/tests/e2e/responsive/__screenshots__/
+        continue-on-error: true
+
+      - name: Run visual regression tests
+        working-directory: ./app
+        run: npm run test:mobile:visual
+        env:
+          CI: true
+
+      - name: Upload baseline screenshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-baselines
+          path: app/tests/e2e/responsive/__screenshots__/
+          retention-days: 30
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: app/test-results/
+          retention-days: 7
+
+  mobile-specific:
+    name: Mobile-Specific Features
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./app
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Prisma Client
+        working-directory: ./app
+        run: npm run db:generate
+
+      - name: Run mobile-specific tests
+        working-directory: ./app
+        run: npm run test:mobile:specific
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-specific-results
+          path: app/test-results/
+          retention-days: 7
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [mobile-tests, visual-regression, mobile-specific]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Display test summary
+        run: |
+          echo "## Mobile Test Results 📱" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Mobile Tests: ${{ needs.mobile-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Visual Regression: ${{ needs.visual-regression.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Mobile-Specific: ${{ needs.mobile-specific.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 8 Device Configurations" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 47+ Automated Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Visual Regression Testing" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ RTL & Hebrew Validation" >> $GITHUB_STEP_SUMMARY

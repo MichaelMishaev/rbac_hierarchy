@@ -9,11 +9,11 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonIcon from '@mui/icons-material/Person';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpIcon from '@mui/icons-material/Help';
-import LogoutIcon from '@mui/icons-material/Logout';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 import BusinessIcon from '@mui/icons-material/Business';
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
+import { LogoutButton } from '@/app/components/LogoutButton';
 
 export default async function MorePage() {
   const session = await auth();
@@ -114,19 +114,7 @@ export default async function MorePage() {
           <Divider />
 
           {/* Logout */}
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={() => {
-                // TODO: Implement logout
-                window.location.href = '/api/auth/signout';
-              }}
-            >
-              <ListItemIcon>
-                <LogoutIcon sx={{ color: colors.error }} />
-              </ListItemIcon>
-              <ListItemText primary="התנתק" />
-            </ListItemButton>
-          </ListItem>
+          <LogoutButton />
         </List>
       </Paper>
 

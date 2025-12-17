@@ -2,7 +2,17 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Multi-Tenant Isolation Tests - v1.3 Compliance
- * Verifies perfect tenant isolation via composite FKs
+ *
+ * INVARIANTS TESTED:
+ * - INV-001: Multi-City Data Isolation
+ * - INV-004: Composite Foreign Keys Integrity
+ *
+ * INTENT: Verify perfect tenant isolation via composite FKs
+ * Prevent cross-city data leakage at all levels
+ *
+ * @owner backend-security
+ * @created 2025-10-15
+ * @updated 2025-12-17
  */
 
 test.describe('Corporation Isolation - v1.3 Composite FKs', () => {

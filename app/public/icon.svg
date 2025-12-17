@@ -1,0 +1,11 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#6161FF" rx="102"/>
+  
+  <!-- White circle -->
+  <circle cx="256" cy="256" r="180" fill="#FFFFFF"/>
+  
+  <!-- Hebrew letter ק (Qof) for קמפיין -->
+  <text x="256" y="320" font-family="Arial, sans-serif" font-size="240" font-weight="bold" 
+        fill="#6161FF" text-anchor="middle">ק</text>
+</svg>

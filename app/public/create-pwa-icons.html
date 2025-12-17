@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Generate PWA Icons</title>
+</head>
+<body>
+    <canvas id="canvas192" width="192" height="192" style="display:none;"></canvas>
+    <canvas id="canvas512" width="512" height="512" style="display:none;"></canvas>
+    <div id="status">Generating icons...</div>
+    
+    <script>
+        function createIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Background - brand color
+            ctx.fillStyle = '#6161FF';
+            ctx.fillRect(0, 0, size, size);
+            
+            // White circle
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size*0.35, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Hebrew letter ק (Qof) - for קמפיין
+            ctx.fillStyle = '#6161FF';
+            ctx.font = `bold ${size*0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('ק', size/2, size/2);
+        }
+        
+        // Generate 192x192
+        const canvas192 = document.getElementById('canvas192');
+        createIcon(canvas192, 192);
+        const link192 = document.createElement('a');
+        link192.download = 'icon-192x192.png';
+        link192.href = canvas192.toDataURL('image/png');
+        link192.click();
+        
+        // Generate 512x512
+        setTimeout(() => {
+            const canvas512 = document.getElementById('canvas512');
+            createIcon(canvas512, 512);
+            const link512 = document.createElement('a');
+            link512.download = 'icon-512x512.png';
+            link512.href = canvas512.toDataURL('image/png');
+            link512.click();
+            
+            document.getElementById('status').textContent = 'Icons generated! Check your downloads.';
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'path';
 import { register } from 'tsconfig-paths';
 
 // Register TypeScript path mappings for module resolution
@@ -28,9 +27,72 @@ export default defineConfig({
   },
 
   projects: [
+    // Desktop testing
     {
-      name: 'chromium',
+      name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
+    },
+
+    // Mobile testing - phones
+    {
+      name: 'mobile-iphone-14',
+      use: {
+        ...devices['iPhone 14'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+    {
+      name: 'mobile-iphone-14-pro-max',
+      use: {
+        ...devices['iPhone 14 Pro Max'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+    {
+      name: 'mobile-pixel-7',
+      use: {
+        ...devices['Pixel 7'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+    {
+      name: 'mobile-samsung-s21',
+      use: {
+        ...devices['Galaxy S9+'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+
+    // Tablet testing
+    {
+      name: 'tablet-ipad-air',
+      use: {
+        ...devices['iPad (gen 7)'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+    {
+      name: 'tablet-ipad-pro',
+      use: {
+        ...devices['iPad Pro 11'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
+    },
+
+    // Landscape modes for common mobile devices
+    {
+      name: 'mobile-iphone-14-landscape',
+      use: {
+        ...devices['iPhone 14 landscape'],
+        locale: 'he-IL',
+        timezoneId: 'Asia/Jerusalem',
+      },
     },
   ],
 

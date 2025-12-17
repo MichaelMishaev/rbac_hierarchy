@@ -48,6 +48,7 @@ model User {
   pushSubscriptions            PushSubscription[]              @relation("PushSubscriptions")
   attendanceCheckedIn          AttendanceRecord[]              @relation("AttendanceCheckedInBy")
   attendanceLastEdited         AttendanceRecord[]              @relation("AttendanceLastEditedBy")
+  votersInserted               Voter[]                         @relation("VoterInsertedBy")
 
   @@index([email])
   @@index([isActive])
@@ -158,6 +159,7 @@ model City {
   invitations          Invitation[]
   activists            Activist[] @relation("CityToActivist")
   attendanceRecords    AttendanceRecord[]
+  votersAssigned       Voter[]    @relation("VoterAssignedCity")
 
   @@index([code])
   @@index([isActive])
@@ -608,4 +610,98 @@ enum AttendanceStatus {
   NOT_PRESENT
 
   @@map("attendance_status")
+}
+
+// ============================================
+// VOTERS TABLE (v2.3: Voter Management System)
+// ============================================
+model Voter {
+  id String @id @default(uuid())
+
+  // === VOTER PERSONAL INFO ===
+  fullName    String
+  phone       String          // Primary identifier (not unique - duplicates allowed)
+  idNumber    String?         @map("id_number") // Israeli ID (9 digits)
+  email       String?
+  dateOfBirth DateTime?       @map("date_of_birth") @db.Date
+  gender      String?         // "זכר", "נקבה", "אחר"
+
+  // === GEOGRAPHIC INFO (TEXT ONLY - NOT FK) ===
+  voterAddress       String? @map("voter_address")       // Full address where voter lives
+  voterCity          String? @map("voter_city")          // City where voter lives (text)
+  voterNeighborhood  String? @map("voter_neighborhood")  // Neighborhood where voter lives (text)
+
+  // === CAMPAIGN STATUS ===
+  supportLevel  String? @map("support_level")  // "תומך", "מהסס", "מתנגד", "לא ענה"
+  contactStatus String? @map("contact_status") // "נוצר קשר", "נקבע פגישה", "הצביע", "לא זמין"
+  priority      String? // "גבוה", "בינוני", "נמוך"
+  notes         String? @db.Text // Free text notes
+  lastContactedAt DateTime? @map("last_contacted_at") @db.Timestamptz
+
+  // === ORGANIZATIONAL OWNERSHIP (WHO INSERTED) ===
+  insertedByUserId          String @map("inserted_by_user_id")
+  insertedByUserName        String @map("inserted_by_user_name")         // Denormalized: "יוסי כהן"
+  insertedByUserRole        String @map("inserted_by_user_role")         // Denormalized: "פעיל שטח", "רכז פעילים", etc
+  insertedByNeighborhoodName String? @map("inserted_by_neighborhood_name") // Activist's neighborhood (for context)
+  insertedByCityName         String? @map("inserted_by_city_name")        // Activist's city (for context)
+  insertedAt                 DateTime @default(now()) @map("inserted_at") @db.Timestamptz
+
+  // === OPTIONAL: FOR REPORTING (AREA MANAGER USE CASE) ===
+  assignedCityId   String? @map("assigned_city_id")   // Optional: Area Manager assigns voter to city for reporting
+  assignedCityName String? @map("assigned_city_name") // Denormalized for display
+  assignedCity     City?   @relation("VoterAssignedCity", fields: [assignedCityId], references: [id], onDelete: SetNull)
+
+  // === SOFT DELETE ===
+  isActive          Boolean   @default(true) @map("is_active")
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedByUserName String?   @map("deleted_by_user_name")
+
+  // === METADATA ===
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // === RELATIONS ===
+  insertedBy  User                @relation("VoterInsertedBy", fields: [insertedByUserId], references: [id], onDelete: Restrict)
+  editHistory VoterEditHistory[]
+
+  // === INDEXES (Performance-critical) ===
+  @@index([phone])                    // For duplicate detection
+  @@index([insertedByUserId])         // For visibility queries
+  @@index([isActive])                 // For filtering active voters
+  @@index([assignedCityId])           // For reporting queries
+  @@index([supportLevel])             // For filtering by support level
+  @@index([contactStatus])            // For filtering by contact status
+  @@index([lastContactedAt])          // For sorting by last contact
+  @@index([insertedAt(sort: Desc)])   // For recent voters
+  @@map("voters")
+}
+
+// ============================================
+// VOTER EDIT HISTORY TABLE (v2.3: Audit Trail)
+// ============================================
+model VoterEditHistory {
+  id BigInt @id @default(autoincrement())
+
+  // === VOTER RELATIONSHIP ===
+  voterId String @map("voter_id")
+  voter   Voter  @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  // === WHO EDITED (Denormalized for manager-friendly display) ===
+  editedByUserId   String @map("edited_by_user_id")
+  editedByUserName String @map("edited_by_user_name") // "שרה לוי" (denormalized)
+  editedByUserRole String @map("edited_by_user_role") // "רכז פעילים" (denormalized)
+
+  // === WHAT CHANGED ===
+  fieldName String  @map("field_name") // "supportLevel", "phone", "notes", etc
+  oldValue  String? @map("old_value") @db.Text  // JSON string if complex
+  newValue  String? @map("new_value") @db.Text  // JSON string if complex
+
+  // === WHEN ===
+  editedAt DateTime @default(now()) @map("edited_at") @db.Timestamptz
+
+  // === INDEXES ===
+  @@index([voterId])
+  @@index([editedByUserId])
+  @@index([editedAt(sort: Desc)]) // For recent edits
+  @@map("voter_edit_history")
 }
