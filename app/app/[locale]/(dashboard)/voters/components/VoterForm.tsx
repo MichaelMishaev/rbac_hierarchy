@@ -163,6 +163,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
       case 0:
         return (
           <Paper
+            key="step-0"
             elevation={2}
             sx={{
               p: { xs: 2.5, sm: 4 },
@@ -333,6 +334,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
       case 1:
         return (
           <Paper
+            key="step-1"
             elevation={2}
             sx={{
               p: { xs: 2.5, sm: 4 },
@@ -420,6 +422,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
       case 2:
         return (
           <Paper
+            key="step-2"
             elevation={2}
             sx={{
               p: { xs: 2.5, sm: 4 },
@@ -626,6 +629,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
         {/* Step Content - Scrollable */}
         <Box
+          key={`step-content-${activeStep}`}
           sx={{
             flex: 1,
             overflowY: 'auto',

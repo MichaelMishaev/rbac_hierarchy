@@ -102,8 +102,8 @@ export default async function NotificationsPage() {
           mb: 3,
           borderRadius: borderRadius['2xl'],
           background: isPushEnabled
-            ? `linear-gradient(135deg, ${colors.success} 0%, ${colors.successLight} 100%)`
-            : `linear-gradient(135deg, ${colors.warning} 0%, ${colors.warningLight} 100%)`,
+            ? colors.gradients.success
+            : colors.gradients.warning,
           color: 'white',
         }}
       >
