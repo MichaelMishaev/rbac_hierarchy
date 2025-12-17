@@ -202,7 +202,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   error={!!errors.fullName}
                   helperText={errors.fullName?.message}
                   disabled={isSubmitting}
-                  autoComplete="name"
+                  autoComplete="off"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -221,7 +221,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   helperText={errors.phone?.message}
                   disabled={isSubmitting}
                   placeholder="05xxxxxxxx"
-                  autoComplete="tel"
+                  autoComplete="off"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -256,7 +256,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   error={!!errors.email}
                   helperText={errors.email?.message}
                   disabled={isSubmitting}
-                  autoComplete="email"
+                  autoComplete="off"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -371,7 +371,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   error={!!errors.voterAddress}
                   helperText={errors.voterAddress?.message}
                   disabled={isSubmitting}
-                  autoComplete="street-address"
+                  autoComplete="off"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -388,7 +388,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   error={!!errors.voterCity}
                   helperText={errors.voterCity?.message}
                   disabled={isSubmitting}
-                  autoComplete="address-level2"
+                  autoComplete="off"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -405,6 +405,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   error={!!errors.voterNeighborhood}
                   helperText={errors.voterNeighborhood?.message}
                   disabled={isSubmitting}
+                  autoComplete="off"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,
@@ -534,6 +535,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
         component="form"
         onSubmit={handleSubmit(onSubmit)}
         dir="rtl"
+        autoComplete="off"
         sx={{
           display: 'flex',
           flexDirection: 'column',

@@ -100,7 +100,7 @@ export default async function NotificationsPage() {
       <Card
         sx={{
           mb: 3,
-          borderRadius: `${borderRadius.large}px`,
+          borderRadius: borderRadius['2xl'],
           background: isPushEnabled
             ? `linear-gradient(135deg, ${colors.success} 0%, ${colors.successLight} 100%)`
             : `linear-gradient(135deg, ${colors.warning} 0%, ${colors.warningLight} 100%)`,
@@ -135,7 +135,7 @@ export default async function NotificationsPage() {
                 '&:hover': {
                   bgcolor: 'rgba(255,255,255,0.3)',
                 },
-                borderRadius: `${borderRadius.medium}px`,
+                borderRadius: borderRadius.md,
                 textTransform: 'none',
               }}
             >
@@ -157,7 +157,7 @@ export default async function NotificationsPage() {
 
       {/* Summary Stats */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <Card sx={{ flex: 1, borderRadius: `${borderRadius.large}px` }}>
+        <Card sx={{ flex: 1, borderRadius: borderRadius['2xl'] }}>
           <CardContent>
             <Typography variant="h3" fontWeight="bold" color="primary">
               {unreadCount}
@@ -168,7 +168,7 @@ export default async function NotificationsPage() {
           </CardContent>
         </Card>
 
-        <Card sx={{ flex: 1, borderRadius: `${borderRadius.large}px` }}>
+        <Card sx={{ flex: 1, borderRadius: borderRadius['2xl'] }}>
           <CardContent>
             <Typography variant="h3" fontWeight="bold" color="success.main">
               {taskAssignments.filter((a) => a.status === 'done').length}
@@ -179,7 +179,7 @@ export default async function NotificationsPage() {
           </CardContent>
         </Card>
 
-        <Card sx={{ flex: 1, borderRadius: `${borderRadius.large}px` }}>
+        <Card sx={{ flex: 1, borderRadius: borderRadius['2xl'] }}>
           <CardContent>
             <Typography variant="h3" fontWeight="bold">
               {taskAssignments.length}
@@ -211,7 +211,7 @@ export default async function NotificationsPage() {
               <Card
                 key={assignment.id.toString()}
                 sx={{
-                  borderRadius: `${borderRadius.large}px`,
+                  borderRadius: borderRadius['2xl'],
                   border: isUnread ? `2px solid ${colors.primary}` : undefined,
                   bgcolor: isUnread ? 'rgba(97, 97, 255, 0.05)' : undefined,
                   transition: 'all 0.2s',
@@ -306,7 +306,7 @@ export default async function NotificationsPage() {
                       component={Link}
                       href="/tasks/inbox"
                       sx={{
-                        borderRadius: `${borderRadius.medium}px`,
+                        borderRadius: borderRadius.md,
                         textTransform: 'none',
                       }}
                     >
@@ -328,7 +328,7 @@ export default async function NotificationsPage() {
           href="/tasks/inbox"
           startIcon={<AssignmentIcon />}
           sx={{
-            borderRadius: `${borderRadius.medium}px`,
+            borderRadius: borderRadius.md,
             textTransform: 'none',
           }}
         >
@@ -340,7 +340,7 @@ export default async function NotificationsPage() {
           href="/settings"
           startIcon={<SettingsIcon />}
           sx={{
-            borderRadius: `${borderRadius.medium}px`,
+            borderRadius: borderRadius.md,
             textTransform: 'none',
           }}
         >
