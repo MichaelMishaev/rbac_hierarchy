@@ -133,6 +133,12 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   };
 
   const onSubmit = async (data: CreateVoterFormData) => {
+    // CRITICAL: Only allow submission when user is on the final step
+    if (activeStep !== steps.length - 1) {
+      console.warn('[VoterForm] Prevented premature submission at step', activeStep);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     setSuccess(false);
@@ -543,10 +549,19 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     }
   };
 
-  // Prevent Enter key from submitting form except on submit button
+  // Completely prevent Enter key from submitting form in multi-step wizard
   const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'BUTTON') {
-      e.preventDefault();
+    if (e.key === 'Enter') {
+      // Only allow Enter on the actual submit button when on last step
+      const target = e.target as HTMLElement;
+      const isSubmitButton = target.tagName === 'BUTTON' &&
+                             target.getAttribute('type') === 'submit' &&
+                             activeStep === steps.length - 1;
+
+      if (!isSubmitButton) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
     }
   };
 

@@ -7,6 +7,8 @@
  * IMPORTANT: These functions run in the browser only.
  */
 
+import { env } from './env';
+
 /**
  * Check if browser supports push notifications
  */
@@ -128,8 +130,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription> 
   }
 
   // Step 4: Get VAPID public key from environment
-  // IMPORTANT: NEXT_PUBLIC_ env vars are replaced at build time by Next.js
-  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPublicKey = env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
   console.log('[Push] Environment check:', {
     hasKey: !!vapidPublicKey,
@@ -138,8 +139,8 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription> 
   });
 
   if (!vapidPublicKey) {
-    console.error('[Push] VAPID public key not found. Env vars:', Object.keys(process.env));
-    throw new Error('VAPID public key not configured. Please check that NEXT_PUBLIC_VAPID_PUBLIC_KEY is set in .env file.');
+    console.error('[Push] VAPID public key not found in env config');
+    throw new Error('VAPID public key not configured. Please check that NEXT_PUBLIC_VAPID_PUBLIC_KEY is set in .env file and restart dev server.');
   }
 
   // Step 5: Subscribe to push manager

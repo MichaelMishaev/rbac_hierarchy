@@ -47,6 +47,7 @@
     "tests/**/*",
     "scripts/**/*",
     "playwright.config.ts",
+    "playwright.demo.config.ts",
     "verify-org-tree.ts"
   ]
 }
