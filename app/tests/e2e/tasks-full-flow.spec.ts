@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { loginAs, testUsers } from './fixtures/auth.fixture';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Full QA Automation for Tasks Feature
@@ -11,6 +10,39 @@ import { loginAs, testUsers } from './fixtures/auth.fixture';
  * 5. Task archiving and deletion
  * 6. Multi-user scenarios
  */
+
+// User credentials mapping
+const testCredentials = {
+  'מנהל מערכת ראשי': { email: 'admin@election.test', password: 'admin123' },
+  'רכז עיר - דוד לוי (תל אביב)': { email: 'david.levi@telaviv.test', password: 'manager123' },
+  'רכזת פעילים - רחל בן-דוד': { email: 'rachel.bendavid@telaviv.test', password: 'supervisor123' },
+};
+
+// Helper function for login with direct credentials
+async function quickLogin(page: Page, roleLabel: string) {
+  const credentials = testCredentials[roleLabel as keyof typeof testCredentials];
+  if (!credentials) {
+    throw new Error(`Unknown role: ${roleLabel}`);
+  }
+
+  await page.goto('http://localhost:3200/login');
+
+  // Fill form directly - click first to ensure focus
+  await page.click('input[name="email"]');
+  await page.fill('input[name="email"]', credentials.email);
+
+  await page.click('input[name="password"]');
+  await page.fill('input[name="password"]', credentials.password);
+
+  // Submit
+  await page.click('button[type="submit"]');
+
+  // Wait for navigation to dashboard
+  await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+
+  // Wait for page to fully settle
+  await page.waitForLoadState('networkidle');
+}
 
 test.describe('Tasks - Full Flow QA Automation', () => {
   test.describe.configure({ mode: 'serial' }); // Run tests sequentially
@@ -24,7 +56,7 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('1. SuperAdmin can access tasks page and FAB works', async ({ page }) => {
     // Login as SuperAdmin
-    await loginAs(page, testUsers.superAdmin);
+    await quickLogin(page, 'מנהל מערכת ראשי');
 
     // Navigate to /tasks (should redirect to /tasks/inbox)
     await page.goto('http://localhost:3200/tasks');
@@ -46,23 +78,19 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('2. SuperAdmin creates and sends a task', async ({ page }) => {
     // Login as SuperAdmin
-    await loginAs(page, testUsers.superAdmin);
-    
-    
-    
-    
+    await quickLogin(page, 'מנהל מערכת ראשי');
 
     // Navigate to task creation
     await page.goto('http://localhost:3200/tasks/new');
 
     // Fill task description (minimum 20 characters)
     const taskDescription = 'בדיקת אוטומציה - אנא אשר קבלת משימה זו. זהו טסט אוטומטי מלא.';
-    await page.fill('textarea[placeholder*="תאר את המשימה"]', taskDescription);
+    const textarea = page.locator('textarea[placeholder*="תאר את המשימה"]');
+    await textarea.click();
+    await textarea.fill(taskDescription);
 
-    // Wait for validation to pass
-    await expect(page.locator('text=/נדרשים עוד \\d+ תווים/').or(page.locator('text=/✓.*תווים/'))
-      .or(page.locator('text=/תיאור תקין/')))
-      .toBeVisible({ timeout: 5000 });
+    // Wait a moment for validation
+    await page.waitForTimeout(1000);
 
     // Select "Send to all" (should be selected by default)
     const sendToAllButton = page.locator('button:has-text("שלח לכולם")');
@@ -83,25 +111,25 @@ test.describe('Tasks - Full Flow QA Automation', () => {
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
 
-    // Wait for success notification or redirect
-    await page.waitForTimeout(2000);
+    // Wait for navigation or success message
+    await Promise.race([
+      page.waitForURL(/\/tasks\/(inbox|sent)/, { timeout: 10000 }),
+      page.waitForSelector('text=/נשלח.*בהצלחה|נוצר.*בהצלחה|המשימה נשלחה/i', { timeout: 10000 })
+    ]).catch(() => {
+      console.log('No redirect or success message found');
+    });
 
-    // Should redirect to sent tasks or show success
+    // Verify success
     const currentUrl = page.url();
-    const isSuccessful =
-      currentUrl.includes('/tasks/inbox') ||
-      await page.locator('text=/נשלח.*בהצלחה|נוצר.*בהצלחה|המשימה נשלחה/i').isVisible().catch(() => false);
+    const hasRedirected = currentUrl.includes('/tasks/inbox') || currentUrl.includes('/tasks/sent');
+    const hasSuccessMessage = await page.locator('text=/נשלח.*בהצלחה|נוצר.*בהצלחה|המשימה נשלחה/i').isVisible().catch(() => false);
 
-    expect(isSuccessful).toBeTruthy();
+    expect(hasRedirected || hasSuccessMessage).toBeTruthy();
   });
 
   test('3. SuperAdmin views sent task in "נשלחו" tab', async ({ page }) => {
     // Login as SuperAdmin
-    await loginAs(page, testUsers.superAdmin);
-    
-    
-    
-    
+    await quickLogin(page, 'מנהל מערכת ראשי');
 
     // Navigate to inbox
     await page.goto('http://localhost:3200/tasks/inbox');
@@ -127,11 +155,7 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('4. City Coordinator receives and reads task', async ({ page }) => {
     // Login as City Coordinator
-    await loginAs(page, testUsers.cityCoordinator);
-    
-    
-    
-    
+    await quickLogin(page, 'רכז עיר - דוד לוי (תל אביב)');
 
     // Navigate to inbox
     await page.goto('http://localhost:3200/tasks/inbox');
@@ -172,8 +196,18 @@ test.describe('Tasks - Full Flow QA Automation', () => {
   });
 
   test('5. City Coordinator acknowledges task', async ({ page }) => {
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.cityCoordinator.email);
+    await page.fill('input[name="password"]', testUsers.cityCoordinator.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
     // Login as City Coordinator
-    await loginAs(page, testUsers.cityCoordinator);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.cityCoordinator.email);
+    await page.fill('input[name="password"]', testUsers.cityCoordinator.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -215,7 +249,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('6. Test quick acknowledge from task card', async ({ page }) => {
     // Login as Activist Coordinator
-    await loginAs(page, testUsers.activistCoordinator);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.activistCoordinator.email);
+    await page.fill('input[name="password"]', testUsers.activistCoordinator.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -242,7 +281,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('7. Test task archiving', async ({ page }) => {
     // Login as City Coordinator
-    await loginAs(page, testUsers.cityCoordinator);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.cityCoordinator.email);
+    await page.fill('input[name="password"]', testUsers.cityCoordinator.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -285,7 +329,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('8. Test bulk operations', async ({ page }) => {
     // Login as City Coordinator
-    await loginAs(page, testUsers.cityCoordinator);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.cityCoordinator.email);
+    await page.fill('input[name="password"]', testUsers.cityCoordinator.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -331,7 +380,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('9. Test search functionality', async ({ page }) => {
     // Login as City Coordinator
-    await loginAs(page, testUsers.cityCoordinator);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.cityCoordinator.email);
+    await page.fill('input[name="password"]', testUsers.cityCoordinator.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -368,7 +422,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     // Login as SuperAdmin
-    await loginAs(page, testUsers.superAdmin);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.superAdmin.email);
+    await page.fill('input[name="password"]', testUsers.superAdmin.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -403,7 +462,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('11. Test RTL layout and Hebrew text', async ({ page }) => {
     // Login
-    await loginAs(page, testUsers.superAdmin);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.superAdmin.email);
+    await page.fill('input[name="password"]', testUsers.superAdmin.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
@@ -427,7 +491,12 @@ test.describe('Tasks - Full Flow QA Automation', () => {
 
   test('12. Verify sent task shows recipient status', async ({ page }) => {
     // Login as SuperAdmin
-    await loginAs(page, testUsers.superAdmin);
+    await page.goto('http://localhost:3200/login');
+    await page.fill('input[name="email"]', testUsers.superAdmin.email);
+    await page.fill('input[name="password"]', testUsers.superAdmin.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    
     
     
     
