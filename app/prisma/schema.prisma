@@ -201,6 +201,7 @@ model CityCoordinator {
   @@index([cityId])
   @@index([userId])
   @@index([isActive])
+  @@index([cityId, isActive]) // Performance: Common filtered query
   @@map("city_coordinators")
 }
 
@@ -239,6 +240,7 @@ model ActivistCoordinator {
   @@index([cityId])
   @@index([userId])
   @@index([isActive])
+  @@index([cityId, isActive]) // Performance: Common filtered query
   @@map("activist_coordinators")
 }
 
@@ -287,6 +289,7 @@ model Neighborhood {
   @@index([cityId])
   @@index([cityCoordinatorId])
   @@index([isActive])
+  @@index([cityId, isActive]) // Performance: Common filtered query
   @@map("neighborhoods")
 }
 
@@ -376,6 +379,8 @@ model Activist {
   @@index([activistCoordinatorId])
   @@index([isActive])
   @@index([phone])
+  @@index([cityId, isActive]) // Performance: Common filtered query for city-scoped active activists
+  @@index([neighborhoodId, isActive]) // Performance: Common filtered query for neighborhood-scoped active activists
   @@map("activists")
 }
 

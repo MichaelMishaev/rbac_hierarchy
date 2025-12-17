@@ -1,9 +1,15 @@
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 
 // Re-export auth for convenience
 export { auth };
 
+/**
+ * Get current user with all relations (cached for 30 seconds)
+ * PERFORMANCE: This function loads heavy nested data, so we cache it
+ * to avoid duplicate expensive queries per page load
+ */
 export async function getCurrentUser() {
   const session = await auth();
 
@@ -11,35 +17,45 @@ export async function getCurrentUser() {
     throw new Error('Unauthorized');
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      areaManager: {
+  // Cache the user query per user ID for 30 seconds
+  const dbUser = await unstable_cache(
+    async (userId: string) => {
+      return prisma.user.findUnique({
+        where: { id: userId },
         include: {
-          cities: true,
-        },
-      },
-      coordinatorOf: {
-        include: {
-          city: true,
-        },
-      },
-      activistCoordinatorOf: {
-        include: {
-          city: true,
-        },
-      },
-      activistCoordinatorNeighborhoods: {
-        include: {
-          neighborhood: {
+          areaManager: {
             include: {
-              cityRelation: true,
+              cities: true,
+            },
+          },
+          coordinatorOf: {
+            include: {
+              city: true,
+            },
+          },
+          activistCoordinatorOf: {
+            include: {
+              city: true,
+            },
+          },
+          activistCoordinatorNeighborhoods: {
+            include: {
+              neighborhood: {
+                include: {
+                  cityRelation: true,
+                },
+              },
             },
           },
         },
-      },
+      });
     },
-  });
+    [`user-${session.user.id}`],
+    {
+      revalidate: 30, // Cache for 30 seconds
+      tags: ['user', `user-${session.user.id}`],
+    }
+  )(session.user.id);
 
   if (!dbUser) {
     // User exists in session but not in database (stale JWT token)

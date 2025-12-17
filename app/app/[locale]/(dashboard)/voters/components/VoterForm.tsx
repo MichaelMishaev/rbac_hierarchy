@@ -62,6 +62,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [lastStepChangeTime, setLastStepChangeTime] = useState<number>(0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -115,6 +116,8 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   }, [setFocus]);
 
   const handleNext = async () => {
+    console.log('[VoterForm] handleNext called - current activeStep:', activeStep);
+
     // Validate current step fields before proceeding
     const fieldsToValidate = {
       0: ['fullName', 'phone', 'idNumber', 'email', 'dateOfBirth', 'gender'],
@@ -123,22 +126,34 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     }[activeStep] as Array<keyof CreateVoterFormData>;
 
     const isValid = await trigger(fieldsToValidate);
+    console.log('[VoterForm] Validation result:', isValid, 'for fields:', fieldsToValidate);
+
     if (isValid && activeStep < steps.length - 1) {
+      console.log('[VoterForm] Moving to next step from', activeStep, 'to', activeStep + 1);
+      setLastStepChangeTime(Date.now()); // Record step change time
       setActiveStep((prev) => prev + 1);
+    } else {
+      console.log('[VoterForm] Not moving - isValid:', isValid, 'activeStep:', activeStep, 'steps.length:', steps.length);
     }
   };
 
   const handleBack = () => {
+    setLastStepChangeTime(Date.now()); // Record step change time
     setActiveStep((prev) => prev - 1);
   };
 
   const onSubmit = async (data: CreateVoterFormData) => {
+    console.log('[VoterForm] onSubmit called - activeStep:', activeStep, 'steps.length:', steps.length);
+    console.log('[VoterForm] Data:', data);
+    console.trace('[VoterForm] Stack trace');
+
     // CRITICAL: Only allow submission when user is on the final step
     if (activeStep !== steps.length - 1) {
-      console.warn('[VoterForm] Prevented premature submission at step', activeStep);
+      console.warn('[VoterForm] ❌ BLOCKED premature submission at step', activeStep);
       return;
     }
 
+    console.log('[VoterForm] ✅ ALLOWING submission - on final step');
     setIsSubmitting(true);
     setError(null);
     setSuccess(false);
@@ -565,11 +580,41 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     }
   };
 
+  // Prevent form submission unless explicitly via submit button
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    console.log('[VoterForm] handleFormSubmit called');
+    console.log('[VoterForm] Event target:', e.target);
+    console.log('[VoterForm] Event currentTarget:', e.currentTarget);
+    console.log('[VoterForm] nativeEvent submitter:', (e.nativeEvent as SubmitEvent).submitter);
+
+    // CRITICAL: Prevent submission if it's too soon after step change
+    // This prevents event bubbling from "Next" button click to submit button
+    const timeSinceStepChange = Date.now() - lastStepChangeTime;
+    if (lastStepChangeTime > 0 && timeSinceStepChange < 500) {
+      console.warn('[VoterForm] ⛔ BLOCKED submission - too soon after step change!', timeSinceStepChange, 'ms');
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    // Only allow submission if triggered by the actual submit button
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (!submitter || submitter.getAttribute('type') !== 'submit') {
+      console.warn('[VoterForm] ⛔ BLOCKED submission - not from submit button!');
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    console.log('[VoterForm] ✅ Submission from submit button - proceeding');
+    handleSubmit(onSubmit)(e);
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={he}>
       <Box
         component="form"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleFormSubmit}
         onKeyDown={handleKeyDown}
         dir="rtl"
         autoComplete="off"
@@ -713,7 +758,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   py: { xs: 1.25, sm: 1.5 },
                   fontSize: { xs: '0.9rem', sm: '1rem' },
                   fontWeight: 600,
-                  borderRadius: 2,
+                  borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
                 }}
               >
                 חזור
@@ -731,7 +776,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                     py: { xs: 1.25, sm: 1.5 },
                     fontSize: { xs: '0.9rem', sm: '1rem' },
                     fontWeight: 600,
-                    borderRadius: 2,
+                    borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
                   }}
                 >
                   ביטול
@@ -752,7 +797,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   py: { xs: 1.25, sm: 1.5 },
                   fontSize: { xs: '0.9rem', sm: '1rem' },
                   fontWeight: 600,
-                  borderRadius: 2,
+                  borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
                   boxShadow: 2,
                   '&:hover': {
                     boxShadow: 4,
@@ -779,7 +824,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   py: { xs: 1.25, sm: 1.5 },
                   fontSize: { xs: '0.9rem', sm: '1rem' },
                   fontWeight: 600,
-                  borderRadius: 2,
+                  borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
                   boxShadow: 2,
                   '&:hover': {
                     boxShadow: 4,

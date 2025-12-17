@@ -88,6 +88,16 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
+            sx={{
+              borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
+              px: 3,
+              py: 1.25,
+              fontWeight: 600,
+              boxShadow: 2,
+              '&:hover': {
+                boxShadow: 4,
+              },
+            }}
           >
             הוסף בוחר
           </Button>

@@ -158,7 +158,12 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="שם, טלפון, אימייל"
-          sx={{ minWidth: 250 }}
+          sx={{
+            minWidth: 250,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            },
+          }}
         />
 
         <FormControl sx={{ minWidth: 150 }}>
@@ -167,6 +172,9 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
             value={supportFilter}
             onChange={(e) => setSupportFilter(e.target.value)}
             label="רמת תמיכה"
+            sx={{
+              borderRadius: 2,
+            }}
           >
             <MenuItem value="">הכל</MenuItem>
             <MenuItem value="תומך">תומך</MenuItem>
@@ -182,6 +190,9 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
             value={contactFilter}
             onChange={(e) => setContactFilter(e.target.value)}
             label="סטטוס קשר"
+            sx={{
+              borderRadius: 2,
+            }}
           >
             <MenuItem value="">הכל</MenuItem>
             <MenuItem value="נוצר קשר">נוצר קשר</MenuItem>
@@ -193,7 +204,7 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
       </Box>
 
       {/* Table */}
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'primary.light' }}>
