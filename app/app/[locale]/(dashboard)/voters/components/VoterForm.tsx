@@ -543,11 +543,19 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     }
   };
 
+  // Prevent Enter key from submitting form except on submit button
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'BUTTON') {
+      e.preventDefault();
+    }
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={he}>
       <Box
         component="form"
         onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={handleKeyDown}
         dir="rtl"
         autoComplete="off"
         sx={{

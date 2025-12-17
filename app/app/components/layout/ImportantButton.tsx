@@ -78,8 +78,8 @@ export default function ImportantButton() {
             },
           },
           '&:hover': {
-            bgcolor: colors.errorDark,
             animation: 'none',
+            transform: 'scale(1.02)',
           },
         }}
         data-testid="important-button"
@@ -175,9 +175,6 @@ export default function ImportantButton() {
             sx={{
               width: { xs: '100%', sm: 'auto' },
               bgcolor: colors.error,
-              '&:hover': {
-                bgcolor: colors.errorDark,
-              },
               borderRadius: borderRadius.md,
               textTransform: 'none',
               fontWeight: 'bold',

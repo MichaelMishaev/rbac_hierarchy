@@ -7,6 +7,11 @@ const withNextIntl = createNextIntlPlugin('./i18n.ts');
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname),
+  env: {
+    // Explicitly expose NEXT_PUBLIC_ vars to browser (Next.js 15+)
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
