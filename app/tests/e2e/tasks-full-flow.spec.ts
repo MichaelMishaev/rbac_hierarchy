@@ -58,6 +58,9 @@ test.describe('Tasks - Full Flow QA Automation', () => {
     // Login as SuperAdmin
     await quickLogin(page, 'מנהל מערכת ראשי');
 
+    // Wait a moment for dashboard to settle
+    await page.waitForTimeout(500);
+
     // Navigate to /tasks (should redirect to /tasks/inbox)
     await page.goto('http://localhost:3200/tasks');
     await expect(page).toHaveURL(/\/tasks\/inbox$/);
@@ -69,9 +72,14 @@ test.describe('Tasks - Full Flow QA Automation', () => {
     // Test FAB button
     const fab = page.locator('[data-testid="context-aware-fab"]');
     await expect(fab).toBeVisible();
-    await fab.click();
 
-    // Should navigate to /tasks/new
+    // Click and wait for navigation
+    await Promise.all([
+      page.waitForURL(/\/tasks\/new$/, { timeout: 5000 }),
+      fab.click()
+    ]);
+
+    // Verify we're on the new task page
     await expect(page).toHaveURL(/\/tasks\/new$/);
     await expect(page.getByRole('heading', { name: 'משימה חדשה' })).toBeVisible();
   });
@@ -79,6 +87,9 @@ test.describe('Tasks - Full Flow QA Automation', () => {
   test('2. SuperAdmin creates and sends a task', async ({ page }) => {
     // Login as SuperAdmin
     await quickLogin(page, 'מנהל מערכת ראשי');
+
+    // Wait a moment for dashboard to settle
+    await page.waitForTimeout(500);
 
     // Navigate to task creation
     await page.goto('http://localhost:3200/tasks/new');
@@ -107,24 +118,19 @@ test.describe('Tasks - Full Flow QA Automation', () => {
     await tomorrowButton.click();
 
     // Submit the task
-    const submitButton = page.locator('button:has-text("שלח משימה")');
+    const submitButton = page.locator('button:has-text("שלח משימה")').first();
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
 
-    // Wait for navigation or success message
-    await Promise.race([
-      page.waitForURL(/\/tasks\/(inbox|sent)/, { timeout: 10000 }),
-      page.waitForSelector('text=/נשלח.*בהצלחה|נוצר.*בהצלחה|המשימה נשלחה/i', { timeout: 10000 })
-    ]).catch(() => {
-      console.log('No redirect or success message found');
-    });
+    // Wait for confirmation modal
+    await page.waitForTimeout(500);
 
-    // Verify success
-    const currentUrl = page.url();
-    const hasRedirected = currentUrl.includes('/tasks/inbox') || currentUrl.includes('/tasks/sent');
-    const hasSuccessMessage = await page.locator('text=/נשלח.*בהצלחה|נוצר.*בהצלחה|המשימה נשלחה/i').isVisible().catch(() => false);
+    // Confirm in the modal (click the blue "שלח משימה" button in modal)
+    const confirmButton = page.locator('button:has-text("שלח משימה")').last();
+    await confirmButton.click();
 
-    expect(hasRedirected || hasSuccessMessage).toBeTruthy();
+    // Wait for success message to appear
+    await expect(page.locator('text=/המשימה נשלחה בהצלחה|נשלח.*בהצלחה/i').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('3. SuperAdmin views sent task in "נשלחו" tab', async ({ page }) => {
