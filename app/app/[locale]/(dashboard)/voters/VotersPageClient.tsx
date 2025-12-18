@@ -24,12 +24,14 @@ import {
 import {
   Add as AddIcon,
   Close as CloseIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
 import { VotersList } from './components/VotersList';
 import { VoterForm } from './components/VoterForm';
 import { VoterDetails } from './components/VoterDetails';
 import { VoterStatistics } from './components/VoterStatistics';
 import { DuplicatesDashboard } from './components/DuplicatesDashboard';
+import { ExcelUpload } from './components/ExcelUpload';
 import type { Voter } from '@/lib/voters';
 
 type VotersPageClientProps = {
@@ -41,6 +43,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState<Voter | null>(null);
 
   const handleViewVoter = (voter: Voter) => {
@@ -66,6 +69,12 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
     setActiveTab(0);
   };
 
+  const handleUploadSuccess = () => {
+    setUploadDialogOpen(false);
+    // Refresh list
+    setActiveTab(0);
+  };
+
   return (
     <Box dir="rtl" sx={{ p: 3 }}>
       {/* Header */}
@@ -84,23 +93,38 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
         </Tabs>
 
         {activeTab === 0 && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-            sx={{
-              borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
-              px: 3,
-              py: 1.25,
-              fontWeight: 600,
-              boxShadow: 2,
-              '&:hover': {
-                boxShadow: 4,
-              },
-            }}
-          >
-            הוסף בוחר
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<UploadIcon />}
+              onClick={() => setUploadDialogOpen(true)}
+              sx={{
+                borderRadius: '50px !important',
+                px: 3,
+                py: 1.25,
+                fontWeight: 600,
+              }}
+            >
+              ייבוא מאקסל
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{
+                borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
+                px: 3,
+                py: 1.25,
+                fontWeight: 600,
+                boxShadow: 2,
+                '&:hover': {
+                  boxShadow: 4,
+                },
+              }}
+            >
+              הוסף בוחר
+            </Button>
+          </Box>
         )}
       </Box>
 
@@ -218,6 +242,39 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Dialog */}
+      <Dialog
+        open={uploadDialogOpen}
+        onClose={() => setUploadDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        dir="rtl"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: 1,
+            borderColor: 'divider',
+            py: 2,
+          }}
+        >
+          ייבוא בוחרים מאקסל
+          <IconButton onClick={() => setUploadDialogOpen(false)} edge="end">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <ExcelUpload onSuccess={handleUploadSuccess} />
         </DialogContent>
       </Dialog>
     </Box>
