@@ -47,7 +47,6 @@ import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
 import LanguageSwitcher from './LanguageSwitcher';
 import HeaderNotificationToggle from './HeaderNotificationToggle';
-import ImportantButton from './ImportantButton';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 import { useRecentPages } from '@/app/hooks/useRecentPages';
 import { useLogout } from '@/app/hooks/useLogout';
@@ -657,7 +656,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           </Box>
         </Box>
 
-        {/* Notification Controls & Important Button */}
+        {/* Notification Controls */}
         <Box
           sx={{
             px: 2,
@@ -668,9 +667,6 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
             gap: 1.5,
           }}
         >
-          {/* Important Button - Shows for users without push enabled */}
-          <ImportantButton />
-
           {/* Notification Toggle */}
           <Box
             sx={{
