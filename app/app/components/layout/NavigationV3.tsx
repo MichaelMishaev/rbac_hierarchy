@@ -50,6 +50,7 @@ import HeaderNotificationToggle from './HeaderNotificationToggle';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 import { useRecentPages } from '@/app/hooks/useRecentPages';
 import { useLogout } from '@/app/hooks/useLogout';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export type NavigationV3Props = {
   role: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
@@ -242,6 +243,11 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
   // CRITICAL: Secure logout that clears ALL caches
   // ============================================
   const { logout } = useLogout();
+
+  // ============================================
+  // PUSH NOTIFICATIONS: Check if supported
+  // ============================================
+  const { isSupported: isPushSupported } = usePushNotifications();
 
   // ============================================
   // PERFORMANCE OPTIMIZATION: Memoize callbacks
@@ -656,39 +662,41 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           </Box>
         </Box>
 
-        {/* Notification Controls */}
-        <Box
-          sx={{
-            px: 2,
-            py: 2,
-            borderBottom: `1px solid ${colors.neutral[200]}`,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1.5,
-          }}
-        >
-          {/* Notification Toggle */}
+        {/* Notification Controls - Only show if push notifications are supported */}
+        {isPushSupported && (
           <Box
             sx={{
+              px: 2,
+              py: 2,
+              borderBottom: `1px solid ${colors.neutral[200]}`,
               display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              justifyContent: 'space-between',
-              px: 1,
+              flexDirection: 'column',
+              gap: 1.5,
             }}
           >
-            <Typography
-              variant="caption"
+            {/* Notification Toggle */}
+            <Box
               sx={{
-                color: colors.neutral[600],
-                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                justifyContent: 'space-between',
+                px: 1,
               }}
             >
-              התראות דחיפה
-            </Typography>
-            <HeaderNotificationToggle />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: colors.neutral[600],
+                  fontWeight: 600,
+                }}
+              >
+                התראות דחיפה
+              </Typography>
+              <HeaderNotificationToggle />
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {/* Language Switcher */}
         <Box sx={{ p: 2, borderBottom: `1px solid ${colors.neutral[100]}` }}>
@@ -929,6 +937,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       supervisorItems,
       handleLogout,
       tCommon,
+      isPushSupported,
     ]
   );
 
