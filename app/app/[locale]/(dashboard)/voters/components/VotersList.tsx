@@ -39,11 +39,14 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Phone as PhoneIcon,
+  ContentCopy as DuplicateIcon,
 } from '@mui/icons-material';
 import { getVisibleVoters, deleteVoter } from '@/lib/voters/actions/voter-actions';
+import { getVotersWithDuplicates } from '@/app/actions/get-voter-duplicates';
 import type { Voter } from '@/lib/voters';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { DuplicateVotersDialog } from './DuplicateVotersDialog';
 
 interface VotersListProps {
   onViewVoter?: (voter: Voter) => void;
@@ -52,6 +55,8 @@ interface VotersListProps {
 
 export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
   const [voters, setVoters] = useState<Voter[]>([]);
+  const [duplicateMap, setDuplicateMap] = useState<Record<string, number>>({});
+  const [selectedDuplicateVoter, setSelectedDuplicateVoter] = useState<Voter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,17 +71,24 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
     setLoading(true);
     setError(null);
 
-    const result = await getVisibleVoters({
-      isActive: true,
-      supportLevel: supportFilter || undefined,
-      contactStatus: contactFilter || undefined,
-      limit: 100,
-    });
+    const [votersResult, duplicatesResult] = await Promise.all([
+      getVisibleVoters({
+        isActive: true,
+        supportLevel: supportFilter || undefined,
+        contactStatus: contactFilter || undefined,
+        limit: 100,
+      }),
+      getVotersWithDuplicates(),
+    ]);
 
-    if (result.success) {
-      setVoters(result.data);
+    if (votersResult.success) {
+      setVoters(votersResult.data);
     } else {
-      setError(result.error);
+      setError(votersResult.error);
+    }
+
+    if (duplicatesResult.success) {
+      setDuplicateMap(duplicatesResult.data);
     }
 
     setLoading(false);
@@ -324,6 +336,19 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+
+                      {/* Duplicate Indicator */}
+                      {duplicateMap[voter.id] && (
+                        <Tooltip title={`${duplicateMap[voter.id]} כפילויות`}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setSelectedDuplicateVoter(voter)}
+                            color="warning"
+                          >
+                            <DuplicateIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -332,6 +357,18 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Duplicate Voters Dialog */}
+      {selectedDuplicateVoter && (
+        <DuplicateVotersDialog
+          open={!!selectedDuplicateVoter}
+          onClose={() => setSelectedDuplicateVoter(null)}
+          voterId={selectedDuplicateVoter.id}
+          voterName={selectedDuplicateVoter.fullName}
+          voterPhone={selectedDuplicateVoter.phone}
+          voterEmail={selectedDuplicateVoter.email || ''}
+        />
+      )}
     </Box>
   );
 }
