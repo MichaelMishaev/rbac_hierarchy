@@ -18,10 +18,25 @@ type BulkVoterInput = {
   email: string;
 };
 
+type DuplicateInfo = {
+  row: number;
+  phone: string;
+  email: string;
+  existingVoter?: {
+    id: string;
+    fullName: string;
+    insertedByUserName: string;
+    insertedByUserRole: string;
+    createdAt: Date;
+  };
+  type: 'within_excel' | 'in_database';
+};
+
 type ImportResult = {
   success: number;
   failed: number;
   errors: Array<{ row: number; error: string }>;
+  duplicates?: DuplicateInfo[];
 };
 
 /**

@@ -27,9 +27,12 @@ import {
   Upload as UploadIcon,
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
+  Warning as WarningIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { read, utils } from 'xlsx';
 import { bulkImportVoters } from '@/app/actions/voters';
+import { checkExcelDuplicates } from '@/app/actions/voters-duplicate-check';
 
 type ExcelRow = {
   שם: string;
@@ -39,10 +42,25 @@ type ExcelRow = {
   מייל: string;
 };
 
+type DuplicateInfo = {
+  row: number;
+  phone: string;
+  email: string;
+  existingVoter?: {
+    id: string;
+    fullName: string;
+    insertedByUserName: string;
+    insertedByUserRole: string;
+    createdAt: Date;
+  };
+  type: 'within_excel' | 'in_database';
+};
+
 type ImportResult = {
   success: number;
   failed: number;
   errors: Array<{ row: number; error: string }>;
+  duplicates?: DuplicateInfo[];
 };
 
 type ExcelUploadProps = {
@@ -53,6 +71,8 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<ExcelRow[]>([]);
+  const [duplicates, setDuplicates] = useState<DuplicateInfo[]>([]);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +110,20 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
 
       // Show preview (first 5 rows)
       setPreview(jsonData.slice(0, 5));
+
+      // Check for duplicates
+      const voters = jsonData.map((row) => ({
+        firstName: row['שם']?.toString().trim() || '',
+        lastName: row['שם משפחה']?.toString().trim() || '',
+        phone: row['טלפון']?.toString().trim() || '',
+        city: row['עיר']?.toString().trim() || '',
+        email: row['מייל']?.toString().trim() || '',
+      }));
+
+      const duplicateCheck = await checkExcelDuplicates(voters);
+      if (duplicateCheck.success) {
+        setDuplicates(duplicateCheck.duplicates);
+      }
     } catch (err) {
       console.error('[ExcelUpload] Parse error:', err);
       setError('שגיאה בקריאת הקובץ. אנא ודא שהקובץ הוא Excel תקין');
@@ -138,6 +172,8 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
   const handleReset = () => {
     setFile(null);
     setPreview([]);
+    setDuplicates([]);
+    setShowDuplicates(false);
     setResult(null);
     setError(null);
   };
@@ -223,6 +259,80 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
               </TableBody>
             </Table>
           </TableContainer>
+
+          {/* Duplicate Warning */}
+          {duplicates.length > 0 && (
+            <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="body2" fontWeight="medium">
+                    זוהו {duplicates.length} כפילויות (טלפון + אימייל זהים)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    ניתן להמשיך בהעלאה, הכפילויות ייווצרו במערכת
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<VisibilityIcon />}
+                  onClick={() => setShowDuplicates(!showDuplicates)}
+                  sx={{ borderRadius: '20px', ml: 2 }}
+                >
+                  {showDuplicates ? 'הסתר פרטים' : 'הצג כפילויות'}
+                </Button>
+              </Box>
+
+              {/* Duplicate Details */}
+              {showDuplicates && (
+                <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
+                  <TableContainer component={Paper} sx={{ borderRadius: 1 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ backgroundColor: 'grey.100' }}>
+                          <TableCell>שורה</TableCell>
+                          <TableCell>טלפון</TableCell>
+                          <TableCell>אימייל</TableCell>
+                          <TableCell>סוג כפילות</TableCell>
+                          <TableCell>פרטים</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {duplicates.map((dup, index) => (
+                          <TableRow key={`dup-${index}`}>
+                            <TableCell>{dup.row}</TableCell>
+                            <TableCell>{dup.phone}</TableCell>
+                            <TableCell>{dup.email}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={dup.type === 'within_excel' ? 'בתוך הקובץ' : 'במערכת'}
+                                size="small"
+                                color={dup.type === 'within_excel' ? 'warning' : 'error'}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {dup.existingVoter ? (
+                                <Typography variant="caption">
+                                  {dup.existingVoter.fullName} - הוזן ע״י{' '}
+                                  {dup.existingVoter.insertedByUserName} ({dup.existingVoter.insertedByUserRole})
+                                  <br />
+                                  {new Date(dup.existingVoter.createdAt).toLocaleDateString('he-IL')}
+                                </Typography>
+                              ) : (
+                                <Typography variant="caption" color="text.secondary">
+                                  כפילות בקובץ
+                                </Typography>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+            </Alert>
+          )}
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
             <Button
