@@ -158,7 +158,7 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '24px' }}>
           {error}
         </Alert>
       )}
@@ -171,21 +171,22 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="שם, טלפון, אימייל"
           sx={{
-            minWidth: 250,
+            minWidth: { xs: '100%', sm: 250 },
+            flex: { xs: '1 1 100%', sm: '0 0 auto' },
             '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
+              borderRadius: '32px', // 2025 UI/UX: Significantly rounded
             },
           }}
         />
 
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
           <InputLabel>רמת תמיכה</InputLabel>
           <Select
             value={supportFilter}
             onChange={(e) => setSupportFilter(e.target.value)}
             label="רמת תמיכה"
             sx={{
-              borderRadius: 2,
+              borderRadius: '32px', // 2025 UI/UX: Significantly rounded
             }}
           >
             <MenuItem value="">הכל</MenuItem>
@@ -196,14 +197,14 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
           </Select>
         </FormControl>
 
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
           <InputLabel>סטטוס קשר</InputLabel>
           <Select
             value={contactFilter}
             onChange={(e) => setContactFilter(e.target.value)}
             label="סטטוס קשר"
             sx={{
-              borderRadius: 2,
+              borderRadius: '32px', // 2025 UI/UX: Significantly rounded
             }}
           >
             <MenuItem value="">הכל</MenuItem>
@@ -216,7 +217,14 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
       </Box>
 
       {/* Table */}
-      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+      <TableContainer
+        component={Paper}
+        sx={{
+          borderRadius: '32px', // 2025 UI/UX: Significantly rounded
+          overflow: 'hidden', // Ensure rounded corners work
+          boxShadow: 2,
+        }}
+      >
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'primary.light' }}>
@@ -270,6 +278,7 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
                         label={voter.supportLevel}
                         size="small"
                         color={getSupportLevelColor(voter.supportLevel) as any}
+                        sx={{ borderRadius: '20px' }} // 2025 UI/UX: Rounded pills
                       />
                     )}
                   </TableCell>

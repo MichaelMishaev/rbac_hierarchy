@@ -92,7 +92,6 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
       ? ({
           fullName: voter.fullName,
           phone: voter.phone,
-          idNumber: voter.idNumber || '',
           email: voter.email || '',
           dateOfBirth: voter.dateOfBirth ?? null,
           gender: voter.gender || '',
@@ -107,7 +106,6 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
       : {
           fullName: '',
           phone: '',
-          idNumber: '',
           email: '',
           dateOfBirth: null,
           gender: '',
@@ -134,7 +132,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
     // Validate current step fields before proceeding
     const fieldsToValidate = {
-      0: ['fullName', 'phone', 'idNumber', 'email', 'dateOfBirth', 'gender'],
+      0: ['fullName', 'phone', 'email', 'dateOfBirth', 'gender'],
       1: ['voterAddress', 'voterCity', 'voterNeighborhood'],
       2: ['supportLevel', 'contactStatus', 'priority', 'notes'],
     }[activeStep] as Array<keyof CreateVoterFormData>;
@@ -269,23 +267,6 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                   disabled={isSubmitting}
                   placeholder="05xxxxxxxx"
                   autoComplete="off"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('idNumber')}
-                  label="תעודת זהות"
-                  fullWidth
-                  error={!!errors.idNumber}
-                  helperText={errors.idNumber?.message}
-                  disabled={isSubmitting}
-                  placeholder="9 ספרות"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: 2,

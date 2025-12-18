@@ -148,7 +148,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
           sx: {
             maxHeight: { xs: '95vh', sm: '90vh' },
             height: { xs: '95vh', sm: 'auto' },
-            borderRadius: { xs: 3, sm: 3 },
+            borderRadius: { xs: '32px', sm: '32px' }, // 2025 UI/UX: Significantly rounded
             m: { xs: 1, sm: 2 },
           },
         }}
@@ -187,7 +187,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
           sx: {
             maxHeight: { xs: '95vh', sm: '90vh' },
             height: { xs: '95vh', sm: 'auto' },
-            borderRadius: { xs: 3, sm: 3 },
+            borderRadius: { xs: '32px', sm: '32px' }, // 2025 UI/UX: Significantly rounded
             m: { xs: 1, sm: 2 },
           },
         }}
@@ -225,6 +225,11 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
         maxWidth="lg"
         fullWidth
         dir="rtl"
+        PaperProps={{
+          sx: {
+            borderRadius: '32px', // 2025 UI/UX: Significantly rounded
+          },
+        }}
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           פרטי בוחר
@@ -254,7 +259,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
         dir="rtl"
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: '32px', // 2025 UI/UX: Significantly rounded
           },
         }}
       >

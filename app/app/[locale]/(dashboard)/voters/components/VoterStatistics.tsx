@@ -81,7 +81,7 @@ export function VoterStatistics() {
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
+      <Alert severity="error" sx={{ m: 2, borderRadius: '24px' }}>
         {error}
       </Alert>
     );
@@ -105,7 +105,7 @@ export function VoterStatistics() {
       {/* Overview Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <PeopleIcon color="primary" />
@@ -119,7 +119,7 @@ export function VoterStatistics() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <CheckCircleIcon color="success" />
@@ -133,7 +133,7 @@ export function VoterStatistics() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <TrendingUpIcon color="warning" />
@@ -150,7 +150,7 @@ export function VoterStatistics() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <PieChartIcon color="info" />
@@ -167,7 +167,7 @@ export function VoterStatistics() {
       <Grid container spacing={3}>
         {/* Support Level Breakdown */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 פילוח לפי רמת תמיכה
@@ -185,7 +185,7 @@ export function VoterStatistics() {
                     <LinearProgress
                       variant="determinate"
                       value={parseFloat(getSupportPercentage(count))}
-                      sx={{ height: 8, borderRadius: 1 }}
+                      sx={{ height: 8, borderRadius: '8px' }}
                       color={
                         level === 'תומך'
                           ? 'success'
@@ -205,7 +205,7 @@ export function VoterStatistics() {
 
         {/* Contact Status Breakdown */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 פילוח לפי סטטוס קשר
@@ -224,7 +224,7 @@ export function VoterStatistics() {
                       <LinearProgress
                         variant="determinate"
                         value={parseFloat(getSupportPercentage(count))}
-                        sx={{ height: 8, borderRadius: 1 }}
+                        sx={{ height: 8, borderRadius: '8px' }}
                         color={
                           status === 'הצביע'
                             ? 'success'
@@ -243,7 +243,7 @@ export function VoterStatistics() {
 
         {/* Insertion Activity */}
         <Grid item xs={12}>
-          <Card>
+          <Card sx={{ borderRadius: '24px', boxShadow: 2 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 פעילות הכנסה לפי משתמש
