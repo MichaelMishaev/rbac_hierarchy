@@ -127,7 +127,7 @@ export default async function NotificationsPage() {
             <Button
               variant="contained"
               component={Link}
-              href="/settings"
+              href="/settings/notifications"
               startIcon={<SettingsIcon />}
               sx={{
                 bgcolor: 'rgba(255,255,255,0.2)',
@@ -337,7 +337,7 @@ export default async function NotificationsPage() {
         <Button
           variant="outlined"
           component={Link}
-          href="/settings"
+          href="/settings/notifications"
           startIcon={<SettingsIcon />}
           sx={{
             borderRadius: borderRadius.md,
