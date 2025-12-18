@@ -26,7 +26,7 @@ type ImportResult = {
 
 /**
  * Bulk import voters from Excel
- * Validates and creates voters, skipping duplicates
+ * Validates required fields and creates voters (allows duplicates)
  */
 export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<ImportResult> {
   const result: ImportResult = {
@@ -67,21 +67,7 @@ export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<Import
         const phone = row.phone.toString().trim();
         const fullName = `${row.firstName.trim()} ${row.lastName.trim()}`;
 
-        // Check for duplicate phone
-        const existingVoter = await prisma.voter.findFirst({
-          where: {
-            phone,
-            isActive: true,
-          },
-        });
-
-        if (existingVoter) {
-          result.failed++;
-          result.errors.push({ row: rowNumber, error: `טלפון ${phone} כבר קיים במערכת` });
-          continue;
-        }
-
-        // Create voter
+        // Create voter (allow duplicates from Excel import)
         await prisma.voter.create({
           data: {
             fullName,

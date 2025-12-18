@@ -154,7 +154,7 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           <li>משתמשי Mac: מומלץ לייצא מ-Numbers לפורמט Excel לתוצאות מיטביות</li>
           <li>השורה הראשונה חייבת להכיל כותרות עמודות</li>
           <li>עמודות נדרשות: שם, שם משפחה, טלפון, עיר, מייל</li>
-          <li>טלפון חייב להיות ייחודי לכל בוחר</li>
+          <li>ניתן לייבא בוחרים עם מספרי טלפון כפולים</li>
         </Typography>
       </Alert>
 
