@@ -212,7 +212,7 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
               </TableHead>
               <TableBody>
                 {preview.map((row, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={`preview-${index}-${row['טלפון']}`}>
                     <TableCell>{row['שם']}</TableCell>
                     <TableCell>{row['שם משפחה']}</TableCell>
                     <TableCell>{row['טלפון']}</TableCell>
@@ -306,12 +306,12 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
                   שגיאות:
                 </Typography>
                 {result.errors.slice(0, 10).map((err, index) => (
-                  <Typography key={index} variant="caption" component="div" sx={{ mb: 0.5 }}>
+                  <Typography key={`error-${err.row}-${index}`} variant="caption" component="div" sx={{ mb: 0.5 }}>
                     • שורה {err.row}: {err.error}
                   </Typography>
                 ))}
                 {result.errors.length > 10 && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" key="more-errors">
                     ועוד {result.errors.length - 10} שגיאות...
                   </Typography>
                 )}
