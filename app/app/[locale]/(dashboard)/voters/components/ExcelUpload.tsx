@@ -150,7 +150,8 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           הוראות העלאה:
         </Typography>
         <Typography variant="body2" component="ul" sx={{ m: 0, pr: 2 }}>
-          <li>הקובץ חייב להיות בפורמט Excel (.xlsx או .xls)</li>
+          <li>פורמטים נתמכים: Excel (.xlsx, .xls) או Numbers (.numbers)</li>
+          <li>משתמשי Mac: מומלץ לייצא מ-Numbers לפורמט Excel לתוצאות מיטביות</li>
           <li>השורה הראשונה חייבת להכיל כותרות עמודות</li>
           <li>עמודות נדרשות: שם, שם משפחה, טלפון, עיר, מייל</li>
           <li>טלפון חייב להיות ייחודי לכל בוחר</li>
@@ -175,7 +176,7 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
         >
           <input
             type="file"
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.numbers"
             onChange={handleFileChange}
             style={{ display: 'none' }}
             id="excel-upload-input"
@@ -183,7 +184,7 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           <label htmlFor="excel-upload-input" style={{ cursor: 'pointer' }}>
             <UploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant="h6" sx={{ mb: 1 }}>
-              לחץ לבחירת קובץ Excel
+              לחץ לבחירת קובץ Excel או Numbers
             </Typography>
             <Typography variant="body2" color="text.secondary">
               או גרור קובץ לכאן
