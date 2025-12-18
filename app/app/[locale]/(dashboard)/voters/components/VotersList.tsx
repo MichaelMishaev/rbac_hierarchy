@@ -51,9 +51,10 @@ import { DuplicateVotersDialog } from './DuplicateVotersDialog';
 interface VotersListProps {
   onViewVoter?: (voter: Voter) => void;
   onEditVoter?: (voter: Voter) => void;
+  refreshKey?: number; // Increment to trigger refresh
 }
 
-export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
+export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListProps) {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [duplicateMap, setDuplicateMap] = useState<Record<string, number>>({});
   const [selectedDuplicateVoter, setSelectedDuplicateVoter] = useState<Voter | null>(null);
@@ -65,7 +66,7 @@ export function VotersList({ onViewVoter, onEditVoter }: VotersListProps) {
 
   useEffect(() => {
     loadVoters();
-  }, [supportFilter, contactFilter]);
+  }, [supportFilter, contactFilter, refreshKey]);
 
   const loadVoters = async () => {
     setLoading(true);

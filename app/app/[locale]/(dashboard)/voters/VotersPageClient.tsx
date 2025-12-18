@@ -45,6 +45,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState<Voter | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleViewVoter = (voter: Voter) => {
     setSelectedVoter(voter);
@@ -58,21 +59,18 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
 
   const handleCreateSuccess = () => {
     setCreateDialogOpen(false);
-    // Refresh list (trigger re-render)
-    setActiveTab(0);
+    setRefreshKey((prev) => prev + 1); // Trigger VotersList refresh
   };
 
   const handleEditSuccess = () => {
     setEditDialogOpen(false);
     setSelectedVoter(null);
-    // Refresh list
-    setActiveTab(0);
+    setRefreshKey((prev) => prev + 1); // Trigger VotersList refresh
   };
 
   const handleUploadSuccess = () => {
     setUploadDialogOpen(false);
-    // Refresh list
-    setActiveTab(0);
+    setRefreshKey((prev) => prev + 1); // Trigger VotersList refresh
   };
 
   return (
@@ -130,7 +128,11 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
 
       {/* Tab Content */}
       {activeTab === 0 && (
-        <VotersList onViewVoter={handleViewVoter} onEditVoter={handleEditVoter} />
+        <VotersList
+          onViewVoter={handleViewVoter}
+          onEditVoter={handleEditVoter}
+          refreshKey={refreshKey}
+        />
       )}
 
       {activeTab === 1 && <VoterStatistics />}
