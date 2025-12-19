@@ -29,7 +29,7 @@ type User = {
   fullName: string;
   email: string;
   phone: string | null;
-  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN' | 'ACTIVIST';
   // Note: cityId is derived from role tables, not stored directly on User
   cityId?: string | null;
   regionName?: string | null; // For Area Manager
@@ -91,7 +91,7 @@ export default function UserModal({
     email: user?.email || '',
     phone: user?.phone || '',
     password: '',
-    role: user?.role || 'ACTIVIST_COORDINATOR',
+    role: (user?.role && user.role !== 'ACTIVIST') ? user.role : 'ACTIVIST_COORDINATOR',
     cityId: user?.cityId || currentUserCityId || '',
     regionName: user?.regionName || '',
     neighborhoodIds: [],
@@ -108,7 +108,7 @@ export default function UserModal({
         email: user.email,
         phone: user.phone || '',
         password: '',
-        role: user.role,
+        role: user.role !== 'ACTIVIST' ? user.role : 'ACTIVIST_COORDINATOR',
         cityId: user.cityId || currentUserCityId || '',
         regionName: user.regionName || '',
         neighborhoodIds: [],
