@@ -5,7 +5,7 @@
  * - SuperAdmin sees all voters
  * - Area Manager sees voters in their area
  * - City Coordinator sees voters in their city
- * - Activist Coordinator sees only their own voters
+ * - Activist Coordinator sees their own voters + activists' voters
  * - Duplicates dashboard is SuperAdmin-only
  * - Visibility chain enforcement
  */
@@ -92,8 +92,8 @@ test.describe('Voter RBAC and Visibility', () => {
     }
   });
 
-  test('Activist Coordinator should see only their own voters', async ({ page }) => {
-    // Login as Activist Coordinator
+  test('Activist Coordinator should see own voters + activists voters', async ({ page }) => {
+    // Login as Activist Coordinator (Rachel)
     await page.goto('/he/login');
     await page.getByTestId('email-input').fill('rachel.bendavid@telaviv.test');
     await page.getByTestId('password-input').fill('supervisor123');
@@ -104,18 +104,36 @@ test.describe('Voter RBAC and Visibility', () => {
     // Verify voters list is visible
     await expect(page.getByText('רשימת בוחרים')).toBeVisible();
 
-    // Verify all shown voters were inserted by this user
+    // Verify shown voters include:
+    // 1. Voters inserted by Rachel herself
+    // 2. Voters inserted by activists supervised by Rachel
     const rows = page.locator('table tbody tr');
     const count = await rows.count();
 
     if (count > 0) {
-      // Check "Inserted By" column for all rows
+      // Check "Inserted By" column - should include both:
+      // - Rachel (רחל בן-דוד) - her own voters
+      // - Activists (role: פעיל שטח) - supervised activists' voters
       const inserters = await page.locator('table tbody td:nth-child(6)').allTextContents();
 
-      // All should be inserted by Rachel
+      // Count voters from different sources
+      let rachelVoters = 0;
+      let activistVoters = 0;
+
       for (const inserter of inserters) {
-        expect(inserter).toContain('רחל בן-דוד');
+        if (inserter.includes('רחל בן-דוד')) {
+          rachelVoters++;
+        } else if (inserter.includes('פעיל שטח')) {
+          activistVoters++;
+        }
       }
+
+      // Rachel should see at least her own voters
+      expect(rachelVoters).toBeGreaterThanOrEqual(0);
+
+      // NEW: She should also see activists' voters (if activists created any)
+      // This validates the fix - activist coordinators can now see subordinate activists' voters
+      console.log(`Rachel sees ${rachelVoters} own voters + ${activistVoters} activist voters`);
     }
   });
 

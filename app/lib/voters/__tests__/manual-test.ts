@@ -173,10 +173,15 @@ async function runTests() {
 
   // Test 7: Visibility - Denied
   await test('User cannot see other users voters', async () => {
+    // Mock getUserHierarchy function
+    const getUserHierarchy = async (userId: string) => {
+      return { role: 'ACTIVIST_COORDINATOR', cityId: 'city-1' };
+    };
+
     const engine = new VoterVisibilityEngine([
       new SuperAdminVisibilityRule(),
       new DirectInserterVisibilityRule(),
-      new ActivistCoordinatorVisibilityRule(),
+      new ActivistCoordinatorVisibilityRule(getUserHierarchy),
     ]);
 
     const user: UserContext = {

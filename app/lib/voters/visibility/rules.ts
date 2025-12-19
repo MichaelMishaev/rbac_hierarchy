@@ -168,20 +168,29 @@ export class CityCoordinatorVisibilityRule implements VisibilityRule {
 }
 
 /**
- * Rule: Activist Coordinator can only see voters they inserted themselves
- * (Already covered by DirectInserterRule, but explicit for clarity)
+ * Rule: Activist Coordinator can see voters inserted by:
+ * - Themselves
+ * - Activists they supervise (via activistCoordinator relation)
  */
 export class ActivistCoordinatorVisibilityRule implements VisibilityRule {
   readonly name = 'ActivistCoordinatorRule';
   readonly priority = 3;
+
+  constructor(
+    private getUserHierarchy: (userId: string) => Promise<{
+      role: string;
+      areaManagerId?: string;
+      cityId?: string;
+      activistCoordinatorId?: string;
+    } | null>
+  ) {}
 
   async canSee(viewer: UserContext, voter: Voter): Promise<VisibilityResult | null> {
     if (viewer.role !== 'ACTIVIST_COORDINATOR') {
       return null; // Rule doesn't apply
     }
 
-    // Activist Coordinators can ONLY see voters they inserted
-    // This is already handled by DirectInserterRule, but we make it explicit
+    // 1. Can see voters they inserted themselves
     if (voter.insertedByUserId === viewer.userId) {
       return {
         canSee: true,
@@ -190,9 +199,27 @@ export class ActivistCoordinatorVisibilityRule implements VisibilityRule {
       };
     }
 
+    // 2. Can see voters inserted by activists they supervise
+    const inserterHierarchy = await this.getUserHierarchy(voter.insertedByUserId);
+    if (!inserterHierarchy) {
+      return { canSee: false, reason: 'Inserter not found', ruleName: this.name };
+    }
+
+    // Check if inserter is an ACTIVIST supervised by this coordinator
+    if (inserterHierarchy.role === 'ACTIVIST' && inserterHierarchy.activistCoordinatorId) {
+      // Compare coordinator IDs
+      if (inserterHierarchy.activistCoordinatorId === viewer.activistCoordinatorId) {
+        return {
+          canSee: true,
+          reason: 'Voter inserted by activist under your supervision',
+          ruleName: this.name,
+        };
+      }
+    }
+
     return {
       canSee: false,
-      reason: 'Activist Coordinators can only see voters they inserted',
+      reason: 'Voter not in your supervision chain',
       ruleName: this.name,
     };
   }
@@ -299,6 +326,7 @@ export async function createDefaultVisibilityEngine(
     role: string;
     areaManagerId?: string;
     cityId?: string;
+    activistCoordinatorId?: string;
   } | null>
 ): Promise<VoterVisibilityEngine> {
   const rules: VisibilityRule[] = [
@@ -306,7 +334,7 @@ export async function createDefaultVisibilityEngine(
     new DirectInserterVisibilityRule(),
     new AreaManagerVisibilityRule(getUserHierarchy),
     new CityCoordinatorVisibilityRule(getUserHierarchy),
-    new ActivistCoordinatorVisibilityRule(),
+    new ActivistCoordinatorVisibilityRule(getUserHierarchy),
     // Future: new ElectionDayVisibilityRule(),
   ];
 

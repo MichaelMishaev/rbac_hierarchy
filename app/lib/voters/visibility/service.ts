@@ -17,6 +17,7 @@ interface UserHierarchyInfo {
   role: string;
   areaManagerId?: string;
   cityId?: string;
+  activistCoordinatorId?: string;
 }
 
 /**
@@ -56,6 +57,11 @@ export class VoterVisibilityService {
         activistCoordinatorOf: {
           select: { id: true, cityId: true },
         },
+        activistProfile: {
+          select: {
+            activistCoordinatorId: true,
+          },
+        },
       },
     });
 
@@ -67,6 +73,7 @@ export class VoterVisibilityService {
       role: user.role,
       areaManagerId: user.areaManager?.id,
       cityId: user.coordinatorOf?.[0]?.cityId || user.activistCoordinatorOf?.[0]?.cityId,
+      activistCoordinatorId: user.activistProfile?.activistCoordinatorId || undefined,
     };
   }
 
@@ -155,8 +162,18 @@ export class VoterVisibilityService {
       });
     }
 
-    // Activist Coordinator can only see their own voters
-    // (already covered by insertedByUserId check)
+    // Activist Coordinator can see voters inserted by:
+    // 1. Themselves (already in orConditions)
+    // 2. Activists they supervise
+    if (viewer.role === 'ACTIVIST_COORDINATOR' && viewer.activistCoordinatorId) {
+      orConditions.push({
+        insertedBy: {
+          activistProfile: {
+            activistCoordinatorId: viewer.activistCoordinatorId,
+          },
+        },
+      });
+    }
 
     return orConditions.length > 0 ? { OR: orConditions } : { insertedByUserId: viewer.userId };
   }
