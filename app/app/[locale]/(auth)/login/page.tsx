@@ -306,7 +306,7 @@ export default function LoginPage() {
 
           {/* Area Manager - Regional Campaign Director */}
           <Box
-            onClick={() => quickLogin('sarah.cohen@telaviv-district.test', 'area123', 'מנהלת אזור')}
+            onClick={() => quickLogin('sarah.cohen@telaviv-district.test', 'admin123', 'מנהלת אזור')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -345,7 +345,7 @@ export default function LoginPage() {
 
           {/* City Coordinator - City Campaign Manager */}
           <Box
-            onClick={() => quickLogin('david.levi@telaviv.test', 'manager123', 'רכז עיר')}
+            onClick={() => quickLogin('david.levi@telaviv.test', 'admin123', 'רכז עיר')}
             sx={{
               p: 2,
               borderRadius: borderRadius.lg,
@@ -385,7 +385,7 @@ export default function LoginPage() {
           {/* Activist Coordinator - Neighborhood Organizer */}
           <Box
             onClick={() =>
-              quickLogin('rachel.bendavid@telaviv.test', 'supervisor123', 'רכזת פעילים')
+              quickLogin('rachel.bendavid@telaviv.test', 'admin123', 'רכזת פעילים')
             }
             sx={{
               p: 2,
