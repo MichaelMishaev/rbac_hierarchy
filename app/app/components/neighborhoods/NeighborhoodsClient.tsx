@@ -273,10 +273,10 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
       {/* Stats Overview - Neo-Morphic KPI Cards */}
       <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: 4 }}>
         {[
-          { label: isRTL ? 'סה"כ שכונות' : 'Total Neighborhoods', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight, glow: shadows.glowBlue },
-          { label: isRTL ? 'פעילות' : 'Active', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight, glow: shadows.glowGreen },
-          { label: isRTL ? 'לא פעילות' : 'Inactive', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight, glow: '0 0 20px rgba(228, 66, 88, 0.3)' },
-          { label: isRTL ? 'פעילים' : 'Activists', value: stats.totalActivists, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight, glow: shadows.glowPurple },
+          { label: 'סה"כ שכונות', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight, glow: shadows.glowBlue },
+          { label: 'פעילות', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight, glow: shadows.glowGreen },
+          { label: 'לא פעילות', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight, glow: '0 0 20px rgba(228, 66, 88, 0.3)' },
+          { label: 'פעילים', value: stats.totalActivists, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight, glow: shadows.glowPurple },
         ].map((stat, index) => (
           <Grid item xs={6} sm={3} key={index}>
             <Box
@@ -911,10 +911,8 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
             setSelectedSite(null);
           }}
           onConfirm={handleDeleteSite}
-          title={isRTL ? 'מחיקת אתר' : 'Delete Site'}
-          message={isRTL 
-            ? 'האם אתה בטוח שברצונך למחוק את האתר הזה? פעולה זו תמחק גם את כל העובדים המשוייכים.'
-            : 'Are you sure you want to delete this site? This will also delete all associated workers.'}
+          title="מחיקת אתר"
+          message="האם אתה בטוח שברצונך למחוק את האתר הזה? פעולה זו תמחק גם את כל העובדים המשוייכים."
           itemName={selectedSite.name}
         />
       )}

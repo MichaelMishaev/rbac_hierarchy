@@ -34,16 +34,26 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Convert phone number to email format if it looks like a phone
+      let loginEmail = email;
+      const cleanedInput = email.replace(/[^0-9]/g, '');
+
+      // If input is all digits (phone number), convert to email format
+      if (cleanedInput && cleanedInput.length >= 9 && !email.includes('@')) {
+        loginEmail = `${cleanedInput}@activist.login`;
+      }
+
       const result = await signIn('credentials', {
-        email,
+        email: loginEmail,
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError('כתובת אימייל או סיסמה שגויים');
+        setError('מספר טלפון/אימייל או סיסמה שגויים');
       } else {
-        window.location.href = '/dashboard';
+        // Redirect activists to /activists/voters, others to dashboard
+        window.location.href = '/dashboard'; // Middleware will redirect activists
       }
     } catch (err) {
       setError('אירעה שגיאה. נסה שנית.');
@@ -138,18 +148,18 @@ export default function LoginPage() {
         {/* Login Form */}
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
-            {/* Email Input - Inset shadow */}
+            {/* Email/Phone Input - Inset shadow */}
             <TextField
               fullWidth
               name="email"
-              label="כתובת אימייל"
-              type="email"
+              label="מספר טלפון או אימייל"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="0501234567 או email@example.com"
               required
               autoFocus
-              autoComplete="email"
-              placeholder="your.email@company.com"
+              autoComplete="off"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

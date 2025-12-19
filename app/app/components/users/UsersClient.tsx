@@ -45,7 +45,7 @@ type User = {
   email: string;
   phone: string | null;
   avatarUrl: string | null;
-  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN' | 'ACTIVIST';
   lastLoginAt: Date | null;
   createdAt: Date;
   isActive: boolean;
@@ -107,6 +107,8 @@ function getHierarchyLevel(role: string): number {
       return 3;
     case 'ACTIVIST_COORDINATOR':
       return 4;
+    case 'ACTIVIST':
+      return 5;
     default:
       return 999;
   }

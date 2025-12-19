@@ -314,7 +314,7 @@ export default function SmartAssignmentDialog({
             },
           }}
         >
-          {isRTL ? 'ביטול' : 'Cancel'}
+          ביטול
         </Button>
       </DialogActions>
     </Dialog>

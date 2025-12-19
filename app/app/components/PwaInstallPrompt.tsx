@@ -1,8 +1,18 @@
 /**
- * PWA Install Prompt Component
- * Prompts users to install the app on their device
- * Uses beforeinstallprompt event (Chrome, Edge, Samsung Internet)
- * Shows custom UI instead of browser default
+ * PWA Install Prompt Component - Smart Detection
+ *
+ * Prompts users to install the app on their device with intelligent filtering.
+ * Uses beforeinstallprompt event (Chrome, Edge, Samsung Internet).
+ * Shows custom UI instead of browser default.
+ *
+ * Smart Detection Criteria (all must pass):
+ * 1. Not already installed (standalone mode check)
+ * 2. Not iOS device (beforeinstallprompt not supported)
+ * 3. Not dismissed in last 90 days (was 7 days)
+ * 4. User has visited 3+ times (engagement check)
+ * 5. Session duration 30+ seconds (not a bounce)
+ *
+ * This prevents popup flooding while reaching engaged users.
  */
 
 'use client';
@@ -26,24 +36,59 @@ export default function PwaInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
+    // 1. Check if already installed (standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
-    // Check if user dismissed prompt before
+    // 2. Check if iOS device (doesn't support beforeinstallprompt)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      console.log('[PWA] iOS device detected - beforeinstallprompt not supported');
+      return;
+    }
+
+    // 3. Check if user dismissed prompt before (90 days cooldown)
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed) {
       const dismissedDate = new Date(dismissed);
       const now = new Date();
       const daysSinceDismissed = Math.floor((now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Don't show again for 7 days
-      if (daysSinceDismissed < 7) {
+      // Don't show again for 90 days (was 7)
+      if (daysSinceDismissed < 90) {
         return;
       }
     }
+
+    // 4. Check visit count (show only after 3+ visits)
+    const visitCount = parseInt(localStorage.getItem('pwa-visit-count') || '0', 10);
+    const newVisitCount = visitCount + 1;
+    localStorage.setItem('pwa-visit-count', newVisitCount.toString());
+
+    if (newVisitCount < 3) {
+      console.log(`[PWA] Visit ${newVisitCount}/3 - not showing prompt yet`);
+      return;
+    }
+
+    // 5. Track session duration (show only if user stays 30+ seconds)
+    const sessionStart = Date.now();
+    let sessionValid = false;
+
+    const checkSessionDuration = () => {
+      const sessionDuration = (Date.now() - sessionStart) / 1000; // seconds
+      if (sessionDuration >= 30) {
+        sessionValid = true;
+      }
+    };
+
+    const sessionTimer = setTimeout(() => {
+      checkSessionDuration();
+      if (!sessionValid) {
+        console.log('[PWA] Session too short (< 30s) - not showing prompt');
+      }
+    }, 30000); // Check after 30 seconds
 
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing
@@ -52,24 +97,32 @@ export default function PwaInstallPrompt() {
       // Save the event for later use
       setDeferredPrompt(e as BeforeInstallPromptEvent);
 
-      // Show our custom prompt after a short delay
+      // Show our custom prompt only if session is valid (30+ seconds)
       setTimeout(() => {
-        setShowPrompt(true);
-      }, 3000); // Wait 3 seconds after page load
+        if (sessionValid) {
+          console.log('[PWA] All checks passed - showing install prompt');
+          setShowPrompt(true);
+        }
+      }, 32000); // Wait 32 seconds (30s session + 2s buffer)
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Detect if app was installed
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       console.log('[PWA] App installed successfully');
       setIsInstalled(true);
       setShowPrompt(false);
       localStorage.removeItem('pwa-install-dismissed');
-    });
+      localStorage.removeItem('pwa-visit-count'); // Reset visit counter
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      clearTimeout(sessionTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 

@@ -17,45 +17,42 @@ export async function getCurrentUser() {
     throw new Error('Unauthorized');
   }
 
-  // Cache the user query per user ID for 30 seconds
-  const dbUser = await unstable_cache(
-    async (userId: string) => {
-      return prisma.user.findUnique({
-        where: { id: userId },
+  // Query user directly without caching to avoid stale data issues
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      areaManager: {
         include: {
-          areaManager: {
+          cities: true,
+        },
+      },
+      coordinatorOf: {
+        include: {
+          city: true,
+        },
+      },
+      activistCoordinatorOf: {
+        include: {
+          city: true,
+        },
+      },
+      activistCoordinatorNeighborhoods: {
+        include: {
+          neighborhood: {
             include: {
-              cities: true,
-            },
-          },
-          coordinatorOf: {
-            include: {
-              city: true,
-            },
-          },
-          activistCoordinatorOf: {
-            include: {
-              city: true,
-            },
-          },
-          activistCoordinatorNeighborhoods: {
-            include: {
-              neighborhood: {
-                include: {
-                  cityRelation: true,
-                },
-              },
+              cityRelation: true,
             },
           },
         },
-      });
+      },
+      activistProfile: {
+        include: {
+          neighborhood: true,
+          city: true,
+        },
+      },
     },
-    [`user-${session.user.id}`],
-    {
-      revalidate: 30, // Cache for 30 seconds
-      tags: ['user', `user-${session.user.id}`],
-    }
-  )(session.user.id);
+  });
 
   if (!dbUser) {
     // User exists in session but not in database (stale JWT token)
@@ -94,6 +91,10 @@ export async function requireSupervisor() {
   return requireRole(['SUPERADMIN', 'AREA_MANAGER', 'CITY_COORDINATOR', 'ACTIVIST_COORDINATOR']);
 }
 
+export async function requireActivist() {
+  return requireRole(['ACTIVIST']);
+}
+
 /**
  * Get all corporation IDs that a user has access to
  * Returns 'all' for SUPERADMIN, array of corporation IDs for others
@@ -127,6 +128,16 @@ export function getUserCorporations(user: Awaited<ReturnType<typeof getCurrentUs
     const citiesFromRole = user.activistCoordinatorOf.map(s => s.cityId);
     const citiesFromNeighborhoods = user.activistCoordinatorNeighborhoods.map(ss => ss.neighborhood.cityRelation.id);
     return [...new Set([...citiesFromRole, ...citiesFromNeighborhoods])];
+  }
+
+  if (user.role === 'ACTIVIST') {
+    // Activists only have access to their own city
+    if (!user.activistProfile) {
+      console.error('[getUserCorporations] CRITICAL: User has ACTIVIST role but no activistProfile relation!');
+      console.error('[getUserCorporations] User ID:', user.id, 'Email:', user.email);
+      return []; // Deny access - something is wrong
+    }
+    return [user.activistProfile.cityId];
   }
 
   return [];

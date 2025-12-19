@@ -209,6 +209,8 @@ export default function ActivistsClient({
       activistCoordinatorId: data.supervisorId,
       isActive: data.isActive,
       startDate: data.startDate ? new Date(data.startDate) : undefined,
+      giveLoginAccess: data.giveLoginAccess,
+      generatedPassword: data.generatedPassword,
     });
     if (result.success && result.activist) {
       const worker = {
@@ -247,7 +249,7 @@ export default function ActivistsClient({
       router.refresh();
       return { success: true };
     } else {
-      return { success: false, error: result.error || 'Failed to create activist' };
+      return { success: false, error: result.error || 'שגיאה ביצירת פעיל' };
     }
   };
 
@@ -262,10 +264,10 @@ export default function ActivistsClient({
       // This would call an API endpoint to create an attendance record
       console.log('Quick check-in for activist:', activistId);
       // For now, just show a toast
-      // toast.success(isRTL ? 'נוכחות נרשמה בהצלחה' : 'Attendance recorded successfully');
+      // toast.success('נוכחות נרשמה בהצלחה');
     } catch (error) {
       console.error('Failed to check in:', error);
-      // toast.error(isRTL ? 'שגיאה בעדכון נוכחות' : 'Failed to record attendance');
+      // toast.error('שגיאה בעדכון נוכחות');
     }
   };
 
@@ -314,7 +316,7 @@ export default function ActivistsClient({
       router.refresh();
       return { success: true };
     } else {
-      return { success: false, error: result.error || 'Failed to update activist' };
+      return { success: false, error: result.error || 'שגיאה בעדכון פעיל' };
     }
   };
 
@@ -373,10 +375,10 @@ export default function ActivistsClient({
       {/* Stats Overview - Neo-Morphic KPI Cards */}
       <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: 4 }}>
         {[
-          { label: isRTL ? 'סה"כ עובדים' : 'Total Workers', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight, glow: shadows.glowBlue },
-          { label: isRTL ? 'פעילים' : 'Active', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight, glow: shadows.glowGreen },
-          { label: isRTL ? 'לא פעילים' : 'Inactive', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight, glow: '0 0 20px rgba(228, 66, 88, 0.3)' },
-          { label: isRTL ? 'אתרים' : 'Sites', value: stats.sitesCount, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight, glow: shadows.glowPurple },
+          { label: 'סה"כ עובדים', value: stats.total, color: colors.pastel.blue, bgColor: colors.pastel.blueLight, glow: shadows.glowBlue },
+          { label: 'פעילים', value: stats.active, color: colors.pastel.green, bgColor: colors.pastel.greenLight, glow: shadows.glowGreen },
+          { label: 'לא פעילים', value: stats.inactive, color: colors.pastel.red, bgColor: colors.pastel.redLight, glow: '0 0 20px rgba(228, 66, 88, 0.3)' },
+          { label: 'אתרים', value: stats.sitesCount, color: colors.pastel.purple, bgColor: colors.pastel.purpleLight, glow: shadows.glowPurple },
         ].map((stat, index) => (
           <Grid item xs={6} sm={3} key={index}>
             <Box
@@ -438,7 +440,7 @@ export default function ActivistsClient({
         <Box sx={{ display: 'flex', gap: 2, flex: 1, flexDirection: { xs: 'column', sm: 'row' }, flexWrap: 'wrap' }}>
           {/* Search Bar - Pill Shape per Style Guide */}
           <TextField
-            placeholder={isRTL ? 'חיפוש פעילים...' : 'Search workers...'}
+            placeholder="חיפוש פעילים..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             size="small"
@@ -509,7 +511,7 @@ export default function ActivistsClient({
               },
             }}
           >
-            <MenuItem value="all">{isRTL ? 'כל השכונות' : 'All Sites'}</MenuItem>
+            <MenuItem value="all">כל השכונות</MenuItem>
             {neighborhoods.map((site) => (
               <MenuItem key={site.id} value={site.id}>
                 {site.name}
@@ -554,9 +556,9 @@ export default function ActivistsClient({
               },
             }}
           >
-            <MenuItem value="all">{isRTL ? 'הכל' : 'All'}</MenuItem>
-            <MenuItem value="active">{isRTL ? 'פעילים' : 'Active'}</MenuItem>
-            <MenuItem value="inactive">{isRTL ? 'לא פעילים' : 'Inactive'}</MenuItem>
+            <MenuItem value="all">הכל</MenuItem>
+            <MenuItem value="active">פעילים</MenuItem>
+            <MenuItem value="inactive">לא פעילים</MenuItem>
           </Select>
         </Box>
 
@@ -645,7 +647,7 @@ export default function ActivistsClient({
                   },
                 }}
               >
-                {isRTL ? 'שיבוץ חכם' : 'Smart Assignment'}
+                שיבוץ חכם
               </RtlButton>
             </span>
           </Tooltip>
@@ -716,8 +718,8 @@ export default function ActivistsClient({
             }}
           >
             {searchQuery || filterSite !== 'all' || filterStatus !== 'all'
-              ? (isRTL ? 'לא נמצאו תוצאות' : 'No results found') 
-              : (isRTL ? 'אין עובדים עדיין' : 'No workers yet')}
+              ? 'לא נמצאו תוצאות'
+              : 'אין עובדים עדיין'}
           </Typography>
           <Typography
             variant="body1"
@@ -729,12 +731,8 @@ export default function ActivistsClient({
             }}
           >
             {searchQuery || filterSite !== 'all' || filterStatus !== 'all'
-              ? isRTL
-                ? 'נסה לחפש עם מילות מפתח אחרות או שנה את הסינון'
-                : 'Try searching with different keywords or change the filter'
-              : isRTL
-                ? 'הוסף את העובד הראשון שלך כדי להתחיל'
-                : 'Add your first worker to get started'}
+              ? 'נסה לחפש עם מילות מפתח אחרות או שנה את הסינון'
+              : 'הוסף את העובד הראשון שלך כדי להתחיל'}
           </Typography>
           {!searchQuery && filterSite === 'all' && filterStatus === 'all' && (
             <RtlButton
@@ -813,12 +811,10 @@ export default function ActivistsClient({
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontWeight: 600, color: colors.neutral[800], mb: 0.5 }}>
-                {isRTL ? 'עריכה מהירה זמינה!' : 'Quick Editing Available!'}
+                עריכה מהירה זמינה!
               </Typography>
               <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
-                {isRTL
-                  ? 'לחץ פעמיים על תפקיד, טלפון או שנה את הסטטוס ישירות בטבלה'
-                  : 'Double-click position or phone to edit, or toggle status directly in the table'}
+                לחץ פעמיים על תפקיד, טלפון או שנה את הסטטוס ישירות בטבלה
               </Typography>
             </Box>
           </Box>
@@ -838,10 +834,10 @@ export default function ActivistsClient({
                     {t('site')}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                    {isRTL ? 'טלפון' : 'Phone'}
+                    טלפון
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                    {isRTL ? 'סטטוס' : 'Status'}
+                    סטטוס
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }} align="center">
                     {tCommon('actions')}
@@ -896,7 +892,7 @@ export default function ActivistsClient({
                             field="position"
                             onUpdate={() => router.refresh()}
                             isRTL={isRTL}
-                            placeholder={isRTL ? 'ללא תפקיד' : 'No position'}
+                            placeholder="ללא תפקיד"
                             icon={<WorkIcon fontSize="inherit" />}
                           />
                         </TableCell>
@@ -913,7 +909,7 @@ export default function ActivistsClient({
                             onUpdate={() => router.refresh()}
                             isRTL={isRTL}
                             type="tel"
-                            placeholder={isRTL ? 'ללא טלפון' : 'No phone'}
+                            placeholder="ללא טלפון"
                             icon={<PhoneIcon fontSize="inherit" />}
                           />
                         </TableCell>
@@ -947,7 +943,7 @@ export default function ActivistsClient({
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage={isRTL ? 'שורות לעמוד:' : 'Rows per page:'}
+            labelRowsPerPage="שורות לעמוד:"
             sx={{
               direction: 'ltr',
               '& .MuiTablePagination-actions': {
@@ -1063,10 +1059,8 @@ export default function ActivistsClient({
             setSelectedWorker(null);
           }}
           onConfirm={handleDeleteWorker}
-          title={isRTL ? 'מחיקת עובד' : 'Delete Worker'}
-          message={isRTL
-            ? 'האם אתה בטוח שברצונך למחוק את העובד הזה?'
-            : 'Are you sure you want to delete this worker?'}
+          title="מחיקת עובד"
+          message="האם אתה בטוח שברצונך למחוק את העובד הזה?"
           itemName={selectedWorker.fullName}
         />
       )}
@@ -1080,9 +1074,7 @@ export default function ActivistsClient({
             // Find the selected activist
             const activist = workers.find(w => w.id === activistId);
             toast.success(
-              isRTL
-                ? `נבחר: ${activist?.fullName || 'פעיל'} - התכונה המלאה תושק בקרוב!`
-                : `Selected: ${activist?.fullName || 'Activist'} - Full feature coming soon!`,
+              `נבחר: ${activist?.fullName || 'פעיל'} - התכונה המלאה תושק בקרוב!`,
               {
                 duration: 4000,
                 icon: '🎯',

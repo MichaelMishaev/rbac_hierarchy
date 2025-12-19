@@ -549,7 +549,41 @@ async function main() {
     });
   }
 
-  console.log('✅ City 1: תל אביב-יפו - Full campaign hierarchy created');
+  // ========================
+  // ACTIVIST USER ACCOUNTS (for activists with login access)
+  // ========================
+  console.log('🔐 Creating activist user accounts...');
+
+  // Get first 3 activists from Florentin to give them login access
+  const florentinActivistRecords = await prisma.activist.findMany({
+    where: {
+      neighborhoodId: florentin.id,
+    },
+    take: 3,
+  });
+
+  for (const [index, activistRecord] of florentinActivistRecords.entries()) {
+    const activistUser = await prisma.user.create({
+      data: {
+        email: `activist${index + 1}@florentin.test`,
+        fullName: activistRecord.fullName,
+        phone: activistRecord.phone,
+        passwordHash: await bcrypt.hash('activist123', 10),
+        role: 'ACTIVIST',
+        isActive: true,
+      },
+    });
+
+    // Link activist record to user account
+    await prisma.activist.update({
+      where: { id: activistRecord.id },
+      data: { userId: activistUser.id },
+    });
+
+    console.log(`✅ Created activist user: ${activistUser.email} (${activistUser.fullName})`);
+  }
+
+  console.log('✅ City 1: תל אביב-יפו - Full campaign hierarchy created (with 3 activist accounts)');
 
   // ========================
   // City 2: Ramat Gan

@@ -21,6 +21,8 @@ export type CreateWorkerInput = {
   neighborhoodId: string;
   activistCoordinatorId?: string; // Optional, defaults to current user if supervisor
   isActive?: boolean;
+  giveLoginAccess?: boolean;
+  generatedPassword?: string;
 };
 
 export type UpdateWorkerInput = {
@@ -256,6 +258,32 @@ export async function createWorker(data: CreateWorkerInput) {
         },
       },
     });
+
+    // Create user account if requested (activist login access)
+    if (data.giveLoginAccess && data.generatedPassword && data.phone) {
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.hash(data.generatedPassword, 10);
+
+      const activistUser = await prisma.user.create({
+        data: {
+          email: `${data.phone.replace(/[^0-9]/g, '')}@activist.login`, // Phone as email
+          fullName: data.fullName,
+          phone: data.phone,
+          passwordHash,
+          role: 'ACTIVIST',
+          isActive: true,
+          requirePasswordChange: true, // Force password change on first login
+        },
+      });
+
+      // Link activist to user
+      await prisma.activist.update({
+        where: { id: newActivist.id },
+        data: { userId: activistUser.id },
+      });
+
+      console.log(`✅ Created activist user account: ${activistUser.email} (phone: ${data.phone})`);
+    }
 
     // Create audit log
     await prisma.auditLog.create({
@@ -636,7 +664,7 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
     }
 
     // Handle site change - clear supervisorId and require reselection
-    let finalNeighborhoodId = data.neighborhoodId || existingActivist.neighborhoodId;
+    const finalNeighborhoodId = data.neighborhoodId || existingActivist.neighborhoodId;
     let finalActivistCoordinatorId = data.activistCoordinatorId !== undefined ? data.activistCoordinatorId : existingActivist.activistCoordinatorId;
 
     // Validate new site if being changed

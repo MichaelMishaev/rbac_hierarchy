@@ -210,27 +210,27 @@ export default function NeighborhoodModal({
     const newErrors: Partial<Record<keyof SiteFormData, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = isRTL ? 'שם השכונה נדרש' : 'Neighborhood name is required';
+      newErrors.name = 'שם השכונה נדרש';
     }
 
     // CITY COORDINATOR FIX: Skip area validation if user city is locked
     if (userCityId && mode === 'create') {
       // City is already set, no area validation needed
       if (!formData.cityId) {
-        newErrors.cityId = isRTL ? 'יש לבחור עיר' : 'City is required';
+        newErrors.cityId = 'יש לבחור עיר';
       }
     } else {
       // Normal flow: validate area first, then city
       if (!selectedAreaId) {
         // Add area validation as a city error since area affects city selection
-        newErrors.cityId = isRTL ? 'יש לבחור אזור תחילה' : 'Please select an area first';
+        newErrors.cityId = 'יש לבחור אזור תחילה';
       } else if (!formData.cityId) {
-        newErrors.cityId = isRTL ? 'יש לבחור עיר' : 'City is required';
+        newErrors.cityId = 'יש לבחור עיר';
       }
     }
 
     if (!formData.activistCoordinatorId) {
-      newErrors.activistCoordinatorId = isRTL ? 'יש לבחור רכז שכונתי' : 'Supervisor is required';
+      newErrors.activistCoordinatorId = 'יש לבחור רכז שכונתי';
     }
 
     setErrors(newErrors);
@@ -418,7 +418,7 @@ export default function NeighborhoodModal({
               }}
             >
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                {isRTL ? 'יש למלא את השדות הבאים:' : 'Please fill in the following fields:'}
+                יש למלא את השדות הבאים:
               </Typography>
               <Box component="ul" sx={{ m: 0, pl: isRTL ? 0 : 2, pr: isRTL ? 2 : 0 }}>
                 {errors.name && (
@@ -518,7 +518,7 @@ export default function NeighborhoodModal({
                   InputProps={{
                     readOnly: true,
                   }}
-                  helperText={isRTL ? 'העיר שלך נבחרה אוטומטית' : 'Your city is automatically selected'}
+                  helperText="העיר שלך נבחרה אוטומטית"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '12px',
@@ -554,15 +554,15 @@ export default function NeighborhoodModal({
                       },
                     }}
                   >
-                    <InputLabel>{isRTL ? 'אזור' : 'Area'}</InputLabel>
+                    <InputLabel>אזור</InputLabel>
                     <Select
                       value={selectedAreaId}
                       onChange={handleAreaChange as any}
-                      label={isRTL ? 'אזור' : 'Area'}
+                      label="אזור"
                       error={!!errors.cityId && !selectedAreaId}
                     >
                       <MenuItem value="">
-                        <em>{isRTL ? 'בחר אזור' : 'Select Area'}</em>
+                        <em>בחר אזור</em>
                       </MenuItem>
                       {areas.map((area) => (
                         <MenuItem key={area.id} value={area.id}>
@@ -602,7 +602,7 @@ export default function NeighborhoodModal({
                       label={t('city')}
                     >
                       <MenuItem value="">
-                        <em>{isRTL ? 'בחר עיר' : 'Select City'}</em>
+                        <em>בחר עיר</em>
                       </MenuItem>
                       {filteredCities.map((city) => (
                         <MenuItem key={city.id} value={city.id}>
@@ -625,14 +625,14 @@ export default function NeighborhoodModal({
                 options={activistCoordinators}
                 getOptionLabel={(option) => option.fullName}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                noOptionsText={isRTL ? 'אין רכזי שכונות זמינים' : 'No supervisors available'}
+                noOptionsText="אין רכזי שכונות זמינים"
                 disabled={activistCoordinators.length === 0}
                 fullWidth
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label={isRTL ? 'רכז שכונתי' : 'Supervisor'}
-                    placeholder={isRTL ? 'חפש לפי שם או אימייל...' : 'Search by name or email...'}
+                    label="רכז שכונתי"
+                    placeholder="חפש לפי שם או אימייל..."
                     error={!!errors.activistCoordinatorId}
                     helperText={errors.activistCoordinatorId}
                     required
@@ -712,14 +712,12 @@ export default function NeighborhoodModal({
                           onClick={() => setShowCreateSupervisor(true)}
                           sx={{ textTransform: 'none' }}
                         >
-                          {isRTL ? 'צור רכז שכונתי' : 'Create Supervisor'}
+                          צור רכז שכונתי
                         </RtlButton>
                       )
                     }
                   >
-                    {isRTL
-                      ? 'לא נמצאו רכזי שכונות לעיר זו. יש ליצור רכז שכונתי חדש כדי להמשיך.'
-                      : 'No supervisors found for this city. Create a new supervisor to continue.'}
+                    לא נמצאו רכזי שכונות לעיר זו. יש ליצור רכז שכונתי חדש כדי להמשיך.
                   </Alert>
 
                   {/* Quick supervisor creation form */}
@@ -735,7 +733,7 @@ export default function NeighborhoodModal({
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {isRTL ? 'יצירת רכז שכונתי חדש' : 'Create New Supervisor'}
+                          יצירת רכז שכונתי חדש
                         </Typography>
                         <IconButton size="small" onClick={() => setShowCreateSupervisor(false)}>
                           <CloseIcon fontSize="small" />
@@ -750,7 +748,7 @@ export default function NeighborhoodModal({
 
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <TextField
-                          label={isRTL ? 'שם מלא *' : 'Full Name *'}
+                          label="שם מלא *"
                           value={supervisorFormData.fullName}
                           onChange={(e) => {
                             setSupervisorFormData((prev) => ({ ...prev, fullName: e.target.value }));
@@ -762,7 +760,7 @@ export default function NeighborhoodModal({
                           size="small"
                         />
                         <TextField
-                          label={isRTL ? 'אימייל *' : 'Email *'}
+                          label="אימייל *"
                           type="email"
                           value={supervisorFormData.email}
                           onChange={(e) => {
@@ -775,7 +773,7 @@ export default function NeighborhoodModal({
                           size="small"
                         />
                         <TextField
-                          label={isRTL ? 'טלפון' : 'Phone'}
+                          label="טלפון"
                           value={supervisorFormData.phone}
                           onChange={(e) =>
                             setSupervisorFormData((prev) => ({ ...prev, phone: e.target.value }))
@@ -784,25 +782,25 @@ export default function NeighborhoodModal({
                           size="small"
                         />
                         <TextField
-                          label={isRTL ? 'תפקיד' : 'Title'}
+                          label="תפקיד"
                           value={supervisorFormData.title}
                           onChange={(e) =>
                             setSupervisorFormData((prev) => ({ ...prev, title: e.target.value }))
                           }
-                          placeholder={isRTL ? 'רכז שכונתי' : 'Supervisor'}
+                          placeholder="רכז שכונתי"
                           fullWidth
                           size="small"
                         />
                         <TextField
-                          label={isRTL ? 'סיסמה זמנית (אופציונלי)' : 'Temp Password (Optional)'}
+                          label="סיסמה זמנית (אופציונלי)"
                           value={supervisorFormData.tempPassword}
                           onChange={(e) =>
                             setSupervisorFormData((prev) => ({ ...prev, tempPassword: e.target.value }))
                           }
-                          placeholder={isRTL ? 'ברירת מחדל: admin0' : 'Default: admin0'}
+                          placeholder="ברירת מחדל: admin0"
                           fullWidth
                           size="small"
-                          helperText={isRTL ? 'השאר ריק עבור ברירת מחדל: admin0' : 'Leave empty for default: admin0'}
+                          helperText="השאר ריק עבור ברירת מחדל: admin0"
                         />
                         <Button
                           variant="contained"
@@ -813,10 +811,8 @@ export default function NeighborhoodModal({
                         >
                           {creatingSupervisor ? (
                             <CircularProgress size={24} />
-                          ) : isRTL ? (
-                            'צור רכז שכונתי'
                           ) : (
-                            'Create Supervisor'
+                            'צור רכז שכונתי'
                           )}
                         </Button>
                       </Box>
@@ -837,10 +833,10 @@ export default function NeighborhoodModal({
                   }
                 >
                   <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    {isRTL ? 'רכז שכונתי נוצר בהצלחה!' : 'Supervisor created successfully!'}
+                    רכז שכונתי נוצר בהצלחה!
                   </Typography>
                   <Typography variant="body2">
-                    {isRTL ? 'סיסמה זמנית: ' : 'Temporary password: '}
+                    סיסמה זמנית:
                     <Box
                       component="span"
                       sx={{
@@ -856,9 +852,7 @@ export default function NeighborhoodModal({
                     </Box>
                   </Typography>
                   <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                    {isRTL
-                      ? 'שמור את הסיסמה במקום בטוח. הרכז השכונתי יתבקש לשנות אותה בכניסה הראשונה.'
-                      : 'Save this password in a safe place. The supervisor will be asked to change it on first login.'}
+                    שמור את הסיסמה במקום בטוח. הרכז השכונתי יתבקש לשנות אותה בכניסה הראשונה.
                   </Typography>
                 </Alert>
               )}

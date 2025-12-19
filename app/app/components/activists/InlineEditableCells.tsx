@@ -72,7 +72,7 @@ export function EditableTextCell({
       if (result.success) {
         // Success feedback
         toast.success(
-          isRTL ? `${getFieldLabel(field, isRTL)} עודכן בהצלחה` : `${getFieldLabel(field, isRTL)} updated`,
+          `${getFieldLabel(field)} עודכן בהצלחה`,
           {
             duration: 2000,
             icon: '✓',
@@ -88,7 +88,7 @@ export function EditableTextCell({
         onUpdate(); // Refresh data
       } else {
         // Error feedback
-        toast.error(result.error || 'Update failed', {
+        toast.error(result.error || 'שגיאה בעדכון', {
           duration: 3000,
           style: {
             background: colors.pastel.redLight,
@@ -102,7 +102,7 @@ export function EditableTextCell({
       }
     } catch (error) {
       console.error('Error updating field:', error);
-      toast.error(isRTL ? 'שגיאה בעדכון' : 'Update failed');
+      toast.error('שגיאה בעדכון');
       setLocalValue(value || '');
     } finally {
       setSaving(false);
@@ -127,7 +127,7 @@ export function EditableTextCell({
   if (!isEditing) {
     return (
       <Tooltip
-        title={isRTL ? `לחץ פעמיים לעריכה` : `Double-click to edit`}
+        title="לחץ פעמיים לעריכה"
         arrow
         placement="top"
       >
@@ -215,7 +215,7 @@ export function EditableTextCell({
 
       {/* Action buttons */}
       <Box sx={{ display: 'flex', gap: 0.5 }}>
-        <Tooltip title={isRTL ? 'שמור' : 'Save'} arrow>
+        <Tooltip title="שמור" arrow>
           <IconButton
             onClick={handleSave}
             disabled={saving}
@@ -235,7 +235,7 @@ export function EditableTextCell({
           </IconButton>
         </Tooltip>
 
-        <Tooltip title={isRTL ? 'ביטול' : 'Cancel'} arrow>
+        <Tooltip title="ביטול" arrow>
           <IconButton
             onClick={handleCancel}
             disabled={saving}
@@ -295,9 +295,7 @@ export function StatusToggleCell({
 
       if (result.success) {
         toast.success(
-          isRTL
-            ? `הסטטוס שונה ל${checked ? 'פעיל' : 'לא פעיל'}`
-            : `Status changed to ${checked ? 'Active' : 'Inactive'}`,
+          `הסטטוס שונה ל${checked ? 'פעיל' : 'לא פעיל'}`,
           {
             duration: 2000,
             icon: checked ? '✓' : '○',
@@ -313,14 +311,14 @@ export function StatusToggleCell({
       } else {
         // Revert optimistic update on error
         setOptimisticValue(isActive);
-        toast.error(result.error || 'Failed to update status', {
+        toast.error(result.error || 'שגיאה בעדכון סטטוס', {
           duration: 3000,
         });
       }
     } catch (error) {
       console.error('Error updating status:', error);
       setOptimisticValue(isActive);
-      toast.error(isRTL ? 'שגיאה בעדכון סטטוס' : 'Failed to update status');
+      toast.error('שגיאה בעדכון סטטוס');
     } finally {
       setSaving(false);
     }
@@ -375,7 +373,7 @@ export function StatusToggleCell({
       </Box>
 
       <Chip
-        label={optimisticValue ? (isRTL ? 'פעיל' : 'Active') : (isRTL ? 'לא פעיל' : 'Inactive')}
+        label={optimisticValue ? 'פעיל' : 'לא פעיל'}
         size="small"
         sx={{
           backgroundColor: optimisticValue ? colors.pastel.greenLight : colors.neutral[200],
@@ -398,11 +396,11 @@ export function StatusToggleCell({
 // HELPER FUNCTIONS
 // ============================================
 
-function getFieldLabel(field: 'phone' | 'email' | 'position', isRTL: boolean): string {
+function getFieldLabel(field: 'phone' | 'email' | 'position'): string {
   const labels = {
-    phone: isRTL ? 'טלפון' : 'Phone',
-    email: isRTL ? 'אימייל' : 'Email',
-    position: isRTL ? 'תפקיד' : 'Position',
+    phone: 'טלפון',
+    email: 'אימייל',
+    position: 'תפקיד',
   };
   return labels[field];
 }

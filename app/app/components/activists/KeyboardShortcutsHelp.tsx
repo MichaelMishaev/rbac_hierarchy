@@ -44,19 +44,12 @@ export default function KeyboardShortcutsHelp({ isRTL }: KeyboardShortcutsHelpPr
     return null;
   }
 
-  const shortcuts = isRTL
-    ? [
-        { key: 'לחץ פעמיים', action: 'עריכת שדה' },
-        { key: 'Enter', action: 'שמירת שינויים' },
-        { key: 'Esc', action: 'ביטול עריכה' },
-        { key: 'Tab', action: 'מעבר בין שדות' },
-      ]
-    : [
-        { key: 'Double-click', action: 'Edit field' },
-        { key: 'Enter', action: 'Save changes' },
-        { key: 'Esc', action: 'Cancel edit' },
-        { key: 'Tab', action: 'Navigate fields' },
-      ];
+  const shortcuts = [
+    { key: 'לחץ פעמיים', action: 'עריכת שדה' },
+    { key: 'Enter', action: 'שמירת שינויים' },
+    { key: 'Esc', action: 'ביטול עריכה' },
+    { key: 'Tab', action: 'מעבר בין שדות' },
+  ];
 
   return (
     <Collapse in={isVisible}>
@@ -112,12 +105,10 @@ export default function KeyboardShortcutsHelp({ isRTL }: KeyboardShortcutsHelpPr
 
           <Box sx={{ flex: 1 }}>
             <Typography sx={{ fontWeight: 700, color: colors.neutral[900], mb: 0.5, fontSize: '1.1rem' }}>
-              {isRTL ? '⚡ קיצורי דרך מהירים' : '⚡ Quick Shortcuts'}
+              ⚡ קיצורי דרך מהירים
             </Typography>
             <Typography variant="body2" sx={{ color: colors.neutral[700], mb: 2 }}>
-              {isRTL
-                ? 'עבוד מהר יותר עם קיצורי מקלדת'
-                : 'Work faster with keyboard shortcuts'}
+              עבוד מהר יותר עם קיצורי מקלדת
             </Typography>
 
             {/* Shortcuts Grid */}
@@ -178,7 +169,7 @@ export default function KeyboardShortcutsHelp({ isRTL }: KeyboardShortcutsHelpPr
               },
             }}
           >
-            {isRTL ? 'הסתר לצמיתות' : "Don't show again"}
+            הסתר לצמיתות
           </Typography>
         </Box>
       </Box>

@@ -518,7 +518,9 @@ export async function getUserById(userId: string) {
 
     // Validate access permissions
     const userCorps = getUserCorporations(currentUser);
-    const targetUserCorps = getUserCorporations(user);
+    // Extract user data without _count for getUserCorporations
+    const { _count, ...userWithoutCount } = user;
+    const targetUserCorps = getUserCorporations(userWithoutCount as Awaited<ReturnType<typeof getCurrentUser>>);
 
     if (userCorps !== 'all' && targetUserCorps !== 'all') {
       // Check if there's any overlap in corporations
@@ -617,6 +619,12 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
             neighborhood: { include: { cityRelation: true,
               },
             },
+          },
+        },
+        activistProfile: {
+          include: {
+            neighborhood: true,
+            city: true,
           },
         },
       },
@@ -845,6 +853,12 @@ export async function deleteUser(userId: string) {
             neighborhood: { include: { cityRelation: true,
               },
             },
+          },
+        },
+        activistProfile: {
+          include: {
+            neighborhood: true,
+            city: true,
           },
         },
       },

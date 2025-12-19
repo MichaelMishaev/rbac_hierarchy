@@ -28,8 +28,9 @@ model User {
   role Role @default(ACTIVIST_COORDINATOR)
 
   // Status
-  isActive     Boolean @default(true) @map("is_active")
-  isSuperAdmin Boolean @default(false) @map("is_super_admin")
+  isActive              Boolean @default(true) @map("is_active")
+  isSuperAdmin          Boolean @default(false) @map("is_super_admin")
+  requirePasswordChange Boolean @default(false) @map("require_password_change")
 
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -49,6 +50,7 @@ model User {
   attendanceCheckedIn          AttendanceRecord[]              @relation("AttendanceCheckedInBy")
   attendanceLastEdited         AttendanceRecord[]              @relation("AttendanceLastEditedBy")
   votersInserted               Voter[]                         @relation("VoterInsertedBy")
+  activistProfile              Activist?                       @relation("ActivistUser")
 
   @@index([email])
   @@index([isActive])
@@ -61,6 +63,7 @@ enum Role {
   AREA_MANAGER
   CITY_COORDINATOR
   ACTIVIST_COORDINATOR
+  ACTIVIST
 }
 
 // ============================================
@@ -365,6 +368,10 @@ model Activist {
   activistCoordinatorId String?              @map("activist_coordinator_id")
   activistCoordinator   ActivistCoordinator? @relation("CoordinatorToActivist", fields: [activistCoordinatorId, cityId], references: [id, cityId], onDelete: SetNull)
 
+  // v2.3: Optional link to User account (for activists with login access)
+  userId String? @unique @map("user_id")
+  user   User?   @relation("ActivistUser", fields: [userId], references: [id], onDelete: SetNull)
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -379,6 +386,7 @@ model Activist {
   @@index([activistCoordinatorId])
   @@index([isActive])
   @@index([phone])
+  @@index([userId])
   @@index([cityId, isActive]) // Performance: Common filtered query for city-scoped active activists
   @@index([neighborhoodId, isActive]) // Performance: Common filtered query for neighborhood-scoped active activists
   @@map("activists")

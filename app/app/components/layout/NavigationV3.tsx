@@ -45,7 +45,6 @@ import PublicIcon from '@mui/icons-material/Public';
 import HistoryIcon from '@mui/icons-material/History';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
-import LanguageSwitcher from './LanguageSwitcher';
 import HeaderNotificationToggle from './HeaderNotificationToggle';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 import { useRecentPages } from '@/app/hooks/useRecentPages';
@@ -315,7 +314,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
             icon: <GroupIcon />,
             badge: stats?.activeWorkers,
           },
-          { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
+          { path: '/manage-voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
           { path: '/users', label: t('users'), icon: <PeopleIcon /> },
         ],
       },
@@ -364,7 +363,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
             icon: <GroupIcon />,
             badge: stats?.activeWorkers,
           },
-          { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
+          { path: '/manage-voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
           { path: '/users', label: t('users'), icon: <PeopleIcon /> },
         ],
       },
@@ -400,7 +399,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         icon: <GroupIcon />,
         badge: stats?.activeWorkers,
       },
-      { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
+      { path: '/manage-voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
       { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
     [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
@@ -429,7 +428,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
         icon: <GroupIcon />,
         badge: stats?.activeWorkers,
       },
-      { path: '/voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
+      { path: '/manage-voters', label: 'בוחרים', icon: <HowToVoteIcon /> },
       { path: '/users', label: t('users'), icon: <PeopleIcon /> },
     ],
     [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
@@ -698,10 +697,6 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
           </Box>
         )}
 
-        {/* Language Switcher */}
-        <Box sx={{ p: 2, borderBottom: `1px solid ${colors.neutral[100]}` }}>
-          <LanguageSwitcher />
-        </Box>
 
         {/* Recent Pages - Redesigned with 2025 Best Practices */}
         {recentPages.length > 0 && (

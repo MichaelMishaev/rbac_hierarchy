@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for Railway and production deployments
@@ -14,33 +14,51 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('[Auth] Missing credentials');
           return null;
         }
 
         const email = credentials.email as string;
         const password = credentials.password as string;
 
+        console.log('[Auth] Login attempt for email:', email);
+
         // Find user by email
         const user = await prisma.user.findUnique({
           where: { email },
         });
 
-        if (!user || !user.passwordHash) {
+        if (!user) {
+          console.log('[Auth] User not found:', email);
           return null;
         }
+
+        if (!user.passwordHash) {
+          console.log('[Auth] User has no password hash:', email);
+          return null;
+        }
+
+        console.log('[Auth] User found:', user.email, 'Role:', user.role);
 
         // Verify password
         const isValid = await bcrypt.compare(password, user.passwordHash);
 
         if (!isValid) {
+          console.log('[Auth] Invalid password for:', email);
           return null;
         }
+
+        console.log('[Auth] Login successful for:', email);
 
         // Update last login
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         });
+
+        // Invalidate cached user data to force fresh fetch on next request
+        const { revalidateTag } = await import('next/cache');
+        revalidateTag(`user-${user.id}`);
 
         // Return user data for session
         return {
@@ -49,7 +67,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.fullName,
           role: user.role,
           avatar: user.avatarUrl,
-          isSuperAdmin: user.isSuperAdmin, // ADDED: Include isSuperAdmin flag
+          isSuperAdmin: user.isSuperAdmin,
+          requirePasswordChange: user.requirePasswordChange,
         };
       },
     }),
@@ -61,7 +80,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.name = user.name;
         token.role = user.role;
         token.avatar = user.avatar;
-        token.isSuperAdmin = user.isSuperAdmin; // ADDED: Include isSuperAdmin flag
+        token.isSuperAdmin = user.isSuperAdmin;
+        token.requirePasswordChange = user.requirePasswordChange;
       }
       return token;
     },
@@ -71,7 +91,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.name = token.name as string;
         session.user.role = token.role as string;
         session.user.avatar = token.avatar as string | null;
-        session.user.isSuperAdmin = token.isSuperAdmin as boolean; // ADDED: Include isSuperAdmin flag
+        session.user.isSuperAdmin = token.isSuperAdmin as boolean;
+        session.user.requirePasswordChange = token.requirePasswordChange as boolean;
+
+        // Note: Activist profile is loaded separately via getCurrentUser() in lib/auth.ts
+        // We cannot query Prisma here as this runs in Edge Runtime (middleware)
       }
       return session;
     },

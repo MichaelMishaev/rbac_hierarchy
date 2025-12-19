@@ -205,7 +205,7 @@ export default function ActivistCardSwipeable({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <LocationOnIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
                 <Typography variant="body2" sx={{ color: colors.neutral[600], fontWeight: 500 }}>
-                  {activist.neighborhood?.name || (isRTL ? 'ללא שכונה' : 'No neighborhood')}
+                  {activist.neighborhood?.name || 'ללא שכונה'}
                 </Typography>
               </Box>
             </Box>
@@ -253,7 +253,7 @@ export default function ActivistCardSwipeable({
                   letterSpacing: '0.5px',
                 }}
               >
-                {isRTL ? 'תפקיד' : 'Position'}
+                תפקיד
               </Typography>
               <Box
                 sx={{
@@ -269,7 +269,7 @@ export default function ActivistCardSwipeable({
                   field="position"
                   onUpdate={() => router.refresh()}
                   isRTL={isRTL}
-                  placeholder={isRTL ? 'ללא תפקיד' : 'No position'}
+                  placeholder="ללא תפקיד"
                   icon={<WorkIcon fontSize="inherit" />}
                 />
               </Box>
@@ -289,7 +289,7 @@ export default function ActivistCardSwipeable({
                   letterSpacing: '0.5px',
                 }}
               >
-                {isRTL ? 'טלפון' : 'Phone'}
+                טלפון
               </Typography>
               <Box
                 sx={{
@@ -306,7 +306,7 @@ export default function ActivistCardSwipeable({
                   onUpdate={() => router.refresh()}
                   isRTL={isRTL}
                   type="tel"
-                  placeholder={isRTL ? 'ללא טלפון' : 'No phone'}
+                  placeholder="ללא טלפון"
                   icon={<PhoneIcon fontSize="inherit" />}
                 />
               </Box>
@@ -335,14 +335,14 @@ export default function ActivistCardSwipeable({
                 ))
               ) : (
                 <Typography variant="caption" sx={{ color: colors.neutral[400] }}>
-                  {isRTL ? 'ללא תגיות' : 'No tags'}
+                  ללא תגיות
                 </Typography>
               )}
             </Box>
 
             {/* Status Chip - Visual Only (no inline toggle on mobile for simplicity) */}
             <Chip
-              label={activist.isActive !== false ? (isRTL ? 'פעיל' : 'Active') : (isRTL ? 'לא פעיל' : 'Inactive')}
+              label={activist.isActive !== false ? 'פעיל' : 'לא פעיל'}
               size="small"
               sx={{
                 bgcolor: activist.isActive !== false ? colors.pastel.greenLight : colors.neutral[200],
@@ -362,7 +362,7 @@ export default function ActivistCardSwipeable({
             }}
           >
             <Chip
-              label={isRTL ? 'ערוך הכל' : 'Full Edit'}
+              label="ערוך הכל"
               onClick={() => onEdit?.(activist.id)}
               icon={<EditIcon />}
               sx={{

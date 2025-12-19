@@ -7,6 +7,20 @@ declare module 'next-auth' {
       role: string;
       avatar: string | null;
       isSuperAdmin: boolean;
+      requirePasswordChange: boolean;
+      activistProfile?: {
+        id: string;
+        neighborhoodId: string;
+        cityId: string;
+        neighborhood: {
+          id: string;
+          name: string;
+        };
+        city: {
+          id: string;
+          name: string;
+        };
+      } | null;
     } & DefaultSession['user'];
   }
 
@@ -17,6 +31,7 @@ declare module 'next-auth' {
     role: string;
     avatar: string | null;
     isSuperAdmin: boolean;
+    requirePasswordChange: boolean;
   }
 }
 
@@ -26,5 +41,6 @@ declare module 'next-auth/jwt' {
     role: string;
     avatar: string | null;
     isSuperAdmin: boolean;
+    requirePasswordChange: boolean;
   }
 }

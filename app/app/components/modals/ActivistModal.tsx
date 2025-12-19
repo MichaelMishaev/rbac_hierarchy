@@ -34,6 +34,8 @@ export type WorkerFormData = {
   supervisorId: string;
   isActive: boolean;
   startDate?: string;
+  giveLoginAccess?: boolean;
+  generatedPassword?: string;
 };
 
 type Area = {
@@ -277,19 +279,24 @@ export default function ActivistModal({
     const newErrors: Partial<Record<keyof WorkerFormData, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = isRTL ? 'שם העובד נדרש' : 'Worker name is required';
+      newErrors.name = 'שם העובד נדרש';
     }
 
     if (!formData.siteId) {
-      newErrors.siteId = isRTL ? 'יש לבחור אתר' : 'Site is required';
+      newErrors.siteId = 'יש לבחור אתר';
     }
 
     if (!formData.supervisorId) {
-      newErrors.supervisorId = isRTL ? 'יש לבחור רכז שכונתי' : 'Supervisor is required';
+      newErrors.supervisorId = 'יש לבחור רכז שכונתי';
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = isRTL ? 'פורמט אימייל שגוי' : 'Invalid email format';
+      newErrors.email = 'פורמט אימייל שגוי';
+    }
+
+    // Validate phone is provided when login access is enabled
+    if (formData.giveLoginAccess && !formData.phone?.trim()) {
+      newErrors.phone = 'מספר טלפון נדרש כאשר גישה למערכת מופעלת';
     }
 
     setErrors(newErrors);
@@ -321,10 +328,20 @@ export default function ActivistModal({
   const handleChange = (field: keyof WorkerFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown } }
   ) => {
-    const value = field === 'isActive'
+    const value = (field === 'isActive' || field === 'giveLoginAccess')
       ? (event.target as HTMLInputElement).checked
       : event.target.value as string;
-    setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // Generate password when giveLoginAccess is checked
+    if (field === 'giveLoginAccess' && value === true) {
+      const defaultPassword = 'active0'; // Default password for all activists
+      setFormData((prev) => ({ ...prev, [field]: value, generatedPassword: defaultPassword }));
+    } else if (field === 'giveLoginAccess' && value === false) {
+      setFormData((prev) => ({ ...prev, [field]: value, generatedPassword: undefined, phone: '' }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -477,7 +494,7 @@ export default function ActivistModal({
                     }}
                   >
                     <MenuItem value="">
-                      <em>{isRTL ? 'בחר אזור' : 'Select Area'}</em>
+                      <em>בחר אזור</em>
                     </MenuItem>
                     {areas.map((area) => (
                       <MenuItem key={area.id} value={area.id}>
@@ -489,11 +506,11 @@ export default function ActivistModal({
 
                 {/* Step 2: Select City (filtered by area) */}
                 <FormControl sx={{ flex: 1, minWidth: '200px' }} required disabled={!selectedAreaId}>
-                  <InputLabel>{isRTL ? 'עיר' : 'City'}</InputLabel>
+                  <InputLabel>עיר</InputLabel>
                   <Select
                     value={selectedCityId}
                     onChange={handleCityChange as any}
-                    label={isRTL ? 'עיר' : 'City'}
+                    label="עיר"
                     sx={{
                       borderRadius: '12px',
                       backgroundColor: 'white',
@@ -503,7 +520,7 @@ export default function ActivistModal({
                     }}
                   >
                     <MenuItem value="">
-                      <em>{isRTL ? 'בחר עיר' : 'Select City'}</em>
+                      <em>בחר עיר</em>
                     </MenuItem>
                     {filteredCities.map((city) => (
                       <MenuItem key={city.id} value={city.id}>
@@ -531,7 +548,7 @@ export default function ActivistModal({
                     }}
                   >
                     <MenuItem value="">
-                      <em>{isRTL ? 'בחר שכונה' : 'Select Neighborhood'}</em>
+                      <em>בחר שכונה</em>
                     </MenuItem>
                     {filteredNeighborhoods.map((neighborhood) => (
                       <MenuItem key={neighborhood.id} value={neighborhood.id}>
@@ -561,10 +578,10 @@ export default function ActivistModal({
                     isOptionEqualToValue={(option, value) => option.id === value.id}
                     noOptionsText={
                       loadingCoordinators
-                        ? (isRTL ? 'טוען רכזים...' : 'Loading coordinators...')
+                        ? 'טוען רכזים...'
                         : !formData.siteId
-                        ? (isRTL ? 'נא לבחור שכונה תחילה' : 'Please select a neighborhood first')
-                        : (isRTL ? 'אין רכזים משוייכים לשכונה זו' : 'No coordinators assigned to this neighborhood')
+                        ? 'נא לבחור שכונה תחילה'
+                        : 'אין רכזים משוייכים לשכונה זו'
                     }
                     loading={loadingCoordinators}
                     disabled={!formData.siteId || loadingCoordinators}
@@ -572,8 +589,8 @@ export default function ActivistModal({
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label={isRTL ? 'רכז שכונתי' : 'Activist Coordinator'}
-                        placeholder={isRTL ? 'חפש לפי שם או אימייל...' : 'Search by name or email...'}
+                        label="רכז שכונתי"
+                        placeholder="חפש לפי שם או אימייל..."
                         error={!!errors.supervisorId}
                         helperText={errors.supervisorId}
                         required
@@ -643,339 +660,133 @@ export default function ActivistModal({
             </Box>
           </Box>
 
-          {/* Employment Details */}
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              backgroundColor: '#FAFBFC',
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: '#F5F6F8',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              },
-            }}
-          >
-            <Typography
-              variant="subtitle1"
+          {/* Login Access Section (Create mode only) */}
+          {mode === 'create' && (
+            <Box
               sx={{
-                fontWeight: 700,
-                color: 'primary.main',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
+                p: 3,
+                borderRadius: '16px',
+                backgroundColor: '#FAFBFC',
+                border: '1px solid',
+                borderColor: 'divider',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: '#F5F6F8',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                },
               }}
             >
-              <Box
+              <Typography
+                variant="subtitle1"
                 sx={{
-                  width: 6,
-                  height: 24,
-                  borderRadius: '3px',
-                  background: 'linear-gradient(135deg, #FDAB3D 0%, #E89B2A 100%)',
+                  fontWeight: 700,
+                  color: 'primary.main',
+                  mb: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
                 }}
-              />
-              פרטי תעסוקה
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label={t('position')}
-                value={formData.position}
-                onChange={handleChange('position')}
-                sx={{
-                  flex: 1,
-                  minWidth: '200px',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(253, 171, 61, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(253, 171, 61, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              />
-
-              <TextField
-                label={t('startDate')}
-                type="date"
-                value={formData.startDate}
-                onChange={handleChange('startDate')}
-                sx={{
-                  flex: 1,
-                  minWidth: '200px',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(253, 171, 61, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(253, 171, 61, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </Box>
-          </Box>
-
-          {/* Contact Information */}
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              backgroundColor: '#FAFBFC',
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: '#F5F6F8',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              },
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 700,
-                color: 'primary.main',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 6,
-                  height: 24,
-                  borderRadius: '3px',
-                  background: 'linear-gradient(135deg, #00C875 0%, #00A661 100%)',
-                }}
-              />
-              פרטי התקשרות
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label={isRTL ? 'טלפון' : 'Phone'}
-                value={formData.phone}
-                onChange={handleChange('phone')}
-                sx={{
-                  flex: 1,
-                  minWidth: '200px',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              />
-              <TextField
-                label={isRTL ? 'אימייל' : 'Email'}
-                value={formData.email}
-                onChange={handleChange('email')}
-                error={!!errors.email}
-                helperText={errors.email}
-                type="email"
-                sx={{
-                  flex: 1,
-                  minWidth: '200px',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(0, 200, 117, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(0, 200, 117, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              />
-            </Box>
-          </Box>
-
-          {/* Additional Information */}
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              backgroundColor: '#FAFBFC',
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: '#F5F6F8',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              },
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 700,
-                color: 'primary.main',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 6,
-                  height: 24,
-                  borderRadius: '3px',
-                  background: 'linear-gradient(135deg, #A25DDC 0%, #8B4BCF 100%)',
-                }}
-              />
-              מידע נוסף
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Autocomplete
-                multiple
-                freeSolo
-                options={COMMON_TAGS}
-                value={formData.tags}
-                onChange={(_, newValue) => {
-                  setFormData((prev) => ({ ...prev, tags: newValue as string[] }));
-                }}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={option}
-                      label={option}
-                      size="small"
-                      sx={{
-                        backgroundColor: '#F5F5FF',
-                        color: '#6161FF',
-                        fontWeight: 500,
-                      }}
-                    />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label={t('tags')}
-                    placeholder={isRTL ? 'הוסף תגיות...' : 'Add tags...'}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '12px',
-                        backgroundColor: 'white',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          boxShadow: '0 2px 8px rgba(162, 93, 220, 0.1)',
-                        },
-                        '&.Mui-focused': {
-                          boxShadow: '0 4px 12px rgba(162, 93, 220, 0.15)',
-                        },
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontSize: '1rem',
-                        fontWeight: 500,
-                      },
-                    }}
-                  />
-                )}
-              />
-
-              <TextField
-                label={isRTL ? 'הערות' : 'Notes'}
-                value={formData.notes}
-                onChange={handleChange('notes')}
-                fullWidth
-                multiline
-                rows={3}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(162, 93, 220, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(162, 93, 220, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              />
-
+              >
+                <Box
+                  sx={{
+                    width: 6,
+                    height: 24,
+                    borderRadius: '3px',
+                    background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
+                  }}
+                />
+                גישה למערכת
+              </Typography>
               <Box
                 sx={{
                   display: 'flex',
-                  alignItems: 'center',
+                  flexDirection: 'column',
+                  gap: 2,
                   p: 2,
                   borderRadius: '12px',
-                  backgroundColor: formData.isActive ? '#E5FFF3' : '#FFE8EC',
+                  backgroundColor: formData.giveLoginAccess ? '#E8F4FF' : '#F5F5F5',
                   border: '1px solid',
-                  borderColor: formData.isActive ? '#00C875' : '#E44258',
+                  borderColor: formData.giveLoginAccess ? '#6161FF' : '#E0E0E0',
                   transition: 'all 0.3s ease',
                 }}
               >
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={formData.isActive}
-                      onChange={handleChange('isActive')}
+                      checked={formData.giveLoginAccess || false}
+                      onChange={handleChange('giveLoginAccess')}
                       sx={{
                         '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: '#00C875',
+                          color: '#6161FF',
                         },
                         '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor: '#00C875',
+                          backgroundColor: '#6161FF',
                         },
                       }}
                     />
                   }
                   label={
                     <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>
-                      {tCommon('active')}
+                      🔐 אפשר גישה למערכת (יצירת חשבון משתמש)
                     </Typography>
                   }
                   sx={{ margin: 0 }}
                 />
+
+                {formData.giveLoginAccess && (
+                  <>
+                    {/* Phone Number Field */}
+                    <TextField
+                      fullWidth
+                      label="📱 מספר טלפון *"
+                      value={formData.phone}
+                      onChange={handleChange('phone')}
+                      required={formData.giveLoginAccess}
+                      error={!!errors.phone}
+                      helperText={errors.phone}
+                      placeholder="0501234567"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          backgroundColor: 'white',
+                        },
+                      }}
+                    />
+
+                    {/* Password Display */}
+                    {formData.generatedPassword && (
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: '8px',
+                          backgroundColor: '#FFF9E6',
+                          border: '1px dashed #FDAB3D',
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#D68000' }}>
+                          ⚠️ סיסמה ברירת מחדל - תן לפעיל:
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            color: '#D68000',
+                            letterSpacing: '2px',
+                          }}
+                        >
+                          {formData.generatedPassword}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#A86800', mt: 0.5, display: 'block' }}>
+                          הפעיל יתבקש לשנות סיסמה בכניסה הראשונה
+                        </Typography>
+                      </Box>
+                    )}
+                  </>
+                )}
               </Box>
             </Box>
-          </Box>
+          )}
         </Box>
       </DialogContent>
 
