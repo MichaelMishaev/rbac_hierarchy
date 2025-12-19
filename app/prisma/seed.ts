@@ -36,7 +36,7 @@ async function main() {
     create: {
       email: 'sarah.cohen@telaviv-district.test',
       fullName: 'שרה כהן',
-      passwordHash: await bcrypt.hash('area123', 10),
+      passwordHash: hashedPassword,
       role: 'AREA_MANAGER',
       phone: '+972-54-200-0001',
       isActive: true,
@@ -72,7 +72,7 @@ async function main() {
     create: {
       email: 'manager@north-district.test',
       fullName: 'יעל גולן',
-      passwordHash: await bcrypt.hash('area123', 10),
+      passwordHash: hashedPassword,
       role: 'AREA_MANAGER',
       phone: '+972-54-200-0002',
       isActive: true,
@@ -100,7 +100,7 @@ async function main() {
     create: {
       email: 'manager@haifa-district.test',
       fullName: 'מיכאל כרמל',
-      passwordHash: await bcrypt.hash('area123', 10),
+      passwordHash: hashedPassword,
       role: 'AREA_MANAGER',
       phone: '+972-54-200-0003',
       isActive: true,
@@ -128,7 +128,7 @@ async function main() {
     create: {
       email: 'manager@center-district.test',
       fullName: 'רונית שרון',
-      passwordHash: await bcrypt.hash('area123', 10),
+      passwordHash: hashedPassword,
       role: 'AREA_MANAGER',
       phone: '+972-54-200-0004',
       isActive: true,
@@ -156,7 +156,7 @@ async function main() {
     create: {
       email: 'manager@jerusalem-district.test',
       fullName: 'אבי הר-טוב',
-      passwordHash: await bcrypt.hash('area123', 10),
+      passwordHash: hashedPassword,
       role: 'AREA_MANAGER',
       phone: '+972-54-200-0005',
       isActive: true,
@@ -184,7 +184,7 @@ async function main() {
     create: {
       email: 'manager@south-district.test',
       fullName: 'תמר נגב',
-      passwordHash: await bcrypt.hash('area123', 10),
+      passwordHash: hashedPassword,
       role: 'AREA_MANAGER',
       phone: '+972-54-200-0006',
       isActive: true,
@@ -237,7 +237,7 @@ async function main() {
     create: {
       email: 'david.levi@telaviv.test',
       fullName: 'דוד לוי',
-      passwordHash: await bcrypt.hash('manager123', 10),
+      passwordHash: hashedPassword,
       role: 'CITY_COORDINATOR',
       phone: '+972-54-300-0001',
       isActive: true,
@@ -337,7 +337,7 @@ async function main() {
     create: {
       email: 'rachel.bendavid@telaviv.test',
       fullName: 'רחל בן-דוד',
-      passwordHash: await bcrypt.hash('supervisor123', 10),
+      passwordHash: hashedPassword,
       role: 'ACTIVIST_COORDINATOR',
       phone: '+972-54-400-0001',
       isActive: true,
@@ -402,7 +402,7 @@ async function main() {
     create: {
       email: 'yael.cohen@telaviv.test',
       fullName: 'יעל כהן',
-      passwordHash: await bcrypt.hash('supervisor123', 10),
+      passwordHash: hashedPassword,
       role: 'ACTIVIST_COORDINATOR',
       phone: '+972-54-400-0002',
       isActive: true,
@@ -606,7 +606,7 @@ async function main() {
     create: {
       email: 'moshe.israeli@ramatgan.test',
       fullName: 'משה ישראלי',
-      passwordHash: await bcrypt.hash('manager123', 10),
+      passwordHash: hashedPassword,
       role: 'CITY_COORDINATOR',
       phone: '+972-54-300-0002',
       isActive: true,
@@ -657,7 +657,7 @@ async function main() {
     create: {
       email: 'dan.carmel@ramatgan.test',
       fullName: 'דן כרמל',
-      passwordHash: await bcrypt.hash('supervisor123', 10),
+      passwordHash: hashedPassword,
       role: 'ACTIVIST_COORDINATOR',
       phone: '+972-54-400-0003',
       isActive: true,
@@ -894,14 +894,14 @@ async function main() {
   console.log('   - Voters from different hierarchy levels');
 
   console.log('\n🎉 Election Campaign System seed completed successfully!');
-  console.log('\n📝 Test credentials:');
-  console.log('SuperAdmin:           admin@election.test / admin123');
-  console.log('Area Manager:         sarah.cohen@telaviv-district.test / area123');
-  console.log('City Coord (TLV):     david.levi@telaviv.test / manager123');
-  console.log('City Coord (RG):      moshe.israeli@ramatgan.test / manager123');
-  console.log('Activist Coord (FL):  rachel.bendavid@telaviv.test / supervisor123');
-  console.log('Activist Coord (JF):  yael.cohen@telaviv.test / supervisor123');
-  console.log('Activist Coord (RG):  dan.carmel@ramatgan.test / supervisor123');
+  console.log('\n📝 Test credentials (all passwords: admin123):');
+  console.log('SuperAdmin:           admin@election.test');
+  console.log('Area Manager:         sarah.cohen@telaviv-district.test');
+  console.log('City Coord (TLV):     david.levi@telaviv.test');
+  console.log('City Coord (RG):      moshe.israeli@ramatgan.test');
+  console.log('Activist Coord (FL):  rachel.bendavid@telaviv.test');
+  console.log('Activist Coord (JF):  yael.cohen@telaviv.test');
+  console.log('Activist Coord (RG):  dan.carmel@ramatgan.test');
   console.log('\n🗳️  Complete Campaign Hierarchy:');
   console.log('SuperAdmin → Area Manager (מחוז תל אביב)');
   console.log('  → City 1: תל אביב-יפו');
