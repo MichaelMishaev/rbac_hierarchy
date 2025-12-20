@@ -122,6 +122,28 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     initialize();
   }, [checkSubscription]);
 
+  // Listen for permission changes (when user grants/denies permission)
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const handlePermissionChange = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ permission: NotificationPermission }>;
+      const newPermission = customEvent.detail?.permission || getNotificationPermission();
+
+      console.log('[usePushNotifications] Permission changed to:', newPermission);
+      setPermission(newPermission);
+
+      // Re-check subscription status after permission change
+      await checkSubscription();
+    };
+
+    window.addEventListener('notificationpermissionchange', handlePermissionChange);
+
+    return () => {
+      window.removeEventListener('notificationpermissionchange', handlePermissionChange);
+    };
+  }, [isSupported, checkSubscription]);
+
   return {
     isSubscribed,
     isLoading,

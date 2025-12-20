@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -137,6 +137,18 @@ export default function ActivistsClient({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [smartAssignmentOpen, setSmartAssignmentOpen] = useState(false);
+
+  // Listen for FAB button clicks to open create modal
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setCreateModalOpen(true);
+    };
+
+    window.addEventListener('openActivistModal', handleOpenModal);
+    return () => {
+      window.removeEventListener('openActivistModal', handleOpenModal);
+    };
+  }, []);
 
   // Transform supervisors to match ActivistModal expected format
   const transformedSupervisors = useMemo(() => {

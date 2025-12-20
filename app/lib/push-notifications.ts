@@ -49,6 +49,14 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
   try {
     const permission = await Notification.requestPermission();
+
+    // Dispatch custom event to notify components of permission change
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('notificationpermissionchange', {
+        detail: { permission }
+      }));
+    }
+
     return permission;
   } catch (error) {
     console.error('Failed to request notification permission:', error);

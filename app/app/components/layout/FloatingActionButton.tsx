@@ -37,8 +37,8 @@ export default function ContextAwareFAB() {
         icon: <AddIcon />,
         label: 'הוסף פעיל',
         action: () => {
-          // TODO: Open activist modal
-          console.log('Add activist');
+          // Dispatch custom event to open activist modal
+          window.dispatchEvent(new CustomEvent('openActivistModal'));
         },
         color: 'primary',
       };

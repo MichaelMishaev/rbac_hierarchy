@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -19,8 +19,13 @@ import {
   Chip,
   Autocomplete,
   Typography,
+  InputAdornment,
 } from '@mui/material';
-import { Person as PersonIcon } from '@mui/icons-material';
+import {
+  Person as PersonIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+} from '@mui/icons-material';
 import { useTranslations, useLocale } from 'next-intl';
 
 export type WorkerFormData = {
@@ -131,10 +136,15 @@ export default function ActivistModal({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof WorkerFormData, string>>>({});
+  const [validationErrors, setValidationErrors] = useState<Partial<Record<keyof WorkerFormData, string>>>({});
+  const validationTimeoutRef = useRef<NodeJS.Timeout>();
 
   // State for neighborhood-specific coordinators (filtered by selected neighborhood)
   const [neighborhoodCoordinators, setNeighborhoodCoordinators] = useState<Supervisor[]>(activistCoordinators);
   const [loadingCoordinators, setLoadingCoordinators] = useState(false);
+
+  // Ref for auto-scrolling to password section (2025 UX best practice)
+  const passwordSectionRef = useRef<HTMLDivElement>(null);
 
   // Filtered cities based on selected area
   const filteredCities = selectedAreaId
@@ -325,6 +335,24 @@ export default function ActivistModal({
     }
   };
 
+  // Real-time field validation with debounce (2025 UX best practice)
+  const validateField = useCallback((field: keyof WorkerFormData, value: any): string | undefined => {
+    switch (field) {
+      case 'name':
+        return !value?.trim() ? 'שם העובד נדרש' : undefined;
+      case 'email':
+        return value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'פורמט אימייל שגוי' : undefined;
+      case 'phone':
+        return value && !/^[0-9\-\+\(\)\s]{9,}$/.test(value) ? 'מספר טלפון שגוי' : undefined;
+      case 'siteId':
+        return !value ? 'יש לבחור שכונה' : undefined;
+      case 'supervisorId':
+        return !value ? 'יש לבחור רכז שכונתי' : undefined;
+      default:
+        return undefined;
+    }
+  }, []);
+
   const handleChange = (field: keyof WorkerFormData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: unknown } }
   ) => {
@@ -332,19 +360,39 @@ export default function ActivistModal({
       ? (event.target as HTMLInputElement).checked
       : event.target.value as string;
 
-    // Generate password when giveLoginAccess is checked
+    // Update form data immediately for responsive UX
     if (field === 'giveLoginAccess' && value === true) {
-      const defaultPassword = 'active0'; // Default password for all activists
+      const defaultPassword = 'active0';
       setFormData((prev) => ({ ...prev, [field]: value, generatedPassword: defaultPassword }));
+
+      // 2025 UX Best Practice: Auto-scroll to password section with smooth animation
+      setTimeout(() => {
+        passwordSectionRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest',
+        });
+      }, 100); // Small delay to allow DOM to update
     } else if (field === 'giveLoginAccess' && value === false) {
       setFormData((prev) => ({ ...prev, [field]: value, generatedPassword: undefined, phone: '' }));
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
 
+    // Clear error optimistically (immediate feedback)
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
+
+    // Debounced validation (500ms - not too aggressive)
+    clearTimeout(validationTimeoutRef.current);
+    validationTimeoutRef.current = setTimeout(() => {
+      const error = validateField(field, value);
+      setValidationErrors((prev) => ({ ...prev, [field]: error }));
+    }, 500);
   };
 
   return (
@@ -353,11 +401,42 @@ export default function ActivistModal({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      aria-labelledby="activist-dialog-title"
+      aria-describedby="activist-dialog-description"
       PaperProps={{
         sx: {
-          borderRadius: '20px',
+          // Mobile: Bottom sheet pattern (2025 UX best practice)
+          // Desktop: Centered modal
+          borderRadius: { xs: '24px 24px 0 0', sm: '20px' },
           boxShadow: '0 24px 48px rgba(0, 0, 0, 0.15)',
           overflow: 'hidden',
+
+          // Mobile positioning (bottom sheet)
+          position: { xs: 'fixed', sm: 'relative' },
+          bottom: { xs: 0, sm: 'auto' },
+          left: { xs: 0, sm: 'auto' },
+          right: { xs: 0, sm: 'auto' },
+          margin: { xs: 0, sm: 'auto' },
+          maxHeight: { xs: '90vh', sm: '90vh' },
+
+          // Flexbox for proper scroll containment
+          display: 'flex',
+          flexDirection: 'column',
+
+          // Swipe-down affordance indicator (mobile only)
+          '&::before': {
+            content: '""',
+            display: { xs: 'block', sm: 'none' },
+            position: 'absolute',
+            top: '8px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '40px',
+            height: '4px',
+            borderRadius: '2px',
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            zIndex: 1,
+          },
         },
       }}
       TransitionProps={{
@@ -368,19 +447,22 @@ export default function ActivistModal({
           sx: {
             backdropFilter: 'blur(8px)',
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            overflow: 'hidden',
           },
         },
       }}
     >
       <DialogTitle
+        id="activist-dialog-title"
         sx={{
           fontWeight: 700,
           pb: 3,
-          pt: 4,
-          px: 4,
+          pt: { xs: 5, sm: 4 }, // Extra padding on mobile for swipe indicator
+          px: { xs: 3, sm: 4 },
           background: 'linear-gradient(135deg, #F5F5FF 0%, #FFFFFF 100%)',
           borderBottom: '1px solid',
           borderColor: 'divider',
+          flexShrink: 0, // Don't shrink when scrolling
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -409,8 +491,35 @@ export default function ActivistModal({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 4, pb: 3, px: 4 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <DialogContent
+        id="activist-dialog-description"
+        sx={{
+          pt: { xs: 3, sm: 4 },
+          pb: { xs: 2, sm: 3 },
+          px: { xs: 3, sm: 4 },
+          flex: 1,
+          overflow: 'auto',
+          // Smooth scrolling with momentum on iOS
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          scrollBehavior: 'smooth',
+          // Custom scrollbar styling
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            },
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, sm: 4 } }}>
           {/* Basic Information */}
           <Box
             sx={{
@@ -447,20 +556,41 @@ export default function ActivistModal({
               />
               מידע בסיסי
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2.5, sm: 3 } }}>
               <TextField
                 label={t('name')}
                 value={formData.name}
                 onChange={handleChange('name')}
-                error={!!errors.name}
-                helperText={errors.name}
+                error={!!(validationErrors.name || errors.name)}
+                helperText={validationErrors.name || errors.name}
                 fullWidth
                 required
                 autoFocus
+                InputProps={{
+                  endAdornment: validationErrors.name ? (
+                    <InputAdornment position="end">
+                      <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
+                    </InputAdornment>
+                  ) : formData.name && !validationErrors.name ? (
+                    <InputAdornment position="end">
+                      <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                    </InputAdornment>
+                  ) : null,
+                }}
                 sx={{
+                  '& input': {
+                    fontSize: '16px', // Prevents iOS zoom on focus
+                    minHeight: '24px',
+                    padding: '16px 14px',
+                  },
                   '& .MuiOutlinedInput-root': {
+                    minHeight: '56px', // 44px touch target + padding
                     borderRadius: '12px',
-                    backgroundColor: 'white',
+                    backgroundColor: validationErrors.name
+                      ? 'rgba(211, 47, 47, 0.04)'
+                      : formData.name && !validationErrors.name
+                      ? 'rgba(56, 142, 60, 0.04)'
+                      : 'white',
                     transition: 'all 0.2s ease',
                     '&:hover': {
                       boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
@@ -480,7 +610,7 @@ export default function ActivistModal({
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 {/* Step 1: Select Area */}
                 <FormControl sx={{ flex: 1, minWidth: '200px' }} required>
-                  <InputLabel>{isRTL ? 'אזור' : 'Area'}</InputLabel>
+                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{isRTL ? 'אזור' : 'Area'}</InputLabel>
                   <Select
                     value={selectedAreaId}
                     onChange={handleAreaChange as any}
@@ -506,7 +636,7 @@ export default function ActivistModal({
 
                 {/* Step 2: Select City (filtered by area) */}
                 <FormControl sx={{ flex: 1, minWidth: '200px' }} required disabled={!selectedAreaId}>
-                  <InputLabel>עיר</InputLabel>
+                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>עיר</InputLabel>
                   <Select
                     value={selectedCityId}
                     onChange={handleCityChange as any}
@@ -534,7 +664,7 @@ export default function ActivistModal({
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 {/* Step 3: Select Neighborhood (filtered by city) */}
                 <FormControl sx={{ flex: 1, minWidth: '200px' }} required error={!!errors.siteId} disabled={!selectedCityId}>
-                  <InputLabel>{t('site')}</InputLabel>
+                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{t('site')}</InputLabel>
                   <Select
                     value={formData.siteId}
                     onChange={(e) => handleChange('siteId')(e as any)}
@@ -660,7 +790,7 @@ export default function ActivistModal({
             </Box>
           </Box>
 
-          {/* Login Access Section (Create mode only) */}
+          {/* Login Access Section (Create mode only) - 2025 UX Improved */}
           {mode === 'create' && (
             <Box
               sx={{
@@ -726,15 +856,59 @@ export default function ActivistModal({
                     />
                   }
                   label={
-                    <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>
-                      🔐 אפשר גישה למערכת (יצירת חשבון משתמש)
-                    </Typography>
+                    <Box>
+                      <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        🔐 אפשר גישה למערכת (יצירת חשבון משתמש)
+                      </Typography>
+                      {!formData.giveLoginAccess && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                          הפעל כדי לאפשר לפעיל להתחבר למערכת
+                        </Typography>
+                      )}
+                    </Box>
                   }
                   sx={{ margin: 0 }}
                 />
 
                 {formData.giveLoginAccess && (
-                  <>
+                  <Box
+                    ref={passwordSectionRef}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      // 2025 UX: Smooth fade-in animation when section appears
+                      animation: 'fadeInUp 0.3s ease-out',
+                      '@keyframes fadeInUp': {
+                        from: {
+                          opacity: 0,
+                          transform: 'translateY(10px)',
+                        },
+                        to: {
+                          opacity: 1,
+                          transform: 'translateY(0)',
+                        },
+                      },
+                    }}
+                  >
+                    {/* Info Banner - Mobile-optimized (2025 UX) */}
+                    <Box
+                      sx={{
+                        p: { xs: 1.5, sm: 2 },
+                        borderRadius: '8px',
+                        backgroundColor: '#E8F4FF',
+                        border: '1px solid #6161FF40',
+                        display: 'flex',
+                        gap: { xs: 1, sm: 1.5 },
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography sx={{ fontSize: { xs: '16px', sm: '20px' } }}>ℹ️</Typography>
+                      <Typography variant="caption" sx={{ color: '#1565c0', flex: 1, lineHeight: 1.4 }}>
+                        מספר הטלפון ישמש להתחברות. הסיסמה למטה.
+                      </Typography>
+                    </Box>
+
                     {/* Phone Number Field */}
                     <TextField
                       fullWidth
@@ -742,47 +916,139 @@ export default function ActivistModal({
                       value={formData.phone}
                       onChange={handleChange('phone')}
                       required={formData.giveLoginAccess}
-                      error={!!errors.phone}
-                      helperText={errors.phone}
+                      error={!!(validationErrors.phone || errors.phone)}
+                      helperText={validationErrors.phone || errors.phone || 'ישמש כשם משתמש להתחברות'}
                       placeholder="0501234567"
+                      type="tel"
+                      InputProps={{
+                        endAdornment: validationErrors.phone ? (
+                          <InputAdornment position="end">
+                            <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
+                          </InputAdornment>
+                        ) : formData.phone && !validationErrors.phone ? (
+                          <InputAdornment position="end">
+                            <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                          </InputAdornment>
+                        ) : null,
+                      }}
                       sx={{
+                        '& input': {
+                          fontSize: '16px',
+                          minHeight: '24px',
+                          padding: '16px 14px',
+                        },
                         '& .MuiOutlinedInput-root': {
+                          minHeight: '56px',
                           borderRadius: '12px',
-                          backgroundColor: 'white',
+                          backgroundColor: validationErrors.phone
+                            ? 'rgba(211, 47, 47, 0.04)'
+                            : formData.phone && !validationErrors.phone
+                            ? 'rgba(56, 142, 60, 0.04)'
+                            : 'white',
+                          transition: 'all 0.2s ease',
                         },
                       }}
                     />
 
-                    {/* Password Display */}
+                    {/* Password Display - Ultra-compact mobile design with proper RTL */}
                     {formData.generatedPassword && (
                       <Box
                         sx={{
-                          p: 2,
-                          borderRadius: '8px',
+                          p: { xs: 1.5, sm: 2.5 },
+                          borderRadius: '12px',
                           backgroundColor: '#FFF9E6',
-                          border: '1px dashed #FDAB3D',
+                          border: '2px solid #FDAB3D',
+                          // 2025 UX: Subtle pulse animation to draw attention
+                          animation: 'pulseGlow 2s ease-in-out infinite',
+                          '@keyframes pulseGlow': {
+                            '0%, 100%': {
+                              boxShadow: '0 0 0 0 rgba(253, 171, 61, 0)',
+                            },
+                            '50%': {
+                              boxShadow: '0 0 20px 5px rgba(253, 171, 61, 0.3)',
+                            },
+                          },
                         }}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#D68000' }}>
-                          ⚠️ סיסמה ברירת מחדל - תן לפעיל:
-                        </Typography>
+                        {/* Compact header */}
                         <Typography
-                          variant="h6"
+                          variant="caption"
                           sx={{
-                            fontFamily: 'monospace',
-                            fontWeight: 700,
+                            display: 'block',
+                            textAlign: 'center',
                             color: '#D68000',
-                            letterSpacing: '2px',
+                            fontWeight: 700,
+                            fontSize: { xs: '11px', sm: '12px' },
+                            mb: { xs: 1, sm: 1.5 },
                           }}
                         >
-                          {formData.generatedPassword}
+                          ⚠️ סיסמה זמנית - תן לפעיל
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#A86800', mt: 0.5, display: 'block' }}>
-                          הפעיל יתבקש לשנות סיסמה בכניסה הראשונה
+
+                        {/* Password display */}
+                        <Box
+                          sx={{
+                            p: { xs: 1.5, sm: 2 },
+                            borderRadius: '8px',
+                            backgroundColor: 'white',
+                            border: '1px dashed #FDAB3D',
+                            textAlign: 'center',
+                            mb: { xs: 1, sm: 1.5 },
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              color: '#D68000',
+                              fontSize: { xs: '22px', sm: '28px' },
+                              letterSpacing: { xs: '3px', sm: '4px' },
+                            }}
+                          >
+                            {formData.generatedPassword}
+                          </Typography>
+                        </Box>
+
+                        {/* Copy button - full width on mobile */}
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          onClick={() => {
+                            navigator.clipboard.writeText(formData.generatedPassword || '');
+                          }}
+                          sx={{
+                            minHeight: { xs: '40px', sm: '36px' },
+                            borderColor: '#FDAB3D',
+                            color: '#D68000',
+                            fontSize: { xs: '12px', sm: '13px' },
+                            fontWeight: 600,
+                            mb: { xs: 0.75, sm: 1 },
+                            '&:hover': {
+                              borderColor: '#D68000',
+                              backgroundColor: '#FFF9E6',
+                            },
+                          }}
+                        >
+                          📋 העתק סיסמה
+                        </Button>
+
+                        {/* Single-line compact tip */}
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: 'block',
+                            textAlign: 'center',
+                            color: '#A86800',
+                            fontSize: { xs: '10px', sm: '11px' },
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          💡 ישנה בכניסה ראשונה
                         </Typography>
                       </Box>
                     )}
-                  </>
+                  </Box>
                 )}
               </Box>
             </Box>
@@ -792,12 +1058,22 @@ export default function ActivistModal({
 
       <DialogActions
         sx={{
-          px: 4,
-          py: 3,
+          px: { xs: 3, sm: 4 },
+          py: { xs: 2, sm: 3 },
           gap: 2,
           backgroundColor: '#FAFBFC',
           borderTop: '1px solid',
           borderColor: 'divider',
+          flexShrink: 0,
+          // Mobile: Sticky footer, Desktop: Normal flow
+          position: { xs: 'sticky', sm: 'relative' },
+          bottom: { xs: 0, sm: 'auto' },
+          // Safe area insets for notch/home indicator
+          paddingBottom: { xs: 'calc(16px + env(safe-area-inset-bottom))', sm: '24px' },
+          paddingLeft: { xs: 'calc(24px + env(safe-area-inset-left))', sm: '32px' },
+          paddingRight: { xs: 'calc(24px + env(safe-area-inset-right))', sm: '32px' },
+          // Mobile: Stack buttons vertically for better ergonomics
+          flexDirection: { xs: 'column-reverse', sm: 'row' },
         }}
       >
         <Button
@@ -806,21 +1082,27 @@ export default function ActivistModal({
           disabled={loading}
           size="large"
           sx={{
+            minHeight: '48px', // 44px WCAG + 4px padding
             borderRadius: '12px',
-            px: 4,
-            py: 1.5,
+            px: { xs: 3, sm: 4 },
+            py: { xs: 1.75, sm: 1.5 },
+            fontSize: { xs: '15px', sm: '16px' },
             fontWeight: 600,
             borderWidth: 2,
             borderColor: 'divider',
             color: 'text.secondary',
             transition: 'all 0.2s ease',
+            width: { xs: '100%', sm: 'auto' }, // Full-width on mobile
             '&:hover': {
               borderWidth: 2,
               borderColor: 'primary.main',
               backgroundColor: 'transparent',
               color: 'primary.main',
-              transform: 'translateY(-2px)',
+              transform: { sm: 'translateY(-2px)' },
               boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+            },
+            '&:active': {
+              transform: 'scale(0.98)',
             },
           }}
         >
@@ -832,20 +1114,27 @@ export default function ActivistModal({
           disabled={loading}
           size="large"
           sx={{
+            minHeight: '48px', // 44px WCAG + 4px padding
             borderRadius: '12px',
-            px: 4,
-            py: 1.5,
+            px: { xs: 3, sm: 4 },
+            py: { xs: 1.75, sm: 1.5 },
+            fontSize: { xs: '15px', sm: '16px' },
             fontWeight: 600,
             background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
             boxShadow: '0 4px 12px rgba(97, 97, 255, 0.3)',
             transition: 'all 0.2s ease',
+            width: { xs: '100%', sm: 'auto' }, // Full-width on mobile
             '&:hover': {
               background: 'linear-gradient(135deg, #5034FF 0%, #4028E6 100%)',
-              transform: 'translateY(-2px)',
+              transform: { sm: 'translateY(-2px)' },
               boxShadow: '0 8px 20px rgba(97, 97, 255, 0.4)',
             },
             '&:active': {
-              transform: 'translateY(0)',
+              transform: 'scale(0.98)',
+            },
+            '&:disabled': {
+              background: '#E0E0E0',
+              color: '#9E9E9E',
             },
           }}
         >
