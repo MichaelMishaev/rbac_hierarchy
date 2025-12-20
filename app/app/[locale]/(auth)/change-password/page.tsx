@@ -18,20 +18,29 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import { colors, shadows } from '@/lib/design-system';
+import { changeOwnPassword } from '@/app/actions/password-reset';
 
 export default function ChangePasswordPage() {
   const { data: session, update } = useSession();
   const router = useRouter();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate current password is provided
+    if (!currentPassword) {
+      setError('נא להזין את הסיסמה הנוכחית (זמנית)');
+      return;
+    }
 
     // Validate passwords match
     if (newPassword !== confirmPassword) {
@@ -48,16 +57,11 @@ export default function ChangePasswordPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword }),
-      });
+      // Use server action to change password
+      const result = await changeOwnPassword(currentPassword, newPassword);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'אירעה שגיאה בשינוי הסיסמה');
+      if (!result.success) {
+        setError('שגיאה בשינוי הסיסמה');
         setLoading(false);
         return;
       }
@@ -85,9 +89,8 @@ export default function ChangePasswordPage() {
       } else {
         window.location.href = '/dashboard';
       }
-    } catch (err) {
-      setError('אירעה שגיאה. נסה שנית.');
-    } finally {
+    } catch (err: any) {
+      setError(err.message || 'אירעה שגיאה. נסה שנית.');
       setLoading(false);
     }
   };
@@ -175,6 +178,44 @@ export default function ChangePasswordPage() {
         {/* Change Password Form */}
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
+            {/* Current Password (Temporary) */}
+            <TextField
+              fullWidth
+              name="currentPassword"
+              label="סיסמה נוכחית (זמנית)"
+              type={showCurrentPassword ? 'text' : 'password'}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoFocus
+              placeholder="הכנס את הסיסמה הזמנית שקיבלת"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      edge="end"
+                      sx={{ color: colors.neutral[500] }}
+                    >
+                      {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: colors.neutral[50],
+                  boxShadow: shadows.innerMedium,
+                  direction: 'ltr',
+                },
+                '& .MuiInputLabel-root': {
+                  right: 35,
+                  left: 'auto',
+                  transformOrigin: 'right',
+                },
+              }}
+            />
+
             {/* New Password */}
             <TextField
               fullWidth
@@ -184,7 +225,6 @@ export default function ChangePasswordPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              autoFocus
               placeholder="הכנס סיסמה חדשה (לפחות 6 תווים)"
               InputProps={{
                 endAdornment: (

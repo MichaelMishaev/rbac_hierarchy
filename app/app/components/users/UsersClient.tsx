@@ -33,9 +33,11 @@ import AddIcon from '@mui/icons-material/Add';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
+import LockResetIcon from '@mui/icons-material/LockReset';
 import RtlButton from '@/app/components/ui/RtlButton';
 import UserModal from './UserModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
+import ResetPasswordDialog from './ResetPasswordDialog';
 import { deleteUser, getExistingRegions } from '@/app/actions/users';
 import { useRouter } from 'next/navigation';
 
@@ -135,6 +137,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
 
@@ -205,6 +208,11 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
     handleMenuClose();
   };
 
+  const handleResetPasswordClick = () => {
+    setResetPasswordDialogOpen(true);
+    handleMenuClose();
+  };
+
   const handleDeleteConfirm = async () => {
     if (!selectedUser) return;
 
@@ -220,6 +228,10 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const handleUserModalSuccess = () => {
     setUserModalOpen(false);
     setEditingUser(null);
+    router.refresh();
+  };
+
+  const handleResetPasswordSuccess = () => {
     router.refresh();
   };
 
@@ -728,6 +740,13 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
           {tCommon('edit')}
         </MenuItem>
         <MenuItem
+          onClick={handleResetPasswordClick}
+          disabled={selectedUser ? !canManageUser(currentUserRole, selectedUser.role) : true}
+        >
+          <LockResetIcon sx={{ mr: 1, fontSize: 20, color: colors.status.orange }} />
+          <Typography sx={{ color: colors.status.orange }}>אפס סיסמה</Typography>
+        </MenuItem>
+        <MenuItem
           onClick={handleDeleteClick}
           sx={{ color: colors.error }}
           disabled={selectedUser ? !canManageUser(currentUserRole, selectedUser.role) : true}
@@ -757,6 +776,19 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         onConfirm={handleDeleteConfirm}
         title={t('deleteUser')}
         message={t('deleteConfirm')}
+      />
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog
+        open={resetPasswordDialogOpen}
+        onClose={() => {
+          setResetPasswordDialogOpen(false);
+          setSelectedUser(null);
+        }}
+        userId={selectedUser?.id || null}
+        userFullName={selectedUser?.fullName || null}
+        userEmail={selectedUser?.email || null}
+        onSuccess={handleResetPasswordSuccess}
       />
     </Box>
   );
