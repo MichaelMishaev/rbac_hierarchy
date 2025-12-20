@@ -1260,6 +1260,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
                                 )}
                               </Box>
                             }
+                            secondaryTypographyProps={{ component: 'div' }}
                           />
                         </ListItem>
                         {index < selectedNode.children.length - 1 && (

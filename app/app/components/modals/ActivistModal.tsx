@@ -520,277 +520,7 @@ export default function ActivistModal({
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, sm: 4 } }}>
-          {/* Basic Information */}
-          <Box
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              backgroundColor: '#FAFBFC',
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: '#F5F6F8',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              },
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 700,
-                color: 'primary.main',
-                mb: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 6,
-                  height: 24,
-                  borderRadius: '3px',
-                  background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
-                }}
-              />
-              מידע בסיסי
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2.5, sm: 3 } }}>
-              <TextField
-                label={t('name')}
-                value={formData.name}
-                onChange={handleChange('name')}
-                error={!!(validationErrors.name || errors.name)}
-                helperText={validationErrors.name || errors.name}
-                fullWidth
-                required
-                autoFocus
-                InputProps={{
-                  endAdornment: validationErrors.name ? (
-                    <InputAdornment position="end">
-                      <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                    </InputAdornment>
-                  ) : formData.name && !validationErrors.name ? (
-                    <InputAdornment position="end">
-                      <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
-                    </InputAdornment>
-                  ) : null,
-                }}
-                sx={{
-                  '& input': {
-                    fontSize: '16px', // Prevents iOS zoom on focus
-                    minHeight: '24px',
-                    padding: '16px 14px',
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    minHeight: '56px', // 44px touch target + padding
-                    borderRadius: '12px',
-                    backgroundColor: validationErrors.name
-                      ? 'rgba(211, 47, 47, 0.04)'
-                      : formData.name && !validationErrors.name
-                      ? 'rgba(56, 142, 60, 0.04)'
-                      : 'white',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                    },
-                    '&.Mui-focused': {
-                      boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                  },
-                }}
-              />
-
-              {/* HIERARCHICAL CASCADE: Area → City → Neighborhood */}
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {/* Step 1: Select Area */}
-                <FormControl sx={{ flex: 1, minWidth: '200px' }} required>
-                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{isRTL ? 'אזור' : 'Area'}</InputLabel>
-                  <Select
-                    value={selectedAreaId}
-                    onChange={handleAreaChange as any}
-                    label={isRTL ? 'אזור' : 'Area'}
-                    sx={{
-                      borderRadius: '12px',
-                      backgroundColor: 'white',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                      },
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>בחר אזור</em>
-                    </MenuItem>
-                    {areas.map((area) => (
-                      <MenuItem key={area.id} value={area.id}>
-                        {area.regionName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Step 2: Select City (filtered by area) */}
-                <FormControl sx={{ flex: 1, minWidth: '200px' }} required disabled={!selectedAreaId}>
-                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>עיר</InputLabel>
-                  <Select
-                    value={selectedCityId}
-                    onChange={handleCityChange as any}
-                    label="עיר"
-                    sx={{
-                      borderRadius: '12px',
-                      backgroundColor: 'white',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                      },
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>בחר עיר</em>
-                    </MenuItem>
-                    {filteredCities.map((city) => (
-                      <MenuItem key={city.id} value={city.id}>
-                        {city.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {/* Step 3: Select Neighborhood (filtered by city) */}
-                <FormControl sx={{ flex: 1, minWidth: '200px' }} required error={!!errors.siteId} disabled={!selectedCityId}>
-                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{t('site')}</InputLabel>
-                  <Select
-                    value={formData.siteId}
-                    onChange={(e) => handleChange('siteId')(e as any)}
-                    label={t('site')}
-                    sx={{
-                      borderRadius: '12px',
-                      backgroundColor: 'white',
-                      '&:hover': {
-                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                      },
-                    }}
-                  >
-                    <MenuItem value="">
-                      <em>בחר שכונה</em>
-                    </MenuItem>
-                    {filteredNeighborhoods.map((neighborhood) => (
-                      <MenuItem key={neighborhood.id} value={neighborhood.id}>
-                        {neighborhood.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.siteId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
-                      {errors.siteId}
-                    </Typography>
-                  )}
-                </FormControl>
-
-                {/* Activist Coordinator */}
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
-                  <Autocomplete
-                    value={neighborhoodCoordinators.find((ac) => ac.id === formData.supervisorId) || null}
-                    onChange={(event, newValue) => {
-                      setFormData((prev) => ({ ...prev, supervisorId: newValue?.id || '' }));
-                      if (errors.supervisorId) {
-                        setErrors((prev) => ({ ...prev, supervisorId: undefined }));
-                      }
-                    }}
-                    options={neighborhoodCoordinators}
-                    getOptionLabel={(option) => option.name}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                    noOptionsText={
-                      loadingCoordinators
-                        ? 'טוען רכזים...'
-                        : !formData.siteId
-                        ? 'נא לבחור שכונה תחילה'
-                        : 'אין רכזים משוייכים לשכונה זו'
-                    }
-                    loading={loadingCoordinators}
-                    disabled={!formData.siteId || loadingCoordinators}
-                    fullWidth
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="רכז שכונתי"
-                        placeholder="חפש לפי שם או אימייל..."
-                        error={!!errors.supervisorId}
-                        helperText={errors.supervisorId}
-                        required
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            backgroundColor: 'white',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
-                            },
-                            '&.Mui-focused': {
-                              boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
-                            },
-                          },
-                          '& .MuiInputLabel-root': {
-                            fontSize: '1rem',
-                            fontWeight: 500,
-                          },
-                        }}
-                      />
-                    )}
-                    renderOption={(props, option) => {
-                      const { key, ...otherProps } = props as any;
-                      return (
-                        <Box
-                          component="li"
-                          key={key}
-                          {...otherProps}
-                          sx={{
-                            padding: '12px 16px !important',
-                            '&:hover': {
-                              backgroundColor: 'rgba(97, 97, 255, 0.08)',
-                            },
-                          }}
-                        >
-                          <Box sx={{ width: '100%' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {option.name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {option.email}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      );
-                    }}
-                    filterOptions={(options, { inputValue }) => {
-                      const searchTerm = inputValue.toLowerCase();
-                      return options.filter(
-                        (option) =>
-                          option.name.toLowerCase().includes(searchTerm) ||
-                          option.email.toLowerCase().includes(searchTerm)
-                      );
-                    }}
-                    sx={{
-                      '& .MuiAutocomplete-popupIndicator': {
-                        color: 'primary.main',
-                      },
-                      '& .MuiAutocomplete-clearIndicator': {
-                        color: 'primary.main',
-                      },
-                    }}
-                  />
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Login Access Section (Create mode only) - 2025 UX Improved */}
+          {/* Login Access Section (Create mode only) - 2025 UX: MOVED TO TOP for mobile visibility */}
           {mode === 'create' && (
             <Box
               sx={{
@@ -1001,8 +731,10 @@ export default function ActivistModal({
                               fontFamily: 'monospace',
                               fontWeight: 700,
                               color: '#D68000',
-                              fontSize: { xs: '22px', sm: '28px' },
-                              letterSpacing: { xs: '3px', sm: '4px' },
+                              fontSize: { xs: '20px', sm: '28px' },
+                              letterSpacing: { xs: '1px', sm: '4px' },
+                              wordBreak: 'break-all',
+                              overflowWrap: 'break-word',
                             }}
                           >
                             {formData.generatedPassword}
@@ -1053,6 +785,279 @@ export default function ActivistModal({
               </Box>
             </Box>
           )}
+
+          {/* Basic Information */}
+          <Box
+            sx={{
+              p: 3,
+              borderRadius: '16px',
+              backgroundColor: '#FAFBFC',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#F5F6F8',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              },
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 700,
+                color: 'primary.main',
+                mb: 3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 6,
+                  height: 24,
+                  borderRadius: '3px',
+                  background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
+                }}
+              />
+              מידע בסיסי
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2.5, sm: 3 } }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <TextField
+                  label={t('name')}
+                  value={formData.name}
+                  onChange={handleChange('name')}
+                  error={!!(validationErrors.name || errors.name)}
+                  helperText={validationErrors.name || errors.name}
+                  required
+                  autoFocus
+                  InputProps={{
+                    endAdornment: validationErrors.name ? (
+                      <InputAdornment position="end">
+                        <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : formData.name && !validationErrors.name ? (
+                      <InputAdornment position="end">
+                        <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : null,
+                  }}
+                  sx={{
+                    flex: 1,
+                    minWidth: '200px',
+                    '& input': {
+                      fontSize: '16px', // Prevents iOS zoom on focus
+                      minHeight: '24px',
+                      padding: '16px 14px',
+                    },
+                    '& .MuiOutlinedInput-root': {
+                      minHeight: '56px', // 44px touch target + padding
+                      borderRadius: '12px',
+                      backgroundColor: validationErrors.name
+                        ? 'rgba(211, 47, 47, 0.04)'
+                        : formData.name && !validationErrors.name
+                        ? 'rgba(56, 142, 60, 0.04)'
+                        : 'white',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* HIERARCHICAL CASCADE: Area → City → Neighborhood */}
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {/* Step 1: Select Area */}
+                <FormControl sx={{ flex: 1, minWidth: '200px' }} required>
+                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{isRTL ? 'אזור' : 'Area'}</InputLabel>
+                  <Select
+                    value={selectedAreaId}
+                    onChange={handleAreaChange as any}
+                    label={isRTL ? 'אזור' : 'Area'}
+                    sx={{
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>בחר אזור</em>
+                    </MenuItem>
+                    {areas.map((area) => (
+                      <MenuItem key={area.id} value={area.id}>
+                        {area.regionName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Step 2: Select City (filtered by area) */}
+                <FormControl sx={{ flex: 1, minWidth: '200px' }} required disabled={!selectedAreaId}>
+                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>עיר</InputLabel>
+                  <Select
+                    value={selectedCityId}
+                    onChange={handleCityChange as any}
+                    label="עיר"
+                    sx={{
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>בחר עיר</em>
+                    </MenuItem>
+                    {filteredCities.map((city) => (
+                      <MenuItem key={city.id} value={city.id}>
+                        {city.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {/* Step 3: Select Neighborhood (filtered by city) */}
+                <FormControl sx={{ flex: 1, minWidth: '200px' }} required error={!!errors.siteId} disabled={!selectedCityId}>
+                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{t('site')}</InputLabel>
+                  <Select
+                    value={formData.siteId}
+                    onChange={(e) => handleChange('siteId')(e as any)}
+                    label={t('site')}
+                    sx={{
+                      borderRadius: '12px',
+                      backgroundColor: 'white',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>בחר שכונה</em>
+                    </MenuItem>
+                    {filteredNeighborhoods.map((neighborhood) => (
+                      <MenuItem key={neighborhood.id} value={neighborhood.id}>
+                        {neighborhood.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.siteId && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                      {errors.siteId}
+                    </Typography>
+                  )}
+                </FormControl>
+
+                {/* Activist Coordinator */}
+                <Box sx={{ flex: 1, minWidth: '200px' }}>
+                  <Autocomplete
+                    value={neighborhoodCoordinators.find((ac) => ac.id === formData.supervisorId) || null}
+                    onChange={(event, newValue) => {
+                      setFormData((prev) => ({ ...prev, supervisorId: newValue?.id || '' }));
+                      if (errors.supervisorId) {
+                        setErrors((prev) => ({ ...prev, supervisorId: undefined }));
+                      }
+                    }}
+                    options={neighborhoodCoordinators}
+                    getOptionLabel={(option) => option.name}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    noOptionsText={
+                      loadingCoordinators
+                        ? 'טוען רכזים...'
+                        : !formData.siteId
+                        ? 'נא לבחור שכונה תחילה'
+                        : 'אין רכזים משוייכים לשכונה זו'
+                    }
+                    loading={loadingCoordinators}
+                    disabled={!formData.siteId || loadingCoordinators}
+                    fullWidth
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="רכז שכונתי"
+                        placeholder="חפש לפי שם או אימייל..."
+                        error={!!errors.supervisorId}
+                        helperText={errors.supervisorId}
+                        required
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            backgroundColor: 'white',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                            },
+                            '&.Mui-focused': {
+                              boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                            },
+                          },
+                          '& .MuiInputLabel-root': {
+                            fontSize: '1rem',
+                            fontWeight: 500,
+                          },
+                        }}
+                      />
+                    )}
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props as any;
+                      return (
+                        <Box
+                          component="li"
+                          key={key}
+                          {...otherProps}
+                          sx={{
+                            padding: '12px 16px !important',
+                            '&:hover': {
+                              backgroundColor: 'rgba(97, 97, 255, 0.08)',
+                            },
+                          }}
+                        >
+                          <Box sx={{ width: '100%' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {option.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    }}
+                    filterOptions={(options, { inputValue }) => {
+                      const searchTerm = inputValue.toLowerCase();
+                      return options.filter(
+                        (option) =>
+                          option.name.toLowerCase().includes(searchTerm) ||
+                          option.email.toLowerCase().includes(searchTerm)
+                      );
+                    }}
+                    sx={{
+                      '& .MuiAutocomplete-popupIndicator': {
+                        color: 'primary.main',
+                      },
+                      '& .MuiAutocomplete-clearIndicator': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
+          </Box>
         </Box>
       </DialogContent>
 

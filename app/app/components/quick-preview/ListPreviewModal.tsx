@@ -201,7 +201,7 @@ export default function ListPreviewModal({
                       }
                       secondary={
                         item.subtitle && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" component="span">
                             {item.subtitle}
                           </Typography>
                         )

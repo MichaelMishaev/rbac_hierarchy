@@ -246,6 +246,7 @@ export default function SmartAssignmentDialog({
                         )}
                       </Box>
                     }
+                    primaryTypographyProps={{ component: 'div' }}
                     secondary={
                       <Box sx={{ mt: 1 }}>
                         {/* Score Progress Bar */}
@@ -290,6 +291,7 @@ export default function SmartAssignmentDialog({
                         </Box>
                       </Box>
                     }
+                    secondaryTypographyProps={{ component: 'div' }}
                   />
                 </ListItem>
               ))}

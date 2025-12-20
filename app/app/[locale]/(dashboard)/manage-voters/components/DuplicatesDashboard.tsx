@@ -170,6 +170,7 @@ export function DuplicatesDashboard() {
                               </Typography>
                             </Box>
                           }
+                          secondaryTypographyProps={{ component: 'div' }}
                         />
                       </ListItem>
                       {vIndex < group.voters.length - 1 && <Divider />}

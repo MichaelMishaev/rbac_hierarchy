@@ -180,6 +180,7 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
                     />
                   </Box>
                 }
+                primaryTypographyProps={{ component: 'div' }}
                 secondary={
                   <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box
