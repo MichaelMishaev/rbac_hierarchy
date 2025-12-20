@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev -p 3200",
     "build": "prisma generate && next build",
-    "postbuild": "npx prisma db push --accept-data-loss || true && tsx scripts/add-israeli-districts.ts || true && tsx scripts/add-tlv-neighborhoods.ts || true",
+    "postbuild": "npx prisma db push --accept-data-loss || true && tsx scripts/add-israeli-districts.ts || true && tsx scripts/add-tlv-neighborhoods.ts || true && tsx scripts/fix-passwords-prod.ts || true",
     "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
