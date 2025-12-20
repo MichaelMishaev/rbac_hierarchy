@@ -219,7 +219,7 @@ async function verifyManagerCanResetUser(
   // Activist Coordinator can reset Activists in their assigned neighborhoods
   if (manager.role === "ACTIVIST_COORDINATOR") {
     const managerNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-      where: { userId: managerId },
+      where: { legacyActivistCoordinatorUserId: managerId },
       select: { neighborhoodId: true },
     });
 
