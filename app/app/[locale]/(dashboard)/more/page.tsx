@@ -11,6 +11,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpIcon from '@mui/icons-material/Help';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 import BusinessIcon from '@mui/icons-material/Business';
+import PeopleIcon from '@mui/icons-material/People';
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { LogoutButton } from '@/app/components/LogoutButton';
@@ -46,6 +47,21 @@ export default async function MorePage() {
           </ListItem>
 
           <Divider />
+
+          {/* Users - All except Activist Coordinator */}
+          {role !== 'ACTIVIST_COORDINATOR' && role !== 'ACTIVIST' && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton href="/users">
+                  <ListItemIcon>
+                    <PeopleIcon sx={{ color: colors.primary.main }} />
+                  </ListItemIcon>
+                  <ListItemText primary="משתמשים" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+            </>
+          )}
 
           {/* Cities - Only for Area Managers and SuperAdmin */}
           {(role === 'AREA_MANAGER' || role === 'SUPERADMIN') && (

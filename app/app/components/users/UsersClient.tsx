@@ -22,6 +22,10 @@ import {
   FormControl,
   InputLabel,
   Grid,
+  Card,
+  CardContent,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -132,6 +136,8 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -359,16 +365,26 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const hasActiveFilters = nameFilter || emailFilter || areaFilter || cityFilter;
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
       {/* Header */}
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
+      <Box
+        sx={{
+          mb: { xs: 3, md: 4 },
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: 2,
+        }}
+      >
+        <Box sx={{ flex: 1 }}>
           <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
               color: colors.neutral[800],
               mb: 0.5,
+              fontSize: { xs: '1.5rem', md: '2rem' },
             }}
           >
             {t('title')}
@@ -377,37 +393,37 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
             variant="body1"
             sx={{
               color: colors.neutral[500],
+              fontSize: { xs: '0.875rem', md: '1rem' },
             }}
           >
             {t('description')}
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          {/* Add User Button */}
-          {currentUserRole !== 'ACTIVIST_COORDINATOR' && (
-            <RtlButton
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreateUser}
-              data-testid="users-create"
-              sx={{
-                background: colors.primary.main,
-                color: colors.secondary.white,
-                px: 3,
-                py: 1.5,
-                borderRadius: borderRadius.md,
-                boxShadow: shadows.soft,
-                '&:hover': {
-                  background: colors.primary.dark,
-                  boxShadow: shadows.glowBlue,
-                },
-              }}
-            >
-              {t('newUser')}
-            </RtlButton>
-          )}
-        </Box>
+        {/* Add User Button */}
+        {currentUserRole !== 'ACTIVIST_COORDINATOR' && (
+          <RtlButton
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateUser}
+            data-testid="users-create"
+            sx={{
+              background: colors.primary.main,
+              color: colors.secondary.white,
+              px: { xs: 2, md: 3 },
+              py: { xs: 1.25, md: 1.5 },
+              borderRadius: borderRadius.md,
+              boxShadow: shadows.soft,
+              alignSelf: { xs: 'stretch', sm: 'center' },
+              '&:hover': {
+                background: colors.primary.dark,
+                boxShadow: shadows.glowBlue,
+              },
+            }}
+          >
+            {t('newUser')}
+          </RtlButton>
+        )}
       </Box>
 
       {/* Filters Section */}
@@ -578,147 +594,296 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         </Grid>
       </Paper>
 
-      {/* Users Table */}
-      <TableContainer
-        component={Paper}
-        sx={{
-          borderRadius: borderRadius.lg,
-          boxShadow: shadows.soft,
-          border: `1px solid ${colors.neutral[200]}`,
-        }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow
+      {/* Users List - Mobile Card View / Desktop Table */}
+      {isMobile ? (
+        // Mobile Card View
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filteredUsers.length === 0 ? (
+            <Paper
               sx={{
-                backgroundColor: colors.neutral[50],
+                p: 6,
+                textAlign: 'center',
+                borderRadius: borderRadius.lg,
+                boxShadow: shadows.soft,
+                border: `1px solid ${colors.neutral[200]}`,
               }}
             >
-              <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {t('name')}
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {t('email')}
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {t('phone')}
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {t('role')}
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {t('corporation')}
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {t('lastLogin')}
-              </TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                {tCommon('actions')}
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                  <PersonIcon sx={{ fontSize: 64, color: colors.neutral[300], mb: 2 }} />
-                  <Typography variant="h6" sx={{ color: colors.neutral[600], mb: 1 }}>
-                    {hasActiveFilters ? 'לא נמצאו משתמשים' : t('noUsers')}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: colors.neutral[400] }}>
-                    {hasActiveFilters ? 'נסה לשנות את הסינונים' : t('createFirst')}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredUsers.map((user) => (
-                <TableRow
-                  key={user.id}
-                  sx={{
-                    '&:hover': {
-                      backgroundColor: colors.neutral[50],
-                    },
-                  }}
-                >
-                  {/* Name with Avatar */}
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <PersonIcon sx={{ fontSize: 64, color: colors.neutral[300], mb: 2 }} />
+              <Typography variant="h6" sx={{ color: colors.neutral[600], mb: 1 }}>
+                {hasActiveFilters ? 'לא נמצאו משתמשים' : t('noUsers')}
+              </Typography>
+              <Typography variant="body2" sx={{ color: colors.neutral[400] }}>
+                {hasActiveFilters ? 'נסה לשנות את הסינונים' : t('createFirst')}
+              </Typography>
+            </Paper>
+          ) : (
+            filteredUsers.map((user) => (
+              <Card
+                key={user.id}
+                sx={{
+                  borderRadius: borderRadius.lg,
+                  boxShadow: shadows.soft,
+                  border: `1px solid ${colors.neutral[200]}`,
+                  '&:hover': {
+                    boxShadow: shadows.large,
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  {/* Header: Avatar, Name, Actions */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
                       <Avatar
                         src={user.avatarUrl || undefined}
                         sx={{
-                          width: 40,
-                          height: 40,
+                          width: 48,
+                          height: 48,
                           bgcolor: colors.primary.ultraLight,
                           color: colors.primary.main,
                         }}
                       >
                         {user.fullName.charAt(0).toUpperCase()}
                       </Avatar>
-                      <Typography sx={{ fontWeight: 500, color: colors.neutral[800] }}>
-                        {user.fullName}
-                      </Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            color: colors.neutral[800],
+                            fontSize: '16px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {user.fullName}
+                        </Typography>
+                        <Chip
+                          label={getRoleLabel(user.role)}
+                          size="small"
+                          sx={{
+                            backgroundColor: `${getRoleColor(user.role)}20`,
+                            color: getRoleColor(user.role),
+                            fontWeight: 600,
+                            fontSize: '11px',
+                            height: '20px',
+                            mt: 0.5,
+                            borderRadius: borderRadius.full,
+                          }}
+                        />
+                      </Box>
                     </Box>
-                  </TableCell>
-
-                  {/* Email */}
-                  <TableCell>
-                    <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                      {user.email}
-                    </Typography>
-                  </TableCell>
-
-                  {/* Phone */}
-                  <TableCell>
-                    <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                      {user.phone || '-'}
-                    </Typography>
-                  </TableCell>
-
-                  {/* Role */}
-                  <TableCell>
-                    <Chip
-                      label={getRoleLabel(user.role)}
-                      size="small"
-                      sx={{
-                        backgroundColor: `${getRoleColor(user.role)}20`,
-                        color: getRoleColor(user.role),
-                        fontWeight: 600,
-                        fontSize: '12px',
-                        borderRadius: borderRadius.full,
-                      }}
-                    />
-                  </TableCell>
-
-                  {/* Corporation */}
-                  <TableCell>
-                    <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                      {getCorporationDisplay(user)}
-                    </Typography>
-                  </TableCell>
-
-                  {/* Last Login */}
-                  <TableCell>
-                    <Typography sx={{ color: colors.neutral[500], fontSize: '13px' }}>
-                      {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleDateString('he-IL')
-                        : '-'}
-                    </Typography>
-                  </TableCell>
-
-                  {/* Actions */}
-                  <TableCell align="right">
                     {canManageUser(currentUserRole, user.role) && (
-                      <IconButton onClick={(e) => handleMenuOpen(e, user)} size="small">
+                      <IconButton
+                        onClick={(e) => handleMenuOpen(e, user)}
+                        size="small"
+                        sx={{ marginInlineStart: 1 }}
+                      >
                         <MoreVertIcon />
                       </IconButton>
                     )}
+                  </Box>
+
+                  {/* Details Grid */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5, mt: 2 }}>
+                    {/* Email */}
+                    <Box>
+                      <Typography sx={{ fontSize: '12px', color: colors.neutral[500], mb: 0.5 }}>
+                        {t('email')}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: '14px',
+                          color: colors.neutral[700],
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {user.email}
+                      </Typography>
+                    </Box>
+
+                    {/* Phone */}
+                    {user.phone && (
+                      <Box>
+                        <Typography sx={{ fontSize: '12px', color: colors.neutral[500], mb: 0.5 }}>
+                          {t('phone')}
+                        </Typography>
+                        <Typography sx={{ fontSize: '14px', color: colors.neutral[700] }}>
+                          {user.phone}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {/* Corporation */}
+                    <Box>
+                      <Typography sx={{ fontSize: '12px', color: colors.neutral[500], mb: 0.5 }}>
+                        {t('corporation')}
+                      </Typography>
+                      <Typography sx={{ fontSize: '14px', color: colors.neutral[700] }}>
+                        {getCorporationDisplay(user)}
+                      </Typography>
+                    </Box>
+
+                    {/* Last Login */}
+                    {user.lastLoginAt && (
+                      <Box>
+                        <Typography sx={{ fontSize: '12px', color: colors.neutral[500], mb: 0.5 }}>
+                          {t('lastLogin')}
+                        </Typography>
+                        <Typography sx={{ fontSize: '14px', color: colors.neutral[700] }}>
+                          {new Date(user.lastLoginAt).toLocaleDateString('he-IL')}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      ) : (
+        // Desktop Table View
+        <TableContainer
+          component={Paper}
+          sx={{
+            borderRadius: borderRadius.lg,
+            boxShadow: shadows.soft,
+            border: `1px solid ${colors.neutral[200]}`,
+          }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow
+                sx={{
+                  backgroundColor: colors.neutral[50],
+                }}
+              >
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {t('name')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {t('email')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {t('phone')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {t('role')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {t('corporation')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {t('lastLogin')}
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                  {tCommon('actions')}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                    <PersonIcon sx={{ fontSize: 64, color: colors.neutral[300], mb: 2 }} />
+                    <Typography variant="h6" sx={{ color: colors.neutral[600], mb: 1 }}>
+                      {hasActiveFilters ? 'לא נמצאו משתמשים' : t('noUsers')}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colors.neutral[400] }}>
+                      {hasActiveFilters ? 'נסה לשנות את הסינונים' : t('createFirst')}
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow
+                    key={user.id}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: colors.neutral[50],
+                      },
+                    }}
+                  >
+                    {/* Name with Avatar */}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar
+                          src={user.avatarUrl || undefined}
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            bgcolor: colors.primary.ultraLight,
+                            color: colors.primary.main,
+                          }}
+                        >
+                          {user.fullName.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Typography sx={{ fontWeight: 500, color: colors.neutral[800] }}>
+                          {user.fullName}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+
+                    {/* Email */}
+                    <TableCell>
+                      <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
+                        {user.email}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Phone */}
+                    <TableCell>
+                      <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
+                        {user.phone || '-'}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Role */}
+                    <TableCell>
+                      <Chip
+                        label={getRoleLabel(user.role)}
+                        size="small"
+                        sx={{
+                          backgroundColor: `${getRoleColor(user.role)}20`,
+                          color: getRoleColor(user.role),
+                          fontWeight: 600,
+                          fontSize: '12px',
+                          borderRadius: borderRadius.full,
+                        }}
+                      />
+                    </TableCell>
+
+                    {/* Corporation */}
+                    <TableCell>
+                      <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
+                        {getCorporationDisplay(user)}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Last Login */}
+                    <TableCell>
+                      <Typography sx={{ color: colors.neutral[500], fontSize: '13px' }}>
+                        {user.lastLoginAt
+                          ? new Date(user.lastLoginAt).toLocaleDateString('he-IL')
+                          : '-'}
+                      </Typography>
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell align="right">
+                      {canManageUser(currentUserRole, user.role) && (
+                        <IconButton onClick={(e) => handleMenuOpen(e, user)} size="small">
+                          <MoreVertIcon />
+                        </IconButton>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* Context Menu */}
       <Menu
