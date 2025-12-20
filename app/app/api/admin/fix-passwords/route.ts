@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
 
     for (const email of testUsers) {
       try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true, email: true },
+        });
 
         if (!user) {
           console.log(`⚠️  User not found: ${email}`);
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
         updated++;
       } catch (error) {
         console.error(`❌ Error updating ${email}:`, error);
-        results.push(`❌ Error: ${email}`);
+        results.push(`❌ Error: ${email} - ${String(error)}`);
       }
     }
 
