@@ -152,42 +152,73 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
   return (
     <Box dir="rtl" sx={{ width: '100%' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: { xs: 2, sm: 3 },
+          px: { xs: 0.5, sm: 0 },
+        }}
+      >
+        <Typography variant="h5" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           רשימת בוחרים ({filteredVoters.length})
         </Typography>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: '24px' }}>
+        <Alert
+          severity="error"
+          sx={{
+            mb: { xs: 2, sm: 3 },
+            borderRadius: { xs: '16px', sm: '24px' },
+            fontSize: { xs: '0.875rem', sm: '1rem' },
+          }}
+        >
           {error}
         </Alert>
       )}
 
       {/* Filters */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1.5, sm: 2 },
+          mb: { xs: 2, sm: 3 },
+          px: { xs: 0.5, sm: 0 },
+        }}
+      >
         <TextField
           label="חיפוש"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="שם, טלפון, אימייל"
+          fullWidth
           sx={{
-            minWidth: { xs: '100%', sm: 250 },
-            flex: { xs: '1 1 100%', sm: '0 0 auto' },
             '& .MuiOutlinedInput-root': {
-              borderRadius: '32px', // 2025 UI/UX: Significantly rounded
+              borderRadius: { xs: '16px', sm: '32px' },
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              minHeight: { xs: 44, sm: 56 }, // WCAG touch target
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: { xs: '0.875rem', sm: '1rem' },
             },
           }}
         />
 
-        <FormControl sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
-          <InputLabel>רמת תמיכה</InputLabel>
+        <FormControl fullWidth>
+          <InputLabel sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+            רמת תמיכה
+          </InputLabel>
           <Select
             value={supportFilter}
             onChange={(e) => setSupportFilter(e.target.value)}
             label="רמת תמיכה"
             sx={{
-              borderRadius: '32px', // 2025 UI/UX: Significantly rounded
+              borderRadius: { xs: '16px', sm: '32px' },
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              minHeight: { xs: 44, sm: 56 }, // WCAG touch target
             }}
           >
             <MenuItem value="">הכל</MenuItem>
@@ -198,14 +229,18 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
           </Select>
         </FormControl>
 
-        <FormControl sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
-          <InputLabel>סטטוס קשר</InputLabel>
+        <FormControl fullWidth>
+          <InputLabel sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+            סטטוס קשר
+          </InputLabel>
           <Select
             value={contactFilter}
             onChange={(e) => setContactFilter(e.target.value)}
             label="סטטוס קשר"
             sx={{
-              borderRadius: '32px', // 2025 UI/UX: Significantly rounded
+              borderRadius: { xs: '16px', sm: '32px' },
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              minHeight: { xs: 44, sm: 56 }, // WCAG touch target
             }}
           >
             <MenuItem value="">הכל</MenuItem>
@@ -221,22 +256,52 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
       <TableContainer
         component={Paper}
         sx={{
-          borderRadius: '32px', // 2025 UI/UX: Significantly rounded
-          overflow: 'hidden', // Ensure rounded corners work
+          borderRadius: { xs: '16px', sm: '32px' },
+          overflow: 'auto', // Enable horizontal scroll on mobile
           boxShadow: 2,
+          // Mobile: Enable horizontal scroll for wide table
+          '&::-webkit-scrollbar': {
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'rgba(0,0,0,0.05)',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0,0,0,0.2)',
+            borderRadius: '4px',
+          },
         }}
       >
-        <Table>
+        <Table sx={{ minWidth: { xs: 900, md: 'auto' } }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'primary.light' }}>
-              <TableCell>שם מלא</TableCell>
-              <TableCell>טלפון</TableCell>
-              <TableCell>רמת תמיכה</TableCell>
-              <TableCell>סטטוס קשר</TableCell>
-              <TableCell>עדיפות</TableCell>
-              <TableCell>הוכנס על ידי</TableCell>
-              <TableCell>תאריך הכנסה</TableCell>
-              <TableCell align="center">פעולות</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                שם מלא
+              </TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                טלפון
+              </TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                רמת תמיכה
+              </TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                סטטוס קשר
+              </TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                עדיפות
+              </TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                הוכנס על ידי
+              </TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
+                תאריך הכנסה
+              </TableCell>
+              <TableCell
+                align="center"
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}
+              >
+                פעולות
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -255,72 +320,119 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
                   hover
                   sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
                 >
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight="medium"
+                      sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}
+                    >
                       {voter.fullName}
                     </Typography>
                     {voter.email && (
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: { xs: '0.6875rem', sm: '0.75rem' } }}
+                      >
                         {voter.email}
                       </Typography>
                     )}
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PhoneIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{voter.phone}</Typography>
+                      <PhoneIcon sx={{ fontSize: { xs: 16, sm: 18 } }} color="action" />
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}
+                      >
+                        {voter.phone}
+                      </Typography>
                     </Box>
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
                     {voter.supportLevel && (
                       <Chip
                         label={voter.supportLevel}
                         size="small"
                         color={getSupportLevelColor(voter.supportLevel) as any}
-                        sx={{ borderRadius: '20px' }} // 2025 UI/UX: Rounded pills
+                        sx={{
+                          borderRadius: '20px',
+                          fontSize: { xs: '0.6875rem', sm: '0.75rem' },
+                          height: { xs: 24, sm: 28 },
+                        }}
                       />
                     )}
                   </TableCell>
 
-                  <TableCell>
-                    <Typography variant="body2">
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}
+                    >
                       {voter.contactStatus || '-'}
                     </Typography>
                   </TableCell>
 
-                  <TableCell>
-                    <Typography variant="body2">{voter.priority || '-'}</Typography>
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}
+                    >
+                      {voter.priority || '-'}
+                    </Typography>
                   </TableCell>
 
-                  <TableCell>
-                    <Typography variant="body2" fontSize="0.875rem">
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       {voter.insertedByUserName}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.6875rem', sm: '0.75rem' } }}
+                    >
                       {getRoleInHebrew(voter.insertedByUserRole)}
                     </Typography>
                   </TableCell>
 
-                  <TableCell>
-                    <Typography variant="body2" fontSize="0.875rem">
+                  <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       {format(new Date(voter.insertedAt), 'dd/MM/yyyy', {
                         locale: he,
                       })}
                     </Typography>
                   </TableCell>
 
-                  <TableCell align="center">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                  <TableCell align="center" sx={{ py: { xs: 1.5, sm: 2 } }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: { xs: 0.25, sm: 0.5 },
+                        justifyContent: 'center',
+                        flexWrap: 'nowrap',
+                      }}
+                    >
                       {onViewVoter && (
                         <Tooltip title="צפייה">
                           <IconButton
                             size="small"
                             onClick={() => onViewVoter(voter)}
                             color="primary"
+                            sx={{
+                              minWidth: { xs: 36, sm: 40 },
+                              minHeight: { xs: 36, sm: 40 },
+                              p: { xs: 0.5, sm: 1 },
+                            }}
                           >
-                            <ViewIcon fontSize="small" />
+                            <ViewIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                           </IconButton>
                         </Tooltip>
                       )}
@@ -331,8 +443,13 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
                             size="small"
                             onClick={() => onEditVoter(voter)}
                             color="primary"
+                            sx={{
+                              minWidth: { xs: 36, sm: 40 },
+                              minHeight: { xs: 36, sm: 40 },
+                              p: { xs: 0.5, sm: 1 },
+                            }}
                           >
-                            <EditIcon fontSize="small" />
+                            <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                           </IconButton>
                         </Tooltip>
                       )}
@@ -342,8 +459,13 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
                           size="small"
                           onClick={() => handleDelete(voter.id)}
                           color="error"
+                          sx={{
+                            minWidth: { xs: 36, sm: 40 },
+                            minHeight: { xs: 36, sm: 40 },
+                            p: { xs: 0.5, sm: 1 },
+                          }}
                         >
-                          <DeleteIcon fontSize="small" />
+                          <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                         </IconButton>
                       </Tooltip>
 
@@ -354,8 +476,13 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
                             size="small"
                             onClick={() => setSelectedDuplicateVoter(voter)}
                             color="warning"
+                            sx={{
+                              minWidth: { xs: 36, sm: 40 },
+                              minHeight: { xs: 36, sm: 40 },
+                              p: { xs: 0.5, sm: 1 },
+                            }}
                           >
-                            <DuplicateIcon fontSize="small" />
+                            <DuplicateIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                           </IconButton>
                         </Tooltip>
                       )}

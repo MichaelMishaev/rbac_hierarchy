@@ -74,33 +74,57 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
   };
 
   return (
-    <Box dir="rtl" sx={{ p: 3 }}>
+    <Box dir="rtl" sx={{ p: { xs: 2, sm: 3 } }}>
       {/* Header */}
       <Box
         sx={{
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: { xs: 2, sm: 0 },
           mb: 3,
         }}
       >
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            minHeight: { xs: 40, sm: 48 },
+            '& .MuiTab-root': {
+              minHeight: { xs: 40, sm: 48 },
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+            },
+          }}
+        >
           <Tab label="רשימת בוחרים" />
           <Tab label="סטטיסטיקות" />
           {isSuperAdmin && <Tab label="כפילויות" />}
         </Tabs>
 
         {activeTab === 0 && (
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 1.5, sm: 2 },
+              mt: { xs: 0, sm: 0 },
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<UploadIcon />}
               onClick={() => setUploadDialogOpen(true)}
+              fullWidth={true}
               sx={{
-                borderRadius: '50px !important',
-                px: 3,
-                py: 1.25,
+                borderRadius: '9999px',
+                px: { xs: 2.5, sm: 3 },
+                py: { xs: 1, sm: 1.25 },
                 fontWeight: 600,
+                minHeight: 44, // WCAG 2.1 touch target
+                fontSize: { xs: '0.875rem', sm: '1rem' },
               }}
             >
               ייבוא מאקסל
@@ -109,11 +133,14 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setCreateDialogOpen(true)}
+              fullWidth={true}
               sx={{
-                borderRadius: '50px !important', // Pill-shaped (2025 UI/UX standard)
-                px: 3,
-                py: 1.25,
+                borderRadius: '9999px', // Pill-shaped (2025 UI/UX standard)
+                px: { xs: 2.5, sm: 3 },
+                py: { xs: 1, sm: 1.25 },
                 fontWeight: 600,
+                minHeight: 44, // WCAG 2.1 touch target
+                fontSize: { xs: '0.875rem', sm: '1rem' },
                 boxShadow: 2,
                 '&:hover': {
                   boxShadow: 4,
