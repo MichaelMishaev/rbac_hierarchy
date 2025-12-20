@@ -15,7 +15,7 @@ import { colors } from '@/lib/design-system';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import MapIcon from '@mui/icons-material/Map';
+import HowToVoteIcon from '@mui/icons-material/HowToVote';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
 
@@ -31,13 +31,13 @@ export default function MobileBottomNav() {
   const getActiveIndex = () => {
     if (currentPath === '/dashboard') return 0;
     if (currentPath.startsWith('/activists')) return 1;
-    if (currentPath.startsWith('/tasks')) return 2;
-    if (currentPath.startsWith('/map')) return 3;
+    if (currentPath.startsWith('/manage-voters') || currentPath.startsWith('/voters')) return 2;
+    if (currentPath.startsWith('/tasks')) return 3;
     return 4; // More
   };
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    const paths = ['/dashboard', '/activists', '/tasks', '/map', '/more'];
+    const paths = ['/dashboard', '/activists', '/manage-voters', '/tasks', '/more'];
     router.push(paths[newValue] ?? '/dashboard');
   };
 
@@ -89,6 +89,11 @@ export default function MobileBottomNav() {
           icon={<GroupIcon />}
         />
         <BottomNavigationAction
+          data-testid="bottom-nav-voters"
+          label="בוחרים"
+          icon={<HowToVoteIcon />}
+        />
+        <BottomNavigationAction
           data-testid="bottom-nav-tasks"
           label="משימות"
           icon={
@@ -96,11 +101,6 @@ export default function MobileBottomNav() {
               <AssignmentIcon />
             </Badge>
           }
-        />
-        <BottomNavigationAction
-          data-testid="bottom-nav-map"
-          label="מפה"
-          icon={<MapIcon />}
         />
         <BottomNavigationAction
           data-testid="bottom-nav-more"
