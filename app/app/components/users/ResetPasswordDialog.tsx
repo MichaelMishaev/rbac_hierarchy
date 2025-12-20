@@ -18,7 +18,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import CloseIcon from '@mui/icons-material/Close';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
-import { resetUserPasswordByManager } from '@/app/actions/password-reset';
+import { resetUserPasswordByManager } from '@/actions/password-reset';
 
 type ResetPasswordDialogProps = {
   open: boolean;

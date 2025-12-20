@@ -143,17 +143,22 @@ async function verifyManagerCanResetUser(
     where: { id: targetUserId },
     include: {
       areaManager: true,
-      coordinatorOf: true,
+      coordinatorOf: {
+        select: {
+          cityId: true,
+        },
+      },
       activistCoordinatorOf: {
-        include: {
-          city: true,
+        select: {
+          cityId: true,
         },
       },
       activistProfile: {
-        include: {
+        select: {
+          neighborhoodId: true,
           neighborhood: {
-            include: {
-              city: true,
+            select: {
+              cityId: true,
             },
           },
         },
@@ -189,7 +194,7 @@ async function verifyManagerCanResetUser(
 
     // Can reset Activists in their area
     if (targetUser.role === "ACTIVIST" && targetUser.activistProfile) {
-      const targetCityId = targetUser.activistProfile.neighborhood.city.id;
+      const targetCityId = targetUser.activistProfile.neighborhood.cityId;
       return managerCityIds.includes(targetCityId);
     }
   }
@@ -206,7 +211,7 @@ async function verifyManagerCanResetUser(
 
     // Can reset Activists in their city
     if (targetUser.role === "ACTIVIST" && targetUser.activistProfile) {
-      const targetCityId = targetUser.activistProfile.neighborhood.city.id;
+      const targetCityId = targetUser.activistProfile.neighborhood.cityId;
       return managerCityIds.includes(targetCityId);
     }
   }

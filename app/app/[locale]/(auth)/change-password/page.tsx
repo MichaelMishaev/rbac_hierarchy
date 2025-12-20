@@ -18,7 +18,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import { colors, shadows } from '@/lib/design-system';
-import { changeOwnPassword } from '@/app/actions/password-reset';
+import { changeOwnPassword } from '@/actions/password-reset';
 
 export default function ChangePasswordPage() {
   const { data: session, update } = useSession();
