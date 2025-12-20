@@ -53,6 +53,11 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
+  // Redirect admin/managers from /voters to /manage-voters
+  if (userRole !== 'ACTIVIST' && pathnameWithoutLocale === '/voters') {
+    return NextResponse.redirect(new URL('/manage-voters', req.url));
+  }
+
   // ACTIVIST cannot access coordinator/admin routes
   if (userRole === 'ACTIVIST') {
     const blockedPaths = [
