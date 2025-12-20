@@ -56,7 +56,9 @@ SuperAdmin (system-wide)
 - **SuperAdmin/Area Manager**: Dashboard, Attendance, Map, Areas, Cities, Neighborhoods, Activists, Users
 - **City/Activist Coordinator**: Dashboard, Attendance, Neighborhoods, Activists, Users (NO Cities tab)
 
-### 🔒 LOCKED: Cities Page
+### 🔒 LOCKED Pages
+
+#### Cities Page
 **File**: `app/app/[locale]/(dashboard)/cities/page.tsx`
 **Access**: SuperAdmin & Area Manager ONLY (locked 2025-12-15)
 ```typescript
@@ -65,6 +67,22 @@ if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'AREA_MANAGER') 
   return <AccessDenied />;
 }
 ```
+
+#### Manage Voters Page (Admin/Coordinator)
+**File**: `app/app/[locale]/(dashboard)/manage-voters/page.tsx`
+**Last locked**: 2025-12-20
+**Reason**: Stable voter management with Excel import functionality
+**Related files (also locked)**:
+- `VotersPageClient.tsx` - Main client component with tabs
+- `components/ExcelUpload.tsx` - Excel import with duplicate detection
+- `components/VotersList.tsx` - Voter list table
+- `components/VoterForm.tsx` - Create/edit voter form
+- `components/VoterDetails.tsx` - Voter detail view
+- `components/VoterStatistics.tsx` - Statistics dashboard
+- `components/DuplicatesDashboard.tsx` - Duplicate voters report
+
+**⚠️ WARNING**: These files are locked. Any modifications require explicit approval.
+**URL**: `/manage-voters` (admin/coordinators auto-redirected from `/voters`)
 
 ## Development Commands
 
