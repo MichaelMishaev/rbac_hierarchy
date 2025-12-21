@@ -10,16 +10,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getAvailableRecipients } from '@/lib/tasks';
 import { Role } from '@prisma/client';
+import { withErrorHandler, ForbiddenError, UnauthorizedError } from '@/lib/error-handler';
+import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async (request: NextRequest) => {
   try {
     // 1. Authenticate user
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'נדרש אימות' },
-        { status: 401 }
-      );
+      const context = await extractRequestContext(request);
+      logger.authFailure('Unauthenticated available recipients access attempt', context);
+      throw new UnauthorizedError('נדרש אימות');
     }
 
     const userId = session.user.id as string;
@@ -27,10 +28,13 @@ export async function GET(request: NextRequest) {
 
     // 2. Validate that user can send tasks
     if (userRole === 'ACTIVIST_COORDINATOR') {
-      return NextResponse.json(
-        { error: 'רכזי שכונות לא יכולים לשלוח משימות' },
-        { status: 403 }
-      );
+      const context = await extractRequestContext(request);
+      logger.rbacViolation('Activist coordinator attempted to access recipient list', {
+        ...context,
+        ...extractSessionContext(session),
+        attemptedAction: 'get_available_recipients',
+      });
+      throw new ForbiddenError('רכזי שכונות לא יכולים לשלוח משימות');
     }
 
     // 3. Parse query parameters
@@ -87,4 +91,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

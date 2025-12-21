@@ -11,19 +11,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logTaskAudit } from '@/lib/tasks';
+import { withErrorHandler, ForbiddenError, UnauthorizedError, NotFoundError } from '@/lib/error-handler';
+import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export async function DELETE(
+export const DELETE = withErrorHandler(async (
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string }> }
-) {
+) => {
   try {
     // 1. Authenticate user
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'נדרש אימות' },
-        { status: 401 }
-      );
+      const context = await extractRequestContext(request);
+      logger.authFailure('Unauthenticated task deletion attempt', context);
+      throw new UnauthorizedError('נדרש אימות');
     }
 
     const userId = session.user.id as string;
@@ -43,17 +44,19 @@ export async function DELETE(
     });
 
     if (!task) {
-      return NextResponse.json(
-        { error: 'משימה לא נמצאה' },
-        { status: 404 }
-      );
+      throw new NotFoundError('משימה לא נמצאה');
     }
 
     if (task.senderUserId !== userId) {
-      return NextResponse.json(
-        { error: 'רק השולח יכול למחוק משימה' },
-        { status: 403 }
-      );
+      const context = await extractRequestContext(request);
+      logger.rbacViolation('User attempted to delete task they did not create', {
+        ...context,
+        ...extractSessionContext(session),
+        taskId: taskId.toString(),
+        actualSenderId: task.senderUserId,
+        attemptedAction: 'delete_task',
+      });
+      throw new ForbiddenError('רק השולח יכול למחוק משימה');
     }
 
     // 3. Check if already deleted
@@ -136,4 +139,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});

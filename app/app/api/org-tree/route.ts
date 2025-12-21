@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler, UnauthorizedError, ForbiddenError } from '@/lib/error-handler';
+import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export async function GET() {
+export const GET = withErrorHandler(async (req: Request) => {
   try {
     const session = await auth();
 
     // Require authentication
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Authentication required' },
-        { status: 401 }
-      );
+      const context = await extractRequestContext(req);
+      logger.authFailure('Unauthenticated access to org-tree', context);
+      throw new UnauthorizedError('נדרשת הזדהות');
     }
 
     const userRole = session.user.role;
@@ -36,7 +37,12 @@ export async function GET() {
         select: { cityId: true },
       });
       if (!cityCoordinator) {
-        return NextResponse.json({ error: 'City Coordinator not assigned to any city' }, { status: 403 });
+        const context = await extractRequestContext(req);
+        logger.rbacViolation('City Coordinator not assigned to any city', {
+          ...context,
+          ...extractSessionContext(session),
+        });
+        throw new ForbiddenError('רכז עיר לא משוייך לאף עיר');
       }
       cityWhere = { id: cityCoordinator.cityId, isActive: true };
     } else if (userRole === 'ACTIVIST_COORDINATOR') {
@@ -50,10 +56,12 @@ export async function GET() {
         },
       });
       if (!activistCoordinator) {
-        return NextResponse.json({
-          error: 'לא נמצאה הגדרת רכז פעילים עבור משתמש זה',
-          errorCode: 'ACTIVIST_COORDINATOR_NOT_FOUND'
-        }, { status: 403 });
+        const context = await extractRequestContext(req);
+        logger.rbacViolation('Activist Coordinator not found for user', {
+          ...context,
+          ...extractSessionContext(session),
+        });
+        throw new ForbiddenError('לא נמצאה הגדרת רכז פעילים עבור משתמש זה');
       }
 
       // IMPORTANT: Allow empty neighborhood assignments - show empty tree instead of error
@@ -381,7 +389,12 @@ export async function GET() {
       // Area Manager: Root is their Area (skip SuperAdmin level)
       const areaManager = areaManagers[0]; // Should only be one due to filtering
       if (!areaManager) {
-        return NextResponse.json({ error: 'Area Manager not found' }, { status: 404 });
+        const context = await extractRequestContext(req);
+        logger.rbacViolation('Area Manager data not found for user', {
+          ...context,
+          ...extractSessionContext(session),
+        });
+        throw new ForbiddenError('לא נמצאו נתונים עבור מנהל האזור');
       }
 
       tree = {
@@ -412,7 +425,12 @@ export async function GET() {
       const city = areaManagerWithCity?.cities[0];
 
       if (!city) {
-        return NextResponse.json({ error: 'City not found for coordinator' }, { status: 404 });
+        const context = await extractRequestContext(req);
+        logger.rbacViolation('City not found for City Coordinator', {
+          ...context,
+          ...extractSessionContext(session),
+        });
+        throw new ForbiddenError('לא נמצאה עיר עבור רכז העיר');
       }
 
       tree = buildCityTree(city);
@@ -423,20 +441,33 @@ export async function GET() {
       const city = areaManagerWithCity?.cities[0];
 
       if (!city) {
-        return NextResponse.json({ error: 'City/Neighborhoods not found for activist coordinator' }, { status: 404 });
+        const context = await extractRequestContext(req);
+        logger.rbacViolation('City not found for Activist Coordinator', {
+          ...context,
+          ...extractSessionContext(session),
+        });
+        throw new ForbiddenError('לא נמצאה עיר/שכונות עבור רכז הפעילים');
       }
 
       tree = buildActivistCoordinatorTree(city); // Use simplified tree builder (no coordinator/activist coordinator groups)
     } else {
-      return NextResponse.json({ error: 'Unknown role' }, { status: 403 });
+      const context = await extractRequestContext(req);
+      logger.rbacViolation('Unknown role attempted to access org-tree', {
+        ...context,
+        ...extractSessionContext(session),
+      });
+      throw new ForbiddenError('תפקיד לא מוכר');
     }
 
     return NextResponse.json(tree);
   } catch (error) {
+    // Re-throw known errors (withErrorHandler will handle them)
+    if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
+      throw error;
+    }
+
+    // Log and re-throw unknown errors
     console.error('Error fetching organizational tree:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch organizational tree' },
-      { status: 500 }
-    );
+    throw error;
   }
-}
+});

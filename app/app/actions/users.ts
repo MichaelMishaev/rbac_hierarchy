@@ -117,7 +117,7 @@ export async function createUser(data: CreateUserInput) {
     if (data.role === 'SUPERADMIN') {
       return {
         success: false,
-        error: 'SuperAdmin users can only be created via database/seed script.',
+        error: 'לא ניתן ליצור משתמש Super Admin דרך הממשק. משתמשי Super Admin נוצרים רק דרך מסד הנתונים מטעמי אבטחה.',
       };
     }
 
@@ -439,7 +439,7 @@ export async function listUsers(filters: ListUsersFilters = {}) {
 
     // Remove password from response
     const sanitizedUsers = users.map((user) => {
-      const { passwordHash, ...userWithoutPassword } = user;
+      const { passwordHash: _passwordHash, ...userWithoutPassword } = user;
       return userWithoutPassword;
     });
 
@@ -540,7 +540,7 @@ export async function getUserById(userId: string) {
     }
 
     // Remove password from response
-    const { passwordHash, ...userWithoutPassword } = user;
+    const { passwordHash: _passwordHash, ...userWithoutPassword } = user;
 
     return {
       success: true,
@@ -786,7 +786,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
     revalidatePath(`/users/${userId}`);
 
     // Remove password from response
-    const { passwordHash, ...userWithoutPassword } = updatedUser;
+    const { passwordHash: _passwordHash, ...userWithoutPassword } = updatedUser;
 
     return {
       success: true,

@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler } from '@/lib/error-handler';
+import { logger, extractRequestContext } from '@/lib/logger';
 
 /**
  * Admin-only endpoint to migrate voters tables to production
  * DELETE THIS FILE AFTER RUNNING ONCE!
+ * ⚠️ WARNING: NO AUTH CHECK - This should be protected or deleted after use!
  *
  * Usage: curl https://app.rbac.shop/api/admin/migrate-voters
  */
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async (request: NextRequest) => {
   try {
+    // Log migration attempt (NO AUTH CHECK - security concern!)
+    const context = await extractRequestContext(request);
+    logger.info('Voters table migration initiated', {
+      ...context,
+      warning: 'NO_AUTH_CHECK',
+    });
+
     console.log('🚀 Starting voters table migration...');
 
     // Execute the migration
@@ -145,4 +155,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

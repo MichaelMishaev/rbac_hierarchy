@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { withErrorHandler } from '@/lib/error-handler';
+import { logger, extractRequestContext } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   try {
     // Simple auth check - require a secret header
     const authHeader = request.headers.get('x-admin-secret');
     if (authHeader !== process.env.ADMIN_SECRET && authHeader !== 'temp-admin-2025') {
+      const context = await extractRequestContext(request);
+      logger.authFailure('Unauthorized admin password fix attempt - invalid secret', context);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -87,4 +91,4 @@ export async function POST(request: NextRequest) {
   } finally {
     await prisma.$disconnect();
   }
-}
+});

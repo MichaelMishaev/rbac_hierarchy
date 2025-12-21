@@ -6,16 +6,16 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler, UnauthorizedError } from '@/lib/error-handler';
+import { logger } from '@/lib/logger';
 
-export async function GET() {
+export const GET = withErrorHandler(async (_request: Request) => {
   try {
     // 1. Authenticate user
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'נדרש אימות' },
-        { status: 401 }
-      );
+      logger.authFailure('Unauthenticated unread count access attempt', {});
+      throw new UnauthorizedError('נדרש אימות');
     }
 
     const userId = session.user.id as string;
@@ -42,4 +42,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

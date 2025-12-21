@@ -2,17 +2,27 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import * as XLSX from 'xlsx';
+import { withErrorHandler, UnauthorizedError, ForbiddenError } from '@/lib/error-handler';
+import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export async function GET() {
+export const GET = withErrorHandler(async (req: Request) => {
   try {
     const session = await auth();
 
     // Only SuperAdmin can access organizational tree
-    if (!session?.user || !session.user.isSuperAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized: SuperAdmin access required' },
-        { status: 403 }
-      );
+    if (!session?.user) {
+      const context = await extractRequestContext(req);
+      logger.authFailure('Unauthenticated access to org-tree export', context);
+      throw new UnauthorizedError('נדרשת הזדהות');
+    }
+
+    if (!session.user.isSuperAdmin) {
+      const context = await extractRequestContext(req);
+      logger.rbacViolation('Non-SuperAdmin attempted org-tree export', {
+        ...context,
+        ...extractSessionContext(session),
+      });
+      throw new ForbiddenError('רק מנהל מערכת יכול לייצא את המבנה הארגוני');
     }
 
     // Fetch all organizational data
@@ -242,10 +252,13 @@ export async function GET() {
       },
     });
   } catch (error) {
+    // Re-throw known errors (withErrorHandler will handle them)
+    if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
+      throw error;
+    }
+
+    // Log and re-throw unknown errors
     console.error('Error generating Excel export:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate Excel export' },
-      { status: 500 }
-    );
+    throw error;
   }
-}
+});

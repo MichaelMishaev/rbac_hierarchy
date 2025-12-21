@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { withErrorHandler, ForbiddenError } from '@/lib/error-handler';
+import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
 const voterUpdateSchema = z.object({
   fullName: z.string().min(1).optional(),
@@ -17,16 +19,22 @@ const voterUpdateSchema = z.object({
  * PUT /api/activists/voters/[id]
  * Update voter (only if inserted by current activist)
  */
-export async function PUT(
+export const PUT = withErrorHandler(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await auth();
 
     // CRITICAL: Only ACTIVIST role can access
     if (!session || session.user.role !== 'ACTIVIST') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      const context = await extractRequestContext(request);
+      logger.rbacViolation('Non-activist attempted voter update', {
+        ...context,
+        ...(session ? extractSessionContext(session) : {}),
+        attemptedRole: session?.user?.role || 'unauthenticated',
+      });
+      throw new ForbiddenError('רק פעילים יכולים לערוך בוחרים');
     }
 
     // Next.js 15: params is now a Promise
@@ -43,10 +51,14 @@ export async function PUT(
 
     // CRITICAL: Verify ownership
     if (existingVoter.insertedByUserId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'You can only edit voters you created' },
-        { status: 403 }
-      );
+      const context = await extractRequestContext(request);
+      logger.rbacViolation('Activist attempted to edit voter not created by them', {
+        ...context,
+        ...extractSessionContext(session),
+        voterId: id,
+        voterOwnerId: existingVoter.insertedByUserId,
+      });
+      throw new ForbiddenError('ניתן לערוך רק בוחרים שהוספת בעצמך');
     }
 
     const body = await request.json();
@@ -74,22 +86,28 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * GET /api/activists/voters/[id]
  * Get single voter (only if inserted by current activist)
  */
-export async function GET(
+export const GET = withErrorHandler(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await auth();
 
     // CRITICAL: Only ACTIVIST role can access
     if (!session || session.user.role !== 'ACTIVIST') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      const context = await extractRequestContext(request);
+      logger.rbacViolation('Non-activist attempted voter retrieval', {
+        ...context,
+        ...(session ? extractSessionContext(session) : {}),
+        attemptedRole: session?.user?.role || 'unauthenticated',
+      });
+      throw new ForbiddenError('רק פעילים יכולים לצפות בבוחרים');
     }
 
     // Next.js 15: params is now a Promise
@@ -105,10 +123,14 @@ export async function GET(
 
     // CRITICAL: Verify ownership
     if (voter.insertedByUserId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'You can only view voters you created' },
-        { status: 403 }
-      );
+      const context = await extractRequestContext(request);
+      logger.rbacViolation('Activist attempted to view voter not created by them', {
+        ...context,
+        ...extractSessionContext(session),
+        voterId: id,
+        voterOwnerId: voter.insertedByUserId,
+      });
+      throw new ForbiddenError('ניתן לצפות רק בבוחרים שהוספת בעצמך');
     }
 
     return NextResponse.json(voter);
@@ -119,4 +141,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});

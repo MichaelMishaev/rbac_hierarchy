@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withErrorHandler } from '@/lib/error-handler';
 
 /**
  * Deep Tree Example API - 5 Levels Deep
@@ -9,8 +10,10 @@ import { NextResponse } from 'next/server';
  * Level 3: Site (Tel Aviv HQ)
  * Level 4: Department (Engineering)
  * Level 5: Team (Frontend, Backend, DevOps)
+ *
+ * NOTE: This is static mock data for testing/examples. No RBAC required.
  */
-export async function GET() {
+export const GET = withErrorHandler(async (_req: Request) => {
   const deepTree = {
     id: 'superadmin-root',
     name: 'System Administrator',
@@ -148,4 +151,4 @@ export async function GET() {
   };
 
   return NextResponse.json(deepTree);
-}
+});

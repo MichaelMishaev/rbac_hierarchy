@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { withErrorHandler } from '@/lib/error-handler';
+import { logger, extractRequestContext } from '@/lib/logger';
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
+      const context = await extractRequestContext(req);
+      logger.authFailure('Unauthenticated password change attempt', context);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -38,4 +42,4 @@ export async function POST(req: NextRequest) {
     console.error('Error changing password:', error);
     return NextResponse.json({ error: 'Failed to change password' }, { status: 500 });
   }
-}
+});

@@ -9,16 +9,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler, UnauthorizedError } from '@/lib/error-handler';
+import { logger, extractRequestContext } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   try {
     // 1. Authenticate user
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'נדרש אימות' },
-        { status: 401 }
-      );
+      const context = await extractRequestContext(request);
+      logger.authFailure('Unauthenticated bulk archive attempt', context);
+      throw new UnauthorizedError('נדרש אימות');
     }
 
     const userId = session.user.id as string;
@@ -67,4 +68,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

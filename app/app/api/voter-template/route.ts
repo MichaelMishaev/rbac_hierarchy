@@ -1,14 +1,21 @@
 /**
  * API Route: Download Voter Template
  * Serves the Excel template file with proper headers
+ * Note: Public endpoint - no authentication required for template download
  */
 
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { withErrorHandler } from '@/lib/error-handler';
+import { logger, extractRequestContext } from '@/lib/logger';
 
-export async function GET() {
+export const GET = withErrorHandler(async (request: Request) => {
   try {
+    // Log template download (public endpoint)
+    const context = await extractRequestContext(request);
+    logger.info('Voter template download requested', context);
+
     // Path to template file
     const filePath = path.join(process.cwd(), 'public', 'samples', 'voter-template.xlsx');
 
@@ -39,4 +46,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});
