@@ -120,7 +120,7 @@ export default async function DashboardContent() {
         {
           title: t('totalCities'),
           value: stats.superadmin?.totalCities ?? 0,
-          subtitle: t('activeCities'),
+          subtitle: `${stats.superadmin?.activeCities ?? 0} ${tCommon('active')}`,
           color: 'blue' as const,
           icon: <BusinessIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/cities`,
@@ -134,24 +134,28 @@ export default async function DashboardContent() {
           href: `/${locale}/neighborhoods`,
         },
         {
-          title: t('systemUsers'),
-          value:
-            (stats.superadmin?.totalManagers ?? 0) +
-            (stats.superadmin?.totalSupervisors ?? 0),
-          subtitle: `${stats.superadmin?.totalManagers ?? 0} ${t('managers')}, ${
-            stats.superadmin?.totalSupervisors ?? 0
-          } ${t('supervisors')}`,
-          color: 'purple' as const,
-          icon: <PeopleIcon sx={{ fontSize: 24 }} />,
-          href: `/${locale}/users`,
-        },
-        {
           title: t('totalActivists'),
           value: stats.superadmin?.totalActivists ?? 0,
           subtitle: `${stats.superadmin?.activeActivists ?? 0} ${tCommon('active')}`,
           color: 'orange' as const,
           icon: <GroupIcon sx={{ fontSize: 24 }} />,
           href: `/${locale}/activists`,
+        },
+        {
+          title: 'רכזי עיר',
+          value: stats.superadmin?.totalManagers ?? 0,
+          subtitle: t('allLocations'),
+          color: 'indigo' as const,
+          icon: <PeopleIcon sx={{ fontSize: 24 }} />,
+          href: `/${locale}/users`,
+        },
+        {
+          title: 'רכזי שכונות',
+          value: stats.superadmin?.totalSupervisors ?? 0,
+          subtitle: t('allLocations'),
+          color: 'purple' as const,
+          icon: <PeopleIcon sx={{ fontSize: 24 }} />,
+          href: `/${locale}/users`,
         },
         {
           title: t('pendingInvitations'),
@@ -257,7 +261,15 @@ export default async function DashboardContent() {
           href: `/${locale}/activists`,
         },
         {
-          title: t('supervisors'),
+          title: 'רכזי עיר',
+          value: stats.manager?.totalManagers ?? 0,
+          subtitle: t('allLocations'),
+          color: 'blue' as const,
+          icon: <PeopleIcon sx={{ fontSize: 24 }} />,
+          href: `/${locale}/users`,
+        },
+        {
+          title: 'רכזי שכונות',
           value: stats.manager?.totalSupervisors ?? 0,
           subtitle: t('allLocations'),
           color: 'purple' as const,

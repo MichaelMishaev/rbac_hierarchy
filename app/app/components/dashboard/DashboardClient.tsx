@@ -10,7 +10,7 @@ type KPICardData = {
   title: string;
   value: number | string;
   subtitle?: string;
-  color: 'blue' | 'purple' | 'green' | 'orange' | 'red';
+  color: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'indigo';
   icon: React.ReactNode;
   href?: string;
   entityType?: 'corporations' | 'sites' | 'workers' | 'managers' | 'supervisors';
@@ -53,9 +53,24 @@ export default function DashboardClient({ cards }: DashboardClientProps) {
 
   return (
     <>
-      <Grid container spacing={3} sx={{ mb: 4 }} data-testid="dashboard-kpi-cards">
+      <Grid
+        container
+        spacing={3} // Optimal spacing for modern dashboard (24px gap)
+        sx={{ mb: 3 }}
+        data-testid="dashboard-kpi-cards"
+      >
         {cards.map((card, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid
+            item
+            xs={12}      // Mobile: 1 card per row (full width) - Field activists
+            sm={6}       // Tablet portrait: 2 cards per row - Campaign managers
+            md={6}       // Tablet landscape: 2 cards per row - Better balance
+            lg={4}       // Desktop: 3 cards per row - OPTIMAL (Monday.com pattern)
+            xl={4}       // Large desktop: 3 cards per row - CONSISTENT (no shift)
+            // Research: 3 cards = ~380px each (optimal width for Hebrew RTL + numbers)
+            // 4+ cards = cramped, poor UX. 2 cards = wasted space on wide screens.
+            key={index}
+          >
             <KPICard
               title={card.title}
               value={card.value}

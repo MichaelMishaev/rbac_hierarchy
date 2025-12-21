@@ -1,6 +1,9 @@
 # Exclude documentation
 docs/
 
+# Production credentials (NEVER COMMIT)
+docs/prod/logInvestigateProd.md
+
 # Dependencies
 node_modules/
 .pnpm-store/

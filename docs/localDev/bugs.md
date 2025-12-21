@@ -7696,3 +7696,325 @@ No code changes - dev server restart resolved the issue.
 Date: 2025-12-21
 
 ---
+
+---
+
+## Bug #[DATE: 2025-12-21] - Map Page 500 Error on Stale Session
+
+**Reported:** 2025-12-21
+**Status:** FIXED
+**Severity:** HIGH (breaks critical map functionality)
+**Category:** Authentication / Error Handling
+
+### Problem
+
+**Symptoms:**
+- `/map/leaflet` page fails to load
+- Console shows: `XHR GET http://localhost:3200/api/map-data [HTTP/1.1 500 Internal Server Error]`
+- Map component stuck in loading or error state
+
+**Root Cause:**
+After database re-seed (e.g., `npm run db:seed`), user session JWT still contains old user ID that no longer exists in database. When `/api/map-data` endpoint calls `getCurrentUser()`, it throws `SESSION_INVALID` error, but the API returns HTTP 500 instead of HTTP 401, and the client doesn't handle this gracefully.
+
+**Technical Details:**
+1. User visits `/map/leaflet` after database re-seed
+2. JWT session cookie contains old user ID (from before re-seed)
+3. `LeafletClient` component calls `/api/map-data`
+4. API route calls `getCurrentUser()` → queries DB for user
+5. User doesn't exist → `lib/auth.ts:62` throws `SESSION_INVALID` error
+6. Error caught in `route.ts` catch block → returns 500 instead of 401
+7. Client shows generic error message, doesn't redirect to signin
+
+### Solution
+
+**Files Changed:**
+- `app/api/map-data/route.ts` (lines 13-38)
+- `app/[locale]/(dashboard)/map/leaflet/LeafletClient.tsx` (lines 132-166)
+
+**Fix Applied:**
+
+1. **API Error Handling** (`route.ts:18-38`):
+   - Detect `SESSION_INVALID` error specifically
+   - Return HTTP 401 with structured response:
+     ```json
+     {
+       "error": "Session expired. Please sign out and sign back in.",
+       "code": "SESSION_INVALID",
+       "redirectTo": "/api/auth/signout"
+     }
+     ```
+
+2. **Client Error Handling** (`LeafletClient.tsx:139-157`):
+   - Check for 401 status code
+   - Parse error response for `SESSION_INVALID` code
+   - Show Hebrew message: "ההפעלה פגה תוקף. מפנה לדף כניסה מחדש..."
+   - Redirect to signout after 1.5s delay
+
+**Prevention Rule:**
+- **RULE:** All API routes that call `getCurrentUser()` MUST handle `SESSION_INVALID` errors and return HTTP 401 (not 500)
+- **RULE:** All client components fetching protected data MUST handle 401 errors and redirect to signout
+- **PATTERN:** Check for `errorMessage.includes('SESSION_INVALID')` in catch blocks
+- **UX:** Show Hebrew error message with 1.5s delay before redirect (user can read the message)
+
+### Verification
+
+**Test Steps:**
+1. Sign in as any user
+2. Re-seed database: `npm run db:seed`
+3. Visit `/map/leaflet` (DO NOT sign out first)
+4. Expected: See Hebrew error message, then auto-redirect to signout
+5. Sign back in
+6. Map should load correctly
+
+**Related Files:**
+- `lib/auth.ts` (throws SESSION_INVALID error)
+- All API routes using `getCurrentUser()`
+- All client components fetching from protected APIs
+
+### Impact
+
+**Before Fix:**
+- 500 error with generic message
+- User confused, doesn't know to sign out
+- Manual intervention required
+
+**After Fix:**
+- 401 error with clear Hebrew message
+- Auto-redirect to signout → signin
+- Self-healing UX
+
+**Category:** Error Handling / UX Improvement
+**Compliance:** Hebrew-only error messages (INV-I18N-001)
+
+---
+
+## Bug #[DATE: 2025-12-21] - Map API Returns Undefined Area Manager Names
+
+**Reported:** 2025-12-21
+**Status:** FIXED
+**Severity:** MEDIUM (breaks map display for area managers)
+**Category:** Data Integrity / API Query
+
+### Problem
+
+**Symptoms:**
+- Server console shows: `[Map API] Using centroid for area manager undefined`
+- Map page fails to load or shows incomplete data
+- Area managers appear with missing names on map
+
+**Root Cause:**
+The `AreaManager` model allows `userId` to be NULL (optional relation). The seed script or manual data entry created 10 area managers without assigning users to them. The `/api/map-data` endpoint was querying ALL active area managers (including those without users) and trying to access `areaManager.user.fullName` which was undefined.
+
+**Technical Details:**
+1. Database has 12 active area managers
+2. Only 2 have `user_id` assigned (Jerusalem and North districts)
+3. 10 have `user_id = NULL` (created as placeholder regions)
+4. API query didn't filter by `userId NOT NULL`
+5. Formatting code accessed `areaManager.user?.fullName` → undefined
+6. Console logs showed "undefined" for 10 area managers
+
+**Schema Design:**
+```typescript
+model AreaManager {
+  userId String? @unique @map("user_id")  // ← Optional (can be NULL)
+  user   User?   @relation("AreaManagerUser", ...)
+}
+```
+
+### Solution
+
+**Files Changed:**
+- `app/api/map-data/route.ts` (lines 106-131, 439-490)
+
+**Fix Applied:**
+
+1. **Filter Query** (line 128):
+   ```typescript
+   where: {
+     isActive: true,
+     userId: { not: null }, // Only area managers with assigned users
+   }
+   ```
+
+2. **Defensive Check in Formatting** (lines 443-446):
+   ```typescript
+   if (!areaManager.user) {
+     console.warn(`[Map API] Skipping area manager ${areaManager.id} - no user assigned`);
+     return null;
+   }
+   ```
+
+3. **Non-Null Assertions** (lines 465, 475, 480-483):
+   - Changed `areaManager.user?.fullName` → `areaManager.user.fullName`
+   - Added `!` assertion for `userId` since we know it's not null
+
+**Prevention Rule:**
+- **RULE:** When querying area managers for map display, ALWAYS filter `userId: { not: null }`
+- **RULE:** Area managers without users should NOT appear on maps (no one to display)
+- **DATA:** Area managers CAN exist without users (placeholder for future assignment)
+- **API:** Public-facing APIs must filter out area managers without users
+- **SEED:** Consider assigning users to all area managers in seed script
+
+### Verification
+
+**Test Steps:**
+1. Sign out and sign back in (to get fresh session)
+2. Visit `/map/leaflet` as SuperAdmin
+3. Check server console - should see only 2 area manager logs (not 12)
+4. Expected console:
+   ```
+   [Map API] Using database coordinates for area manager מחוז ירושלים
+   [Map API] Using centroid for area manager מנהל מחוז צפון
+   ```
+5. Map should load without errors
+
+**Database Check:**
+```sql
+-- Count area managers with and without users
+SELECT 
+  COUNT(*) FILTER (WHERE user_id IS NOT NULL) as with_users,
+  COUNT(*) FILTER (WHERE user_id IS NULL) as without_users
+FROM area_managers
+WHERE is_active = true;
+```
+
+Expected: `with_users=2, without_users=10`
+
+### Impact
+
+**Before Fix:**
+- 12 area managers queried (10 with null users)
+- Console spam with "undefined" logs
+- Potential crashes if code doesn't use optional chaining
+
+**After Fix:**
+- Only 2 area managers with assigned users returned
+- Clean console logs
+- Map displays correctly
+
+**Related Schema Design:**
+The `userId` being optional is INTENTIONAL - allows creating area manager regions before assigning actual users to manage them. This is valid for the system design.
+
+**Category:** Data Filtering / Null Safety
+**Compliance:** No violations (working as designed, just needed proper filtering)
+
+---
+
+---
+
+## Bug #XX+7: Download Sample File Button Not Appearing in Production (2025-12-21)
+
+### Description
+The "הורד קובץ לדוגמא" (Download Sample File) button in the `/manage-voters` page Excel upload section appears in local development but does not appear in production.
+
+### Reproduction Steps
+1. Navigate to `/manage-voters` page in production
+2. Click on "Excel ייבוא" tab
+3. Look for "הורד קובץ לדוגמא" button in the instructions Alert component
+4. ❌ Button is missing/not visible
+5. Expected: Button should appear and download voter-template.xlsx
+
+### Root Cause Analysis
+**Static File Not Committed to Git:**
+
+The button code was present in the component but the file it referenced was missing in production:
+
+**app/app/[locale]/(dashboard)/manage-voters/components/ExcelUpload.tsx:198-217:**
+```typescript
+{/* Download Sample Button */}
+<Box sx={{ mt: 2, textAlign: 'center' }}>
+  <Button
+    variant="outlined"
+    size="small"
+    startIcon={<DownloadIcon />}
+    href="/api/voter-template"  // ✅ Button exists
+    component="a"
+  >
+    הורד קובץ לדוגמא
+  </Button>
+</Box>
+```
+
+**app/app/api/voter-template/route.ts:13-21:**
+```typescript
+// Path to template file
+const filePath = path.join(process.cwd(), 'public', 'samples', 'voter-template.xlsx');
+
+// Check if file exists
+if (!fs.existsSync(filePath)) {
+  return NextResponse.json(
+    { error: 'Template file not found' },  // ❌ Returns 404 in production
+    { status: 404 }
+  );
+}
+```
+
+**Problem:** The file `app/public/samples/voter-template.xlsx` existed locally but was NOT committed to git (shown as untracked in `git status`), so it was missing in production. When the API endpoint `/api/voter-template` tried to serve the file, it returned a 404.
+
+### Solution Implemented
+**1. Added voter-template.xlsx to git** (commit fa51069):
+```bash
+git add app/public/samples/voter-template.xlsx
+git commit -m "fix(voters): add voter template Excel file to git"
+git push
+```
+
+**File Location:** `app/public/samples/voter-template.xlsx`
+- Contains Hebrew columns: שם, שם משפחה, טלפון, עיר, מייל
+- Required for `/api/voter-template` endpoint to work
+- File is now tracked in git and will deploy to production
+
+### Prevention Rule
+**Rule 18: Always Commit Static Assets Referenced by Code**
+
+**Before pushing:**
+```bash
+# Check for untracked files in public/
+git status app/public/
+
+# If static assets are referenced in code, commit them
+git add app/public/[asset-path]
+```
+
+**In Code Reviews:**
+- Verify all `public/` assets referenced in code are committed
+- Check API routes that serve static files have corresponding files in git
+- Test production deployment includes all required static assets
+
+**Related Files:**
+- `app/public/samples/voter-template.xlsx` - Template file (now tracked)
+- `app/app/api/voter-template/route.ts` - API endpoint
+- `app/app/[locale]/(dashboard)/manage-voters/components/ExcelUpload.tsx:198-217` - Download button
+
+### Testing
+**Manual Test:**
+1. Deploy to production (Railway auto-deploys from main)
+2. Navigate to `/manage-voters`
+3. Click "Excel ייבוא" tab
+4. ✅ Verify "הורד קובץ לדוגמא" button is visible
+5. ✅ Click button and verify Excel file downloads successfully
+6. ✅ Verify downloaded file contains Hebrew column headers
+
+**Verification:**
+```bash
+# Verify file is in git
+git ls-files app/public/samples/voter-template.xlsx
+# Should show: app/public/samples/voter-template.xlsx
+
+# Test API endpoint locally
+curl -I http://localhost:3200/api/voter-template
+# Should return: 200 OK
+
+# After production deployment
+curl -I https://[production-url]/api/voter-template
+# Should return: 200 OK
+```
+
+### Impact
+- **Severity:** Medium (feature missing but non-critical)
+- **Users Affected:** All users trying to import voters via Excel
+- **UX Impact:** Users couldn't download a sample template to understand the required format
+
+### Status
+✅ Fixed - Commit fa51069 pushed to main, will deploy automatically to production
+

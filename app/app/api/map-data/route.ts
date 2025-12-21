@@ -17,6 +17,20 @@ export async function GET(_request: Request) {
       user = await getCurrentUser();
     } catch (authError) {
       console.error('[Map Data API] Authentication error:', authError);
+
+      // Check if this is a stale session error
+      const errorMessage = authError instanceof Error ? authError.message : String(authError);
+      if (errorMessage.includes('SESSION_INVALID')) {
+        return NextResponse.json(
+          {
+            error: 'Session expired. Please sign out and sign back in.',
+            code: 'SESSION_INVALID',
+            redirectTo: '/api/auth/signout'
+          },
+          { status: 401 }
+        );
+      }
+
       return NextResponse.json(
         { error: 'Unauthorized - Please log in again' },
         { status: 401 }
@@ -77,6 +91,8 @@ export async function GET(_request: Request) {
           name: true,
           description: true,
           isActive: true,
+          centerLatitude: true,
+          centerLongitude: true,
           _count: {
             select: {
               neighborhoods: true,
@@ -88,6 +104,7 @@ export async function GET(_request: Request) {
       }),
 
       // Area Managers (SuperAdmin only - Area Managers should NOT see other Area Managers)
+      // IMPORTANT: Only return area managers that have a user assigned (userId IS NOT NULL)
       user.isSuperAdmin
         ? prisma.areaManager.findMany({
             include: {
@@ -105,6 +122,10 @@ export async function GET(_request: Request) {
                   name: true,
                 },
               },
+            },
+            where: {
+              isActive: true,
+              userId: { not: null }, // Only area managers with assigned users
             },
           })
         : [], // Empty array for non-SuperAdmin (including Area Managers)
@@ -175,27 +196,43 @@ export async function GET(_request: Request) {
       }),
     ]);
 
-    // Step 1: Geocode cities (for city coordinators positioning)
+    // Step 1: Get city coordinates (from database first, then geocode if needed)
     const cityCoordsMap = new Map<string, { latitude: number; longitude: number }>();
 
     for (const city of corporations) {
-      let coords = await geocodeLocation(city.name, 'IL');
+      let coords: { latitude: number; longitude: number } | null = null;
 
-      // Validate coordinates are not in the sea
-      if (coords && !isValidIsraelCoordinate(coords)) {
-        console.warn(
-          `[Map API] Invalid coordinates for city "${city.name}": ${coords.latitude}, ${coords.longitude} (likely in sea)`
-        );
-        coords = null; // Force fallback
+      // Prefer database coordinates if available
+      if (city.centerLatitude && city.centerLongitude) {
+        coords = {
+          latitude: city.centerLatitude,
+          longitude: city.centerLongitude,
+        };
+        console.log(`[Map API] Using database coordinates for city "${city.name}"`);
       }
 
-      // Fallback to known city centers
+      // Fallback to geocoding if no database coords
       if (!coords) {
-        coords = getCityFallbackCoordinates(city.name);
-        console.log(`[Map API] Using fallback coordinates for city "${city.name}"`);
+        coords = await geocodeLocation(city.name, 'IL');
+
+        // Validate coordinates are not in the sea
+        if (coords && !isValidIsraelCoordinate(coords)) {
+          console.warn(
+            `[Map API] Invalid coordinates for city "${city.name}": ${coords.latitude}, ${coords.longitude} (likely in sea)`
+          );
+          coords = null; // Force fallback
+        }
+
+        // Fallback to known city centers
+        if (!coords) {
+          coords = getCityFallbackCoordinates(city.name);
+          console.log(`[Map API] Using fallback coordinates for city "${city.name}"`);
+        }
       }
 
-      cityCoordsMap.set(city.id, coords);
+      if (coords) {
+        cityCoordsMap.set(city.id, coords);
+      }
     }
 
     // Step 2: Geocode neighborhoods (if they don't have coordinates)
@@ -399,28 +436,58 @@ export async function GET(_request: Request) {
       })
       .filter(Boolean);
 
-    // Step 6: Format area managers with centroid of their cities
-    const formattedAreaManagers = areaManagers
-      .map((areaManager) => {
-        const cityCoords = areaManager.cities
-          .map((city) => cityCoordsMap.get(city.id))
-          .filter(Boolean) as Array<{ latitude: number; longitude: number }>;
+    // Step 6: Format area managers (use database coordinates, fallback to centroid of cities)
+    const formattedAreaManagers = (await Promise.all(
+      areaManagers.map(async (areaManager) => {
+        // Skip area managers without users (defensive check, should be filtered in query)
+        if (!areaManager.user) {
+          console.warn(`[Map API] Skipping area manager ${areaManager.id} - no user assigned`);
+          return null;
+        }
 
-        const centroid = calculateCentroid(cityCoords) || getIsraelCenter();
+        // Fetch full area manager data with coordinates
+        const fullAreaManager = await prisma.areaManager.findUnique({
+          where: { id: areaManager.id },
+          select: {
+            centerLatitude: true,
+            centerLongitude: true,
+          },
+        });
+
+        let coords: { latitude: number; longitude: number } | null = null;
+
+        // Prefer database coordinates
+        if (fullAreaManager?.centerLatitude && fullAreaManager?.centerLongitude) {
+          coords = {
+            latitude: fullAreaManager.centerLatitude,
+            longitude: fullAreaManager.centerLongitude,
+          };
+          console.log(`[Map API] Using database coordinates for area manager ${areaManager.user.fullName}`);
+        }
+
+        // Fallback to centroid of cities
+        if (!coords) {
+          const cityCoords = areaManager.cities
+            .map((city) => cityCoordsMap.get(city.id))
+            .filter(Boolean) as Array<{ latitude: number; longitude: number }>;
+
+          coords = calculateCentroid(cityCoords) || getIsraelCenter();
+          console.log(`[Map API] Using centroid for area manager ${areaManager.user.fullName}`);
+        }
 
         return {
           id: areaManager.id,
-          userId: areaManager.userId,
-          fullName: areaManager.user?.fullName || 'Unknown',
-          email: areaManager.user?.email || '',
-          phone: areaManager.user?.phone || null,
+          userId: areaManager.userId!,
+          fullName: areaManager.user.fullName,
+          email: areaManager.user.email,
+          phone: areaManager.user.phone,
           cities: areaManager.cities,
-          latitude: centroid.latitude,
-          longitude: centroid.longitude,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
           type: 'area_manager' as const,
         };
       })
-      .filter(Boolean);
+    )).filter(Boolean) as typeof formattedAreaManagers;
 
     // Calculate stats
     const stats = {

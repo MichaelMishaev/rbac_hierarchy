@@ -17,7 +17,7 @@ export type KPICardProps = {
     label?: string;
   };
   icon?: React.ReactNode;
-  color: 'blue' | 'purple' | 'green' | 'orange' | 'red';
+  color: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'indigo';
   onClick?: () => void;
   'data-testid'?: string;
 };
@@ -39,6 +39,11 @@ export default function KPICard({
       main: colors.pastel.blue,
       shadow: shadows.glowBlue,
     },
+    indigo: {
+      bg: '#E0E7FF', // Indigo light
+      main: '#6366F1', // Indigo
+      shadow: shadows.medium,
+    },
     purple: {
       bg: colors.pastel.purpleLight,
       main: colors.pastel.purple,
@@ -52,12 +57,12 @@ export default function KPICard({
     orange: {
       bg: colors.pastel.orangeLight,
       main: colors.pastel.orange,
-      shadow: shadows.medium, // Use medium shadow instead
+      shadow: shadows.medium,
     },
     red: {
       bg: colors.pastel.redLight,
       main: colors.error,
-      shadow: shadows.medium, // Use medium shadow instead
+      shadow: shadows.medium,
     },
   };
 
@@ -68,31 +73,43 @@ export default function KPICard({
       onClick={onClick}
       data-testid={dataTestId}
       clickable={!!onClick}
-      intensity={10} // Slightly stronger lift effect
+      intensity={6} // Reduced from 10 for more subtle lift
       sx={{
         background: currentColor.bg,
         border: `2px solid ${currentColor.main}40`,
         borderRadius: borderRadius['2xl'],
         boxShadow: shadows.soft,
         height: '100%',
+        minHeight: '160px', // Compact minimum height (was ~300px)
         display: 'flex',
         flexDirection: 'column',
-        // Enhanced hover effect with physics-based animation
+        // Subtle hover effect
         '&:hover': onClick
           ? {
               borderColor: currentColor.main,
+              boxShadow: shadows.medium,
             }
           : {},
       }}
     >
-      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+      <CardContent
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          p: 2, // Reduced from 3 (16px instead of 24px)
+          '&:last-child': {
+            pb: 2, // Override MUI default padding-bottom
+          }
+        }}
+      >
         {/* Header with Icon */}
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            mb: 2,
+            mb: 1.5, // Reduced from 2
           }}
         >
           <Typography
@@ -102,7 +119,8 @@ export default function KPICard({
               color: colors.neutral[600],
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
-              fontSize: '13px',
+              fontSize: '11px', // Reduced from 13px
+              lineHeight: 1.2,
             }}
           >
             {title}
@@ -110,8 +128,8 @@ export default function KPICard({
           {icon && (
             <Box
               sx={{
-                width: 48,
-                height: 48,
+                width: 36, // Reduced from 48px
+                height: 36, // Reduced from 48px
                 borderRadius: '50%',
                 background: colors.neutral[0],
                 boxShadow: shadows.inner,
@@ -119,6 +137,10 @@ export default function KPICard({
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: currentColor.main,
+                flexShrink: 0,
+                '& > svg': {
+                  fontSize: '20px', // Icon size
+                },
               }}
             >
               {icon}
@@ -127,21 +149,30 @@ export default function KPICard({
         </Box>
 
         {/* Main Value */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}>
           {typeof value === 'number' ? (
             <AnimatedCounter
               value={value}
               showTrend={false}
               color={colors.neutral[900]}
+              sx={{
+                fontSize: { xs: '2rem', sm: '2.25rem' }, // Slightly reduced (was h2: 2.5rem)
+                fontWeight: 700,
+                lineHeight: 1,
+                mb: 0.5,
+              }}
             />
           ) : (
             <Typography
-              variant="h2"
+              variant="h3"
+              component="div"
               sx={{
+                fontSize: { xs: '2rem', sm: '2.25rem' }, // Reduced from h2
                 fontWeight: 700,
                 color: colors.neutral[900],
                 letterSpacing: '-0.02em',
-                mb: 1,
+                lineHeight: 1,
+                mb: 0.5,
               }}
             >
               {value}
@@ -155,7 +186,9 @@ export default function KPICard({
               sx={{
                 color: colors.neutral[600],
                 fontWeight: 500,
-                mb: 1,
+                fontSize: '13px', // Slightly reduced
+                lineHeight: 1.3,
+                mb: trend ? 1 : 0,
               }}
             >
               {subtitle}
@@ -164,27 +197,32 @@ export default function KPICard({
 
           {/* Trend Indicator */}
           {trend && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 'auto' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 'auto' }}>
               <Chip
                 icon={
                   trend.isPositive ? (
-                    <TrendingUpIcon sx={{ fontSize: 16 }} />
+                    <TrendingUpIcon sx={{ fontSize: 14 }} />
                   ) : (
-                    <TrendingDownIcon sx={{ fontSize: 16 }} />
+                    <TrendingDownIcon sx={{ fontSize: 14 }} />
                   )
                 }
                 label={`${trend.isPositive ? '+' : ''}${trend.value}%`}
                 size="small"
                 sx={{
+                  height: '22px', // Compact chip
                   backgroundColor: trend.isPositive
                     ? colors.pastel.greenLight
                     : colors.pastel.redLight,
                   color: trend.isPositive ? colors.success : colors.error,
                   fontWeight: 600,
-                  fontSize: '12px',
+                  fontSize: '11px',
                   borderRadius: borderRadius.full,
                   '& .MuiChip-icon': {
                     color: trend.isPositive ? colors.success : colors.error,
+                    marginInlineEnd: '-4px',
+                  },
+                  '& .MuiChip-label': {
+                    px: 1,
                   },
                 }}
               />
@@ -194,6 +232,7 @@ export default function KPICard({
                   sx={{
                     color: colors.neutral[500],
                     fontWeight: 500,
+                    fontSize: '11px',
                   }}
                 >
                   {trend.label}

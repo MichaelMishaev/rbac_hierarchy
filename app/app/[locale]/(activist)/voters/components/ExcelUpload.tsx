@@ -29,6 +29,7 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon,
   Visibility as VisibilityIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { read, utils } from 'xlsx';
 import { bulkImportVoters } from '@/app/actions/voters';
@@ -192,6 +193,26 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           <li>עמודות נדרשות: שם, שם משפחה, טלפון, עיר, מייל</li>
           <li>ניתן לייבא בוחרים עם מספרי טלפון כפולים</li>
         </Typography>
+
+        {/* Download Sample Button */}
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DownloadIcon />}
+            href="/api/voter-template"
+            component="a"
+            sx={{
+              borderRadius: '20px',
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              minHeight: 36,
+            }}
+          >
+            הורד קובץ לדוגמא
+          </Button>
+        </Box>
       </Alert>
 
       {/* File Input */}

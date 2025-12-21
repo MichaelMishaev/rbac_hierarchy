@@ -135,13 +135,31 @@ export default function LeafletClient() {
       const response = await fetch('/api/map-data', {
         credentials: 'include',
       });
+
       if (!response.ok) {
-        throw new Error('Failed to fetch map data');
+        // Handle authentication errors
+        if (response.status === 401) {
+          const errorData = await response.json();
+
+          // If session is invalid, redirect to signout
+          if (errorData.code === 'SESSION_INVALID') {
+            setError('ההפעלה פגה תוקף. מפנה לדף כניסה מחדש...');
+            setTimeout(() => {
+              window.location.href = errorData.redirectTo || '/api/auth/signout';
+            }, 1500);
+            return;
+          }
+
+          throw new Error(errorData.error || 'לא מורשה - נא להתחבר מחדש');
+        }
+
+        throw new Error('שגיאה בטעינת נתוני מפה');
       }
+
       const result = await response.json();
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'שגיאה לא ידועה');
     } finally {
       setLoading(false);
     }

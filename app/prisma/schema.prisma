@@ -116,6 +116,10 @@ model AreaManager {
   // Metadata
   metadata Json? @default("{}")
 
+  // Geographic coordinates (for map display)
+  centerLatitude  Float? @map("center_latitude")   // Region center latitude
+  centerLongitude Float? @map("center_longitude")  // Region center longitude
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -150,6 +154,10 @@ model City {
   isActive Boolean @default(true) @map("is_active")
   settings Json    @default("{}") // City-level configuration
   metadata Json?                  // Flexible data storage
+
+  // Geographic coordinates (for map display)
+  centerLatitude  Float? @map("center_latitude")   // City center latitude
+  centerLongitude Float? @map("center_longitude")  // City center longitude
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -473,6 +481,68 @@ model AuditLog {
   @@index([cityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================
+// ERROR LOGS TABLE (Production Error Tracking)
+// ============================================
+model ErrorLog {
+  id String @id @default(uuid())
+
+  // Error classification
+  level       ErrorLevel @default(ERROR)
+  errorType   String     @map("error_type")   // "ValidationError", "AuthError", "RBACViolation", "DatabaseError", etc.
+  message     String     @db.Text              // Human-readable error message
+  stack       String?    @db.Text              // Stack trace (production should sanitize sensitive data)
+  code        String?                          // Error code (e.g., "ERR_RBAC_CITY_ACCESS_DENIED")
+
+  // HTTP context (for API errors)
+  httpMethod  String? @map("http_method")      // GET, POST, PUT, DELETE
+  httpStatus  Int?    @map("http_status")      // 400, 401, 403, 500, etc.
+  url         String? @db.Text                 // Request URL
+  referer     String? @db.Text                 // Referer header
+
+  // User context
+  userId      String? @map("user_id")
+  userEmail   String? @map("user_email")
+  userRole    String? @map("user_role")
+  cityId      String? @map("city_id")          // Multi-tenant context
+
+  // Request metadata
+  ipAddress   String? @map("ip_address")
+  userAgent   String? @map("user_agent") @db.Text
+  requestId   String? @map("request_id")       // For distributed tracing
+
+  // Additional context (flexible JSON)
+  metadata    Json?                            // Extra debug info (sanitized)
+
+  // Environment
+  environment String  @default("production")   // "production", "staging", "development"
+
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Indexes for fast queries
+  @@index([level])
+  @@index([errorType])
+  @@index([httpStatus])
+  @@index([userId])
+  @@index([cityId])
+  @@index([createdAt(sort: Desc)])
+  @@index([environment])
+  @@index([level, createdAt(sort: Desc)]) // Performance: Most common query (all errors by severity)
+  @@index([errorType, createdAt(sort: Desc)]) // Performance: Errors by type over time
+  @@map("error_logs")
+}
+
+enum ErrorLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+
+  @@map("error_level")
 }
 
 // ============================================

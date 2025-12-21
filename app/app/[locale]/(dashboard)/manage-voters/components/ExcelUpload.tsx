@@ -11,6 +11,7 @@ import { useState } from 'react';
 import {
   Box,
   Button,
+  Stack,
   Typography,
   Alert,
   LinearProgress,
@@ -29,6 +30,7 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon,
   Visibility as VisibilityIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { read, utils } from 'xlsx';
 import { bulkImportVoters } from '@/app/actions/voters';
@@ -192,6 +194,26 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           <li>עמודות נדרשות: שם, שם משפחה, טלפון, עיר, מייל</li>
           <li>ניתן לייבא בוחרים עם מספרי טלפון כפולים</li>
         </Typography>
+
+        {/* Download Sample Button */}
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DownloadIcon />}
+            href="/api/voter-template"
+            component="a"
+            sx={{
+              borderRadius: '20px',
+              px: 3,
+              py: 1,
+              fontWeight: 600,
+              minHeight: 36,
+            }}
+          >
+            הורד קובץ לדוגמא
+          </Button>
+        </Box>
       </Alert>
 
       {/* File Input */}
@@ -263,25 +285,39 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           {/* Duplicate Warning */}
           {duplicates.length > 0 && (
             <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" fontWeight="medium">
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+                justifyContent="space-between"
+              >
+                {/* Warning Text */}
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body2" fontWeight="medium" sx={{ mb: 0.5 }}>
                     זוהו {duplicates.length} כפילויות (טלפון + אימייל זהים)
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     ניתן להמשיך בהעלאה, הכפילויות ייווצרו במערכת
                   </Typography>
                 </Box>
+
+                {/* View Duplicates Button */}
                 <Button
                   size="small"
                   variant="outlined"
                   startIcon={<VisibilityIcon />}
                   onClick={() => setShowDuplicates(!showDuplicates)}
-                  sx={{ borderRadius: '20px', ml: 2 }}
+                  sx={{
+                    borderRadius: '20px',
+                    minHeight: 44,
+                    flexShrink: 0,
+                    alignSelf: { xs: 'flex-start', sm: 'center' },
+                  }}
+                  data-testid="toggle-duplicates-button"
                 >
                   {showDuplicates ? 'הסתר פרטים' : 'הצג כפילויות'}
                 </Button>
-              </Box>
+              </Stack>
 
               {/* Duplicate Details */}
               {showDuplicates && (
