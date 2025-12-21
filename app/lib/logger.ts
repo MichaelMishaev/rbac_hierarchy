@@ -91,7 +91,7 @@ async function persistErrorToDb(data: ErrorLogData): Promise<void> {
         ipAddress: data.ipAddress,
         userAgent: data.userAgent?.substring(0, 500),
         requestId: data.requestId,
-        metadata: sanitizeMetadata(data.metadata) as Record<string, unknown> | undefined,
+        metadata: sanitizeMetadata(data.metadata) as any,
         environment: process.env.NODE_ENV || 'production',
       },
     });
