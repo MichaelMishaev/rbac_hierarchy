@@ -24,6 +24,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -76,9 +78,10 @@ type CitiesClientProps = {
     fullName: string;
     email: string;
   } | null;
+  superiorUser: { fullName: string; email: string } | null;
 };
 
-export default function CitiesClient({ cities: initialCorporations, userRole, currentUserAreaManager }: CitiesClientProps) {
+export default function CitiesClient({ cities: initialCorporations, userRole, currentUserAreaManager, superiorUser }: CitiesClientProps) {
   const t = useTranslations('citys');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -256,6 +259,81 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           </Grid>
         ))}
       </Grid>
+
+      {/* Permission Info Banner - Only show for Area Managers */}
+      {userRole === 'AREA_MANAGER' && superiorUser && (
+        <Box
+          sx={{
+            mb: 3,
+            p: 2.5,
+            background: colors.pastel.blueLight,
+            border: `1px solid ${colors.pastel.blue}`,
+            borderRadius: borderRadius.lg,
+            boxShadow: shadows.soft,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            direction: isRTL ? 'rtl' : 'ltr',
+          }}
+          data-testid="permission-info-banner"
+        >
+          <InfoOutlinedIcon
+            sx={{
+              fontSize: 28,
+              color: colors.pastel.blue,
+              flexShrink: 0,
+            }}
+          />
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 600,
+                color: colors.neutral[900],
+                mb: 0.5,
+              }}
+            >
+              רק מנהל המערכת יכול ליצור ערים חדשות
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: colors.neutral[700],
+                }}
+              >
+                ליצירת עיר חדשה, פנה ל:
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: colors.pastel.blue,
+                  }}
+                >
+                  {superiorUser.fullName}
+                </Typography>
+                <EmailIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
+                <Typography
+                  variant="body2"
+                  component="a"
+                  href={`mailto:${superiorUser.email}`}
+                  sx={{
+                    color: colors.pastel.blue,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  {superiorUser.email}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {/* Search and Actions Bar */}
       <Box

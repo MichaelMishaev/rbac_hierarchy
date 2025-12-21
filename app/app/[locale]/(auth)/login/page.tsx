@@ -34,18 +34,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Trim whitespace from inputs to prevent accidental spaces
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+
       // Convert phone number to email format if it looks like a phone
-      let loginEmail = email;
-      const cleanedInput = email.replace(/[^0-9]/g, '');
+      let loginEmail = trimmedEmail;
+      const cleanedInput = trimmedEmail.replace(/[^0-9]/g, '');
 
       // If input is all digits (phone number), convert to email format
-      if (cleanedInput && cleanedInput.length >= 9 && !email.includes('@')) {
+      if (cleanedInput && cleanedInput.length >= 9 && !trimmedEmail.includes('@')) {
         loginEmail = `${cleanedInput}@activist.login`;
       }
 
       const result = await signIn('credentials', {
         email: loginEmail,
-        password,
+        password: trimmedPassword,
         redirect: false,
       });
 
@@ -55,7 +59,7 @@ export default function LoginPage() {
         // Redirect activists to /activists/voters, others to dashboard
         window.location.href = '/dashboard'; // Middleware will redirect activists
       }
-    } catch (err) {
+    } catch {
       setError('אירעה שגיאה. נסה שנית.');
     } finally {
       setLoading(false);
@@ -159,7 +163,7 @@ export default function LoginPage() {
               placeholder="0501234567 או email@example.com"
               required
               autoFocus
-              autoComplete="off"
+              autoComplete="username"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -190,7 +194,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoComplete="current-password"
+              autoComplete="off"
               placeholder="הכנס סיסמה"
               InputProps={{
                 startAdornment: (

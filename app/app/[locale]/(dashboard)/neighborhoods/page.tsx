@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { colors } from '@/lib/design-system';
+import { prisma } from '@/lib/prisma';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { listCities } from '@/app/actions/cities';
 import { listAreas } from '@/app/actions/areas';
@@ -46,11 +47,59 @@ export default async function SitesPage() {
 
   // Get current user's city if they're a City Coordinator
   let userCityId: string | undefined;
+  let superiorUser: { fullName: string; email: string } | null = null;
+
   if (session.user.role === 'CITY_COORDINATOR') {
     // Import getCurrentUser to get full user data
     const { getCurrentUser } = await import('@/lib/auth');
     const currentUser = await getCurrentUser();
     userCityId = currentUser.coordinatorOf[0]?.cityId;
+
+    // Fetch Area Manager as superior user for City Coordinators
+    if (userCityId) {
+      const city = await prisma.city.findUnique({
+        where: { id: userCityId },
+        select: {
+          areaManager: {
+            select: {
+              user: {
+                select: {
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (city?.areaManager?.user) {
+        superiorUser = city.areaManager.user;
+      }
+    }
+  } else if (session.user.role === 'ACTIVIST_COORDINATOR') {
+    // Fetch City Coordinator as superior user for Activist Coordinators
+    const { getCurrentUser } = await import('@/lib/auth');
+    const currentUser = await getCurrentUser();
+    const cityId = currentUser.activistCoordinatorOf[0]?.cityId;
+
+    if (cityId) {
+      const cityCoordinator = await prisma.cityCoordinator.findFirst({
+        where: { cityId },
+        select: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (cityCoordinator?.user) {
+        superiorUser = cityCoordinator.user;
+      }
+    }
   }
 
   return (
@@ -96,6 +145,7 @@ export default async function SitesPage() {
         areas={areas.map(a => ({ id: a.id, regionName: a.regionName, regionCode: a.regionCode }))}
         userRole={session.user.role}
         userCityId={userCityId}
+        superiorUser={superiorUser}
       />
     </Box>
   );

@@ -54,6 +54,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 export type NavigationV3Props = {
   role: 'SUPERADMIN' | 'AREA_MANAGER' | 'MANAGER' | 'SUPERVISOR';
   userEmail?: string;
+  roleDescription?: string;
   stats?: {
     pendingInvites?: number;
     activeWorkers?: number;
@@ -202,7 +203,7 @@ NavItemComponent.displayName = 'NavItemComponent';
 // Main Navigation Component (Memoized)
 // ============================================
 
-function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
+function NavigationV3Component({ role, userEmail, roleDescription, stats }: NavigationV3Props) {
   const t = useTranslations('navigation');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -621,7 +622,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                   fontWeight: 500,
                 }}
               >
-                {role === 'SUPERADMIN'
+                {roleDescription || (role === 'SUPERADMIN'
                   ? 'מנהל על'
                   : role === 'AREA_MANAGER'
                   ? 'מנהל מחוז'
@@ -629,7 +630,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
                   ? 'מנהל'
                   : role === 'SUPERVISOR'
                   ? 'רכז שכונתי'
-                  : role}
+                  : role)}
               </Typography>
               {userEmail && (
                 <Typography
@@ -919,6 +920,7 @@ function NavigationV3Component({ role, userEmail, stats }: NavigationV3Props) {
       isRTL,
       role,
       userEmail,
+      roleDescription,
       isMobile,
       locale,
       sectionColors,
@@ -1054,6 +1056,7 @@ export default memo(NavigationV3Component, (prevProps, nextProps) => {
   return (
     prevProps.role === nextProps.role &&
     prevProps.userEmail === nextProps.userEmail &&
+    prevProps.roleDescription === nextProps.roleDescription &&
     prevProps.stats?.pendingInvites === nextProps.stats?.pendingInvites &&
     prevProps.stats?.activeWorkers === nextProps.stats?.activeWorkers &&
     prevProps.stats?.activeSites === nextProps.stats?.activeSites

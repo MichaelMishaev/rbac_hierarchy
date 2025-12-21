@@ -49,8 +49,35 @@ export async function GET() {
           },
         },
       });
-      if (!activistCoordinator || activistCoordinator.neighborhoodAssignments.length === 0) {
-        return NextResponse.json({ error: 'Activist Coordinator not assigned to any neighborhoods' }, { status: 403 });
+      if (!activistCoordinator) {
+        return NextResponse.json({
+          error: 'לא נמצאה הגדרת רכז פעילים עבור משתמש זה',
+          errorCode: 'ACTIVIST_COORDINATOR_NOT_FOUND'
+        }, { status: 403 });
+      }
+
+      // IMPORTANT: Allow empty neighborhood assignments - show empty tree instead of error
+      // This allows users to log in and see their dashboard even before being assigned
+      if (activistCoordinator.neighborhoodAssignments.length === 0) {
+        console.log('⚠️  [ORG-TREE API] Activist Coordinator has no neighborhoods assigned - returning empty city tree');
+        // Return empty city structure instead of error
+        const city = await prisma.city.findUnique({
+          where: { id: activistCoordinator.cityId },
+          select: { id: true, name: true },
+        });
+
+        return NextResponse.json({
+          id: city?.id || 'unknown',
+          name: city?.name || 'עיר לא ידועה',
+          type: 'city',
+          count: {
+            neighborhoods: 0,
+            activists: 0,
+          },
+          children: [],
+          isEmpty: true,
+          emptyMessage: 'טרם הוקצו לך שכונות. פנה למנהל העיר שלך.',
+        });
       }
       const neighborhoodIds = activistCoordinator.neighborhoodAssignments.map((a) => a.neighborhoodId);
       neighborhoodWhere = { id: { in: neighborhoodIds }, isActive: true };

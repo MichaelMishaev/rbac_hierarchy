@@ -124,14 +124,25 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       const response = await fetch(apiEndpoint);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch organizational tree');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'שגיאה בטעינת התרשים הארגוני');
       }
 
       const rawData = await response.json();
+
+      // Handle empty tree response (user with no assignments)
+      if (rawData.isEmpty) {
+        setData(null);
+        setError(rawData.emptyMessage || 'אין נתונים להצגה');
+        return;
+      }
+
       const formattedTree = convertToD3Format(rawData);
       setData(formattedTree);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'שגיאה לא ידועה');
+      setData(null);
     } finally {
       setLoading(false);
     }

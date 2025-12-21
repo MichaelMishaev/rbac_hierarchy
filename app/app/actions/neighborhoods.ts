@@ -28,6 +28,7 @@ export type UpdateNeighborhoodInput = {
   phone?: string;
   email?: string;
   isActive?: boolean;
+  activistCoordinatorId?: string; // Allow changing assigned activist coordinator
 };
 
 export type ListNeighborhoodsFilters = {
@@ -293,13 +294,28 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
         where.cityId = { in: areaManager.cities.map(c => c.id) };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Supervisors can only see sites they are assigned to (using legacyActivistCoordinatorUserId for User.id)
-      const activistCoordinatorAssignments = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: currentUser.id },
-        select: { neighborhoodId: true },
+      // Activist Coordinators can only see neighborhoods assigned to them via M2M table
+      // Step 1: Get ActivistCoordinator record for current user
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: {
+          userId: currentUser.id,
+          isActive: true,
+        },
+        select: { id: true },
       });
-      const siteIds = activistCoordinatorAssignments.map(ss => ss.neighborhoodId);
-      where.id = { in: siteIds };
+
+      if (activistCoordinator) {
+        // Step 2: Query M2M table using activistCoordinator.id (NOT user.id)
+        const activistCoordinatorAssignments = await prisma.activistCoordinatorNeighborhood.findMany({
+          where: { activistCoordinatorId: activistCoordinator.id },
+          select: { neighborhoodId: true },
+        });
+        const siteIds = activistCoordinatorAssignments.map(ss => ss.neighborhoodId);
+        where.id = { in: siteIds };
+      } else {
+        // No activist coordinator record - show empty list
+        where.id = { in: [] };
+      }
     }
 
     // Apply additional filters
@@ -439,10 +455,27 @@ export async function getNeighborhoodById(neighborhoodId: string) {
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Check if supervisor has access to this site (v1.3: use findFirst since unique constraint changed)
+      // Check if activist coordinator has access to this neighborhood via M2M table
+      // Step 1: Get ActivistCoordinator record for current user
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: {
+          userId: currentUser.id,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'Access denied',
+        };
+      }
+
+      // Step 2: Check M2M assignment using activistCoordinator.id (NOT user.id)
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          activistCoordinatorId: currentUser.id,
+          activistCoordinatorId: activistCoordinator.id,
           neighborhoodId: neighborhood.id,
         },
       });
@@ -508,31 +541,105 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
       }
     }
 
-    // Update site
-    const updatedNeighborhood = await prisma.neighborhood.update({
-      where: { id: neighborhoodId },
-      data: {
-        name: data.name,
-        address: data.address,
-        city: data.city,
-        country: data.country,
-        phone: data.phone,
-        email: data.email,
-        isActive: data.isActive,
-      },
-      include: { cityRelation: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
+    // Validate activist coordinator if provided
+    let activistCoordinator = null;
+    if (data.activistCoordinatorId) {
+      activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: {
+          id: data.activistCoordinatorId,
+          cityId: existingNeighborhood.cityId,
+          isActive: true,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
           },
         },
-        _count: { select: { activistCoordinatorAssignments: true,
-            activists: true,
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'Activist coordinator not found, inactive, or from different city',
+        };
+      }
+    }
+
+    // Get existing activist coordinator assignments (for audit log)
+    const existingAssignments = await prisma.activistCoordinatorNeighborhood.findMany({
+      where: { neighborhoodId },
+      include: {
+        activistCoordinator: {
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
           },
         },
       },
     });
+
+    // Use transaction to update neighborhood and activist coordinator assignment atomically
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update neighborhood basic fields
+      const updatedNeighborhood = await tx.neighborhood.update({
+        where: { id: neighborhoodId },
+        data: {
+          name: data.name,
+          address: data.address,
+          city: data.city,
+          country: data.country,
+          phone: data.phone,
+          email: data.email,
+          isActive: data.isActive,
+        },
+        include: {
+          cityRelation: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          _count: {
+            select: {
+              activistCoordinatorAssignments: true,
+              activists: true,
+            },
+          },
+        },
+      });
+
+      // 2. Update activist coordinator assignment if provided
+      if (data.activistCoordinatorId && activistCoordinator) {
+        // Delete all existing assignments (UI supports single coordinator only)
+        await tx.activistCoordinatorNeighborhood.deleteMany({
+          where: { neighborhoodId },
+        });
+
+        // Create new assignment
+        await tx.activistCoordinatorNeighborhood.create({
+          data: {
+            neighborhoodId,
+            activistCoordinatorId: data.activistCoordinatorId,
+            cityId: existingNeighborhood.cityId,
+            legacyActivistCoordinatorUserId: activistCoordinator.userId,
+            assignedBy: currentUser.id,
+          },
+        });
+      }
+
+      return updatedNeighborhood;
+    });
+
+    const updatedNeighborhood = result;
 
     // Create audit log
     await prisma.auditLog.create({
@@ -548,12 +655,19 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
           address: existingNeighborhood.address,
           city: existingNeighborhood.city,
           isActive: existingNeighborhood.isActive,
+          activistCoordinators: existingAssignments.map(a => ({
+            id: a.activistCoordinatorId,
+            name: a.activistCoordinator.user.fullName,
+            email: a.activistCoordinator.user.email,
+          })),
         },
         after: {
           name: updatedNeighborhood.name,
           address: updatedNeighborhood.address,
           city: updatedNeighborhood.city,
           isActive: updatedNeighborhood.isActive,
+          activistCoordinatorId: data.activistCoordinatorId,
+          activistCoordinatorName: activistCoordinator?.user.fullName,
         },
       },
     });
@@ -710,10 +824,27 @@ export async function getNeighborhoodStats(neighborhoodId: string) {
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Check if supervisor has access to this site (v1.3: use findFirst since unique constraint changed)
+      // Check if activist coordinator has access to this neighborhood via M2M table
+      // Step 1: Get ActivistCoordinator record for current user
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: {
+          userId: currentUser.id,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'Access denied',
+        };
+      }
+
+      // Step 2: Check M2M assignment using activistCoordinator.id (NOT user.id)
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          activistCoordinatorId: currentUser.id,
+          activistCoordinatorId: activistCoordinator.id,
           neighborhoodId: neighborhood.id,
         },
       });

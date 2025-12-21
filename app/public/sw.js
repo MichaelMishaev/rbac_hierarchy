@@ -15,7 +15,7 @@
  * Version: 2.0.0 - PWA with Offline Support
  */
 
-const SW_VERSION = '2.1.0';
+const SW_VERSION = '2.1.1'; // Bumped to force cache refresh for reset password fix
 const CACHE_NAME = `campaign-v${SW_VERSION}`;
 const OFFLINE_PAGE = '/offline.html';
 

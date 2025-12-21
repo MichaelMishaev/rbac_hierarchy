@@ -742,40 +742,43 @@ export default function TaskCreationFormV2({ senderId, senderRole, senderName }:
                       getOptionLabel={(option) =>
                         `${option.full_name} - ${option.city_name || 'לא משויך לעיר'}`
                       }
-                      renderOption={(props, option) => (
-                        <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between', py: 1.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                            <Typography sx={{ fontWeight: 500, fontSize: '14px' }}>
-                              {option.full_name}
-                            </Typography>
-                            {option.city_name ? (
-                              <Chip
-                                label={option.city_name}
-                                size="small"
-                                sx={{
-                                  backgroundColor: `${colors.info}20`,
-                                  color: colors.info,
-                                  fontWeight: 600,
-                                  fontSize: '12px',
-                                  height: '22px',
-                                }}
-                              />
-                            ) : (
-                              <Chip
-                                label="לא משויך"
-                                size="small"
-                                sx={{
-                                  backgroundColor: `${colors.warning}20`,
-                                  color: colors.warning,
-                                  fontWeight: 600,
-                                  fontSize: '12px',
-                                  height: '22px',
-                                }}
-                              />
-                            )}
+                      renderOption={(props, option) => {
+                        const { key, ...otherProps } = props as any;
+                        return (
+                          <Box component="li" key={key} {...otherProps} sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between', py: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                              <Typography sx={{ fontWeight: 500, fontSize: '14px' }}>
+                                {option.full_name}
+                              </Typography>
+                              {option.city_name ? (
+                                <Chip
+                                  label={option.city_name}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: `${colors.info}20`,
+                                    color: colors.info,
+                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    height: '22px',
+                                  }}
+                                />
+                              ) : (
+                                <Chip
+                                  label="לא משויך"
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: `${colors.warning}20`,
+                                    color: colors.warning,
+                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    height: '22px',
+                                  }}
+                                />
+                              )}
+                            </Box>
                           </Box>
-                        </Box>
-                      )}
+                        );
+                      }}
                       loading={loadingRecipients}
                       renderInput={(params) => (
                         <TextField

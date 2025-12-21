@@ -29,6 +29,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import EmailIcon from '@mui/icons-material/Email';
 import AreaModal, { AreaFormData } from '@/app/components/modals/AreaModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
@@ -70,9 +72,10 @@ type Area = {
 type AreasClientProps = {
   areas: Area[];
   userRole: string;
+  superiorUser: { fullName: string; email: string } | null;
 };
 
-export default function AreasClient({ areas: initialAreas, userRole }: AreasClientProps) {
+export default function AreasClient({ areas: initialAreas, userRole, superiorUser }: AreasClientProps) {
   const t = useTranslations('areas');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -263,6 +266,81 @@ export default function AreasClient({ areas: initialAreas, userRole }: AreasClie
           </Card>
         </Grid>
       </Grid>
+
+      {/* Permission Info Banner - Only show for non-SuperAdmin users */}
+      {!isSuperAdmin && superiorUser && (
+        <Box
+          sx={{
+            mb: 3,
+            p: 2.5,
+            background: colors.pastel.blueLight,
+            border: `1px solid ${colors.pastel.blue}`,
+            borderRadius: borderRadius.lg,
+            boxShadow: shadows.soft,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            direction: isRTL ? 'rtl' : 'ltr',
+          }}
+          data-testid="permission-info-banner"
+        >
+          <InfoOutlinedIcon
+            sx={{
+              fontSize: 28,
+              color: colors.pastel.blue,
+              flexShrink: 0,
+            }}
+          />
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 600,
+                color: colors.neutral[900],
+                mb: 0.5,
+              }}
+            >
+              רק מנהל המערכת יכול ליצור אזורים חדשים
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: colors.neutral[700],
+                }}
+              >
+                ליצירת אזור חדש, פנה ל:
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: colors.pastel.blue,
+                  }}
+                >
+                  {superiorUser.fullName}
+                </Typography>
+                <EmailIcon sx={{ fontSize: 16, color: colors.neutral[500] }} />
+                <Typography
+                  variant="body2"
+                  component="a"
+                  href={`mailto:${superiorUser.email}`}
+                  sx={{
+                    color: colors.pastel.blue,
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  {superiorUser.email}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {/* Search and Actions Bar */}
       <Box

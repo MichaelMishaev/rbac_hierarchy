@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import {
   Box,
   Button,
@@ -21,8 +20,7 @@ import { colors, shadows } from '@/lib/design-system';
 import { changeOwnPassword } from '@/actions/password-reset';
 
 export default function ChangePasswordPage() {
-  const { data: session, update } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,8 +55,12 @@ export default function ChangePasswordPage() {
     setLoading(true);
 
     try {
+      // Trim whitespace to prevent accidental spaces
+      const trimmedCurrentPassword = currentPassword.trim();
+      const trimmedNewPassword = newPassword.trim();
+
       // Use server action to change password
-      const result = await changeOwnPassword(currentPassword, newPassword);
+      const result = await changeOwnPassword(trimmedCurrentPassword, trimmedNewPassword);
 
       if (!result.success) {
         setError('שגיאה בשינוי הסיסמה');
@@ -70,7 +72,7 @@ export default function ChangePasswordPage() {
       // This is necessary because the old JWT still has requirePasswordChange: true
       const signInResult = await signIn('credentials', {
         email: session?.user?.email,
-        password: newPassword,
+        password: trimmedNewPassword,
         redirect: false,
       });
 
@@ -188,6 +190,7 @@ export default function ChangePasswordPage() {
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
               autoFocus
+              autoComplete="off"
               placeholder="הכנס את הסיסמה הזמנית שקיבלת"
               InputProps={{
                 endAdornment: (
@@ -225,6 +228,7 @@ export default function ChangePasswordPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
+              autoComplete="new-password"
               placeholder="הכנס סיסמה חדשה (לפחות 6 תווים)"
               InputProps={{
                 endAdornment: (
@@ -262,6 +266,7 @@ export default function ChangePasswordPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              autoComplete="new-password"
               placeholder="הכנס שוב את הסיסמה החדשה"
               InputProps={{
                 endAdornment: (

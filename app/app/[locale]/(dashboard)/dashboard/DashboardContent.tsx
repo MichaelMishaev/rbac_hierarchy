@@ -80,6 +80,7 @@ export default async function DashboardContent() {
   } else {
     // Fallback to basic role labels
     roleDescription =
+      role === 'AREA_MANAGER' ? 'מנהל מחוז' :
       role === 'MANAGER' ? 'מנהל עיר' :
       role === 'SUPERVISOR' ? 'רכז שכונתי' :
       role === 'ACTIVIST_COORDINATOR' ? 'רכז שכונתי' :
@@ -309,7 +310,7 @@ export default async function DashboardContent() {
         },
         {
           title: t('totalNeighborhoods'),
-          value: stats.supervisor?.neighborhood?.name ?? 'N/A',
+          value: stats.supervisor?.neighborhood?.name ?? 'טרם הוקצו שכונות',
           subtitle: stats.supervisor?.neighborhood?.isActive ? tCommon('active') : tCommon('inactive'),
           color: 'green' as const,
           icon: <LocationOnIcon sx={{ fontSize: 24 }} />,

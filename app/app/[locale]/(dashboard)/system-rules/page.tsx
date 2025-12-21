@@ -30,6 +30,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Link from 'next/link';
 import SecurityIcon from '@mui/icons-material/Security';
 import InfoIcon from '@mui/icons-material/Info';
+import SystemRulesClient from '@/app/components/system-rules/SystemRulesClient';
 
 export default async function SystemRulesPage() {
   const session = await auth();
@@ -574,159 +575,264 @@ export default async function SystemRulesPage() {
         📋 הדרכה שלב אחר שלב
       </Typography>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {setupSteps.map((step) => (
-          <Grid item xs={12} key={step.order}>
-            <Card
-              sx={{
-                borderRadius: borderRadius.xl,
-                boxShadow: shadows.medium,
-                border: `2px solid ${step.color}`,
-                overflow: 'hidden',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  boxShadow: shadows.large,
-                  transform: 'translateY(-4px)',
-                },
-              }}
-            >
-              {/* Step Header */}
-              <Box
-                sx={{
-                  background: `linear-gradient(135deg, ${step.color} 0%, ${step.color}CC 100%)`,
-                  p: 3,
-                  color: colors.neutral[0],
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+      <Box sx={{ mb: 4 }}>
+        <SystemRulesClient setupSteps={setupSteps} isRTL={isRTL} />
+      </Box>
+
+      {/* Password Management Section */}
+      <Card
+        sx={{
+          borderRadius: borderRadius.xl,
+          boxShadow: shadows.medium,
+          border: `2px solid ${colors.status.orange}`,
+          overflow: 'hidden',
+          mb: 4,
+        }}
+      >
+        <Box
+          sx={{
+            background: `linear-gradient(135deg, ${colors.status.orange} 0%, ${colors.status.orange}CC 100%)`,
+            p: 3,
+            color: colors.neutral[0],
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <SecurityIcon sx={{ fontSize: 32 }} />
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+              🔐 ניהול סיסמאות - מידע חשוב
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.95 }}>
+              כיצד לטפל בסיסמאות שנשכחו ולאפס גישה למשתמשים
+            </Typography>
+          </Box>
+        </Box>
+
+        <CardContent sx={{ p: 3 }}>
+          <Alert severity="error" sx={{ mb: 3, borderRadius: borderRadius.md }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '15px', mb: 1 }}>
+              ⚠️ אזהרה קריטית: סיסמאות לא נשמרות במערכת!
+            </Typography>
+            <Typography sx={{ fontSize: '14px' }}>
+              כאשר אתה יוצר משתמש חדש, הסיסמה מוצגת <strong>פעם אחת בלבד</strong> במסך אישור היצירה.
+              לאחר סגירת המסך, אין דרך לשחזר את הסיסמה המקורית. אם משתמש שכח את הסיסמה שלו,
+              <strong> הדרך היחידה היא לאפס את הסיסמה</strong>.
+            </Typography>
+          </Alert>
+
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, mb: 2, color: colors.neutral[800], display: 'flex', alignItems: 'center', gap: 1 }}
+          >
+            <InfoIcon sx={{ color: colors.status.blue }} />
+            איך לאפס סיסמה למשתמש?
+          </Typography>
+
+          <Box
+            sx={{
+              p: 3,
+              background: colors.neutral[50],
+              borderRadius: borderRadius.lg,
+              border: `2px solid ${colors.neutral[200]}`,
+              mb: 3,
+            }}
+          >
+            <List>
+              <ListItem sx={{ alignItems: 'flex-start', pb: 2 }}>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
                   <Box
                     sx={{
-                      width: 48,
-                      height: 48,
+                      width: 28,
+                      height: 28,
                       borderRadius: '50%',
-                      background: colors.neutral[0],
+                      background: colors.status.blue,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: step.color,
+                      color: colors.neutral[0],
                       fontWeight: 700,
-                      fontSize: '20px',
+                      fontSize: '14px',
                     }}
                   >
-                    {step.order}
+                    1
                   </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      {step.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.95 }}>
-                      {step.description}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
+                </ListItemIcon>
+                <ListItemText
+                  primary="עבור למסך משתמשים"
+                  secondary={
+                    <Link href="/users" style={{ color: colors.primary.main, fontWeight: 600, textDecoration: 'underline' }}>
+                      לחץ כאן כדי לעבור למסך משתמשים ➤
+                    </Link>
+                  }
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: colors.neutral[800],
+                    mb: 0.5,
+                  }}
+                  secondaryTypographyProps={{
+                    fontSize: '14px',
+                    color: colors.neutral[600],
+                    mt: 0.5,
+                  }}
+                />
+              </ListItem>
 
-              <CardContent sx={{ p: 3 }}>
-                {/* Action Link */}
-                <Link href={step.link} passHref style={{ textDecoration: 'none' }}>
+              <ListItem sx={{ alignItems: 'flex-start', pb: 2 }}>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
                   <Box
                     sx={{
-                      mb: 3,
-                      p: 2.5,
-                      background: `${step.color}15`,
-                      borderRadius: borderRadius.lg,
-                      border: `2px solid ${step.color}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        background: `${step.color}25`,
-                        transform: 'translateX(-4px)',
-                      },
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: colors.status.blue,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '14px',
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box
-                        sx={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: '50%',
-                          background: step.color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: colors.neutral[0],
-                        }}
-                      >
-                        {step.icon}
-                      </Box>
-                      <Typography
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: '16px',
-                          color: colors.neutral[900],
-                          flex: 1,
-                        }}
-                      >
-                        {step.linkText}
-                      </Typography>
-                      <Box
-                        sx={{
-                          px: 2,
-                          py: 1,
-                          background: step.color,
-                          color: colors.neutral[0],
-                          borderRadius: borderRadius.md,
-                          fontWeight: 700,
-                          fontSize: '14px',
-                        }}
-                      >
-                        לחץ כאן
-                      </Box>
-                    </Box>
+                    2
                   </Box>
-                </Link>
+                </ListItemIcon>
+                <ListItemText
+                  primary="מצא את המשתמש ברשימה"
+                  secondary="השתמש בסינונים או בחיפוש כדי למצוא את המשתמש שצריך לאפס לו את הסיסמה"
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: colors.neutral[800],
+                    mb: 0.5,
+                  }}
+                  secondaryTypographyProps={{
+                    fontSize: '14px',
+                    color: colors.neutral[600],
+                  }}
+                />
+              </ListItem>
 
-                {/* Step Instructions */}
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, mb: 2, color: colors.neutral[800] }}
-                >
-                  איך לעשות את זה:
-                </Typography>
-                <List dense>
-                  {step.steps.map((instruction, idx) => (
-                    <ListItem key={idx} sx={{ alignItems: 'flex-start' }}>
-                      <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
-                        <CheckCircleIcon sx={{ fontSize: 20, color: step.color }} />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={instruction}
-                        primaryTypographyProps={{
-                          fontSize: '14px',
-                          color: colors.neutral[700],
-                          lineHeight: 1.6,
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+              <ListItem sx={{ alignItems: 'flex-start', pb: 2 }}>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: colors.status.blue,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '14px',
+                    }}
+                  >
+                    3
+                  </Box>
+                </ListItemIcon>
+                <ListItemText
+                  primary='לחץ על שלוש הנקודות (⋮) ליד המשתמש'
+                  secondary="תפריט פעולות ייפתח עם מספר אפשרויות"
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: colors.neutral[800],
+                    mb: 0.5,
+                  }}
+                  secondaryTypographyProps={{
+                    fontSize: '14px',
+                    color: colors.neutral[600],
+                  }}
+                />
+              </ListItem>
 
-                {/* Tip */}
-                {step.tip && (
-                  <Alert severity="info" sx={{ mt: 2, borderRadius: borderRadius.md }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <InfoIcon sx={{ fontSize: 20, mt: 0.2 }} />
-                      <Typography sx={{ fontSize: '13px', lineHeight: 1.5 }}>
-                        <strong>טיפ:</strong> {step.tip}
-                      </Typography>
-                    </Box>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+              <ListItem sx={{ alignItems: 'flex-start', pb: 2 }}>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: colors.status.orange,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '14px',
+                    }}
+                  >
+                    4
+                  </Box>
+                </ListItemIcon>
+                <ListItemText
+                  primary='בחר "אפס סיסמה"'
+                  secondary="תיפתח חלונית שבה תוכל להזין סיסמה חדשה למשתמש"
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: colors.neutral[800],
+                    mb: 0.5,
+                  }}
+                  secondaryTypographyProps={{
+                    fontSize: '14px',
+                    color: colors.neutral[600],
+                  }}
+                />
+              </ListItem>
+
+              <ListItem sx={{ alignItems: 'flex-start' }}>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: colors.status.green,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.neutral[0],
+                      fontWeight: 700,
+                      fontSize: '14px',
+                    }}
+                  >
+                    5
+                  </Box>
+                </ListItemIcon>
+                <ListItemText
+                  primary="הזן סיסמה חדשה ושלח למשתמש"
+                  secondary="הסיסמה החדשה תוצג לך פעם אחת בלבד - העתק והעבר למשתמש באופן מאובטח (WhatsApp, SMS)"
+                  primaryTypographyProps={{
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: colors.neutral[800],
+                    mb: 0.5,
+                  }}
+                  secondaryTypographyProps={{
+                    fontSize: '14px',
+                    color: colors.neutral[600],
+                  }}
+                />
+              </ListItem>
+            </List>
+          </Box>
+
+          <Alert severity="info" sx={{ borderRadius: borderRadius.md }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '14px', mb: 0.5 }}>
+              💡 טיפ: יצירת משתמש חדש
+            </Typography>
+            <Typography sx={{ fontSize: '13px' }}>
+              כאשר אתה יוצר משתמש חדש, הסיסמה המוצגת במסך האישור כוללת כפתור העתקה נוח.
+              השתמש בכפתור &quot;העתק אימייל וסיסמה&quot; כדי להעתיק את שני הפרטים בבת אחת ולשלוח למשתמש החדש.
+            </Typography>
+          </Alert>
+        </CardContent>
+      </Card>
 
       {/* Quick Reference Card */}
       <Card

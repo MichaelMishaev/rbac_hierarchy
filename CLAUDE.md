@@ -45,6 +45,11 @@ SuperAdmin (system-wide)
 - **Activist Coordinator**: Assigned neighborhoods only (M2M table)
 - **Data Isolation**: ALWAYS filter by `city_id`/area (except SuperAdmin)
 
+**📋 RBAC Documentation** (Single Source of Truth):
+- **Permissions Matrix**: `docs/infrastructure/roles/PERMISSIONS_MATRIX.md` ⭐ **START HERE**
+- **Role-specific docs**: `docs/infrastructure/roles/{superAdmin|areManager|cityCoordinator|activistCoordinator}Roles.md`
+- **Hierarchy Overview**: `docs/infrastructure/roles/hierarchy.md`
+
 ### Organization Tree Visibility
 **Each user sees only themselves and what's under them as ROOT:**
 - SuperAdmin → Full hierarchy

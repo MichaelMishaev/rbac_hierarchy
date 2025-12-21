@@ -85,6 +85,7 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
         phone: data.phone ?? null,
         passwordHash: hashedPassword,
         role: 'ACTIVIST_COORDINATOR',
+        requirePasswordChange: true, // Force password change on first login
       },
     });
 

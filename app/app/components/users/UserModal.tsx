@@ -19,9 +19,12 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
+import Link from 'next/link';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { createUser, updateUser } from '@/app/actions/users';
 
 type User = {
@@ -88,9 +91,9 @@ export default function UserModal({
 
   const [formData, setFormData] = useState<FormData>({
     name: user?.fullName || '',
-    email: user?.email || '',
+    email: user?.email || '', // Empty for new users, filled for edit
     phone: user?.phone || '',
-    password: '',
+    password: user ? '' : 'admin0', // Default password for new users only
     role: (user?.role && user.role !== 'ACTIVIST') ? user.role : 'ACTIVIST_COORDINATOR',
     cityId: user?.cityId || currentUserCityId || '',
     regionName: user?.regionName || '',
@@ -99,6 +102,9 @@ export default function UserModal({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | 'both' | null>(null);
 
   // Reset form when user changes
   useEffect(() => {
@@ -116,9 +122,9 @@ export default function UserModal({
     } else {
       setFormData({
         name: '',
-        email: '',
+        email: '', // Empty for new users
         phone: '',
-        password: '',
+        password: 'admin0', // Default password for new users
         role: 'ACTIVIST_COORDINATOR',
         cityId: currentUserCityId || '',
         regionName: '',
@@ -236,12 +242,58 @@ export default function UserModal({
       }
 
       // Success
-      onSuccess();
-      onClose();
+      if (!isEdit && result.success && 'generatedPassword' in result && result.generatedPassword) {
+        // Show password dialog for new users
+        setCreatedCredentials({
+          email: formData.email,
+          password: result.generatedPassword,
+        });
+        setShowPasswordDialog(true);
+        setLoading(false);
+        // Don't close modal yet - wait for password dialog to be closed
+      } else {
+        // Edit mode - close immediately
+        onSuccess();
+        onClose();
+      }
     } catch (err) {
       setError('אירעה שגיאה בלתי צפויה');
       setLoading(false);
     }
+  };
+
+  // Copy to clipboard handlers
+  const handleCopyEmail = async () => {
+    if (createdCredentials) {
+      await navigator.clipboard.writeText(createdCredentials.email);
+      setCopiedField('email');
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    if (createdCredentials) {
+      await navigator.clipboard.writeText(createdCredentials.password);
+      setCopiedField('password');
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const handleCopyBoth = async () => {
+    if (createdCredentials) {
+      const text = `אימייל: ${createdCredentials.email}\nסיסמה: ${createdCredentials.password}`;
+      await navigator.clipboard.writeText(text);
+      setCopiedField('both');
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const handleClosePasswordDialog = () => {
+    setShowPasswordDialog(false);
+    setCreatedCredentials(null);
+    setCopiedField(null);
+    onSuccess();
+    onClose();
   };
 
   // Filter cities based on current user's role
@@ -271,6 +323,7 @@ export default function UserModal({
       : []; // Activist Coordinators cannot create users via this modal
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={onClose}
@@ -365,7 +418,12 @@ export default function UserModal({
             fullWidth
             required={!isEdit}
             disabled={loading}
-            helperText={isEdit ? 'השאר ריק כדי לא לשנות' : 'לפחות 6 תווים'}
+            autoComplete="new-password"
+            helperText={
+              isEdit
+                ? 'השאר ריק כדי לא לשנות'
+                : 'ברירת מחדל: admin0 (המשתמש יידרש לשנות בכניסה הראשונה)'
+            }
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: borderRadius.md,
@@ -479,24 +537,28 @@ export default function UserModal({
                 loading={loading}
                 noOptionsText="אין שכונות זמינות"
                 loadingText="טוען שכונות..."
-                renderOption={(props, option) => (
-                  <Box
-                    component="li"
-                    {...props}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      padding: '8px 12px !important',
-                      '&:hover': {
-                        backgroundColor: `${colors.primary.light}20 !important`,
-                      },
-                    }}
-                  >
-                    <LocationOnIcon sx={{ fontSize: 18, color: colors.primary.main }} />
-                    <Typography variant="body2">{option.name}</Typography>
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <Box
+                      component="li"
+                      key={key}
+                      {...otherProps}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        padding: '8px 12px !important',
+                        '&:hover': {
+                          backgroundColor: `${colors.primary.light}20 !important`,
+                        },
+                      }}
+                    >
+                      <LocationOnIcon sx={{ fontSize: 18, color: colors.primary.main }} />
+                      <Typography variant="body2">{option.name}</Typography>
+                    </Box>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -667,5 +729,207 @@ export default function UserModal({
         </Button>
       </DialogActions>
     </Dialog>
+
+    {/* Password Success Dialog */}
+    <Dialog
+      open={showPasswordDialog}
+      onClose={handleClosePasswordDialog}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: borderRadius.lg,
+          boxShadow: shadows.large,
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          borderBottom: `1px solid ${colors.neutral[200]}`,
+          pb: 2,
+          fontWeight: 600,
+          color: colors.status.green,
+        }}
+      >
+        <CheckCircleIcon sx={{ fontSize: 32, color: colors.status.green }} />
+        משתמש נוצר בהצלחה!
+      </DialogTitle>
+
+      <DialogContent sx={{ pt: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Alert severity="warning" sx={{ borderRadius: borderRadius.md }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '14px', mb: 1 }}>
+              ⚠️ חשוב מאוד: שמור את הסיסמה כעת!
+            </Typography>
+            <Typography sx={{ fontSize: '13px', mb: 1 }}>
+              הסיסמה לא תוצג שוב! המשתמש <strong>יידרש לשנות את הסיסמה</strong> בכניסה הראשונה למערכת.
+            </Typography>
+            <Typography sx={{ fontSize: '13px', mb: 1 }}>
+              אם המשתמש ישכח את הסיסמה לאחר השינוי, תצטרך לאפס אותה דרך מסך המשתמשים.
+            </Typography>
+            <Typography sx={{ fontSize: '13px' }}>
+              <Link
+                href="/system-rules"
+                target="_blank"
+                style={{
+                  color: colors.primary.main,
+                  fontWeight: 600,
+                  textDecoration: 'underline'
+                }}
+              >
+                לחץ כאן למידע נוסף על איפוס סיסמאות
+              </Link>
+            </Typography>
+          </Alert>
+
+          {/* Email Field */}
+          <Box>
+            <Typography
+              sx={{
+                fontSize: '12px',
+                color: colors.neutral[500],
+                mb: 1,
+                fontWeight: 600,
+              }}
+            >
+              אימייל
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                p: 2,
+                backgroundColor: colors.neutral[50],
+                borderRadius: borderRadius.md,
+                border: `1px solid ${colors.neutral[200]}`,
+              }}
+            >
+              <Typography
+                sx={{
+                  flex: 1,
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  color: colors.neutral[800],
+                  direction: 'ltr',
+                  textAlign: 'left',
+                }}
+              >
+                {createdCredentials?.email}
+              </Typography>
+              <IconButton
+                onClick={handleCopyEmail}
+                size="small"
+                sx={{
+                  color: copiedField === 'email' ? colors.status.green : colors.primary.main,
+                }}
+              >
+                {copiedField === 'email' ? <CheckCircleIcon /> : <ContentCopyIcon />}
+              </IconButton>
+            </Box>
+          </Box>
+
+          {/* Password Field */}
+          <Box>
+            <Typography
+              sx={{
+                fontSize: '12px',
+                color: colors.neutral[500],
+                mb: 1,
+                fontWeight: 600,
+              }}
+            >
+              סיסמה
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                p: 2,
+                backgroundColor: colors.status.yellow + '20',
+                borderRadius: borderRadius.md,
+                border: `2px solid ${colors.status.yellow}`,
+              }}
+            >
+              <Typography
+                sx={{
+                  flex: 1,
+                  fontFamily: 'monospace',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: colors.neutral[800],
+                  direction: 'ltr',
+                  textAlign: 'left',
+                  letterSpacing: '1px',
+                }}
+              >
+                {createdCredentials?.password}
+              </Typography>
+              <IconButton
+                onClick={handleCopyPassword}
+                size="small"
+                sx={{
+                  color: copiedField === 'password' ? colors.status.green : colors.primary.main,
+                }}
+              >
+                {copiedField === 'password' ? <CheckCircleIcon /> : <ContentCopyIcon />}
+              </IconButton>
+            </Box>
+          </Box>
+
+          {/* Copy Both Button */}
+          <Button
+            onClick={handleCopyBoth}
+            variant="outlined"
+            startIcon={copiedField === 'both' ? <CheckCircleIcon /> : <ContentCopyIcon />}
+            fullWidth
+            sx={{
+              borderColor: colors.primary.main,
+              color: copiedField === 'both' ? colors.status.green : colors.primary.main,
+              borderRadius: borderRadius.md,
+              py: 1.5,
+              '&:hover': {
+                borderColor: colors.primary.dark,
+                backgroundColor: colors.primary.ultraLight,
+              },
+            }}
+          >
+            {copiedField === 'both' ? 'הועתק!' : 'העתק אימייל וסיסמה'}
+          </Button>
+        </Box>
+      </DialogContent>
+
+      <DialogActions
+        sx={{
+          borderTop: `1px solid ${colors.neutral[200]}`,
+          px: 3,
+          py: 2,
+        }}
+      >
+        <Button
+          onClick={handleClosePasswordDialog}
+          variant="contained"
+          fullWidth
+          sx={{
+            background: colors.primary.main,
+            color: colors.secondary.white,
+            py: 1.5,
+            borderRadius: borderRadius.md,
+            boxShadow: shadows.soft,
+            '&:hover': {
+              background: colors.primary.dark,
+              boxShadow: shadows.glowBlue,
+            },
+          }}
+        >
+          סגור
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }

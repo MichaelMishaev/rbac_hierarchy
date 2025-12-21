@@ -230,6 +230,7 @@ export async function createUser(data: CreateUserInput) {
         phone: data.phone,
         passwordHash: hashedPassword,
         role: data.role,
+        requirePasswordChange: true, // Force password change on first login
       },
     });
 
@@ -282,6 +283,8 @@ export async function createUser(data: CreateUserInput) {
     return {
       success: true,
       user: newUser,
+      // Return the password for display (only on creation)
+      generatedPassword: data.password,
     };
   } catch (error) {
     console.error('Error creating user:', error);

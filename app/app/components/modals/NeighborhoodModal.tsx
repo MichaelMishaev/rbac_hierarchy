@@ -112,7 +112,6 @@ export default function NeighborhoodModal({
     fullName: '',
     email: '',
     phone: '',
-    title: '',
     tempPassword: '', // Custom temp password field
   });
   const [supervisorErrors, setSupervisorErrors] = useState<Record<string, string>>({});
@@ -177,7 +176,7 @@ export default function NeighborhoodModal({
       });
       setErrors({});
       setShowCreateSupervisor(false);
-      setSupervisorFormData({ fullName: '', email: '', phone: '', title: '', tempPassword: '' });
+      setSupervisorFormData({ fullName: '', email: '', phone: '', tempPassword: '' });
       setSupervisorErrors({});
       setTempPassword(null);
     }
@@ -304,7 +303,7 @@ export default function NeighborhoodModal({
         email: supervisorFormData.email,
         phone: supervisorFormData.phone,
         cityId: formData.cityId,
-        title: supervisorFormData.title || 'Activist Coordinator',
+        title: 'רכז שכונתי', // Fixed role for activist coordinators
         tempPassword: supervisorFormData.tempPassword || undefined, // Pass custom password if provided
       });
 
@@ -324,7 +323,7 @@ export default function NeighborhoodModal({
         setFormData((prev) => ({ ...prev, activistCoordinatorId: result.activistCoordinator.id }));
 
         // Reset supervisor form
-        setSupervisorFormData({ fullName: '', email: '', phone: '', title: '', tempPassword: '' });
+        setSupervisorFormData({ fullName: '', email: '', phone: '', tempPassword: '' });
         setSupervisorErrors({});
         setShowCreateSupervisor(false);
       } else {
@@ -783,13 +782,19 @@ export default function NeighborhoodModal({
                         />
                         <TextField
                           label="תפקיד"
-                          value={supervisorFormData.title}
-                          onChange={(e) =>
-                            setSupervisorFormData((prev) => ({ ...prev, title: e.target.value }))
-                          }
-                          placeholder="רכז שכונתי"
+                          value="רכז שכונתי"
                           fullWidth
                           size="small"
+                          disabled
+                          InputProps={{
+                            readOnly: true,
+                          }}
+                          helperText="התפקיד מוגדר אוטומטית"
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              backgroundColor: '#F5F5F5',
+                            },
+                          }}
                         />
                         <TextField
                           label="סיסמה זמנית (אופציונלי)"

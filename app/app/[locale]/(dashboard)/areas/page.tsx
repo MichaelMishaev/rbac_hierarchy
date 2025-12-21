@@ -32,12 +32,27 @@ export default async function AreasPage() {
 
   // Build query based on role
   let whereClause: any = {};
+  let superiorUser: { fullName: string; email: string } | null = null;
 
   // Area Managers can only see their own area
   if (session.user.role === 'AREA_MANAGER') {
     whereClause = {
       userId: session.user.id,
     };
+
+    // Fetch SuperAdmin as superior user for Area Managers
+    const superAdmin = await prisma.user.findFirst({
+      where: {
+        isSuperAdmin: true,
+        isActive: true,
+      },
+      select: {
+        fullName: true,
+        email: true,
+      },
+    });
+
+    superiorUser = superAdmin;
   }
   // SuperAdmin sees all areas (no filter)
 
@@ -123,6 +138,7 @@ export default async function AreasPage() {
       <AreasClient
         areas={areas}
         userRole={session.user.role}
+        superiorUser={superiorUser}
       />
     </Box>
   );

@@ -47,6 +47,7 @@ export default async function CorporationsPage() {
   // ============================================
   const whereClause: any = {};
   let currentUserAreaManager = null;
+  let superiorUser: { fullName: string; email: string } | null = null;
 
   if (session.user.role === 'AREA_MANAGER') {
     // AREA_MANAGER: Only see cities assigned to their area
@@ -76,6 +77,20 @@ export default async function CorporationsPage() {
       // Area Manager record not found - show empty list
       whereClause.id = 'non-existent';
     }
+
+    // Fetch SuperAdmin as superior user for Area Managers
+    const superAdmin = await prisma.user.findFirst({
+      where: {
+        isSuperAdmin: true,
+        isActive: true,
+      },
+      select: {
+        fullName: true,
+        email: true,
+      },
+    });
+
+    superiorUser = superAdmin;
   }
   // SUPERADMIN: See all cities (no filter needed)
 
@@ -158,6 +173,7 @@ export default async function CorporationsPage() {
         cities={cities}
         userRole={session.user.role}
         currentUserAreaManager={currentUserAreaManager}
+        superiorUser={superiorUser}
       />
     </Box>
   );
