@@ -69,48 +69,53 @@ export async function changeOwnPassword(
   currentPassword: string,
   newPassword: string
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    throw new Error("Unauthorized");
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: "לא מורשה" };
+    }
+
+    // Get user with current password hash
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { passwordHash: true },
+    });
+
+    if (!user || !user.passwordHash) {
+      return { success: false, error: "משתמש לא נמצא" };
+    }
+
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      return { success: false, error: "הסיסמה הזמנית שגויה. אנא ודא שהזנת את הסיסמה הנכונה" };
+    }
+
+    // Ensure new password is different
+    const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+    if (isSamePassword) {
+      return { success: false, error: "הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית" };
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password and remove force change flag
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        passwordHash: newPasswordHash,
+        requirePasswordChange: false,
+      },
+    });
+
+    console.log(`[Password Change] User ${session.user.email} changed their password`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Password Change Error]:', error);
+    return { success: false, error: "אירעה שגיאה בשינוי הסיסמה. נסה שנית" };
   }
-
-  // Get user with current password hash
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { passwordHash: true },
-  });
-
-  if (!user || !user.passwordHash) {
-    throw new Error("משתמש לא נמצא");
-  }
-
-  // Verify current password
-  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!isValid) {
-    throw new Error("הסיסמה הנוכחית שגויה");
-  }
-
-  // Ensure new password is different
-  const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
-  if (isSamePassword) {
-    throw new Error("הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית");
-  }
-
-  // Hash new password
-  const newPasswordHash = await bcrypt.hash(newPassword, 10);
-
-  // Update password and remove force change flag
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      passwordHash: newPasswordHash,
-      requirePasswordChange: false,
-    },
-  });
-
-  console.log(`[Password Change] User ${session.user.email} changed their password`);
-
-  return { success: true };
 }
 
 /**

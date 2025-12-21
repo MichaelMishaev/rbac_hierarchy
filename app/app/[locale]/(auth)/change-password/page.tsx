@@ -63,7 +63,7 @@ export default function ChangePasswordPage() {
       const result = await changeOwnPassword(trimmedCurrentPassword, trimmedNewPassword);
 
       if (!result.success) {
-        setError('שגיאה בשינוי הסיסמה');
+        setError(result.error || 'שגיאה בשינוי הסיסמה');
         setLoading(false);
         return;
       }
