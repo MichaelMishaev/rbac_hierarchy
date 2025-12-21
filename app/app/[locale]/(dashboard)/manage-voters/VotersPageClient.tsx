@@ -119,7 +119,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
               onClick={() => setUploadDialogOpen(true)}
               fullWidth={true}
               sx={{
-                borderRadius: '8px',
+                borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
                 px: { xs: 2.5, sm: 3 },
                 py: { xs: 1.25, sm: 1.5 },
                 fontWeight: 600,
@@ -140,7 +140,7 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
               onClick={() => setCreateDialogOpen(true)}
               fullWidth={true}
               sx={{
-                borderRadius: '8px',
+                borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
                 px: { xs: 2.5, sm: 3 },
                 py: { xs: 1.25, sm: 1.5 },
                 fontWeight: 600,
