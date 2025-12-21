@@ -37,11 +37,15 @@ import { bulkImportVoters } from '@/app/actions/voters';
 import { checkExcelDuplicates } from '@/app/actions/voters-duplicate-check';
 
 type ExcelRow = {
-  שם: string;
-  'שם משפחה': string;
-  טלפון: string;
-  עיר: string;
-  מייל: string;
+  [key: string]: unknown;
+  שם?: string;
+  'שם (חובה)'?: string;
+  'שם משפחה'?: string;
+  'שם משפחה (חובה)'?: string;
+  טלפון?: string;
+  'טלפון (חובה)'?: string;
+  עיר?: string;
+  מייל?: string;
 };
 
 type DuplicateInfo = {
@@ -122,13 +126,20 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
 
       // Check for duplicates
       // Support columns with or without "(חובה)" suffix
-      const voters = jsonData.map((row) => ({
-        firstName: (row['שם'] || row['שם (חובה)'])?.toString().trim() || '',
-        lastName: (row['שם משפחה'] || row['שם משפחה (חובה)'])?.toString().trim() || '',
-        phone: (row['טלפון'] || row['טלפון (חובה)'])?.toString().trim() || '',
-        city: row['עיר']?.toString().trim() || '',
-        email: row['מייל']?.toString().trim() || '',
-      }));
+      const voters = jsonData.map((row) => {
+        const getField = (name: string, altName?: string): string => {
+          const value = row[name] || (altName ? row[altName] : undefined);
+          return value?.toString().trim() || '';
+        };
+
+        return {
+          firstName: getField('שם', 'שם (חובה)'),
+          lastName: getField('שם משפחה', 'שם משפחה (חובה)'),
+          phone: getField('טלפון', 'טלפון (חובה)'),
+          city: getField('עיר'),
+          email: getField('מייל'),
+        };
+      });
 
       const duplicateCheck = await checkExcelDuplicates(voters);
       if (duplicateCheck.success) {
