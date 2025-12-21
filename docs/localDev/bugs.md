@@ -8018,3 +8018,167 @@ curl -I https://[production-url]/api/voter-template
 ### Status
 ✅ Fixed - Commit fa51069 pushed to main, will deploy automatically to production
 
+
+---
+
+**UPDATE (2025-12-21):** The actual root cause was identified and fixed in commit 29c837d.
+
+### Actual Root Cause
+**Next.js Standalone Mode Does Not Copy Public Folder:**
+
+The issue was not just that the file wasn't committed - it was that Next.js standalone output mode (`next.config.ts: output: 'standalone'`) does **not automatically copy** the `public/` folder to `.next/standalone/` during build.
+
+**next.config.ts:8:**
+```typescript
+output: 'standalone',  // Public folder NOT copied automatically
+```
+
+**What happens:**
+1. Local dev: `public/samples/voter-template.xlsx` ✅ Works (Next.js serves from root)
+2. Production build: `public/` → NOT copied to `.next/standalone/` ❌ Missing file
+3. API endpoint: `/api/voter-template` returns 404 in production
+
+### Final Solution
+**Updated build script to copy public folder** (package.json:11):
+```json
+"build": "prisma generate && next build && cp -r public .next/standalone/public"
+```
+
+**Before:**
+```bash
+prisma generate && next build
+# Result: .next/standalone/ created WITHOUT public/ folder
+```
+
+**After:**
+```bash
+prisma generate && next build && cp -r public .next/standalone/public
+# Result: .next/standalone/public/ includes all static assets
+```
+
+### Commits
+1. `fa51069` - Added voter-template.xlsx to git (partial fix)
+2. `b65dfa1` - Triggered Railway redeploy (no effect)
+3. `29c837d` - **ACTUAL FIX** - Copy public/ to standalone build
+
+### Verification Commands
+```bash
+# Local build test
+cd app && npm run build
+ls -la .next/standalone/public/samples/voter-template.xlsx
+# Should show the file
+
+# Production test (after deployment)
+curl -I https://app.rbac.shop/api/voter-template
+# Should return: 200 OK
+```
+
+### Related Documentation
+- [Next.js Standalone Output](https://nextjs.org/docs/app/api-reference/next-config-js/output#automatically-copying-traced-files)
+- Railway builds using `output: 'standalone'` for optimized Docker images
+- Always manually copy `public/` folder when using standalone mode
+
+## Bug #[DATE: 2025-12-21] - KPICard TypeScript Error on Railway Build
+
+**Reported:** 2025-12-21
+**Status:** FIXED
+**Severity:** HIGH (blocks production deployment)
+**Category:** TypeScript / Build Error
+
+### Problem
+
+**Symptoms:**
+- Railway deployment fails with TypeScript error
+- Build error: `Property 'sx' does not exist on type 'IntrinsicAttributes & AnimatedCounterProps'`
+- Error in `KPICard.tsx:158` when passing `sx` prop to `AnimatedCounter`
+
+**Root Cause:**
+The `KPICard` component was trying to pass an `sx` prop to the `AnimatedCounter` component to override font size and spacing. However, the `AnimatedCounterProps` interface doesn't include an `sx` prop - it only accepts: `value`, `duration`, `showTrend`, `previousValue`, `suffix`, and `color`.
+
+**Technical Details:**
+```typescript
+// ❌ BEFORE (KPICard.tsx:154-164) - ERROR
+<AnimatedCounter
+  value={value}
+  showTrend={false}
+  color={colors.neutral[900]}
+  sx={{  // ← Error: 'sx' does not exist
+    fontSize: { xs: '2rem', sm: '2.25rem' },
+    fontWeight: 700,
+    lineHeight: 1,
+    mb: 0.5,
+  }}
+/>
+```
+
+The `AnimatedCounter` component already has its own internal styling on the `Typography` component (lines 84-89), including a hardcoded `fontSize: { xs: '2rem', md: '2.5rem' }`.
+
+### Solution
+
+**Files Changed:**
+- `app/components/dashboard/KPICard.tsx` (lines 154-169)
+
+**Fix Applied:**
+Wrapped `AnimatedCounter` in a `Box` component with the desired `sx` styles using CSS selector to override the inner Typography:
+
+```typescript
+// ✅ AFTER (KPICard.tsx:154-169) - FIXED
+<Box
+  sx={{
+    mb: 0.5,
+    '& .MuiTypography-root': {
+      fontSize: { xs: '2rem', sm: '2.25rem' },
+      fontWeight: 700,
+      lineHeight: 1,
+    },
+  }}
+>
+  <AnimatedCounter
+    value={value}
+    showTrend={false}
+    color={colors.neutral[900]}
+  />
+</Box>
+```
+
+**Alternative Solutions Considered:**
+1. ✗ Add `sx` prop to `AnimatedCounterProps` interface - Would require changes to a reusable component
+2. ✓ Wrap in Box with CSS selector override - Non-invasive, works immediately
+3. ✗ Fork AnimatedCounter for KPICard - Creates code duplication
+
+**Prevention Rule:**
+- **RULE:** Before passing props to a component, check the component's interface/props definition
+- **RULE:** Use TypeScript's IntelliSense to see available props before passing unknown props
+- **PATTERN:** When you need to override child component styles, use a wrapper Box with CSS selectors (`'& .ClassName'`)
+- **BUILD:** Always run `npm run build` locally before pushing to Railway to catch TypeScript errors early
+
+### Verification
+
+**Test Steps:**
+1. Run local build: `npm run build`
+2. Check for TypeScript errors in KPICard.tsx
+3. Expected: No errors related to AnimatedCounter sx prop
+4. Push to Railway and verify deployment succeeds
+
+**Build Check:**
+```bash
+npx tsc --noEmit | grep KPICard
+# Should return no errors
+```
+
+### Impact
+
+**Before Fix:**
+- Railway deployment blocked
+- Production deployment failed
+- TypeScript compilation error
+
+**After Fix:**
+- Build passes successfully
+- Railway deployment works
+- Styles apply correctly (same visual result)
+
+**Category:** Build / TypeScript Type Safety
+**Compliance:** No violations (improved type safety)
+
+---

@@ -151,17 +151,22 @@ export default function KPICard({
         {/* Main Value */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}>
           {typeof value === 'number' ? (
-            <AnimatedCounter
-              value={value}
-              showTrend={false}
-              color={colors.neutral[900]}
+            <Box
               sx={{
-                fontSize: { xs: '2rem', sm: '2.25rem' }, // Slightly reduced (was h2: 2.5rem)
-                fontWeight: 700,
-                lineHeight: 1,
                 mb: 0.5,
+                '& .MuiTypography-root': {
+                  fontSize: { xs: '2rem', sm: '2.25rem' }, // Override AnimatedCounter font size
+                  fontWeight: 700,
+                  lineHeight: 1,
+                },
               }}
-            />
+            >
+              <AnimatedCounter
+                value={value}
+                showTrend={false}
+                color={colors.neutral[900]}
+              />
+            </Box>
           ) : (
             <Typography
               variant="h3"
