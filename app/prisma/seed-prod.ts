@@ -125,50 +125,103 @@ async function main() {
   console.log('✅ All 6 District Managers created');
 
   // ========================
-  // 3. Cities (Major Israeli Cities)
+  // 3. Cities (All 82 Israeli Cities)
   // ========================
 
   const cities = [
-    // Tel Aviv District
-    { name: 'תל אביב-יפו', code: 'TLV-YAFO', district: 'TA-DISTRICT', description: 'קמפיין בחירות תל אביב-יפו - עיר הבירה הכלכלית' },
-    { name: 'רמת גן', code: 'RAMAT-GAN', district: 'TA-DISTRICT', description: 'קמפיין בחירות רמת גן - עיר היהלומים' },
-    { name: 'בני ברק', code: 'BNEI-BRAK', district: 'TA-DISTRICT', description: 'קמפיין בחירות בני ברק' },
-    { name: 'הרצליה', code: 'HERZLIYA', district: 'TA-DISTRICT', description: 'קמפיין בחירות הרצליה' },
-    { name: 'בת ים', code: 'BAT-YAM', district: 'TA-DISTRICT', description: 'קמפיין בחירות בת ים' },
-    { name: 'חולון', code: 'HOLON', district: 'TA-DISTRICT', description: 'קמפיין בחירות חולון' },
+    // Tel Aviv District (8 cities)
+    { name: 'תל אביב-יפו', code: 'TLV-YAFO', district: 'TA-DISTRICT' },
+    { name: 'רמת גן', code: 'RAMAT-GAN', district: 'TA-DISTRICT' },
+    { name: 'בני ברק', code: 'BNEI-BRAK', district: 'TA-DISTRICT' },
+    { name: 'הרצליה', code: 'HERZLIYA', district: 'TA-DISTRICT' },
+    { name: 'בת ים', code: 'BAT-YAM', district: 'TA-DISTRICT' },
+    { name: 'חולון', code: 'HOLON', district: 'TA-DISTRICT' },
+    { name: 'גבעתיים', code: 'GIVATAYIM', district: 'TA-DISTRICT' },
+    { name: 'אור יהודה', code: 'OR-YEHUDA', district: 'TA-DISTRICT' },
 
-    // North District
-    { name: 'נצרת', code: 'NAZARETH', district: 'NORTH', description: 'קמפיין בחירות נצרת' },
-    { name: 'עכו', code: 'AKKO', district: 'NORTH', description: 'קמפיין בחירות עכו' },
-    { name: 'טבריה', code: 'TIBERIAS', district: 'NORTH', description: 'קמפיין בחירות טבריה' },
-    { name: 'צפת', code: 'SAFED', district: 'NORTH', description: 'קמפיין בחירות צפת' },
+    // North District (14 cities)
+    { name: 'נצרת', code: 'NAZARETH', district: 'NORTH' },
+    { name: 'עכו', code: 'AKKO', district: 'NORTH' },
+    { name: 'טבריה', code: 'TIBERIAS', district: 'NORTH' },
+    { name: 'צפת', code: 'SAFED', district: 'NORTH' },
+    { name: 'קריית שמונה', code: 'QIRYAT-SHMONA', district: 'NORTH' },
+    { name: 'מעלות-תרשיחא', code: 'MAALOT-TARSHIHA', district: 'NORTH' },
+    { name: 'כרמיאל', code: 'KARMIEL', district: 'NORTH' },
+    { name: 'בית שאן', code: 'BET-SHEAN', district: 'NORTH' },
+    { name: 'נהריה', code: 'NAHARIYA', district: 'NORTH' },
+    { name: 'מגדל העמק', code: 'MIGDAL-HAEMEK', district: 'NORTH' },
+    { name: 'שפרעם', code: 'SHFARAM', district: 'NORTH' },
+    { name: 'עפולה', code: 'AFULA', district: 'NORTH' },
+    { name: 'יקנעם עילית', code: 'YOQNEAM-ILLIT', district: 'NORTH' },
+    { name: 'חצור הגלילית', code: 'HATZOR-HAGLILIT', district: 'NORTH' },
 
-    // Haifa District
-    { name: 'חיפה', code: 'HAIFA', district: 'HAIFA', description: 'קמפיין בחירות חיפה' },
-    { name: 'קריית ים', code: 'QIRYAT-YAM', district: 'HAIFA', description: 'קמפיין בחירות קריית ים' },
-    { name: 'נהריה', code: 'NAHARIYA', district: 'HAIFA', description: 'קמפיין בחירות נהריה' },
+    // Haifa District (10 cities)
+    { name: 'חיפה', code: 'HAIFA', district: 'HAIFA' },
+    { name: 'קריית ים', code: 'QIRYAT-YAM', district: 'HAIFA' },
+    { name: 'קריית ביאליק', code: 'QIRYAT-BIALIK', district: 'HAIFA' },
+    { name: 'קריית מוצקין', code: 'QIRYAT-MOTZKIN', district: 'HAIFA' },
+    { name: 'קריית אתא', code: 'QIRYAT-ATA', district: 'HAIFA' },
+    { name: 'טמרה', code: 'TAMRA', district: 'HAIFA' },
+    { name: 'נשר', code: 'NESHER', district: 'HAIFA' },
+    { name: 'טירת כרמל', code: 'TIRAT-CARMEL', district: 'HAIFA' },
+    { name: 'עתלית', code: 'ATLIT', district: 'HAIFA' },
+    { name: 'דליית אל-כרמל', code: 'DALIYAT-AL-CARMEL', district: 'HAIFA' },
 
-    // Center District
-    { name: 'פתח תקווה', code: 'PETAH-TIKVA', district: 'CENTER', description: 'קמפיין בחירות פתח תקווה' },
-    { name: 'נתניה', code: 'NETANYA', district: 'CENTER', description: 'קמפיין בחירות נתניה' },
-    { name: 'ראשון לציון', code: 'RISHON-LEZION', district: 'CENTER', description: 'קמפיין בחירות ראשון לציון' },
-    { name: 'רעננה', code: 'RAANANA', district: 'CENTER', description: 'קמפיין בחירות רעננה' },
-    { name: 'כפר סבא', code: 'KFAR-SABA', district: 'CENTER', description: 'קמפיין בחירות כפר סבא' },
-    { name: 'הוד השרון', code: 'HOD-HASHARON', district: 'CENTER', description: 'קמפיין בחירות הוד השרון' },
-    { name: 'רחובות', code: 'REHOVOT', district: 'CENTER', description: 'קמפיין בחירות רחובות' },
-    { name: 'לוד', code: 'LOD', district: 'CENTER', description: 'קמפיין בחירות לוד' },
-    { name: 'רמלה', code: 'RAMLA', district: 'CENTER', description: 'קמפיין בחירות רמלה' },
+    // Center District (22 cities)
+    { name: 'פתח תקווה', code: 'PETAH-TIKVA', district: 'CENTER' },
+    { name: 'נתניה', code: 'NETANYA', district: 'CENTER' },
+    { name: 'ראשון לציון', code: 'RISHON-LEZION', district: 'CENTER' },
+    { name: 'רעננה', code: 'RAANANA', district: 'CENTER' },
+    { name: 'כפר סבא', code: 'KFAR-SABA', district: 'CENTER' },
+    { name: 'הוד השרון', code: 'HOD-HASHARON', district: 'CENTER' },
+    { name: 'רחובות', code: 'REHOVOT', district: 'CENTER' },
+    { name: 'לוד', code: 'LOD', district: 'CENTER' },
+    { name: 'רמלה', code: 'RAMLA', district: 'CENTER' },
+    { name: 'יבנה', code: 'YAVNE', district: 'CENTER' },
+    { name: 'גדרה', code: 'GEDERA', district: 'CENTER' },
+    { name: 'נס ציונה', code: 'NES-ZIONA', district: 'CENTER' },
+    { name: 'קריית אונו', code: 'QIRYAT-ONO', district: 'CENTER' },
+    { name: 'קריית עקרון', code: 'QIRYAT-EKRON', district: 'CENTER' },
+    { name: 'יהוד-מונוסון', code: 'YEHUD-MONOSSON', district: 'CENTER' },
+    { name: 'גני תקווה', code: 'GANEI-TIKVA', district: 'CENTER' },
+    { name: 'קריית מלאכי', code: 'QIRYAT-MALACHI', district: 'CENTER' },
+    { name: 'אלעד', code: 'ELAD', district: 'CENTER' },
+    { name: 'סביון', code: 'SAVYON', district: 'CENTER' },
+    { name: 'שוהם', code: 'SHOHAM', district: 'CENTER' },
+    { name: 'תל מונד', code: 'TEL-MOND', district: 'CENTER' },
+    { name: 'אור עקיבא', code: 'OR-AKIVA', district: 'CENTER' },
 
-    // Jerusalem District
-    { name: 'ירושלים', code: 'JERUSALEM', district: 'JERUSALEM', description: 'קמפיין בחירות ירושלים - עיר הבירה' },
-    { name: 'בית שמש', code: 'BEIT-SHEMESH', district: 'JERUSALEM', description: 'קמפיין בחירות בית שמש' },
-    { name: 'מעלה אדומים', code: 'MAALE-ADUMIM', district: 'JERUSALEM', description: 'קמפיין בחירות מעלה אדומים' },
+    // Jerusalem District (8 cities)
+    { name: 'ירושלים', code: 'JERUSALEM', district: 'JERUSALEM' },
+    { name: 'בית שמש', code: 'BEIT-SHEMESH', district: 'JERUSALEM' },
+    { name: 'מעלה אדומים', code: 'MAALE-ADUMIM', district: 'JERUSALEM' },
+    { name: 'מודיעין-מכבים-רעות', code: 'MODIIN-MACCABIM-REUT', district: 'JERUSALEM' },
+    { name: 'מודיעין עילית', code: 'MODIIN-ILLIT', district: 'JERUSALEM' },
+    { name: 'מבשרת ציון', code: 'MEVASSERET-ZION', district: 'JERUSALEM' },
+    { name: 'אפרת', code: 'EFRAT', district: 'JERUSALEM' },
+    { name: 'ביתר עילית', code: 'BEITAR-ILLIT', district: 'JERUSALEM' },
 
-    // South District
-    { name: 'באר שבע', code: 'BEER-SHEVA', district: 'SOUTH', description: 'קמפיין בחירות באר שבע - בירת הנגב' },
-    { name: 'אשדוד', code: 'ASHDOD', district: 'SOUTH', description: 'קמפיין בחירות אשדוד' },
-    { name: 'אשקלון', code: 'ASHKELON', district: 'SOUTH', description: 'קמפיין בחירות אשקלון' },
-    { name: 'אילת', code: 'EILAT', district: 'SOUTH', description: 'קמפיין בחירות אילת' },
+    // South District (20 cities)
+    { name: 'באר שבע', code: 'BEER-SHEVA', district: 'SOUTH' },
+    { name: 'אשדוד', code: 'ASHDOD', district: 'SOUTH' },
+    { name: 'אשקלון', code: 'ASHKELON', district: 'SOUTH' },
+    { name: 'אילת', code: 'EILAT', district: 'SOUTH' },
+    { name: 'קריית גת', code: 'QIRYAT-GAT', district: 'SOUTH' },
+    { name: 'דימונה', code: 'DIMONA', district: 'SOUTH' },
+    { name: 'נתיבות', code: 'NETIVOT', district: 'SOUTH' },
+    { name: 'שדרות', code: 'SDEROT', district: 'SOUTH' },
+    { name: 'אופקים', code: 'OFAKIM', district: 'SOUTH' },
+    { name: 'ערד', code: 'ARAD', district: 'SOUTH' },
+    { name: 'מצפה רמון', code: 'MITZPE-RAMON', district: 'SOUTH' },
+    { name: 'רהט', code: 'RAHAT', district: 'SOUTH' },
+    { name: 'כסיפה', code: 'KUSEIFE', district: 'SOUTH' },
+    { name: 'תל שבע', code: 'TEL-SHEVA', district: 'SOUTH' },
+    { name: 'לקיה', code: 'LAKIYA', district: 'SOUTH' },
+    { name: 'ערערה-בנגב', code: 'ARARA-BANEGEV', district: 'SOUTH' },
+    { name: 'חורה', code: 'HURA', district: 'SOUTH' },
+    { name: 'שגב-שלום', code: 'SEGEV-SHALOM', district: 'SOUTH' },
+    { name: 'ירוחם', code: 'YERUHAM', district: 'SOUTH' },
+    { name: 'קריית מנחם', code: 'QIRYAT-MENAHEM', district: 'SOUTH' },
   ];
 
   for (const city of cities) {
@@ -185,7 +238,7 @@ async function main() {
       create: {
         name: city.name,
         code: city.code,
-        description: city.description,
+        description: `קמפיין בחירות ${city.name}`,
         isActive: true,
         areaManagerId: areaManager.id,
       },
@@ -206,7 +259,7 @@ async function main() {
   console.log('📊 Summary:');
   console.log('   - 1 SuperAdmin');
   console.log('   - 6 Area Managers (Districts)');
-  console.log('   - 29 Cities');
+  console.log(`   - ${cities.length} Cities (All Israeli cities)`);
   console.log('');
   console.log('⚠️  NEXT STEPS:');
   console.log('   1. Login as SuperAdmin');
