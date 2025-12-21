@@ -30,13 +30,15 @@ export const GET = withErrorHandler(async (request: Request) => {
     // Read file as buffer
     const fileBuffer = fs.readFileSync(filePath);
 
-    // Return file with proper headers
+    // Return file with proper headers (no cache to always serve latest template)
     return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': 'attachment; filename="Voter List Sample.xlsx"',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error) {
