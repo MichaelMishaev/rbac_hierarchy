@@ -21,7 +21,6 @@ import { colors, shadows, borderRadius } from '@/lib/design-system';
 import BusinessIcon from '@mui/icons-material/Business';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -31,11 +30,9 @@ import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CityModal, { CorporationFormData } from '@/app/components/modals/CityModal';
-import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import {
   createCity,
   updateCity,
-  deleteCity,
   getAreaManagers,
 } from '@/app/actions/cities';
 
@@ -92,7 +89,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedCorp, setSelectedCorp] = useState<Corporation | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [areaManagers, setAreaManagers] = useState<AreaManager[]>([]); // v1.4: Area Managers list
@@ -173,23 +169,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
       success: result.success,
       error: result.error,
     };
-  };
-
-  const handleDeleteClick = () => {
-    setDeleteModalOpen(true);
-    handleMenuClose();
-  };
-
-  const handleDeleteCorporation = async () => {
-    if (!selectedCorp) return;
-
-    const result = await deleteCity(selectedCorp.id);
-    if (result.success) {
-      setCorporations((prev) => prev.filter((corp) => corp.id !== selectedCorp.id));
-      setDeleteModalOpen(false);
-      setSelectedCorp(null);
-      router.refresh();
-    }
   };
 
   // Get initials for avatar
@@ -758,20 +737,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           <EditIcon sx={{ fontSize: 20, color: colors.pastel.blue }} />
           <Typography sx={{ fontWeight: 500 }}>{tCommon('edit')}</Typography>
         </MenuItem>
-        <MenuItem
-          onClick={handleDeleteClick}
-          sx={{
-            py: 1.5,
-            px: 2,
-            gap: 1.5,
-            '&:hover': {
-              backgroundColor: colors.pastel.redLight,
-            },
-          }}
-        >
-          <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
-          <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>{tCommon('delete')}</Typography>
-        </MenuItem>
       </Menu>
 
       {/* Create Modal - KEEP */}
@@ -804,21 +769,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           mode="edit"
           areaManagers={areaManagers}
           userRole={userRole}
-        />
-      )}
-
-      {/* Delete Confirmation Modal - KEEP */}
-      {selectedCorp && (
-        <DeleteConfirmationModal
-          open={deleteModalOpen}
-          onClose={() => {
-            setDeleteModalOpen(false);
-            setSelectedCorp(null);
-          }}
-          onConfirm={handleDeleteCorporation}
-          title={t('deleteTitle')}
-          message={t('deleteConfirm')}
-          itemName={selectedCorp.name}
         />
       )}
     </Box>
