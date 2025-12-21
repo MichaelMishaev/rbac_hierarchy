@@ -16,7 +16,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     const context = await extractRequestContext(request);
     logger.info('Voters table migration initiated', {
       ...context,
-      warning: 'NO_AUTH_CHECK',
+      metadata: { warning: 'NO_AUTH_CHECK' },
     });
 
     console.log('🚀 Starting voters table migration...');

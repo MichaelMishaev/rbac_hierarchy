@@ -32,7 +32,7 @@ export const PUT = withErrorHandler(async (
       logger.rbacViolation('Non-activist attempted voter update', {
         ...context,
         ...(session ? extractSessionContext(session) : {}),
-        attemptedRole: session?.user?.role || 'unauthenticated',
+        metadata: { attemptedRole: session?.user?.role || 'unauthenticated' },
       });
       throw new ForbiddenError('רק פעילים יכולים לערוך בוחרים');
     }
@@ -55,8 +55,10 @@ export const PUT = withErrorHandler(async (
       logger.rbacViolation('Activist attempted to edit voter not created by them', {
         ...context,
         ...extractSessionContext(session),
-        voterId: id,
-        voterOwnerId: existingVoter.insertedByUserId,
+        metadata: {
+          voterId: id,
+          voterOwnerId: existingVoter.insertedByUserId,
+        },
       });
       throw new ForbiddenError('ניתן לערוך רק בוחרים שהוספת בעצמך');
     }
@@ -105,7 +107,7 @@ export const GET = withErrorHandler(async (
       logger.rbacViolation('Non-activist attempted voter retrieval', {
         ...context,
         ...(session ? extractSessionContext(session) : {}),
-        attemptedRole: session?.user?.role || 'unauthenticated',
+        metadata: { attemptedRole: session?.user?.role || 'unauthenticated' },
       });
       throw new ForbiddenError('רק פעילים יכולים לצפות בבוחרים');
     }
@@ -127,8 +129,10 @@ export const GET = withErrorHandler(async (
       logger.rbacViolation('Activist attempted to view voter not created by them', {
         ...context,
         ...extractSessionContext(session),
-        voterId: id,
-        voterOwnerId: voter.insertedByUserId,
+        metadata: {
+          voterId: id,
+          voterOwnerId: voter.insertedByUserId,
+        },
       });
       throw new ForbiddenError('ניתן לצפות רק בבוחרים שהוספת בעצמך');
     }
