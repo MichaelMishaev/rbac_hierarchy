@@ -119,12 +119,17 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
               onClick={() => setUploadDialogOpen(true)}
               fullWidth={true}
               sx={{
-                borderRadius: '9999px',
+                borderRadius: '8px',
                 px: { xs: 2.5, sm: 3 },
-                py: { xs: 1, sm: 1.25 },
+                py: { xs: 1.25, sm: 1.5 },
                 fontWeight: 600,
-                minHeight: 44, // WCAG 2.1 touch target
-                fontSize: { xs: '0.875rem', sm: '1rem' },
+                minHeight: 48,
+                fontSize: { xs: '0.9375rem', sm: '1rem' },
+                borderWidth: '1.5px',
+                '&:hover': {
+                  borderWidth: '1.5px',
+                  backgroundColor: 'action.hover',
+                },
               }}
             >
               ייבוא מאקסל
@@ -135,15 +140,15 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
               onClick={() => setCreateDialogOpen(true)}
               fullWidth={true}
               sx={{
-                borderRadius: '9999px', // Pill-shaped (2025 UI/UX standard)
+                borderRadius: '8px',
                 px: { xs: 2.5, sm: 3 },
-                py: { xs: 1, sm: 1.25 },
+                py: { xs: 1.25, sm: 1.5 },
                 fontWeight: 600,
-                minHeight: 44, // WCAG 2.1 touch target
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                boxShadow: 2,
+                minHeight: 48,
+                fontSize: { xs: '0.9375rem', sm: '1rem' },
+                boxShadow: 'none',
                 '&:hover': {
-                  boxShadow: 4,
+                  boxShadow: 1,
                 },
               }}
             >
