@@ -41,6 +41,7 @@ export type WorkerFormData = {
   startDate?: string;
   giveLoginAccess?: boolean;
   generatedPassword?: string;
+  hasUserAccount?: boolean; // Edit mode: whether activist already has user account
 };
 
 type Area = {
@@ -520,8 +521,9 @@ export default function ActivistModal({
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, sm: 4 } }}>
-          {/* Login Access Section (Create mode only) - 2025 UX: MOVED TO TOP for mobile visibility */}
-          {mode === 'create' && (
+          {/* Login Access Section - 2025 UX: MOVED TO TOP for mobile visibility */}
+          {/* Show toggle when: (1) Create mode OR (2) Edit mode but activist has NO user account */}
+          {(mode === 'create' || (mode === 'edit' && !initialData?.hasUserAccount)) && (
             <Box
               sx={{
                 p: 3,
@@ -783,6 +785,46 @@ export default function ActivistModal({
                   </Box>
                 )}
               </Box>
+            </Box>
+          )}
+
+          {/* Edit Mode: Show login access info if activist already has user account */}
+          {mode === 'edit' && initialData?.hasUserAccount && (
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: '16px',
+                backgroundColor: '#E8F4FF',
+                border: '1px solid #6161FF40',
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 700,
+                  color: 'primary.main',
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 6,
+                    height: 24,
+                    borderRadius: '3px',
+                    background: 'linear-gradient(135deg, #6161FF 0%, #5034FF 100%)',
+                  }}
+                />
+                גישה למערכת
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#1565c0' }}>
+                ✅ לפעיל יש חשבון משתמש במערכת
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#1565c0', display: 'block', mt: 1 }}>
+                שם משתמש (טלפון): {initialData.phone || 'לא זמין'}
+              </Typography>
             </Box>
           )}
 

@@ -83,6 +83,7 @@ type Worker = {
   startDate: string | null; // ISO string from Server Action serialization
   neighborhoodId: string;
   activistCoordinatorId: string | null;
+  userId: string | null; // Linked user account ID (if activist has login access)
   site?: Site;
   supervisor?: Supervisor | null;
 };
@@ -308,6 +309,8 @@ export default function ActivistsClient({
       neighborhoodId: data.siteId,
       activistCoordinatorId: data.supervisorId,
       isActive: data.isActive,
+      giveLoginAccess: data.giveLoginAccess,
+      generatedPassword: data.generatedPassword,
     });
     if (result.success && result.activist) {
       const updatedWorker = {
@@ -1069,6 +1072,7 @@ export default function ActivistsClient({
             startDate: selectedWorker.startDate
               ? new Date(selectedWorker.startDate).toISOString().split('T')[0]
               : undefined,
+            hasUserAccount: !!selectedWorker.userId, // Has user account if userId exists
           }}
           mode="edit"
           areas={areas}

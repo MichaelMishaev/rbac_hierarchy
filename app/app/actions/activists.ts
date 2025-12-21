@@ -38,6 +38,8 @@ export type UpdateWorkerInput = {
   neighborhoodId?: string;
   activistCoordinatorId?: string;
   isActive?: boolean;
+  giveLoginAccess?: boolean;
+  generatedPassword?: string;
 };
 
 export type ListWorkersFilters = {
@@ -735,6 +737,40 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
       }
     }
 
+    // Handle user account creation/disabling BEFORE updating activist
+    if (data.giveLoginAccess !== undefined) {
+      if (data.giveLoginAccess && data.generatedPassword && data.phone) {
+        // Create user account if toggle is turned ON
+        if (!existingActivist.userId) {
+          const bcrypt = await import('bcryptjs');
+          const passwordHash = await bcrypt.hash(data.generatedPassword, 10);
+
+          const activistUser = await prisma.user.create({
+            data: {
+              email: `${data.phone.replace(/[^0-9]/g, '')}@activist.login`, // Phone as email
+              fullName: data.fullName || existingActivist.fullName,
+              phone: data.phone,
+              passwordHash,
+              role: 'ACTIVIST',
+              isActive: true,
+              requirePasswordChange: true, // Force password change on first login
+            },
+          });
+
+          // Link activist to user (will be done in update below)
+          existingActivist.userId = activistUser.id;
+          console.log(`✅ Created activist user account: ${activistUser.email} (phone: ${data.phone})`);
+        }
+      } else if (!data.giveLoginAccess && existingActivist.userId) {
+        // Disable user account if toggle is turned OFF
+        await prisma.user.update({
+          where: { id: existingActivist.userId },
+          data: { isActive: false },
+        });
+        console.log(`⛔ Disabled user account for activist: ${existingActivist.fullName}`);
+      }
+    }
+
     // Update worker
     const updatedActivist = await prisma.activist.update({
       where: { id: activistId },
@@ -751,6 +787,8 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
         ...(finalNeighborhoodId !== existingActivist.neighborhoodId ? { neighborhoodId: finalNeighborhoodId } : {}),
         ...(finalActivistCoordinatorId !== existingActivist.activistCoordinatorId ? { activistCoordinatorId: finalActivistCoordinatorId } : {}),
         isActive: data.isActive ?? existingActivist.isActive,
+        // Link to user if account was just created
+        ...(existingActivist.userId ? { userId: existingActivist.userId } : {}),
       },
       include: {
         neighborhood: {
