@@ -110,7 +110,7 @@ export function registerPrismaMiddleware(prisma: any) {
   });
 
   logger.info('✅ Prisma middleware registered: 4 runtime guards active', {
-    guards: ['INV-001', 'INV-004', 'INV-005', 'INV-002']
+    metadata: { guards: ['INV-001', 'INV-004', 'INV-005', 'INV-002'] }
   });
 }
 
