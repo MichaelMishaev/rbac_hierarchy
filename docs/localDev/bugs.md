@@ -8182,3 +8182,129 @@ npx tsc --noEmit | grep KPICard
 **Compliance:** No violations (improved type safety)
 
 ---
+
+## Bug #XX: Excel Upload Rejected Valid Files - Over-Restrictive Column Validation
+**Date:** 2025-12-22
+**Commit:** 5c4a5e4
+**Reporter:** User
+**Severity:** MEDIUM (blocks valid user workflows)
+**Category:** Data Import / Validation Mismatch
+
+### Problem
+
+**Symptoms:**
+- Users could not upload Excel files without all 5 columns (שם, שם משפחה, טלפון, עיר, מייל)
+- Frontend rejected valid Excel files that only had mandatory columns
+- Error message: "חסרות עמודות: עיר, מייל" even when only uploading required fields
+
+**Root Cause:**
+Mismatch between frontend and backend validation logic:
+- **Frontend validation:** Required ALL 5 columns to exist in Excel header
+- **Backend validation (original):** Required firstName, lastName, phone (3 fields)
+- **User expectation:** Only name and phone should be mandatory
+
+**Technical Details:**
+```typescript
+// ❌ BEFORE (ExcelUpload.tsx:103)
+const requiredColumns = ['שם', 'שם משפחה', 'טלפון', 'עיר', 'מייל'];
+// Rejected files missing 'עיר' or 'מייל' columns
+
+// ❌ BEFORE (voters.ts:64-80)
+if (!row.firstName?.trim()) { ... }
+if (!row.lastName?.trim()) { ... }  // Last name was required
+if (!row.phone?.trim()) { ... }
+```
+
+### Solution
+
+**Files Changed:**
+1. `app/app/actions/voters.ts` (lines 63-79)
+2. `app/app/[locale]/(dashboard)/manage-voters/components/ExcelUpload.tsx` (lines 103-112, 191-198)
+3. `app/app/[locale]/(activist)/voters/components/ExcelUpload.tsx` (lines 102-111, 190-197)
+
+**Fix Applied:**
+
+**Backend Changes (voters.ts):**
+- Removed lastName validation (made optional)
+- Handle missing lastName gracefully in fullName construction
+- Only validate firstName and phone as required
+
+```typescript
+// ✅ AFTER (voters.ts:63-79)
+// Validate required fields (only name and phone are mandatory)
+if (!row.firstName?.trim()) {
+  result.errors.push({ row: rowNumber, error: 'שם חסר' });
+  continue;
+}
+
+if (!row.phone?.trim()) {
+  result.errors.push({ row: rowNumber, error: 'טלפון חסר' });
+  continue;
+}
+
+const firstName = row.firstName.trim();
+const lastName = row.lastName?.trim() || '';
+const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+```
+
+**Frontend Changes (ExcelUpload.tsx - both dashboard & activist):**
+- Changed required columns from 5 to 2
+- Updated validation messages
+- Updated user instructions
+
+```typescript
+// ✅ AFTER (ExcelUpload.tsx:103-111)
+// Only validate REQUIRED columns (only name and phone are mandatory)
+const requiredColumns = ['שם', 'טלפון'];
+```
+
+**Updated Instructions:**
+```typescript
+<li>עמודות חובה: שם, טלפון</li>
+<li>עמודות אופציונליות: שם משפחה, עיר, מייל</li>
+```
+
+**Prevention Rule:**
+- **RULE:** Always ensure frontend validation matches backend validation (SINGLE SOURCE OF TRUTH)
+- **RULE:** Document field requirements in a shared location (schema, types, or docs)
+- **RULE:** When making fields optional, update BOTH frontend validation AND backend validation
+- **PATTERN:** Use TypeScript types to enforce consistency between frontend and backend field requirements
+- **TESTING:** Test Excel upload with minimal required fields only to ensure optional fields are truly optional
+
+### Verification
+
+**Test Steps:**
+1. Create Excel file with ONLY "שם" and "טלפון" columns
+2. Upload file via /manage-voters or /voters Excel upload
+3. Expected: File uploads successfully
+4. Create Excel file with all 5 columns but empty values in שם משפחה, עיר, מייל
+5. Expected: Rows import successfully with empty optional fields
+6. Create Excel file missing "שם" or "טלפון" column
+7. Expected: Error message "חסרות עמודות חובה: שם" or "חסרות עמודות חובה: טלפון"
+
+**Backend Test:**
+```typescript
+// Test voter creation with minimal fields
+await bulkImportVoters([
+  { firstName: 'דוד', lastName: '', phone: '050-1234567', city: '', email: '' }
+]);
+// Expected: Success, fullName = "דוד"
+```
+
+### Impact
+
+**Before Fix:**
+- Users forced to include unnecessary columns in Excel files
+- Confusion about which fields are mandatory
+- Cannot upload simple name + phone lists
+
+**After Fix:**
+- Users can upload minimal Excel files (only name + phone)
+- Clear distinction between mandatory and optional fields
+- Improved user experience for simple imports
+- Consistent validation across frontend and backend
+
+**Category:** Validation / User Experience
+**Compliance:** No violations (improved UX)
+
+---
