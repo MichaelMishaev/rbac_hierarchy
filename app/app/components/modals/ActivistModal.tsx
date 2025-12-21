@@ -147,6 +147,16 @@ export default function ActivistModal({
   // Ref for auto-scrolling to password section (2025 UX best practice)
   const passwordSectionRef = useRef<HTMLDivElement>(null);
 
+  // Refs for form fields - auto-scroll to validation errors (2025 UX best practice)
+  const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({
+    name: null,
+    phone: null,
+    email: null,
+    position: null,
+    siteId: null,
+    supervisorId: null,
+  });
+
   // Filtered cities based on selected area
   const filteredCities = selectedAreaId
     ? cities.filter((city) => city.areaManagerId === selectedAreaId)
@@ -311,6 +321,35 @@ export default function ActivistModal({
     }
 
     setErrors(newErrors);
+
+    // 2025 UX Best Practice: Auto-scroll to first validation error
+    if (Object.keys(newErrors).length > 0) {
+      // Define field order for scrolling priority
+      const fieldOrder: (keyof typeof fieldRefs.current)[] = ['name', 'phone', 'email', 'position', 'siteId', 'supervisorId'];
+
+      // Find first field with error
+      const firstErrorField = fieldOrder.find(field => newErrors[field as keyof WorkerFormData]);
+
+      if (firstErrorField && fieldRefs.current[firstErrorField]) {
+        setTimeout(() => {
+          fieldRefs.current[firstErrorField]?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest',
+          });
+
+          // Optional: Add visual feedback with a subtle shake animation
+          const element = fieldRefs.current[firstErrorField];
+          if (element) {
+            element.style.animation = 'none';
+            setTimeout(() => {
+              element.style.animation = 'errorShake 0.5s ease';
+            }, 10);
+          }
+        }, 100);
+      }
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -449,6 +488,12 @@ export default function ActivistModal({
             backdropFilter: 'blur(8px)',
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             overflow: 'hidden',
+            // 2025 UX: Error shake animation for field validation feedback
+            '@keyframes errorShake': {
+              '0%, 100%': { transform: 'translateX(0)' },
+              '10%, 30%, 50%, 70%, 90%': { transform: isRTL ? 'translateX(5px)' : 'translateX(-5px)' },
+              '20%, 40%, 60%, 80%': { transform: isRTL ? 'translateX(-5px)' : 'translateX(5px)' },
+            },
           },
         },
       }}
@@ -642,16 +687,17 @@ export default function ActivistModal({
                     </Box>
 
                     {/* Phone Number Field */}
-                    <TextField
-                      fullWidth
-                      label="📱 מספר טלפון *"
-                      value={formData.phone}
-                      onChange={handleChange('phone')}
-                      required={formData.giveLoginAccess}
-                      error={!!(validationErrors.phone || errors.phone)}
-                      helperText={validationErrors.phone || errors.phone || 'ישמש כשם משתמש להתחברות'}
-                      placeholder="0501234567"
-                      type="tel"
+                    <Box ref={(el: HTMLDivElement | null) => { fieldRefs.current.phone = el; }}>
+                      <TextField
+                        fullWidth
+                        label="📱 מספר טלפון *"
+                        value={formData.phone}
+                        onChange={handleChange('phone')}
+                        required={formData.giveLoginAccess}
+                        error={!!(validationErrors.phone || errors.phone)}
+                        helperText={validationErrors.phone || errors.phone || 'ישמש כשם משתמש להתחברות'}
+                        placeholder="0501234567"
+                        type="tel"
                       InputProps={{
                         endAdornment: validationErrors.phone ? (
                           <InputAdornment position="end">
@@ -680,7 +726,8 @@ export default function ActivistModal({
                           transition: 'all 0.2s ease',
                         },
                       }}
-                    />
+                      />
+                    </Box>
 
                     {/* Password Display - Ultra-compact mobile design with proper RTL */}
                     {formData.generatedPassword && (
@@ -865,7 +912,10 @@ export default function ActivistModal({
               מידע בסיסי
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2.5, sm: 3 } }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box
+                ref={(el: HTMLDivElement | null) => { fieldRefs.current.name = el; }}
+                sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}
+              >
                 <TextField
                   label={t('name')}
                   value={formData.name}
@@ -974,12 +1024,13 @@ export default function ActivistModal({
 
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 {/* Step 3: Select Neighborhood (filtered by city) */}
-                <FormControl sx={{ flex: 1, minWidth: '200px' }} required error={!!errors.siteId} disabled={!selectedCityId}>
-                  <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{t('site')}</InputLabel>
-                  <Select
-                    value={formData.siteId}
-                    onChange={(e) => handleChange('siteId')(e as any)}
-                    label={t('site')}
+                <Box ref={(el: HTMLDivElement | null) => { fieldRefs.current.siteId = el; }} sx={{ flex: 1, minWidth: '200px' }}>
+                  <FormControl fullWidth required error={!!errors.siteId} disabled={!selectedCityId}>
+                    <InputLabel sx={{ fontSize: '1rem', fontWeight: 500 }}>{t('site')}</InputLabel>
+                    <Select
+                      value={formData.siteId}
+                      onChange={(e) => handleChange('siteId')(e as any)}
+                      label={t('site')}
                     sx={{
                       borderRadius: '12px',
                       backgroundColor: 'white',
@@ -997,15 +1048,16 @@ export default function ActivistModal({
                       </MenuItem>
                     ))}
                   </Select>
-                  {errors.siteId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
-                      {errors.siteId}
-                    </Typography>
-                  )}
-                </FormControl>
+                    {errors.siteId && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                        {errors.siteId}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Box>
 
                 {/* Activist Coordinator */}
-                <Box sx={{ flex: 1, minWidth: '200px' }}>
+                <Box ref={(el: HTMLDivElement | null) => { fieldRefs.current.supervisorId = el; }} sx={{ flex: 1, minWidth: '200px' }}>
                   <Autocomplete
                     value={neighborhoodCoordinators.find((ac) => ac.id === formData.supervisorId) || null}
                     onChange={(event, newValue) => {

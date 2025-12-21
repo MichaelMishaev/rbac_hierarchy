@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    instrumentationHook: true, // Enable global error handlers
+    // instrumentationHook is now default in Next.js 15+, no longer needed
   },
   images: {
     remotePatterns: [
