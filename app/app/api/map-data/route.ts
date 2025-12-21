@@ -437,7 +437,7 @@ export async function GET(_request: Request) {
       .filter(Boolean);
 
     // Step 6: Format area managers (use database coordinates, fallback to centroid of cities)
-    const formattedAreaManagers = (await Promise.all(
+    const areaManagerResults = await Promise.all(
       areaManagers.map(async (areaManager) => {
         // Skip area managers without users (defensive check, should be filtered in query)
         if (!areaManager.user) {
@@ -487,7 +487,8 @@ export async function GET(_request: Request) {
           type: 'area_manager' as const,
         };
       })
-    )).filter(Boolean) as typeof formattedAreaManagers;
+    );
+    const formattedAreaManagers = areaManagerResults.filter((am) => am !== null);
 
     // Calculate stats
     const stats = {
