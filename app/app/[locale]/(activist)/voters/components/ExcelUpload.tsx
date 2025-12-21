@@ -99,12 +99,13 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
         return;
       }
 
-      const requiredColumns = ['שם', 'שם משפחה', 'טלפון', 'עיר', 'מייל'];
+      // Only validate REQUIRED columns (only name and phone are mandatory)
+      const requiredColumns = ['שם', 'טלפון'];
       const firstRow = jsonData[0];
       const missingColumns = requiredColumns.filter(col => !(col in firstRow));
 
       if (missingColumns.length > 0) {
-        setError(`חסרות עמודות: ${missingColumns.join(', ')}`);
+        setError(`חסרות עמודות חובה: ${missingColumns.join(', ')}`);
         setFile(null);
         return;
       }
@@ -190,7 +191,8 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           <li>פורמטים נתמכים: Excel (.xlsx, .xls) או Numbers (.numbers)</li>
           <li>משתמשי Mac: מומלץ לייצא מ-Numbers לפורמט Excel לתוצאות מיטביות</li>
           <li>השורה הראשונה חייבת להכיל כותרות עמודות</li>
-          <li>עמודות נדרשות: שם, שם משפחה, טלפון, עיר, מייל</li>
+          <li>עמודות חובה: שם, טלפון</li>
+          <li>עמודות אופציונליות: שם משפחה, עיר, מייל</li>
           <li>ניתן לייבא בוחרים עם מספרי טלפון כפולים</li>
         </Typography>
 

@@ -60,16 +60,10 @@ export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<Import
       const rowNumber = i + 2; // +2 because Excel rows start at 1 and first row is header
 
       try {
-        // Validate required fields
+        // Validate required fields (only name and phone are mandatory)
         if (!row.firstName?.trim()) {
           result.failed++;
-          result.errors.push({ row: rowNumber, error: 'שם פרטי חסר' });
-          continue;
-        }
-
-        if (!row.lastName?.trim()) {
-          result.failed++;
-          result.errors.push({ row: rowNumber, error: 'שם משפחה חסר' });
+          result.errors.push({ row: rowNumber, error: 'שם חסר' });
           continue;
         }
 
@@ -80,7 +74,9 @@ export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<Import
         }
 
         const phone = row.phone.toString().trim();
-        const fullName = `${row.firstName.trim()} ${row.lastName.trim()}`;
+        const firstName = row.firstName.trim();
+        const lastName = row.lastName?.trim() || '';
+        const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
         // Create voter (allow duplicates from Excel import)
         await prisma.voter.create({

@@ -88,11 +88,12 @@ function getUserMessage(error: Error): string {
 
 /**
  * Wrap API route handler with error handling
+ * Next.js 15 compatible - supports optional context parameter
  */
-export function withErrorHandler(
-  handler: (req: Request, context?: { params: Record<string, string> }) => Promise<Response>
+export function withErrorHandler<T = any>(
+  handler: (req: Request, context?: T) => Promise<Response>
 ) {
-  return async (req: Request, context?: { params: Record<string, string> }): Promise<Response> => {
+  return async (req: Request, context?: T): Promise<Response> => {
     try {
       return await handler(req, context);
     } catch (error) {
