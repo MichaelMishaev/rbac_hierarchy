@@ -69,6 +69,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
   const [isDownloading, setIsDownloading] = useState(false);
   const [drillDownOpen, setDrillDownOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [isMounted, setIsMounted] = useState(false); // Hydration guard
   const containerRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false); // Prevent infinite loops
   const [errorSnackbar, setErrorSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'warning' | 'info' }>({
@@ -187,7 +188,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     const xPosition = 0; // Center horizontally for now
 
     // Calculate translate to center this position in viewport
-    if (typeof window !== 'undefined') {
+    if (isMounted && typeof window !== 'undefined') {
       const viewportCenterX = window.innerWidth / 2;
       const viewportCenterY = 350; // Tree container is 700px, so center is 350px
 
@@ -198,7 +199,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     }
 
     return { x: 0, y: 0 };
-  }, []);
+  }, [isMounted]);
 
   // Handle search
   useEffect(() => {
@@ -234,13 +235,21 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     }
   }, [searchTerm, data, searchTree, calculateNodePosition]);
 
+  // Set mounted flag to prevent hydration mismatch
   useEffect(() => {
-    fetchOrgTree();
-  }, [fetchOrgTree]);
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      fetchOrgTree();
+    }
+  }, [isMounted, fetchOrgTree]);
 
   // Initialize center translation
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isUpdatingRef.current) {
+    if (isMounted && typeof window !== 'undefined' && !isUpdatingRef.current) {
       const updateTranslate = () => {
         // Only update translate on initial load or when exiting fullscreen
         if (!searchTerm && !isFullscreen) {
@@ -261,7 +270,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       return () => window.removeEventListener('resize', updateTranslate);
     }
     return undefined; // Explicit return for all code paths
-  }, [searchTerm, isFullscreen]);
+  }, [isMounted, searchTerm, isFullscreen]);
 
   // Zoom controls with smooth increments
   const handleZoomIn = useCallback(() => {
@@ -319,7 +328,9 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
       const filename: string = filenameMatch?.[1] ?? `org-tree-${new Date().toISOString().split('T')[0]}.html`;
 
-      // Download file
+      // Download file (only after mounted)
+      if (!isMounted || typeof window === 'undefined') return;
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -339,10 +350,12 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
     } finally {
       setIsDownloading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   // Listen for fullscreen changes
   useEffect(() => {
+    if (!isMounted || typeof document === 'undefined') return;
+
     const handleFullscreenChange = () => {
       const isNowFullscreen = !!document.fullscreenElement;
       setIsFullscreen((prev) => {
@@ -356,7 +369,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [isMounted]);
 
   // Handle node click for drill-down
   const handleNodeClick = useCallback((nodeDatum: any) => {
@@ -381,6 +394,8 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
   // Close on ESC key
   useEffect(() => {
+    if (!isMounted || typeof document === 'undefined') return;
+
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && drillDownOpen) {
         handleCloseDrillDown();
@@ -389,7 +404,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
 
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
-  }, [drillDownOpen, handleCloseDrillDown]);
+  }, [isMounted, drillDownOpen, handleCloseDrillDown]);
 
   // Get node color based on type - Election Campaign Color Scheme
   const getNodeColor = (type: string) => {
