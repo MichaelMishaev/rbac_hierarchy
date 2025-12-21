@@ -21,6 +21,8 @@ import {
   TableRow,
   Paper,
   TablePagination,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -122,6 +124,8 @@ export default function ActivistsClient({
   const locale = useLocale();
   const router = useRouter();
   const isRTL = locale === 'he';
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // < 768px
 
   const [workers, setWorkers] = useState(initialWorkers);
   const [neighborhoods, setNeighborhoods] = useState(sites);
@@ -575,10 +579,10 @@ export default function ActivistsClient({
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          {/* View Mode Toggle */}
+          {/* View Mode Toggle - Hidden on mobile (always uses card view) */}
           <Box
             sx={{
-              display: 'flex',
+              display: { xs: 'none', md: 'flex' },
               backgroundColor: colors.neutral[100],
               borderRadius: borderRadius.lg,
               p: 0.5,
@@ -586,20 +590,26 @@ export default function ActivistsClient({
           >
             <IconButton
               onClick={() => setViewMode('grid')}
+              data-testid="view-mode-grid"
               sx={{
                 borderRadius: borderRadius.md,
                 backgroundColor: viewMode === 'grid' ? colors.neutral[0] : 'transparent',
                 boxShadow: viewMode === 'grid' ? shadows.soft : 'none',
+                minWidth: 48,
+                minHeight: 48,
               }}
             >
               <GridViewIcon sx={{ color: viewMode === 'grid' ? colors.primary.main : colors.neutral[500] }} />
             </IconButton>
             <IconButton
               onClick={() => setViewMode('table')}
+              data-testid="view-mode-table"
               sx={{
                 borderRadius: borderRadius.md,
                 backgroundColor: viewMode === 'table' ? colors.neutral[0] : 'transparent',
                 boxShadow: viewMode === 'table' ? shadows.soft : 'none',
+                minWidth: 48,
+                minHeight: 48,
               }}
             >
               <TableRowsIcon sx={{ color: viewMode === 'table' ? colors.primary.main : colors.neutral[500] }} />
@@ -764,7 +774,8 @@ export default function ActivistsClient({
             </RtlButton>
           )}
         </Box>
-      ) : viewMode === 'grid' ? (
+      ) : (viewMode === 'grid' || isMobile) ? (
+        /* Grid/Card View - Always used on mobile regardless of viewMode */
         <Grid container spacing={3}>
           {filteredWorkers.map((worker) => {
             // Transform worker data for swipeable card component
@@ -937,6 +948,11 @@ export default function ActivistsClient({
                           <IconButton
                             onClick={(e) => handleMenuOpen(e, worker)}
                             size="small"
+                            data-testid={`activist-menu-${worker.id}`}
+                            sx={{
+                              minWidth: 48,
+                              minHeight: 48,
+                            }}
                           >
                             <MoreVertIcon />
                           </IconButton>

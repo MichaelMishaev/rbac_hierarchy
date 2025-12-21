@@ -12,6 +12,28 @@ npm run dev                                           # → http://localhost:320
 # Login: superadmin@election.test / admin123
 ```
 
+## ⚠️ AI DEVELOPMENT RULES (READ FIRST)
+
+**BEFORE writing ANY code, AI MUST:**
+
+1. **Read** `/docs/infrastructure/base/baseRules.md` (system invariants, RBAC rules, Hebrew/RTL)
+2. **Classify risk level:** 🔴 HIGH (RBAC/auth) | 🔸 MEDIUM (features) | 🔹 LOW (UI)
+3. **Declare change boundary:** Allowed files vs forbidden files
+4. **Check locked flows:** `/cities` page, `/manage-voters` page
+5. **State assumptions:** "I assume city-scoped query", "I assume Hebrew-only"
+
+**For 🔴 HIGH RISK changes (RBAC, auth, data filters):**
+- Read `/docs/infrastructure/roles/PERMISSIONS_MATRIX.md`
+- Read `/docs/infrastructure/bugs.md` (check for similar issues)
+- Propose explicit plan BEFORE coding
+- Include negative tests (verify access is DENIED)
+
+**Violating baseRules.md = invalid solution, even if it works.**
+
+**Definition of Done:** See `baseRules.md` section 14.
+
+---
+
 ## 🇮🇱 CRITICAL: Hebrew-Only System
 
 **ALL UI/DB content MUST be Hebrew with RTL**
