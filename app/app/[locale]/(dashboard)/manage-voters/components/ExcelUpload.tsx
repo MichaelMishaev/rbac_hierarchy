@@ -103,7 +103,13 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       // Only validate REQUIRED columns (only name and phone are mandatory)
       const requiredColumns = ['שם', 'טלפון'];
       const firstRow = jsonData[0];
-      const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+
+      // Check if required columns exist (allow with or without "(חובה)" suffix)
+      const missingColumns = requiredColumns.filter(col => {
+        const hasExactMatch = col in firstRow;
+        const hasWithSuffix = `${col} (חובה)` in firstRow;
+        return !hasExactMatch && !hasWithSuffix;
+      });
 
       if (missingColumns.length > 0) {
         setError(`חסרות עמודות חובה: ${missingColumns.join(', ')}`);
@@ -115,10 +121,11 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       setPreview(jsonData.slice(0, 5));
 
       // Check for duplicates
+      // Support columns with or without "(חובה)" suffix
       const voters = jsonData.map((row) => ({
-        firstName: row['שם']?.toString().trim() || '',
-        lastName: row['שם משפחה']?.toString().trim() || '',
-        phone: row['טלפון']?.toString().trim() || '',
+        firstName: (row['שם'] || row['שם (חובה)'])?.toString().trim() || '',
+        lastName: (row['שם משפחה'] || row['שם משפחה (חובה)'])?.toString().trim() || '',
+        phone: (row['טלפון'] || row['טלפון (חובה)'])?.toString().trim() || '',
         city: row['עיר']?.toString().trim() || '',
         email: row['מייל']?.toString().trim() || '',
       }));
@@ -148,10 +155,11 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       const jsonData = utils.sheet_to_json<ExcelRow>(worksheet);
 
       // Transform to server format
+      // Support columns with or without "(חובה)" suffix
       const voters = jsonData.map((row) => ({
-        firstName: row['שם']?.toString().trim() || '',
-        lastName: row['שם משפחה']?.toString().trim() || '',
-        phone: row['טלפון']?.toString().trim() || '',
+        firstName: (row['שם'] || row['שם (חובה)'])?.toString().trim() || '',
+        lastName: (row['שם משפחה'] || row['שם משפחה (חובה)'])?.toString().trim() || '',
+        phone: (row['טלפון'] || row['טלפון (חובה)'])?.toString().trim() || '',
         city: row['עיר']?.toString().trim() || '',
         email: row['מייל']?.toString().trim() || '',
       }));
