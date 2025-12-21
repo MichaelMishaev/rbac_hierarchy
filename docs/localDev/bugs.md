@@ -8308,3 +8308,37 @@ await bulkImportVoters([
 **Compliance:** No violations (improved UX)
 
 ---
+
+---
+
+## Bug: Inconsistent Button Styling in Manage-Voters Page
+
+**Date**: 2025-12-22  
+**Commit**: e23b5b2  
+**Severity**: Medium (UI/UX Consistency)
+
+### Problem
+Buttons in `manage-voters` page had `borderRadius: '8px'` instead of the system-wide standard pill-shaped design (`borderRadius: '50px'`). This broke visual consistency across the application.
+
+**User Feedback**: "the buttons: [Image] in manage-voters, ugly!" then "no!!! all buttons must be same ui ux an system. check it and fix manage-voters page"
+
+### Root Cause
+Developer incorrectly applied `8px` borderRadius instead of following the system's design standard of pill-shaped buttons (`50px` borderRadius).
+
+### Files Affected
+- `app/app/[locale]/(dashboard)/manage-voters/VotersPageClient.tsx` (lines 122, 143)
+
+### Solution
+Reverted buttons to use `borderRadius: '50px'` to match system-wide design standard as defined in:
+- `app/lib/design-system.ts` - `borderRadius.full = '9999px'`
+- Other components consistently use `borderRadius: '50px'` for pill-shaped buttons
+- Examples: `ExcelUpload.tsx`, `VoterForm.tsx`, etc.
+
+### Prevention Rule
+**Always check design-system.ts and existing components before applying custom styling**
+- Search codebase for existing button patterns: `grep -r "borderRadius.*50px" app/**/*.tsx`
+- Use system-defined values from `design-system.ts` or match existing patterns
+- Pills/rounded buttons: `borderRadius: '50px'` (standard)
+- Cards: `borderRadius.xl` or `borderRadius.2xl`
+- Inputs: `borderRadius.md` or `borderRadius.lg`
+
