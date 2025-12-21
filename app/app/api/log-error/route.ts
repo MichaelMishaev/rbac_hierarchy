@@ -39,12 +39,12 @@ export async function POST(req: Request) {
       `[Client-Side Error] ${message}`,
       { message, stack } as Error,
       {
-        errorType,
-        level: errorLevel,
         url,
         userAgent,
         ipAddress: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
         metadata: {
+          level: errorLevel,
+          errorType,
           digest,
           timestamp,
           source: 'client',

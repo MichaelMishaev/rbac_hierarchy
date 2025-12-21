@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { withErrorHandler } from '@/lib/error-handler';
@@ -6,7 +6,7 @@ import { logger, extractRequestContext } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
+export const POST = withErrorHandler(async (request: Request) => {
   try {
     // Simple auth check - require a secret header
     const authHeader = request.headers.get('x-admin-secret');

@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { withErrorHandler } from '@/lib/error-handler';
 import { logger, extractRequestContext } from '@/lib/logger';
 
-export const POST = withErrorHandler(async (req: NextRequest) => {
+export const POST = withErrorHandler(async (req: Request) => {
   try {
     const session = await auth();
 

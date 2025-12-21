@@ -21,7 +21,7 @@ const voterUpdateSchema = z.object({
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -38,7 +38,7 @@ export async function PUT(
     }
 
     // Next.js 15: params is now a Promise
-    const { id } = await params;
+    const { id } = await context.params;
 
     // Check voter exists and was inserted by this user
     const existingVoter = await prisma.voter.findUnique({
@@ -96,7 +96,7 @@ export async function PUT(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -113,7 +113,7 @@ export async function GET(
     }
 
     // Next.js 15: params is now a Promise
-    const { id } = await params;
+    const { id } = await context.params;
 
     const voter = await prisma.voter.findUnique({
       where: { id },

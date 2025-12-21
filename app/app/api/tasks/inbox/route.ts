@@ -6,13 +6,13 @@
  * for legal compliance and audit trail
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { withErrorHandler, UnauthorizedError } from '@/lib/error-handler';
 import { logger, extractRequestContext } from '@/lib/logger';
 
-export const GET = withErrorHandler(async (request: NextRequest) => {
+export const GET = withErrorHandler(async (request: Request) => {
   try {
     // 1. Authenticate user
     const session = await auth();

@@ -6,14 +6,14 @@
  * CRITICAL: MUST show modal when recipients count > 1
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { previewRecipients } from '@/lib/tasks';
 import { Role } from '@prisma/client';
 import { withErrorHandler, ForbiddenError, UnauthorizedError } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
+export const POST = withErrorHandler(async (request: Request) => {
   try {
     // 1. Authenticate user
     const session = await auth();
@@ -32,7 +32,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       logger.rbacViolation('Activist coordinator attempted to preview recipients', {
         ...context,
         ...extractSessionContext(session),
-        attemptedAction: 'preview_recipients',
+        metadata: {
+          attemptedAction: 'preview_recipients',
+        },
       });
       throw new ForbiddenError('רכזי שכונות לא יכולים לשלוח משימות');
     }

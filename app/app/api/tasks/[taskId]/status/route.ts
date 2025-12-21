@@ -10,13 +10,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logTaskAudit } from '@/lib/tasks';
-import { withErrorHandler, UnauthorizedError } from '@/lib/error-handler';
+import { UnauthorizedError } from '@/lib/error-handler';
 import { logger, extractRequestContext } from '@/lib/logger';
 
-export const PATCH = withErrorHandler(async (
+export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ taskId: string }> }
-) => {
+  context: { params: Promise<{ taskId: string }> }
+) {
   try {
     // 1. Authenticate user
     const session = await auth();
@@ -27,7 +27,7 @@ export const PATCH = withErrorHandler(async (
     }
 
     const userId = session.user.id as string;
-    const { taskId: taskIdStr } = await params;
+    const { taskId: taskIdStr } = await context.params;
     const taskId = BigInt(taskIdStr);
 
     // 2. Parse request body
@@ -139,4 +139,4 @@ export const PATCH = withErrorHandler(async (
       { status: 500 }
     );
   }
-});
+}

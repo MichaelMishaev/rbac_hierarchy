@@ -6,7 +6,7 @@
  * to avoid constraint violation (recipients_count > 0)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import {
@@ -19,7 +19,7 @@ import { Role } from '@prisma/client';
 import { withErrorHandler, ForbiddenError, UnauthorizedError } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
+export const POST = withErrorHandler(async (request: Request) => {
   try {
     // 1. Authenticate user
     const session = await auth();
@@ -38,7 +38,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       logger.rbacViolation('Activist coordinator attempted to send task', {
         ...context,
         ...extractSessionContext(session),
-        attemptedAction: 'create_task',
+        metadata: {
+          attemptedAction: 'create_task',
+        },
       });
       throw new ForbiddenError('רכזי שכונות לא יכולים לשלוח משימות');
     }

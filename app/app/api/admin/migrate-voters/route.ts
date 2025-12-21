@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withErrorHandler } from '@/lib/error-handler';
 import { logger, extractRequestContext } from '@/lib/logger';
@@ -10,7 +10,7 @@ import { logger, extractRequestContext } from '@/lib/logger';
  *
  * Usage: curl https://app.rbac.shop/api/admin/migrate-voters
  */
-export const GET = withErrorHandler(async (request: NextRequest) => {
+export const GET = withErrorHandler(async (request: Request) => {
   try {
     // Log migration attempt (NO AUTH CHECK - security concern!)
     const context = await extractRequestContext(request);

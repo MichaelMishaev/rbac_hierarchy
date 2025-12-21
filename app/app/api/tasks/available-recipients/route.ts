@@ -6,14 +6,14 @@
  * Supports search, pagination, and filtering by corporation/role
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getAvailableRecipients } from '@/lib/tasks';
 import { Role } from '@prisma/client';
 import { withErrorHandler, ForbiddenError, UnauthorizedError } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export const GET = withErrorHandler(async (request: NextRequest) => {
+export const GET = withErrorHandler(async (request: Request) => {
   try {
     // 1. Authenticate user
     const session = await auth();
@@ -32,7 +32,9 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
       logger.rbacViolation('Activist coordinator attempted to access recipient list', {
         ...context,
         ...extractSessionContext(session),
-        attemptedAction: 'get_available_recipients',
+        metadata: {
+          attemptedAction: 'get_available_recipients',
+        },
       });
       throw new ForbiddenError('רכזי שכונות לא יכולים לשלוח משימות');
     }
