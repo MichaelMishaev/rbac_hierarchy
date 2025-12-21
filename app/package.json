@@ -19,6 +19,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:prod": "tsx prisma/seed-prod.ts",
     "db:seed:prod-admin": "tsx scripts/seed-production-superadmin.ts",
     "db:restore-prod": "tsx scripts/restore-local-to-prod.ts",
     "railway:sync": "bash scripts/railway-db-sync.sh",
