@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { withErrorHandler, ForbiddenError } from '@/lib/error-handler';
+import { ForbiddenError } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
 const voterUpdateSchema = z.object({
@@ -19,10 +19,10 @@ const voterUpdateSchema = z.object({
  * PUT /api/activists/voters/[id]
  * Update voter (only if inserted by current activist)
  */
-export const PUT = withErrorHandler(async (
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) => {
+) {
   try {
     const session = await auth();
 
@@ -88,16 +88,16 @@ export const PUT = withErrorHandler(async (
       { status: 500 }
     );
   }
-});
+}
 
 /**
  * GET /api/activists/voters/[id]
  * Get single voter (only if inserted by current activist)
  */
-export const GET = withErrorHandler(async (
+export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) => {
+) {
   try {
     const session = await auth();
 
@@ -145,4 +145,4 @@ export const GET = withErrorHandler(async (
       { status: 500 }
     );
   }
-});
+}
