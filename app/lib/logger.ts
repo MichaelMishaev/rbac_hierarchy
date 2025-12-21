@@ -30,7 +30,7 @@ export interface LogContext {
   ipAddress?: string;
   userAgent?: string;
   requestId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ErrorLogData extends LogContext {
@@ -55,7 +55,7 @@ function sanitizeStack(stack?: string): string | undefined {
 }
 
 // Sanitize metadata
-function sanitizeMetadata(metadata?: Record<string, any>): Record<string, any> | undefined {
+function sanitizeMetadata(metadata?: Record<string, unknown>): Record<string, unknown> | undefined {
   if (!metadata) return undefined;
 
   const sanitized = { ...metadata };
@@ -91,7 +91,7 @@ async function persistErrorToDb(data: ErrorLogData): Promise<void> {
         ipAddress: data.ipAddress,
         userAgent: data.userAgent?.substring(0, 500),
         requestId: data.requestId,
-        metadata: sanitizeMetadata(data.metadata) as any,
+        metadata: sanitizeMetadata(data.metadata) as Record<string, unknown> | undefined,
         environment: process.env.NODE_ENV || 'production',
       },
     });
@@ -306,7 +306,7 @@ export async function extractRequestContext(req: Request): Promise<LogContext> {
  *   logger.error('Action failed', error, context);
  * }
  */
-export function extractSessionContext(session: any): LogContext {
+export function extractSessionContext(session: { user?: { id?: string; email?: string; role?: string; cityId?: string } } | null): LogContext {
   if (!session?.user) return {};
 
   return {
