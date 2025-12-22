@@ -77,6 +77,21 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to normalize column names (remove "(חובה)" suffix)
+  const normalizeColumnName = (colName: string): string => {
+    return colName.replace(/\s*\(חובה\)\s*$/, '').trim();
+  };
+
+  // Helper function to create column mapping
+  const createColumnMapping = (row: any): Record<string, string> => {
+    const mapping: Record<string, string> = {};
+    Object.keys(row).forEach(col => {
+      const normalized = normalizeColumnName(col);
+      mapping[normalized] = col;
+    });
+    return mapping;
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -99,10 +114,13 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
         return;
       }
 
+      // Create a mapping of normalized column names to actual column names
+      const firstRow = jsonData[0];
+      const columnMapping = createColumnMapping(firstRow);
+
       // Only validate REQUIRED columns (only name and phone are mandatory)
       const requiredColumns = ['שם', 'טלפון'];
-      const firstRow = jsonData[0];
-      const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+      const missingColumns = requiredColumns.filter(col => !columnMapping[col]);
 
       if (missingColumns.length > 0) {
         setError(`חסרות עמודות חובה: ${missingColumns.join(', ')}`);
@@ -114,12 +132,12 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       setPreview(jsonData.slice(0, 5));
 
       // Check for duplicates
-      const voters = jsonData.map((row) => ({
-        firstName: row['שם']?.toString().trim() || '',
-        lastName: row['שם משפחה']?.toString().trim() || '',
-        phone: row['טלפון']?.toString().trim() || '',
-        city: row['עיר']?.toString().trim() || '',
-        email: row['מייל']?.toString().trim() || '',
+      const voters = jsonData.map((row: any) => ({
+        firstName: row[columnMapping['שם'] || 'שם']?.toString().trim() || '',
+        lastName: row[columnMapping['שם משפחה'] || 'שם משפחה']?.toString().trim() || '',
+        phone: row[columnMapping['טלפון'] || 'טלפון']?.toString().trim() || '',
+        city: row[columnMapping['עיר'] || 'עיר']?.toString().trim() || '',
+        email: row[columnMapping['מייל'] || 'מייל']?.toString().trim() || '',
       }));
 
       const duplicateCheck = await checkExcelDuplicates(voters);
@@ -146,13 +164,17 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = utils.sheet_to_json<ExcelRow>(worksheet);
 
+      // Create column mapping
+      const firstRow = jsonData[0];
+      const columnMapping = createColumnMapping(firstRow);
+
       // Transform to server format
-      const voters = jsonData.map((row) => ({
-        firstName: row['שם']?.toString().trim() || '',
-        lastName: row['שם משפחה']?.toString().trim() || '',
-        phone: row['טלפון']?.toString().trim() || '',
-        city: row['עיר']?.toString().trim() || '',
-        email: row['מייל']?.toString().trim() || '',
+      const voters = jsonData.map((row: any) => ({
+        firstName: row[columnMapping['שם'] || 'שם']?.toString().trim() || '',
+        lastName: row[columnMapping['שם משפחה'] || 'שם משפחה']?.toString().trim() || '',
+        phone: row[columnMapping['טלפון'] || 'טלפון']?.toString().trim() || '',
+        city: row[columnMapping['עיר'] || 'עיר']?.toString().trim() || '',
+        email: row[columnMapping['מייל'] || 'מייל']?.toString().trim() || '',
       }));
 
       console.log('[ExcelUpload] Importing', voters.length, 'voters');

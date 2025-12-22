@@ -798,10 +798,12 @@ export default function ActivistsClient({
               id: worker.id,
               fullName: worker.fullName,
               phone: worker.phone,
+              email: worker.email,
               neighborhood: worker.site ? { name: worker.site.name } : undefined,
               position: worker.position,
               tags: worker.tags,
               isActive: worker.isActive,
+              userId: worker.userId,
             };
 
             return (
@@ -810,6 +812,20 @@ export default function ActivistsClient({
                   activist={activistData}
                   onCheckIn={handleQuickCheckIn}
                   onEdit={handleQuickEdit}
+                  onDelete={(activistId) => {
+                    const activist = workers.find(w => w.id === activistId);
+                    if (activist) {
+                      setSelectedWorker(activist);
+                      setDeleteModalOpen(true);
+                    }
+                  }}
+                  onResetPassword={(activistId) => {
+                    const activist = workers.find(w => w.id === activistId);
+                    if (activist) {
+                      setSelectedWorker(activist);
+                      setResetPasswordDialogOpen(true);
+                    }
+                  }}
                   isRTL={isRTL}
                 />
               </Grid>
