@@ -35,6 +35,12 @@ import {
   CircularProgress,
   Alert,
   TablePagination,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -42,6 +48,8 @@ import {
   Delete as DeleteIcon,
   Phone as PhoneIcon,
   ContentCopy as DuplicateIcon,
+  DeleteSweep as DeleteSweepIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { getVisibleVoters, deleteVoter } from '@/lib/voters/actions/voter-actions';
 import { getVotersWithDuplicates } from '@/app/actions/get-voter-duplicates';
@@ -54,9 +62,10 @@ interface VotersListProps {
   onViewVoter?: (voter: Voter) => void;
   onEditVoter?: (voter: Voter) => void;
   refreshKey?: number; // Increment to trigger refresh
+  isSuperAdmin?: boolean; // RBAC: Only SuperAdmin can bulk delete
 }
 
-export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListProps) {
+export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin = false }: VotersListProps) {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [duplicateMap, setDuplicateMap] = useState<Record<string, number>>({});
   const [selectedDuplicateVoter, setSelectedDuplicateVoter] = useState<Voter | null>(null);
@@ -70,6 +79,11 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [totalVoters, setTotalVoters] = useState(0);
+
+  // Selection state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedVoterIds, setSelectedVoterIds] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     loadVoters();
@@ -123,6 +137,66 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
     }
   };
 
+  const handleToggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    setSelectedVoterIds(new Set()); // Clear selections when toggling mode
+  };
+
+  const handleSelectVoter = (voterId: string) => {
+    const newSelection = new Set(selectedVoterIds);
+    if (newSelection.has(voterId)) {
+      newSelection.delete(voterId);
+    } else {
+      newSelection.add(voterId);
+    }
+    setSelectedVoterIds(newSelection);
+  };
+
+  const handleSelectAll = () => {
+    const currentPageVoters = searchQuery ? filteredVoters : voters;
+    if (selectedVoterIds.size === currentPageVoters.length) {
+      // Deselect all
+      setSelectedVoterIds(new Set());
+    } else {
+      // Select all on current page
+      setSelectedVoterIds(new Set(currentPageVoters.map(v => v.id)));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedVoterIds.size === 0) {
+      return;
+    }
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteDialogOpen(false);
+    setLoading(true);
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const voterId of selectedVoterIds) {
+      const result = await deleteVoter(voterId);
+      if (result.success) {
+        successCount++;
+      } else {
+        failureCount++;
+      }
+    }
+
+    setLoading(false);
+    setSelectionMode(false);
+    setSelectedVoterIds(new Set());
+
+    if (failureCount > 0) {
+      setError(`נמחקו ${successCount} בוחרים, ${failureCount} נכשלו`);
+    }
+
+    // Reload the voters list
+    loadVoters();
+  };
+
   const getSupportLevelColor = (level: string | null) => {
     switch (level) {
       case 'תומך':
@@ -173,11 +247,88 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
           alignItems: 'center',
           mb: { xs: 2, sm: 3 },
           px: { xs: 0.5, sm: 0 },
+          flexWrap: 'wrap',
+          gap: 2,
         }}
       >
         <Typography variant="h5" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
           רשימת בוחרים ({searchQuery ? filteredVoters.length : totalVoters})
         </Typography>
+
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {isSuperAdmin && !selectionMode && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleToggleSelectionMode}
+              sx={{
+                borderRadius: '20px',
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                minHeight: { xs: 40, sm: 44 },
+                px: { xs: 2.5, sm: 3.5 },
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontWeight: 500,
+                border: '1.5px solid',
+                borderColor: 'error.main',
+                '&:hover': {
+                  borderColor: 'error.dark',
+                  backgroundColor: 'error.lighter',
+                },
+              }}
+            >
+              <DeleteSweepIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+              מחיקה
+            </Button>
+          )}
+          {isSuperAdmin && selectionMode && (
+            <>
+              <IconButton
+                onClick={handleToggleSelectionMode}
+                sx={{
+                  width: { xs: 40, sm: 44 },
+                  height: { xs: 40, sm: 44 },
+                  borderRadius: '50%',
+                  border: '1.5px solid',
+                  borderColor: 'grey.400',
+                  color: 'text.secondary',
+                  '&:hover': {
+                    borderColor: 'grey.600',
+                    backgroundColor: 'grey.100',
+                  },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: { xs: 20, sm: 22 } }} />
+              </IconButton>
+
+              {selectedVoterIds.size > 0 && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleDeleteSelected}
+                  sx={{
+                    borderRadius: '20px',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    minHeight: { xs: 40, sm: 44 },
+                    px: { xs: 2.5, sm: 3.5 },
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    fontWeight: 500,
+                    backgroundColor: 'error.main',
+                    '&:hover': {
+                      backgroundColor: 'error.dark',
+                    },
+                  }}
+                >
+                  <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+                  מחק נבחרים ({selectedVoterIds.size})
+                </Button>
+              )}
+            </>
+          )}
+        </Box>
       </Box>
 
       {error && (
@@ -289,6 +440,27 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
         <Table sx={{ minWidth: { xs: 900, md: 'auto' } }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'primary.light' }}>
+              {selectionMode && (
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={
+                      selectedVoterIds.size > 0 &&
+                      selectedVoterIds.size === (searchQuery ? filteredVoters : voters).length
+                    }
+                    indeterminate={
+                      selectedVoterIds.size > 0 &&
+                      selectedVoterIds.size < (searchQuery ? filteredVoters : voters).length
+                    }
+                    onChange={handleSelectAll}
+                    sx={{
+                      color: 'primary.main',
+                      '&.Mui-checked': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  />
+                </TableCell>
+              )}
               <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, whiteSpace: 'nowrap' }}>
                 שם מלא
               </TableCell>
@@ -332,8 +504,25 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
                 <TableRow
                   key={voter.id}
                   hover
-                  sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
+                  sx={{
+                    '&:hover': { backgroundColor: 'action.hover' },
+                    backgroundColor: selectionMode && selectedVoterIds.has(voter.id) ? 'action.selected' : 'inherit',
+                  }}
                 >
+                  {selectionMode && (
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedVoterIds.has(voter.id)}
+                        onChange={() => handleSelectVoter(voter.id)}
+                        sx={{
+                          color: 'primary.main',
+                          '&.Mui-checked': {
+                            color: 'primary.main',
+                          },
+                        }}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
                     <Typography
                       variant="body2"
@@ -522,7 +711,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
           setRowsPerPage(parseInt(event.target.value, 10));
           setPage(0);
         }}
-        rowsPerPageOptions={[25, 50, 100, 200]}
+        rowsPerPageOptions={[50, 100, 200, 400]}
         labelRowsPerPage="שורות לעמוד:"
         labelDisplayedRows={({ from, to, count }) => `${from}-${to} מתוך ${count}`}
         sx={{
@@ -541,6 +730,86 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
           mt: 2,
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        dir="rtl"
+        PaperProps={{
+          sx: {
+            borderRadius: '24px',
+            minWidth: { xs: '90%', sm: '400px' },
+            maxWidth: '500px',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            textAlign: 'center',
+            fontSize: { xs: '1.125rem', sm: '1.25rem' },
+            fontWeight: 600,
+            pt: 4,
+            pb: 2,
+          }}
+        >
+          האם אתה בטוח שברצונך למחוק {selectedVoterIds.size} בוחרים?
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            textAlign: 'center',
+            pb: 3,
+          }}
+        >
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
+            פעולה זו לא ניתנת לביטול!
+          </Typography>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            justifyContent: 'center',
+            gap: 2,
+            pb: 4,
+            px: 3,
+          }}
+        >
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: '20px',
+              minWidth: '120px',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              px: 3,
+              py: 1,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="primary"
+            sx={{
+              borderRadius: '20px',
+              minWidth: '120px',
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+              px: 3,
+              py: 1,
+              backgroundColor: '#007AFF',
+              '&:hover': {
+                backgroundColor: '#0051D5',
+              },
+            }}
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Duplicate Voters Dialog */}
       {selectedDuplicateVoter && (

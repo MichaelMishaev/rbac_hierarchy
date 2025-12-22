@@ -31,6 +31,7 @@ import { VoterForm } from './components/VoterForm';
 import { VoterDetails } from './components/VoterDetails';
 import { VoterStatistics } from './components/VoterStatistics';
 import { DuplicatesDashboard } from './components/DuplicatesDashboard';
+import { DeletedVotersList } from './components/DeletedVotersList';
 import { ExcelUpload } from './components/ExcelUpload';
 import type { Voter } from '@/lib/voters';
 
@@ -102,6 +103,15 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
           <Tab label="רשימת בוחרים" />
           <Tab label="סטטיסטיקות" />
           {isSuperAdmin && <Tab label="כפילויות" />}
+          <Tab
+            label="בוחרים מחוקים"
+            sx={{
+              color: 'error.main',
+              '&.Mui-selected': {
+                color: 'error.dark',
+              },
+            }}
+          />
         </Tabs>
 
         {activeTab === 0 && (
@@ -164,12 +174,15 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
           onViewVoter={handleViewVoter}
           onEditVoter={handleEditVoter}
           refreshKey={refreshKey}
+          isSuperAdmin={isSuperAdmin}
         />
       )}
 
       {activeTab === 1 && <VoterStatistics />}
 
       {activeTab === 2 && isSuperAdmin && <DuplicatesDashboard />}
+
+      {activeTab === (isSuperAdmin ? 3 : 2) && <DeletedVotersList />}
 
       {/* Create Dialog */}
       <Dialog

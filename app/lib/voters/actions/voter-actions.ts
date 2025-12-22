@@ -112,6 +112,55 @@ export async function getVisibleVoters(options?: {
 }
 
 /**
+ * Get all DELETED voters (soft-deleted, isActive = false)
+ *
+ * RBAC:
+ * - Production: SuperAdmin ONLY
+ * - Development: All users (for testing)
+ */
+export async function getDeletedVoters(options?: {
+  supportLevel?: string;
+  contactStatus?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ success: true; data: Voter[]; total: number } | { success: false; error: string }> {
+  try {
+    const viewer = await getUserContext();
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    // RBAC: SuperAdmin only in production, all users in dev
+    if (!isDevelopment && viewer.role !== 'SUPERADMIN') {
+      return {
+        success: false,
+        error: 'Only SuperAdmin can view deleted voters',
+      };
+    }
+
+    const repository = getVoterRepository();
+
+    // Always query deleted voters (isActive: false)
+    const [voters, total] = await Promise.all([
+      repository.findVisibleVoters(viewer, {
+        ...options,
+        isActive: false, // Only deleted voters
+      }),
+      repository.countVisibleVoters(viewer, {
+        ...options,
+        isActive: false,
+      }),
+    ]);
+
+    return { success: true, data: voters, total };
+  } catch (error) {
+    console.error('[getDeletedVoters]', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Search voters by phone number
  */
 export async function searchVotersByPhone(
