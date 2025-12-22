@@ -294,15 +294,23 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {preview.map((row, index) => (
-                  <TableRow key={`preview-${index}-${row['טלפון']}`}>
-                    <TableCell>{row['שם']}</TableCell>
-                    <TableCell>{row['שם משפחה']}</TableCell>
-                    <TableCell>{row['טלפון']}</TableCell>
-                    <TableCell>{row['עיר']}</TableCell>
-                    <TableCell>{row['מייל']}</TableCell>
-                  </TableRow>
-                ))}
+                {preview.map((row, index) => {
+                  // Support columns with or without "(חובה)" suffix
+                  const getField = (name: string, altName?: string): string => {
+                    const value = row[name] || (altName ? row[altName] : undefined);
+                    return value?.toString() || '';
+                  };
+
+                  return (
+                    <TableRow key={`preview-${index}-${getField('טלפון', 'טלפון (חובה)')}`}>
+                      <TableCell>{getField('שם', 'שם (חובה)')}</TableCell>
+                      <TableCell>{getField('שם משפחה', 'שם משפחה (חובה)')}</TableCell>
+                      <TableCell>{getField('טלפון', 'טלפון (חובה)')}</TableCell>
+                      <TableCell>{getField('עיר')}</TableCell>
+                      <TableCell>{getField('מייל')}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
