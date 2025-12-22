@@ -1,6 +1,99 @@
 
 ---
 
+## Bug #XX+7: Excel Upload Preview Table Empty with "(חובה)" Column Suffix (2025-12-22)
+
+### Description
+When activists upload an Excel file with column names containing the "(חובה)" suffix (e.g., "שם (חובה)", "טלפון (חובה)"), the validation passes and the preview section renders, but the preview table displays no data rows. The table header shows correctly but all cells are empty.
+
+### Reproduction Steps
+1. Create Excel file with columns: "שם (חובה)", "שם משפחה (חובה)", "טלפון (חובה)", "עיר", "מייל"
+2. Add one data row: "nhftk", "", "05446544465", "", ""
+3. Navigate to `/voters` as activist
+4. Click "העלאה מאקסל"
+5. Select the Excel file
+6. ✅ Validation passes (no error message)
+7. ✅ Preview section renders with title "תצוגה מקדימה (1 שורות ראשונות):"
+8. ❌ Table shows headers but all data cells are empty
+9. Expected: Table should display the voter data
+
+### Root Cause Analysis
+**Preview Table Using Hardcoded Column Names:**
+
+**ExcelUpload.tsx:303-307 (BEFORE FIX):**
+```typescript
+<TableRow key={`preview-${index}-${row['טלפון']}`}>
+  <TableCell>{row['שם']}</TableCell>
+  <TableCell>{row['שם משפחה']}</TableCell>
+  <TableCell>{row['טלפון']}</TableCell>
+  <TableCell>{row['עיר']}</TableCell>
+  <TableCell>{row['מייל']}</TableCell>
+</TableRow>
+```
+
+**Problem:** The preview table was accessing row data using hardcoded column names (e.g., `row['שם']`), but the actual Excel columns have the "(חובה)" suffix (e.g., `row['שם (חובה)']`). This caused all cells to be undefined/empty.
+
+**Why This Was a Partial Regression:**
+- Previous fix (commit 15fde6c) added `normalizeColumnName()` and `createColumnMapping()` functions
+- Fixed validation to accept columns with "(חובה)" suffix
+- Fixed `handleUpload` to use column mapping when extracting data
+- **BUT:** Forgot to update the preview table rendering to also use column mapping
+- Result: Validation passed, upload worked, but preview was broken
+
+### Solution Implemented
+**Updated Preview Table to Use Column Mapping** (ExcelUpload.tsx:301-313):
+```typescript
+<TableBody>
+  {preview.map((row, index) => {
+    // Create column mapping for this row to handle (חובה) suffix
+    const rowMapping = createColumnMapping(row);
+    return (
+      <TableRow key={`preview-${index}-${row[rowMapping['טלפון'] || 'טלפון']}`}>
+        <TableCell>{row[rowMapping['שם'] || 'שם']}</TableCell>
+        <TableCell>{row[rowMapping['שם משפחה'] || 'שם משפחה']}</TableCell>
+        <TableCell>{row[rowMapping['טלפון'] || 'טלפון']}</TableCell>
+        <TableCell>{row[rowMapping['עיר'] || 'עיר']}</TableCell>
+        <TableCell>{row[rowMapping['מייל'] || 'מייל']}</TableCell>
+      </TableRow>
+    );
+  })}
+</TableBody>
+```
+
+**Key changes:**
+1. Create column mapping for each row using existing `createColumnMapping()` helper
+2. Access row data using `row[rowMapping['שם'] || 'שם']` pattern
+3. Fallback to original column name if mapping doesn't exist (backward compatibility)
+
+### Files Modified
+- `app/app/[locale]/(activist)/voters/components/ExcelUpload.tsx`:
+  - Lines 301-313: Updated preview table rendering to use column mapping
+  - Lines 121-123: Removed debug console.log statements
+
+### Prevention Rules
+1. **Column Name Normalization:** When adding Excel column validation, ALWAYS apply the same normalization logic to ALL places that access the data:
+   - Validation logic
+   - Upload/processing logic
+   - Preview table rendering
+   - Any other UI that displays the data
+
+2. **Test Preview with Validation:** When fixing Excel validation issues, ALWAYS verify the preview table still works correctly. A passing validation doesn't guarantee correct preview rendering.
+
+3. **Use Shared Helpers:** Create helper functions like `createColumnMapping()` and use them consistently across all data access points. Don't hardcode column names in multiple places.
+
+4. **Complete Fix Checklist for Excel Features:**
+   ```
+   ✅ Validation logic
+   ✅ Upload/processing logic
+   ✅ Preview rendering
+   ✅ Error messages
+   ✅ Test with actual data
+   ```
+
+5. **Document Partial Fixes:** When implementing a partial fix (e.g., "fixed validation but not preview"), explicitly document what was NOT fixed to avoid assumptions that the issue is fully resolved.
+
+---
+
 ## Bug #XX+6: Unhelpful Error Message on Wrong Temporary Password (2025-12-21)
 
 ### Description

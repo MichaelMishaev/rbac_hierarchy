@@ -292,15 +292,19 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {preview.map((row, index) => (
-                  <TableRow key={`preview-${index}-${row['טלפון']}`}>
-                    <TableCell>{row['שם']}</TableCell>
-                    <TableCell>{row['שם משפחה']}</TableCell>
-                    <TableCell>{row['טלפון']}</TableCell>
-                    <TableCell>{row['עיר']}</TableCell>
-                    <TableCell>{row['מייל']}</TableCell>
-                  </TableRow>
-                ))}
+                {preview.map((row, index) => {
+                  // Create column mapping for this row to handle (חובה) suffix
+                  const rowMapping = createColumnMapping(row);
+                  return (
+                    <TableRow key={`preview-${index}-${row[rowMapping['טלפון'] || 'טלפון']}`}>
+                      <TableCell>{row[rowMapping['שם'] || 'שם']}</TableCell>
+                      <TableCell>{row[rowMapping['שם משפחה'] || 'שם משפחה']}</TableCell>
+                      <TableCell>{row[rowMapping['טלפון'] || 'טלפון']}</TableCell>
+                      <TableCell>{row[rowMapping['עיר'] || 'עיר']}</TableCell>
+                      <TableCell>{row[rowMapping['מייל'] || 'מייל']}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
