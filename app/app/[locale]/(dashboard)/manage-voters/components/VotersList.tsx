@@ -366,6 +366,11 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                   backgroundColor: 'grey.300',
                   color: 'grey.500',
                 },
+                // RTL fix: Add gap between icon and text
+                '& .MuiButton-startIcon': {
+                  marginInlineEnd: 1,
+                  marginInlineStart: 0,
+                },
               }}
             >
               {exporting ? 'מייצא...' : `ייצוא לאקסל (${totalVoters})`}
@@ -388,6 +393,11 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                 '&:hover': {
                   borderWidth: '1.5px',
                   backgroundColor: 'error.lighter',
+                },
+                // RTL fix: Add gap between icon and text
+                '& .MuiButton-startIcon': {
+                  marginInlineEnd: 1,
+                  marginInlineStart: 0,
                 },
               }}
             >
@@ -432,6 +442,11 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                     '&:hover': {
                       backgroundColor: 'error.dark',
                       boxShadow: 1,
+                    },
+                    // RTL fix: Add gap between icon and text
+                    '& .MuiButton-startIcon': {
+                      marginInlineEnd: 1,
+                      marginInlineStart: 0,
                     },
                   }}
                 >
