@@ -41,6 +41,7 @@ type ExcelRow = {
   טלפון: string;
   עיר: string;
   מייל: string;
+  [key: string]: string; // Allow dynamic key access for column mapping
 };
 
 type DuplicateInfo = {
