@@ -341,21 +341,26 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
               variant="contained"
               onClick={handleExportToExcel}
               disabled={totalVoters === 0 || exporting}
+              startIcon={
+                exporting ? (
+                  <CircularProgress size={18} sx={{ color: 'inherit' }} />
+                ) : (
+                  <ExportIcon />
+                )
+              }
               sx={{
                 borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                minHeight: { xs: 40, sm: 48 },
-                px: { xs: 2.5, sm: 3.5 },
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
+                px: { xs: 2.5, sm: 3 },
+                py: { xs: 1.25, sm: 1.5 },
                 fontWeight: 600,
+                minHeight: 48,
+                fontSize: { xs: '0.9375rem', sm: '1rem' },
                 backgroundColor: 'success.main',
                 color: 'white',
                 boxShadow: 'none',
                 '&:hover': {
                   backgroundColor: 'success.dark',
-                  boxShadow: 2,
+                  boxShadow: 1,
                 },
                 '&:disabled': {
                   backgroundColor: 'grey.300',
@@ -363,17 +368,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                 },
               }}
             >
-              {exporting ? (
-                <>
-                  <CircularProgress size={20} sx={{ color: 'inherit' }} />
-                  מייצא...
-                </>
-              ) : (
-                <>
-                  <ExportIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
-                  ייצוא לאקסל ({totalVoters})
-                </>
-              )}
+              {exporting ? 'מייצא...' : `ייצוא לאקסל (${totalVoters})`}
             </Button>
           )}
           {isSuperAdmin && !selectionMode && (
@@ -381,25 +376,21 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
               variant="outlined"
               color="error"
               onClick={handleToggleSelectionMode}
+              startIcon={<DeleteSweepIcon />}
               sx={{
                 borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                minHeight: { xs: 40, sm: 48 },
-                px: { xs: 2.5, sm: 3.5 },
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
+                px: { xs: 2.5, sm: 3 },
+                py: { xs: 1.25, sm: 1.5 },
                 fontWeight: 600,
-                border: '1.5px solid',
-                borderColor: 'error.main',
+                minHeight: 48,
+                fontSize: { xs: '0.9375rem', sm: '1rem' },
+                borderWidth: '1.5px',
                 '&:hover': {
-                  borderColor: 'error.dark',
-                  backgroundColor: 'error.lighter',
                   borderWidth: '1.5px',
+                  backgroundColor: 'error.lighter',
                 },
               }}
             >
-              <DeleteSweepIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
               מחיקה
             </Button>
           )}
@@ -428,22 +419,22 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                   variant="contained"
                   color="error"
                   onClick={handleDeleteSelected}
+                  startIcon={<DeleteIcon />}
                   sx={{
-                    borderRadius: '20px',
-                    fontSize: { xs: '0.875rem', sm: '1rem' },
-                    minHeight: { xs: 40, sm: 44 },
-                    px: { xs: 2.5, sm: 3.5 },
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    fontWeight: 500,
+                    borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
+                    px: { xs: 2.5, sm: 3 },
+                    py: { xs: 1.25, sm: 1.5 },
+                    fontWeight: 600,
+                    minHeight: 48,
+                    fontSize: { xs: '0.9375rem', sm: '1rem' },
                     backgroundColor: 'error.main',
+                    boxShadow: 'none',
                     '&:hover': {
                       backgroundColor: 'error.dark',
+                      boxShadow: 1,
                     },
                   }}
                 >
-                  <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                   מחק נבחרים ({selectedVoterIds.size})
                 </Button>
               )}
