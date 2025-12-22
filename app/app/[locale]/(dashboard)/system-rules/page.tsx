@@ -57,18 +57,18 @@ export default async function SystemRulesPage() {
   const setupSteps = [
     {
       order: 1,
-      title: '🔐 צור מנהלי אזור (Area Managers)',
-      description: 'מנהלי אזור מנהלים מספר ערים באזור גיאוגרפי',
+      title: '🔐 צור מחוזות',
+      description: 'מנהלי מחוז מנהלים מספר ערים במחוז גיאוגרפי',
       icon: <PublicIcon />,
       color: colors.pastel.orange,
       link: '/areas',
-      linkText: '➤ עבור לדף מנהלי אזור',
+      linkText: '➤ עבור לדף מחוזות',
       steps: [
-        'לחץ על כפתור "+ מנהל אזור חדש"',
+        'לחץ על כפתור "+ מחוז חדש"',
         'בחר משתמש קיים או צור משתמש חדש',
-        'הזן שם אזור (לדוגמה: "מחוז המרכז", "מחוז הצפון")',
-        'הזן קוד אזור (לדוגמה: "CENTER", "NORTH")',
-        'שמור ולחץ "צור מנהל אזור"',
+        'הזן שם מחוז (לדוגמה: "מחוז המרכז", "מחוז הצפון")',
+        'הזן קוד מחוז (לדוגמה: "CENTER", "NORTH")',
+        'שמור ולחץ "צור מחוז"',
       ],
       tip: 'קמפיין קטן? אתה יכול לדלג על שלב זה ולנהל ישירות ערים כ-SuperAdmin',
     },
@@ -84,7 +84,7 @@ export default async function SystemRulesPage() {
         'לחץ על כפתור "+ עיר חדשה"',
         'הזן שם עיר (לדוגמה: "תל אביב-יפו", "ירושלים")',
         'הזן קוד עיר (לדוגמה: "TLV", "JRS")',
-        'בחר מנהל אזור (אם יש) או השאר ריק',
+        'בחר מחוז (אם יש) או השאר ריק',
         'הוסף תיאור אופציונלי',
         'שמור ולחץ "צור עיר"',
       ],
@@ -111,7 +111,7 @@ export default async function SystemRulesPage() {
     {
       order: 4,
       title: '🏘️ צור שכונות',
-      description: 'שכונות הן מחוזות הקמפיין - אזורים גיאוגרפיים בתוך עיר',
+      description: 'שכונות הן אזורי הקמפיין - אזורים גיאוגרפיים בתוך עיר',
       icon: <HomeWorkIcon />,
       color: colors.status.lightGreen,
       link: '/neighborhoods',
@@ -250,10 +250,10 @@ export default async function SystemRulesPage() {
       realWorldExample: `דמיין צבא קטן עם שרשרת פיקוד ברורה:
 
 1. **מפקד על** (אתה - SuperAdmin) - רואה את כולם
-2. **מפקדי גזרות** (Area Managers) - רואים מספר ערים
-3. **מפקדי עיר** (City Coordinators) - רואים עיר אחת
-4. **מפקדי פלוגה** (Activist Coordinators) - רואים 1-5 שכונות
-5. **חיילי שטח** (Activists) - לא נכנסים למערכת
+2. **מפקדי גזרות** (מנהלי מחוז) - רואים מספר ערים
+3. **מפקדי עיר** (רכזי עיר) - רואים עיר אחת
+4. **מפקדי פלוגה** (רכזי פעילים) - רואים 1-5 שכונות
+5. **חיילי שטח** (פעילים) - לא נכנסים למערכת
 
 כל אחד רואה רק את מי שנמצא "מתחתיו" במבנה.`,
       whySuperAdminCares: [
@@ -647,10 +647,10 @@ Activists (\`activists\` table)
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
-                      שלב 1: Area Managers (מנהלי אזור)
+                      שלב 1: מחוזות
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      מנהל מחוז - מנהל מספר ערים באזור גיאוגרפי
+                      מנהל מחוז - מנהל מספר ערים במחוז גיאוגרפי
                     </Typography>
                   </Box>
                   <Chip label="אופציונלי" sx={{ background: colors.pastel.orangeLight, fontWeight: 600 }} />
@@ -776,10 +776,10 @@ Activists (\`activists\` table)
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: '18px', color: colors.neutral[900] }}>
-                      שלב 4: Neighborhoods (שכונות)
+                      שלב 4: שכונות
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      מחוזות קמפיין - אזורים גיאוגרפיים בתוך עיר (פלורנטין, נווה צדק וכו&apos;)
+                      אזורי קמפיין - אזורים גיאוגרפיים בתוך עיר (פלורנטין, נווה צדק וכו&apos;)
                     </Typography>
                   </Box>
                   <Chip label="חובה" sx={{ background: colors.status.red, color: colors.neutral[0], fontWeight: 700 }} />
