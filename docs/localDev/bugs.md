@@ -1,6 +1,97 @@
 
 ---
 
+## Bug #XX+8: TypeScript Build Errors - Invalid Color References (2025-12-22)
+
+### Description
+Build failed with TypeScript errors due to non-existent color properties (`colors.pastel.teal` and `colors.pastel.cyan`) being referenced in system-rules page and wiki search component.
+
+### Reproduction Steps
+1. Run `npm run build`
+2. Build fails with errors:
+   - `system-rules/page.tsx:288`: Property 'teal' does not exist on type 'pastel'
+   - `system-rules/page.tsx:448`: Property 'cyan' does not exist on type 'pastel'
+   - `wiki/components/WikiSearchClient.tsx:49`: 'option' is of type 'unknown'
+
+### Root Cause Analysis
+**1. Invalid Color References:**
+- `app/app/[locale]/(dashboard)/system-rules/page.tsx` referenced `colors.pastel.teal` (line 288) and `colors.pastel.cyan` (line 448)
+- `app/lib/design-system.ts` only defines: `blue`, `blueLight`, `purple`, `purpleLight`, `green`, `greenLight`, `pink`, `pinkLight`, `orange`, `orangeLight`, `yellow`, `yellowLight`, `red`, `redLight`
+- No `teal` or `cyan` colors exist in the palette
+
+**2. TypeScript Type Issue in Autocomplete:**
+- `WikiSearchClient.tsx` used MUI Autocomplete with `freeSolo` mode
+- Function parameters `option` in `getOptionLabel` and `renderOption` were inferred as `unknown` by TypeScript
+- Dynamic import of Autocomplete component prevented proper type inference
+
+### Solution Implemented
+**1. Fixed Color References (system-rules/page.tsx:288, 448):**
+```typescript
+// BEFORE
+color: colors.pastel.teal,  // Line 288 - mobile-first concept
+color: colors.pastel.cyan,  // Line 448 - data-integrity concept
+
+// AFTER
+color: colors.status.blue,  // Line 288 - mobile-first concept
+color: colors.status.blue,  // Line 448 - data-integrity concept
+```
+
+**2. Fixed Autocomplete Type Safety (WikiSearchClient.tsx:56-95):**
+```typescript
+// BEFORE
+getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+renderOption={(props, option) => { ... }}
+
+// AFTER - Added type guards and explicit typing
+type SearchOption = {
+  label: string;
+  value: string;
+  type: 'category';
+  subtitle: string;
+};
+
+getOptionLabel={(option) => {
+  if (typeof option === 'string') return option;
+  if (option && typeof option === 'object' && 'label' in option) {
+    return (option as SearchOption).label;
+  }
+  return '';
+}}
+
+renderOption={(props, option) => {
+  if (typeof option === 'string') return null;
+  if (!option || typeof option !== 'object' || !('label' in option)) return null;
+  const typedOption = option as SearchOption;
+  // Use typedOption.label, typedOption.subtitle
+}}
+
+onChange={(event, value) => {
+  if (value && typeof value === 'object' && 'value' in value) {
+    const typedValue = value as SearchOption;
+    router.push(`/${locale}/wiki/${typedValue.value}`);
+  }
+}}
+```
+
+### Files Modified
+1. `app/app/[locale]/(dashboard)/system-rules/page.tsx` - Fixed two color references
+2. `app/app/[locale]/(dashboard)/wiki/components/WikiSearchClient.tsx` - Added type safety for Autocomplete
+
+### Testing
+```bash
+npm run build  # ✅ Compiled successfully in 11.5s
+npm run dev    # ✅ Server started without errors
+```
+
+### Prevention Rule
+**Before deploying changes:**
+1. Always run `npm run build` to catch TypeScript errors
+2. When using color properties, verify they exist in `lib/design-system.ts`
+3. When using dynamically imported MUI components with `freeSolo`, add explicit type guards
+4. Use type-safe color constants instead of guessing color names
+
+---
+
 ## Bug #XX+7: Excel Upload Preview Table Empty with "(חובה)" Column Suffix (2025-12-22)
 
 ### Description
@@ -8737,3 +8828,191 @@ export default function Page() {
 **Commit:** e6f0930
 
 ---
+
+## Bug #171: System Rules Cross-Tab Search Not Displaying Results
+
+**Date:** 2025-12-22  
+**Severity:** Medium  
+**Risk Level:** 🔹 LOW (UI enhancement)  
+**Status:** Fixed  
+**Commit:** ab2f711
+
+### Symptom
+When searching for "סיסמה" (password) on the Architecture Concepts tab, search counter showed "נמצאו 2 שלבים מתוך 6" (found 2 steps out of 6) but displayed "לא נמצאו תוצאות" (no results found).
+
+### Root Cause
+**File:** `app/app/components/system-rules/SystemRulesClient.tsx`  
+**Lines:** 241, 290
+
+Conditional rendering logic only showed results when:
+- Active tab matched the results, OR
+- Both tabs had results (cross-tab mode)
+
+When searching from Architecture tab for content only existing in Setup tab, neither condition was true, preventing display of valid search results.
+
+**Broken Logic:**
+```typescript
+// Line 241 - Architecture Concepts
+{(activeTab === 'architecture' || (showBothTabs && hasConceptResults)) && (
+  <ArchitectureConceptsGrid />
+)}
+
+// Line 290 - Setup Steps  
+{(activeTab === 'setup' || (showBothTabs && hasStepResults)) && (
+  <SetupStepsGrid />
+)}
+```
+
+**Problem:** If user is on Architecture tab and searches for "סיסמה", results exist only in Setup tab:
+- `activeTab === 'architecture'` ✗ (false for setup section)
+- `showBothTabs && hasStepResults` ✗ (showBothTabs requires BOTH to have results)
+- Result: Setup section doesn't render despite having valid search results
+
+### Solution
+Added fallback condition to show results even when active tab doesn't match, as long as there are results in that section and no results in the other section:
+
+```typescript
+// Line 241 - Architecture Concepts
+{(activeTab === 'architecture' || 
+  (showBothTabs && hasConceptResults) || 
+  (isSearching && !hasStepResults && hasConceptResults)) && (
+  <ArchitectureConceptsGrid />
+)}
+
+// Line 290 - Setup Steps
+{(activeTab === 'setup' || 
+  (showBothTabs && hasStepResults) || 
+  (isSearching && !hasConceptResults && hasStepResults)) && (
+  <SetupStepsGrid />
+)}
+```
+
+**Logic Flow:**
+1. Show section if it's the active tab
+2. Show section if searching with results in both tabs (cross-tab mode)
+3. **NEW:** Show section if searching with results ONLY in this section (fallback)
+
+### Result
+✅ Search correctly displays results from non-active tab when only one tab has matches
+✅ Cross-tab mode still works when both tabs have results  
+✅ Single-tab mode works when no search is active
+✅ Hebrew search terms work correctly across all sections
+
+### Prevention Rule
+**When implementing cross-tab search, ALWAYS handle three scenarios:**
+
+1. **Active Tab Display:** Show content based on user's selected tab
+2. **Cross-Tab Display:** Show both tabs when search has results in both
+3. **Single-Result Fallback:** Show results even when active tab doesn't match, if only one tab has results
+
+**Pattern:**
+```typescript
+const hasConceptResults = filteredConcepts.length > 0;
+const hasStepResults = filteredSteps.length > 0;
+const isSearching = searchQuery.trim().length > 0;
+const showBothTabs = isSearching && hasConceptResults && hasStepResults;
+
+// ❌ INCOMPLETE - Missing fallback
+{(activeTab === 'tab1' || (showBothTabs && hasResults1)) && <Tab1Content />}
+
+// ✅ COMPLETE - All three scenarios
+{(activeTab === 'tab1' || 
+  (showBothTabs && hasResults1) || 
+  (isSearching && !hasResults2 && hasResults1)) && <Tab1Content />}
+```
+
+**Applies to:** Multi-tab search interfaces, conditional content display  
+**Category:** UI Logic / Search UX  
+**Related Feature:** System Rules Architecture Concepts (commit ab2f711)
+
+---
+
+## Bug #172: React Key Prop Warning in Wiki Search
+
+**Date:** 2025-12-22  
+**Severity:** Low  
+**Risk Level:** 🔹 LOW (console warning)  
+**Status:** Fixed  
+**Commit:** ab2f711
+
+### Symptom
+Console warning: "A props object containing a 'key' prop is being spread into JSX"
+
+**Component:** `app/app/[locale]/(dashboard)/wiki/components/WikiSearchClient.tsx`  
+**Line:** 60 (after user's linter changes)
+
+### Root Cause
+In MUI Autocomplete's `renderOption` function, spreading `{...props}` which included React's `key` prop:
+
+```typescript
+renderOption={(props, option) => {
+  return (
+    <Box
+      component="li"
+      {...props}  // ❌ This includes 'key', causing warning
+      sx={{ ... }}
+    >
+```
+
+React requires that `key` props be passed directly to JSX elements, not spread from objects. This is a React best practice to ensure proper reconciliation.
+
+### Solution
+Destructured `key` from props and passed it directly to JSX:
+
+```typescript
+renderOption={(props, option) => {
+  if (typeof option === 'string') return null;
+  if (!option || typeof option !== 'object' || !('label' in option)) return null;
+  
+  const typedOption = option as SearchOption;
+  const { key, ...otherProps } = props;  // Destructure key separately
+  
+  return (
+    <Box
+      key={key}           // ✅ Pass key directly
+      component="li"
+      {...otherProps}     // ✅ Spread remaining props
+      sx={{ ... }}
+    >
+```
+
+### Result
+✅ Console warning eliminated  
+✅ React reconciliation works correctly  
+✅ Autocomplete functionality unchanged  
+✅ Type safety maintained with proper type guards
+
+### Prevention Rule
+**NEVER spread props containing React's special props (`key`, `ref`) into JSX**
+
+Instead, destructure them first:
+
+**Pattern:**
+```typescript
+// ❌ WRONG - Spreads key/ref
+function Component({ renderItem }) {
+  return items.map((item, props) => (
+    <div {...props}>{item}</div>
+  ));
+}
+
+// ✅ CORRECT - Destructure key/ref first
+function Component({ renderItem }) {
+  return items.map((item, props) => {
+    const { key, ref, ...otherProps } = props;
+    return (
+      <div key={key} ref={ref} {...otherProps}>
+        {item}
+      </div>
+    );
+  });
+}
+```
+
+**Applies to:** All React components receiving props with `key` or `ref`  
+**Category:** React Best Practices / MUI Integration  
+**Related:** MUI Autocomplete `renderOption` prop  
+**Compliance:** React 18+ strict mode requirements
+
+---
+
