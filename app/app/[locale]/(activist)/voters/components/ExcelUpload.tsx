@@ -78,9 +78,10 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper function to normalize column names (remove "(חובה)" suffix)
+  // Helper function to normalize column names (remove "(חובה)" suffix and trim whitespace)
   const normalizeColumnName = (colName: string): string => {
-    return colName.replace(/\s*\(חובה\)\s*$/, '').trim();
+    // First trim the string, then remove "(חובה)" suffix, then trim again
+    return colName.trim().replace(/\s*\(חובה\)\s*$/, '').trim();
   };
 
   // Helper function to create column mapping

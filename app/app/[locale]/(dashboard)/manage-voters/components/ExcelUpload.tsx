@@ -108,10 +108,12 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       const requiredColumns = ['שם', 'טלפון'];
       const firstRow = jsonData[0];
 
-      // Check if required columns exist (allow with or without "(חובה)" suffix)
+      // Check if required columns exist (allow with or without "(חובה)" suffix, and trim whitespace)
       const missingColumns = requiredColumns.filter(col => {
-        const hasExactMatch = col in firstRow;
-        const hasWithSuffix = `${col} (חובה)` in firstRow;
+        // Check all column names (trimmed) for matches
+        const columnNames = Object.keys(firstRow).map(k => k.trim());
+        const hasExactMatch = columnNames.includes(col);
+        const hasWithSuffix = columnNames.includes(`${col} (חובה)`);
         return !hasExactMatch && !hasWithSuffix;
       });
 
@@ -125,10 +127,17 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       setPreview(jsonData.slice(0, 5));
 
       // Check for duplicates
-      // Support columns with or without "(חובה)" suffix
+      // Support columns with or without "(חובה)" suffix and handle whitespace
       const voters = jsonData.map((row) => {
         const getField = (name: string, altName?: string): string => {
-          const value = row[name] || (altName ? row[altName] : undefined);
+          // Try exact match first
+          let value = row[name];
+          // Try with trailing space
+          if (!value) value = row[`${name} `];
+          // Try altName (with suffix)
+          if (!value && altName) value = row[altName];
+          // Try altName with trailing space
+          if (!value && altName) value = row[`${altName} `];
           return value?.toString().trim() || '';
         };
 
