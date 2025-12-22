@@ -1,3 +1,9 @@
+# Bug Tracking Log
+
+**IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
+- **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
+- **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
+- **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
 
 ---
 

@@ -70,6 +70,7 @@ function WikiSearchClientComponent({ categories, locale }: WikiSearchClientProps
               key={key}
               component="li"
               {...otherProps}
+              data-testid="wiki-search-result"
               sx={{
                 p: 2,
                 '&:hover': {
@@ -99,6 +100,7 @@ function WikiSearchClientComponent({ categories, locale }: WikiSearchClientProps
             {...params}
             placeholder="חפש בויקי... (קטגוריות, מאמרים, נושאים)"
             fullWidth
+            data-testid="wiki-search-input"
             InputProps={{
               ...params.InputProps,
               startAdornment: (

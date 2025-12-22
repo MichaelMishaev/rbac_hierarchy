@@ -8,7 +8,16 @@
  */
 
 export async function register() {
-  // Only run on server-side
+  // Initialize Sentry first
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./sentry.server.config');
+  }
+
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    await import('./sentry.edge.config');
+  }
+
+  // Then initialize global error handlers
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { initializeGlobalErrorHandlers } = await import('./lib/global-error-handlers');
     initializeGlobalErrorHandlers();
