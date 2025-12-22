@@ -269,6 +269,10 @@ export async function incrementWikiPageView(pageId: string): Promise<{
       },
     });
 
+    // 🚀 PERFORMANCE: Invalidate affected caches after mutation
+    wikiCache.invalidatePattern(/^wiki:popular:/); // Popular pages (viewCount changed)
+    wikiCache.invalidatePattern(new RegExp(`^wiki:recent:.*:${user.id}$`)); // User's recent pages
+
     return { success: true };
   } catch (error) {
     console.error('Error incrementing page view:', error);

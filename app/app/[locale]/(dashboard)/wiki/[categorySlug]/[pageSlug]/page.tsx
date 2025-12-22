@@ -44,8 +44,11 @@ export default async function WikiPageView({
 
   const page = result.page;
 
-  // Increment view count (async, don't wait)
-  incrementWikiPageView(page.id);
+  // Increment view count (fire-and-forget with error handling)
+  incrementWikiPageView(page.id).catch((error) => {
+    // Log error but don't block page render - analytics are non-critical
+    console.error('[Wiki] Failed to increment view count:', error);
+  });
 
   return (
     <Box

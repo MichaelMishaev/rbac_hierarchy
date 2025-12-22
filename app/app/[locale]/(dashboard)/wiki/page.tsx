@@ -16,10 +16,10 @@ export const metadata = {
   description: 'מרכז הידע המלא של מערכת ניהול הקמפיין - למנהלי על בלבד',
 };
 
-// 🚀 PERFORMANCE: Server-side caching
-export const revalidate = 300; // 5 minutes
+// 🚀 PERFORMANCE: Caching handled by wiki-cache.ts in server actions
+// Note: Page must be dynamic due to auth() call - Next.js ISR not applicable
+// Caching strategy: In-memory cache in getWikiCategories/getPopularWikiPages (5min TTL)
 export const dynamic = 'force-dynamic'; // Required for auth()
-export const fetchCache = 'force-cache';
 
 export default async function WikiIndexPage() {
   const session = await auth();
