@@ -274,7 +274,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
         voter.contactStatus || '',
         voter.voterNeighborhood || '',
         voter.voterCity || '',
-        voter.createdAt ? format(new Date(voter.createdAt), 'dd/MM/yyyy HH:mm', { locale: he }) : '',
+        voter.insertedAt ? format(new Date(voter.insertedAt), 'dd/MM/yyyy HH:mm', { locale: he }) : '',
       ]);
 
       const csvContent = [
