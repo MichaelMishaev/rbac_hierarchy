@@ -256,7 +256,7 @@ Must work perfectly on iPhone 14 (390x844).
 2. Regression test (FAILS before fix)
 3. Minimal fix (change only what's needed)
 4. Run relevant tests
-5. Document in `/docs/localDev/bugs.md`
+5. Document in `/docs/bugs/bugs-current.md`
 
 ### Pre-Production
 

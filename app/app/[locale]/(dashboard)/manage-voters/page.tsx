@@ -1,11 +1,9 @@
 /**
- * 🔒 LOCKED: Manage Voters Page - DO NOT MODIFY
+ * ✅ UNLOCKED: Manage Voters Page - Pagination Added (2025-12-22)
  *
- * Last locked: 2025-12-20
- * Reason: Stable voter management with Excel import functionality
- *
- * ⚠️ WARNING: This page is locked for modifications.
- * Any changes require explicit approval.
+ * Last modified: 2025-12-22
+ * Change: Added pagination support to VotersList (was limited to 100 voters)
+ * Reason: Critical bug - election campaign system must show ALL voters
  *
  * Features:
  * - Tabbed interface (List, Statistics, Duplicates)
@@ -14,11 +12,12 @@
  * - RBAC-aware (SuperAdmin sees duplicates tab)
  * - Mobile-responsive
  * - Hebrew-only, RTL layout
+ * - Pagination (25/50/100/200 rows per page)
  *
- * Related files (also locked):
+ * Related files:
  * - VotersPageClient.tsx
  * - components/ExcelUpload.tsx
- * - components/VotersList.tsx
+ * - components/VotersList.tsx ✅ Modified: Added pagination
  * - components/VoterForm.tsx
  * - components/VoterDetails.tsx
  * - components/VoterStatistics.tsx

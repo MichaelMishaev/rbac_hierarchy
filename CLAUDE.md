@@ -24,7 +24,7 @@ npm run dev                                           # → http://localhost:320
 
 **For 🔴 HIGH RISK changes (RBAC, auth, data filters):**
 - Read `/docs/infrastructure/roles/PERMISSIONS_MATRIX.md`
-- Read `/docs/infrastructure/bugs.md` (check for similar issues)
+- Read `/docs/bugs/bugs-current.md` (check for similar issues)
 - Propose explicit plan BEFORE coding
 - Include negative tests (verify access is DENIED)
 
@@ -201,7 +201,7 @@ activistCoordinator: 'activist.coordinator@telaviv.test'
 2. Regression test (fails before, passes after)
 3. Minimal fix (diff-first)
 4. Run relevant tests
-5. Document in `docs/infrastructure/bugs.md` with prevention rule
+5. Document in `docs/bugs/bugs-current.md` with prevention rule
 
 ### Backend Guidelines
 1. Prisma schema first

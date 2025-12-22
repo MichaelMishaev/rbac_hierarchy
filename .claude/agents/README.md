@@ -297,7 +297,7 @@ Each agent has a unique color for easy identification:
 3. 🔵/🟢 Developer: Root cause analysis → write regression test
 4. 🔵/🟢 Developer: Implement minimal fix → run tests
 5. 🔴 QA Tester: Verify fix → confirm regression test passes
-6. 🟡 Project Manager: Document in bugs.md → close ticket
+6. 🟡 Project Manager: Document in bugs-current.md → close ticket
 ```
 
 ---
@@ -311,7 +311,8 @@ All agents reference the campaign system documentation:
 - **`/docs/syAnalyse/mvp/03_API_DESIGN.md`** - Campaign API patterns
 - **`/docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md`** - Campaign UI designs
 - **`/docs/syAnalyse/PRD_2025_Updated_Industry_Standards.md`** - Campaign requirements
-- **`/docs/localDev/bugs.md`** - Known bugs and prevention rules
+- **`/docs/bugs/bugs-current.md`** - Current bugs and prevention rules
+- **`/docs/bugs/bugs-archive-*.md`** - Historical bug archives
 
 ---
 

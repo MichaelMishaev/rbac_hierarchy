@@ -208,7 +208,8 @@ app/CLAUDE.md ............................... 🔒 LOCKED (Development protocols
 docs/infrastructure/base/baseRules.md ....... 🔒 LOCKED (Development rules)
 docs/syAnalyse/ ............................. 🔒 LOCKED (System analysis docs)
 docs/testing/ ............................... 🔒 LOCKED (Testing guides)
-docs/localDev/bugs.md ....................... 🔒 LOCKED (Bug prevention log)
+docs/bugs/bugs-current.md ................... 🔒 LOCKED (Bug prevention log)
+docs/bugs/bugs-archive-*.md ................. 🔒 LOCKED (Historical bug archives)
 README.md ................................... 🔒 LOCKED (Project overview)
 ```
 
@@ -345,7 +346,7 @@ Even with permission:
 
 ### Rule 4: Emergency Override
 Only for **production-down emergencies**:
-1. Document the emergency in `docs/localDev/bugs.md`
+1. Document the emergency in `docs/bugs/bugs-current.md`
 2. Make minimal fix to restore service
 3. Immediately notify team
 4. Create follow-up task for proper fix
@@ -453,7 +454,7 @@ When in doubt: **Ask before editing!**
 ### For Bug Fixes:
 1. ✅ **First**: Try to fix in non-locked code
 2. ✅ **If locked file needed**: Request permission with bug details
-3. ✅ **After fix**: Add entry to `docs/localDev/bugs.md`
+3. ✅ **After fix**: Add entry to `docs/bugs/bugs-current.md`
 4. ✅ **Prevention rule**: Document how to avoid this pattern
 
 ### For Refactoring:

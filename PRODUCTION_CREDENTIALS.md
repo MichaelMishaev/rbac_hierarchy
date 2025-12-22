@@ -138,4 +138,4 @@ All credentials have been verified in:
 - ✅ Production seed file (`app/prisma/seed.ts`)
 - ✅ E2E test fixtures (`tests/e2e/fixtures/auth.fixture.ts`)
 - ✅ Multi-city isolation tests updated to use production credentials
-- ✅ Documentation logged in `/docs/localDev/bugs.md`
+- ✅ Documentation logged in `/docs/bugs/bugs-archive-2025-12-22.md`

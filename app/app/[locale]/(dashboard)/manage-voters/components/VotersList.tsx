@@ -8,6 +8,7 @@
  * - Mobile-responsive
  * - Visibility-aware (only shows visible voters)
  * - Actions (view, edit, delete)
+ * - Pagination for large datasets
  */
 
 'use client';
@@ -33,6 +34,7 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
+  TablePagination,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -64,9 +66,19 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
   const [supportFilter, setSupportFilter] = useState('');
   const [contactFilter, setContactFilter] = useState('');
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [totalVoters, setTotalVoters] = useState(0);
+
   useEffect(() => {
     loadVoters();
-  }, [supportFilter, contactFilter, refreshKey]);
+  }, [supportFilter, contactFilter, refreshKey, page, rowsPerPage]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [supportFilter, contactFilter]);
 
   const loadVoters = async () => {
     setLoading(true);
@@ -77,13 +89,15 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
         isActive: true,
         supportLevel: supportFilter || undefined,
         contactStatus: contactFilter || undefined,
-        limit: 100,
+        limit: rowsPerPage,
+        offset: page * rowsPerPage,
       }),
       getVotersWithDuplicates(),
     ]);
 
     if (votersResult.success) {
       setVoters(votersResult.data);
+      setTotalVoters(votersResult.total);
     } else {
       setError(votersResult.error);
     }
@@ -162,7 +176,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
         }}
       >
         <Typography variant="h5" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-          רשימת בוחרים ({filteredVoters.length})
+          רשימת בוחרים ({searchQuery ? filteredVoters.length : totalVoters})
         </Typography>
       </Box>
 
@@ -494,6 +508,39 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey }: VotersListP
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Pagination */}
+      <TablePagination
+        component="div"
+        count={searchQuery ? filteredVoters.length : totalVoters}
+        page={page}
+        onPageChange={(_, newPage) => {
+          setPage(newPage);
+        }}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={(event) => {
+          setRowsPerPage(parseInt(event.target.value, 10));
+          setPage(0);
+        }}
+        rowsPerPageOptions={[25, 50, 100, 200]}
+        labelRowsPerPage="שורות לעמוד:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} מתוך ${count}`}
+        sx={{
+          direction: 'rtl',
+          '.MuiTablePagination-toolbar': {
+            flexDirection: 'row-reverse',
+          },
+          '.MuiTablePagination-selectLabel': {
+            marginInlineStart: 0,
+            marginInlineEnd: 'auto',
+          },
+          '.MuiTablePagination-displayedRows': {
+            marginInlineStart: 'auto',
+            marginInlineEnd: 0,
+          },
+          mt: 2,
+        }}
+      />
 
       {/* Duplicate Voters Dialog */}
       {selectedDuplicateVoter && (

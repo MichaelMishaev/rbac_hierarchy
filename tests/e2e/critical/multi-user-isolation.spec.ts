@@ -15,7 +15,7 @@
  * - GDPR Violation: Improper data isolation
  * - Trust Loss: Complete loss of user confidence
  *
- * @see /Users/michaelmishayev/Desktop/Projects/corporations/docs/localDev/bugs.md - Bug #999
+ * @see /Users/michaelmishayev/Desktop/Projects/corporations/docs/bugs/bugs-archive-2025-12-22.md - Bug #999
  */
 
 import { test, expect, Page } from '@playwright/test';
