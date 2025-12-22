@@ -24,7 +24,6 @@ import LocationCityIcon from '@mui/icons-material/LocationCity';
 import PeopleIcon from '@mui/icons-material/People';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import GroupsIcon from '@mui/icons-material/Groups';
-import WarningIcon from '@mui/icons-material/Warning';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Link from 'next/link';
@@ -527,23 +526,6 @@ Activists (\`activists\` table)
           </Box>
         </Box>
       </Box>
-
-      {/* Critical Warning */}
-      <Alert severity="error" sx={{ mb: 4, borderRadius: borderRadius.lg }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <WarningIcon sx={{ fontSize: 28 }} />
-          <Box>
-            <Typography sx={{ fontWeight: 700, fontSize: '16px', mb: 0.5 }}>
-              ⚠️ קריטי: החלף את משתמש ה-SuperAdmin לפני כל דבר אחר!
-            </Typography>
-            <Typography sx={{ fontSize: '14px' }}>
-              המערכת יוצרת משתמש דמו בשם <code>superadmin@election.test</code>. אתה חייב להחליף את
-              הפרטים שלו (אימייל, שם, טלפון, סיסמה) לפני שתתחיל לעבוד. השתמש ב-Prisma Studio:{' '}
-              <code>npm run db:studio</code>
-            </Typography>
-          </Box>
-        </Box>
-      </Alert>
 
       {/* Campaign Organizational Hierarchy - Visual Flow */}
       <Card
