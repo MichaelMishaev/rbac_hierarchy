@@ -788,3 +788,108 @@ model VoterEditHistory {
   @@index([editedAt(sort: Desc)]) // For recent edits
   @@map("voter_edit_history")
 }
+
+// ============================================
+// WIKI SYSTEM (v2.4: SuperAdmin Knowledge Base)
+// ============================================
+model WikiCategory {
+  id String @id @default(uuid())
+
+  // Display info
+  name        String  // Hebrew: "תפקידים והרשאות"
+  nameEn      String  @map("name_en") // English reference: "Roles & Permissions"
+  slug        String  @unique // URL-friendly: "roles-permissions"
+  description String? @db.Text
+  icon        String? // MUI icon name: "Security", "People", "Settings"
+
+  // Ordering & visibility
+  order    Int     @default(0)
+  isActive Boolean @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  pages WikiPage[]
+
+  @@index([slug])
+  @@index([order])
+  @@index([isActive])
+  @@map("wiki_categories")
+}
+
+model WikiPage {
+  id String @id @default(uuid())
+
+  // Page content
+  title   String // Hebrew: "מטריצת הרשאות מלאה"
+  titleEn String? @map("title_en") // English reference: "Full Permissions Matrix"
+  slug    String  @unique // URL-friendly: "permissions-matrix"
+  excerpt String? @db.Text // Short summary for cards/search
+  content String  @db.Text // Full markdown/MDX content
+
+  // Categorization
+  categoryId String       @map("category_id")
+  category   WikiCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Tags for search/filtering (stored as array)
+  tags String[] @default([]) // ["rbac", "permissions", "city-coordinator"]
+
+  // Ordering & visibility
+  order       Int     @default(0)
+  isPublished Boolean @default(true) @map("is_published")
+
+  // Analytics
+  viewCount      Int       @default(0) @map("view_count")
+  lastViewedBy   String?   @map("last_viewed_by") // User ID
+  lastViewedAt   DateTime? @map("last_viewed_at") @db.Timestamptz
+
+  // SEO & metadata
+  metaTitle       String? @map("meta_title") @db.Text
+  metaDescription String? @map("meta_description") @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  versions WikiPageVersion[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([tags])
+  @@index([isPublished])
+  @@index([viewCount(sort: Desc)]) // For "popular pages"
+  @@index([lastViewedAt(sort: Desc)]) // For "recently viewed"
+  @@map("wiki_pages")
+}
+
+// ============================================
+// WIKI PAGE VERSIONS (Optional: Version Control)
+// ============================================
+model WikiPageVersion {
+  id BigInt @id @default(autoincrement())
+
+  // Relations
+  pageId String   @map("page_id")
+  page   WikiPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  // Version snapshot
+  title      String
+  content    String @db.Text
+  excerpt    String? @db.Text
+  versionNum Int    @map("version_num") // 1, 2, 3...
+
+  // Audit trail
+  createdByUserId   String @map("created_by_user_id")
+  createdByUserName String @map("created_by_user_name") // Denormalized
+  changeReason      String? @map("change_reason") @db.Text // Why this edit?
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([pageId])
+  @@index([createdAt(sort: Desc)])
+  @@map("wiki_page_versions")
+}
