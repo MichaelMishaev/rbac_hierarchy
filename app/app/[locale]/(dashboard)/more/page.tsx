@@ -12,6 +12,8 @@ import HelpIcon from '@mui/icons-material/Help';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import RuleIcon from '@mui/icons-material/Rule';
 import { auth } from '@/auth.config';
 import { redirect } from 'next/navigation';
 import { LogoutButton } from '@/app/components/LogoutButton';
@@ -87,6 +89,39 @@ export default async function MorePage() {
                     <BusinessIcon sx={{ color: colors.status.purple }} />
                   </ListItemIcon>
                   <ListItemText primary="שכונות" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+            </>
+          )}
+
+          {/* System Rules - SuperAdmin only */}
+          {role === 'SUPERADMIN' && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton href="/system-rules">
+                  <ListItemIcon>
+                    <RuleIcon sx={{ color: colors.status.blue }} />
+                  </ListItemIcon>
+                  <ListItemText primary="כללי מערכת" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+            </>
+          )}
+
+          {/* Wiki - SuperAdmin only */}
+          {role === 'SUPERADMIN' && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton href="/wiki">
+                  <ListItemIcon>
+                    <MenuBookIcon sx={{ color: colors.primary.main }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="מערכת ויקי"
+                    secondary="מדריך מנהל על"
+                  />
                 </ListItemButton>
               </ListItem>
               <Divider />

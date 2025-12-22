@@ -819,35 +819,91 @@ function NavigationV3Component({ role, userEmail, roleDescription, stats }: Navi
         </Box>
       )}
 
-      {/* Mobile Hamburger Button */}
+      {/* Mobile Header with Hamburger Button and Logo */}
       {isMobile && (
         <Fade in>
           <Box
             sx={{
               position: 'fixed',
-              top: 16,
-              [isRTL ? 'right' : 'left']: 16,
+              top: 0,
+              left: 0,
+              right: 0,
               zIndex: 1300,
+              backgroundColor: colors.neutral[0],
+              boxShadow: shadows.soft,
+              borderBottom: `1px solid ${colors.neutral[200]}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              px: 2,
+              py: 1.5,
+              direction: isRTL ? 'rtl' : 'ltr',
             }}
           >
+            {/* Hamburger Menu Button */}
             <IconButton
               onClick={handleDrawerToggle}
               sx={{
                 backgroundColor: colors.primary,
                 color: '#fff',
-                boxShadow: shadows.large,
+                boxShadow: shadows.medium,
                 '&:hover': {
                   backgroundColor: colors.primary,
                   filter: 'brightness(0.95)',
                   transform: 'scale(1.05)',
                 },
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 transition: 'all 0.2s ease',
               }}
             >
               <MenuIcon />
             </IconButton>
+
+            {/* Logo and Title */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                flex: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: borderRadius.md,
+                  overflow: 'hidden',
+                  boxShadow: shadows.soft,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: colors.neutral[100],
+                }}
+              >
+                <img
+                  src="/logo.png"
+                  alt="מערכת ניהול"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                />
+              </Box>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '16px',
+                  color: colors.neutral[900],
+                  lineHeight: 1,
+                }}
+              >
+                מערכת ניהול
+              </Typography>
+            </Box>
           </Box>
         </Fade>
       )}

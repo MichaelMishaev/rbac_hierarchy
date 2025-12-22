@@ -88,7 +88,7 @@ export default async function DashboardLayout({
           />
         </Box>
 
-        {/* Main Content - Mobile: bottom padding for nav, Desktop: sidebar margin */}
+        {/* Main Content - Mobile: top + bottom padding, Desktop: sidebar margin */}
         <Box
           sx={{
             flex: 1,
@@ -96,6 +96,7 @@ export default async function DashboardLayout({
             ml: { xs: 0, md: isRTL ? 0 : '280px' },
             width: { xs: '100%', md: 'calc(100% - 280px)' },
             minHeight: '100vh',
+            pt: { xs: '68px', md: 0 }, // Top padding for mobile header
             pb: { xs: '64px', md: 0 }, // Bottom padding for mobile nav bar
           }}
         >
