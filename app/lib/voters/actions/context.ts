@@ -25,6 +25,7 @@ export async function getUserContext(): Promise<UserContext> {
     where: { id: session.user.id },
     select: {
       id: true,
+      email: true,
       fullName: true,
       role: true,
       areaManager: {
@@ -55,6 +56,7 @@ export async function getUserContext(): Promise<UserContext> {
   // Build UserContext based on role
   const context: UserContext = {
     userId: user.id,
+    email: user.email,
     role: user.role as UserContext['role'],
     fullName: user.fullName,
   };

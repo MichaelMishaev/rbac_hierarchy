@@ -37,5 +37,9 @@ export default async function VotersPage() {
 
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
 
-  return <VotersPageClient isSuperAdmin={isSuperAdmin} />;
+  // Deleted voters tab: ONLY for dima@gmail.com (or all users in development)
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const canSeeDeletedVoters = isDevelopment || session.user.email === 'dima@gmail.com';
+
+  return <VotersPageClient isSuperAdmin={isSuperAdmin} canSeeDeletedVoters={canSeeDeletedVoters} />;
 }

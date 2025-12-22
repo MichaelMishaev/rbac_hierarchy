@@ -95,6 +95,7 @@ export interface UpdateVoterInput {
  */
 export interface UserContext {
   userId: string;
+  email: string; // Added for user-specific permissions (e.g., deleted voters for dima@gmail.com)
   role: 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
   fullName: string;
 

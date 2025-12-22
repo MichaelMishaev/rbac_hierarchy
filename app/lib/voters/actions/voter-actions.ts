@@ -115,7 +115,7 @@ export async function getVisibleVoters(options?: {
  * Get all DELETED voters (soft-deleted, isActive = false)
  *
  * RBAC:
- * - Production: SuperAdmin ONLY
+ * - Production: ONLY dima@gmail.com (specific user, not role-based)
  * - Development: All users (for testing)
  */
 export async function getDeletedVoters(options?: {
@@ -128,11 +128,11 @@ export async function getDeletedVoters(options?: {
     const viewer = await getUserContext();
     const isDevelopment = process.env.NODE_ENV === 'development';
 
-    // RBAC: SuperAdmin only in production, all users in dev
-    if (!isDevelopment && viewer.role !== 'SUPERADMIN') {
+    // RBAC: ONLY dima@gmail.com in production, all users in dev
+    if (!isDevelopment && viewer.email !== 'dima@gmail.com') {
       return {
         success: false,
-        error: 'Only SuperAdmin can view deleted voters',
+        error: 'Access denied: Only authorized user can view deleted voters',
       };
     }
 

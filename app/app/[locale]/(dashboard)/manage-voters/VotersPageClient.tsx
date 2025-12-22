@@ -37,9 +37,10 @@ import type { Voter } from '@/lib/voters';
 
 type VotersPageClientProps = {
   isSuperAdmin: boolean;
+  canSeeDeletedVoters: boolean;
 };
 
-export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps) {
+export default function VotersPageClient({ isSuperAdmin, canSeeDeletedVoters }: VotersPageClientProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -103,15 +104,17 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
           <Tab label="רשימת בוחרים" />
           <Tab label="סטטיסטיקות" />
           {isSuperAdmin && <Tab label="כפילויות" />}
-          <Tab
-            label="בוחרים מחוקים"
-            sx={{
-              color: 'error.main',
-              '&.Mui-selected': {
-                color: 'error.dark',
-              },
-            }}
-          />
+          {canSeeDeletedVoters && (
+            <Tab
+              label="בוחרים מחוקים"
+              sx={{
+                color: 'error.main',
+                '&.Mui-selected': {
+                  color: 'error.dark',
+                },
+              }}
+            />
+          )}
         </Tabs>
 
         {activeTab === 0 && (
@@ -182,7 +185,13 @@ export default function VotersPageClient({ isSuperAdmin }: VotersPageClientProps
 
       {activeTab === 2 && isSuperAdmin && <DuplicatesDashboard />}
 
-      {activeTab === (isSuperAdmin ? 3 : 2) && <DeletedVotersList />}
+      {/* Deleted Voters tab index calculation:
+          - If both isSuperAdmin AND canSeeDeletedVoters: index 3 (after Duplicates)
+          - If only canSeeDeletedVoters (not SuperAdmin): index 2
+          - Else: not rendered
+      */}
+      {activeTab === (isSuperAdmin && canSeeDeletedVoters ? 3 : canSeeDeletedVoters ? 2 : -1) &&
+        canSeeDeletedVoters && <DeletedVotersList />}
 
       {/* Create Dialog */}
       <Dialog
