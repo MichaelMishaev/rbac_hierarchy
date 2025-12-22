@@ -86,6 +86,9 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
   const [selectedVoterIds, setSelectedVoterIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  // Export state
+  const [exporting, setExporting] = useState(false);
+
   useEffect(() => {
     loadVoters();
   }, [supportFilter, contactFilter, refreshKey, page, rowsPerPage]);
@@ -221,42 +224,80 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
     return roleMap[role] || role;
   };
 
-  const handleExportToExcel = () => {
-    // Export filtered voters to Excel (CSV format)
-    const votersToExport = searchQuery ? filteredVoters : voters;
+  const handleExportToExcel = async () => {
+    // Export ALL voters (not just current page) - fetch without pagination
+    setExporting(true);
+    setError(null);
 
-    if (votersToExport.length === 0) {
-      setError('אין בוחרים לייצוא');
-      return;
+    try {
+      // Fetch ALL voters with current filters (no pagination limit)
+      const result = await getVisibleVoters({
+        isActive: true,
+        supportLevel: supportFilter || undefined,
+        contactStatus: contactFilter || undefined,
+        // NO limit/offset - fetch ALL voters
+      });
+
+      if (!result.success) {
+        setError(result.error);
+        setExporting(false);
+        return;
+      }
+
+      const allVoters = result.data;
+
+      // Apply client-side search filter if active
+      const votersToExport = searchQuery
+        ? allVoters.filter((voter) => {
+            const searchLower = searchQuery.toLowerCase();
+            return (
+              voter.fullName.toLowerCase().includes(searchLower) ||
+              voter.phone.includes(searchLower) ||
+              (voter.email && voter.email.toLowerCase().includes(searchLower))
+            );
+          })
+        : allVoters;
+
+      if (votersToExport.length === 0) {
+        setError('אין בוחרים לייצוא');
+        setExporting(false);
+        return;
+      }
+
+      // Create CSV content
+      const headers = ['שם מלא', 'טלפון', 'אימייל', 'רמת תמיכה', 'סטטוס יצירת קשר', 'שכונה', 'עיר', 'תאריך יצירה'];
+      const rows = votersToExport.map((voter) => [
+        voter.fullName,
+        voter.phone,
+        voter.email || '',
+        voter.supportLevel || '',
+        voter.contactStatus || '',
+        voter.neighborhoodName || '',
+        voter.cityName || '',
+        voter.createdAt ? format(new Date(voter.createdAt), 'dd/MM/yyyy HH:mm', { locale: he }) : '',
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      ].join('\n');
+
+      // Add BOM for Excel Hebrew support
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `voters-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      setExporting(false);
+    } catch (err) {
+      console.error('[handleExportToExcel]', err);
+      setError('שגיאה בייצוא הבוחרים');
+      setExporting(false);
     }
-
-    // Create CSV content
-    const headers = ['שם מלא', 'טלפון', 'אימייל', 'רמת תמיכה', 'סטטוס יצירת קשר', 'שכונה', 'עיר', 'תאריך יצירה'];
-    const rows = votersToExport.map((voter) => [
-      voter.fullName,
-      voter.phone,
-      voter.email || '',
-      voter.supportLevel || '',
-      voter.contactStatus || '',
-      voter.neighborhoodName || '',
-      voter.cityName || '',
-      voter.createdAt ? format(new Date(voter.createdAt), 'dd/MM/yyyy HH:mm', { locale: he }) : '',
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    // Add BOM for Excel Hebrew support
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `voters-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   const filteredVoters = voters.filter((voter) => {
@@ -299,7 +340,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
             <Button
               variant="contained"
               onClick={handleExportToExcel}
-              disabled={totalVoters === 0}
+              disabled={totalVoters === 0 || exporting}
               sx={{
                 borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
                 fontSize: { xs: '0.875rem', sm: '1rem' },
@@ -322,8 +363,17 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                 },
               }}
             >
-              <ExportIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
-              ייצוא לאקסל ({searchQuery ? filteredVoters.length : totalVoters})
+              {exporting ? (
+                <>
+                  <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                  מייצא...
+                </>
+              ) : (
+                <>
+                  <ExportIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+                  ייצוא לאקסל ({totalVoters})
+                </>
+              )}
             </Button>
           )}
           {isSuperAdmin && !selectionMode && (
