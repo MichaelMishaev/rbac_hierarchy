@@ -50,6 +50,7 @@ import {
   ContentCopy as DuplicateIcon,
   DeleteSweep as DeleteSweepIcon,
   Close as CloseIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { getVisibleVoters, deleteVoter } from '@/lib/voters/actions/voter-actions';
 import { getVotersWithDuplicates } from '@/app/actions/get-voter-duplicates';
@@ -220,6 +221,44 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
     return roleMap[role] || role;
   };
 
+  const handleExportToExcel = () => {
+    // Export filtered voters to Excel (CSV format)
+    const votersToExport = searchQuery ? filteredVoters : voters;
+
+    if (votersToExport.length === 0) {
+      setError('אין בוחרים לייצוא');
+      return;
+    }
+
+    // Create CSV content
+    const headers = ['שם מלא', 'טלפון', 'אימייל', 'רמת תמיכה', 'סטטוס יצירת קשר', 'שכונה', 'עיר', 'תאריך יצירה'];
+    const rows = votersToExport.map((voter) => [
+      voter.fullName,
+      voter.phone,
+      voter.email || '',
+      voter.supportLevel || '',
+      voter.contactStatus || '',
+      voter.neighborhoodName || '',
+      voter.cityName || '',
+      voter.createdAt ? format(new Date(voter.createdAt), 'dd/MM/yyyy HH:mm', { locale: he }) : '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    // Add BOM for Excel Hebrew support
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `voters-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filteredVoters = voters.filter((voter) => {
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -256,25 +295,57 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {!selectionMode && (
+            <Button
+              variant="contained"
+              onClick={handleExportToExcel}
+              disabled={totalVoters === 0}
+              sx={{
+                borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                minHeight: { xs: 40, sm: 48 },
+                px: { xs: 2.5, sm: 3.5 },
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontWeight: 600,
+                backgroundColor: 'success.main',
+                color: 'white',
+                boxShadow: 'none',
+                '&:hover': {
+                  backgroundColor: 'success.dark',
+                  boxShadow: 2,
+                },
+                '&:disabled': {
+                  backgroundColor: 'grey.300',
+                  color: 'grey.500',
+                },
+              }}
+            >
+              <ExportIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+              ייצוא לאקסל ({searchQuery ? filteredVoters.length : totalVoters})
+            </Button>
+          )}
           {isSuperAdmin && !selectionMode && (
             <Button
               variant="outlined"
               color="error"
               onClick={handleToggleSelectionMode}
               sx={{
-                borderRadius: '20px',
+                borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
                 fontSize: { xs: '0.875rem', sm: '1rem' },
-                minHeight: { xs: 40, sm: 44 },
+                minHeight: { xs: 40, sm: 48 },
                 px: { xs: 2.5, sm: 3.5 },
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                fontWeight: 500,
+                fontWeight: 600,
                 border: '1.5px solid',
                 borderColor: 'error.main',
                 '&:hover': {
                   borderColor: 'error.dark',
                   backgroundColor: 'error.lighter',
+                  borderWidth: '1.5px',
                 },
               }}
             >
