@@ -28,7 +28,14 @@ function WikiSearchClientComponent({ categories, locale }: WikiSearchClientProps
   const router = useRouter();
 
   // Generate search options from categories
-  const searchOptions = categories.map((cat) => ({
+  type SearchOption = {
+    label: string;
+    value: string;
+    type: 'category';
+    subtitle: string;
+  };
+
+  const searchOptions: SearchOption[] = categories.map((cat) => ({
     label: cat.name,
     value: cat.slug,
     type: 'category' as const,
@@ -46,13 +53,23 @@ function WikiSearchClientComponent({ categories, locale }: WikiSearchClientProps
       <Autocomplete
         freeSolo
         options={searchOptions}
-        getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+        getOptionLabel={(option) => {
+          if (typeof option === 'string') return option;
+          if (option && typeof option === 'object' && 'label' in option) {
+            return (option as SearchOption).label;
+          }
+          return '';
+        }}
         renderOption={(props, option) => {
           if (typeof option === 'string') return null;
+          if (!option || typeof option !== 'object' || !('label' in option)) return null;
+          const typedOption = option as SearchOption;
+          const { key, ...otherProps } = props;
           return (
             <Box
+              key={key}
               component="li"
-              {...props}
+              {...otherProps}
               sx={{
                 p: 2,
                 '&:hover': {
@@ -62,18 +79,19 @@ function WikiSearchClientComponent({ categories, locale }: WikiSearchClientProps
             >
               <Box>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: colors.neutral[900] }}>
-                  {option.label}
+                  {typedOption.label}
                 </Typography>
                 <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                  {option.subtitle}
+                  {typedOption.subtitle}
                 </Typography>
               </Box>
             </Box>
           );
         }}
         onChange={(event, value) => {
-          if (value && typeof value !== 'string') {
-            router.push(`/${locale}/wiki/${value.value}`);
+          if (value && typeof value === 'object' && 'value' in value) {
+            const typedValue = value as SearchOption;
+            router.push(`/${locale}/wiki/${typedValue.value}`);
           }
         }}
         renderInput={(params) => (

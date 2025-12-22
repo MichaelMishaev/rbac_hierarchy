@@ -285,7 +285,7 @@ Activists (\`activists\` table)
       order: 5,
       title: 'עיצוב Mobile-First',
       icon: 'PhoneAndroidIcon',
-      color: colors.pastel.teal,
+      color: colors.status.blue,
       realWorldExample: `דמיין רכז שטח שעומד ליד קלפי בשעה 18:00 ביום הבחירות:
 
 • יש לו טלפון בכיס, לא מחשב נייד
@@ -445,7 +445,7 @@ Activists (\`activists\` table)
       order: 9,
       title: 'שלמות נתונים (Data Integrity)',
       icon: 'StorageIcon',
-      color: colors.pastel.cyan,
+      color: colors.status.blue,
       realWorldExample: `דמיין שרכז שכונה מוחק בטעות 50 פעילים במקום להסתיר אותם:
 
 **אם המחיקה קבועה (hard delete):**
