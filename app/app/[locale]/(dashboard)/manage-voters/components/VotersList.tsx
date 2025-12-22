@@ -272,8 +272,8 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
         voter.email || '',
         voter.supportLevel || '',
         voter.contactStatus || '',
-        voter.neighborhoodName || '',
-        voter.cityName || '',
+        voter.voterNeighborhood || '',
+        voter.voterCity || '',
         voter.createdAt ? format(new Date(voter.createdAt), 'dd/MM/yyyy HH:mm', { locale: he }) : '',
       ]);
 
