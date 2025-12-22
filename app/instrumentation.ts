@@ -35,5 +35,18 @@ export async function onRequestError(err: unknown, request: Request, context: { 
   }
 
   const Sentry = await import('@sentry/nextjs');
-  Sentry.captureRequestError(err, request, context);
+
+  // Convert Web API Request to RequestInfo format expected by Sentry
+  const requestInfo = {
+    url: request.url,
+    method: request.method,
+    headers: Object.fromEntries(request.headers.entries()),
+  };
+
+  Sentry.captureException(err, {
+    contexts: {
+      request: requestInfo,
+      nextjs: context,
+    },
+  });
 }
