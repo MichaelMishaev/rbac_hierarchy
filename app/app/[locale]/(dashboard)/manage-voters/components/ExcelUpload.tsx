@@ -147,7 +147,11 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
       }
     } catch (err) {
       console.error('[ExcelUpload] Parse error:', err);
-      setError('שגיאה בקריאת הקובץ. אנא ודא שהקובץ הוא Excel תקין');
+      // More helpful error for Numbers files
+      const errorMessage = selectedFile.name.endsWith('.numbers')
+        ? 'שגיאה בקריאת קובץ Numbers. אנא ייצא את הקובץ מ-Numbers לפורמט Excel (.xlsx) ונסה שוב'
+        : 'שגיאה בקריאת הקובץ. אנא ודא שהקובץ הוא Excel תקין';
+      setError(errorMessage);
       setFile(null);
     }
   };
@@ -208,8 +212,8 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           הוראות העלאה:
         </Typography>
         <Typography variant="body2" component="ul" sx={{ m: 0, pr: 2 }}>
-          <li>פורמטים נתמכים: Excel (.xlsx, .xls) או Numbers (.numbers)</li>
-          <li>משתמשי Mac: מומלץ לייצא מ-Numbers לפורמט Excel לתוצאות מיטביות</li>
+          <li>פורמטים נתמכים: Excel (.xlsx, .xls) בלבד</li>
+          <li>משתמשי Mac: יש לייצא מ-Numbers לפורמט Excel (קובץ → ייצוא → Excel)</li>
           <li>השורה הראשונה חייבת להכיל כותרות עמודות</li>
           <li>עמודות חובה: שם, טלפון</li>
           <li>עמודות אופציונליות: שם משפחה, עיר, מייל</li>
@@ -255,7 +259,7 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
         >
           <input
             type="file"
-            accept=".xlsx,.xls,.numbers"
+            accept=".xlsx,.xls"
             onChange={handleFileChange}
             style={{ display: 'none' }}
             id="excel-upload-input"
@@ -263,7 +267,7 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
           <label htmlFor="excel-upload-input" style={{ cursor: 'pointer' }}>
             <UploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant="h6" sx={{ mb: 1 }}>
-              לחץ לבחירת קובץ Excel או Numbers
+              לחץ לבחירת קובץ Excel
             </Typography>
             <Typography variant="body2" color="text.secondary">
               או גרור קובץ לכאן

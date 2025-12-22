@@ -8342,3 +8342,63 @@ Reverted buttons to use `borderRadius: '50px'` to match system-wide design stand
 - Cards: `borderRadius.xl` or `borderRadius.2xl`
 - Inputs: `borderRadius.md` or `borderRadius.lg`
 
+
+
+## Bug: Misleading Numbers File Support in Excel Upload (2025-12-22)
+
+**Issue:** ExcelUpload component advertised support for .numbers files but the xlsx library cannot parse them
+
+**Root Cause:**
+- UI text claimed to support Numbers files
+- File input accepted  extension
+- But the  library only supports Excel formats (.xlsx, .xls)
+- Generic error message didn't explain the Numbers limitation
+
+**Files Changed:**
+- `app/app/[locale]/(dashboard)/manage-voters/components/ExcelUpload.tsx`
+
+**Fix:**
+1. Removed `.numbers` from file input accept attribute
+2. Updated instruction text to be honest: "Excel (.xlsx, .xls) only"
+3. Added clear Mac user guidance: "Export from Numbers to Excel"
+4. Improved error message for Numbers files specifically
+5. Updated upload button text to remove "Numbers" reference
+
+**Prevention Rule:**
+- ALWAYS verify library capabilities before advertising format support in UI
+- Test with actual file formats before claiming compatibility
+- Provide specific error messages for unsupported formats
+- Include clear export instructions for Mac users
+
+**User Action Required:**
+Users must export Numbers files to Excel format before upload (File → Export → Excel)
+
+
+## Bug: Misleading Numbers File Support in Excel Upload (2025-12-22)
+
+**Issue:** ExcelUpload component advertised support for .numbers files but the xlsx library cannot parse them
+
+**Root Cause:**
+- UI text claimed to support Numbers files
+- File input accepted .numbers extension
+- But the xlsx library only supports Excel formats (.xlsx, .xls)
+- Generic error message did not explain the Numbers limitation
+
+**Files Changed:**
+- app/app/[locale]/(dashboard)/manage-voters/components/ExcelUpload.tsx
+
+**Fix:**
+1. Removed .numbers from file input accept attribute
+2. Updated instruction text to be honest: Excel (.xlsx, .xls) only
+3. Added clear Mac user guidance: Export from Numbers to Excel
+4. Improved error message for Numbers files specifically
+5. Updated upload button text to remove Numbers reference
+
+**Prevention Rule:**
+- ALWAYS verify library capabilities before advertising format support in UI
+- Test with actual file formats before claiming compatibility
+- Provide specific error messages for unsupported formats
+- Include clear export instructions for Mac users
+
+**User Action Required:**
+Users must export Numbers files to Excel format before upload (File → Export → Excel)
