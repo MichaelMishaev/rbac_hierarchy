@@ -13,11 +13,12 @@ import ReactMarkdown from 'react-markdown';
 export default async function WikiPageView({
   params,
 }: {
-  params: { categorySlug: string; pageSlug: string };
+  params: Promise<{ categorySlug: string; pageSlug: string }>;
 }) {
   const session = await auth();
   const locale = await getLocale();
   const isRTL = locale === 'he';
+  const { categorySlug, pageSlug } = await params;
 
   if (!session) {
     redirect('/login');
@@ -35,7 +36,7 @@ export default async function WikiPageView({
   }
 
   // Fetch wiki page
-  const result = await getWikiPage(params.pageSlug);
+  const result = await getWikiPage(pageSlug);
 
   if (!result.success || !result.page) {
     notFound();
@@ -86,7 +87,7 @@ export default async function WikiPageView({
           ויקי
         </Link>
         <Link
-          href={`/${locale}/wiki/${params.categorySlug}`}
+          href={`/${locale}/wiki/${categorySlug}`}
           style={{ textDecoration: 'none', color: colors.neutral[600] }}
         >
           {page.category.name}
@@ -186,10 +187,10 @@ export default async function WikiPageView({
               color: colors.neutral[700],
             },
             '& a': {
-              color: colors.primary,
+              color: colors.primary.main,
               textDecoration: 'underline',
               '&:hover': {
-                color: colors.primaryDark,
+                color: colors.primary.dark,
               },
             },
             '& code': {

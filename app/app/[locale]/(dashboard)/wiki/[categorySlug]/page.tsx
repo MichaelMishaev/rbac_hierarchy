@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { Box, Typography, Card, CardContent, Breadcrumbs, Chip } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import { getWikiCategory } from '@/app/actions/wiki';
-import { getLocale } from 'next/intl/server';
+import { getLocale } from 'next-intl/server';
 import Link from 'next/link';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import HomeIcon from '@mui/icons-material/Home';
@@ -13,11 +13,12 @@ import ArticleIcon from '@mui/icons-material/Article';
 export default async function WikiCategoryPage({
   params,
 }: {
-  params: { categorySlug: string };
+  params: Promise<{ categorySlug: string }>;
 }) {
   const session = await auth();
   const locale = await getLocale();
   const isRTL = locale === 'he';
+  const { categorySlug } = await params;
 
   if (!session) {
     redirect('/login');
@@ -35,7 +36,7 @@ export default async function WikiCategoryPage({
   }
 
   // Fetch category
-  const result = await getWikiCategory(params.categorySlug);
+  const result = await getWikiCategory(categorySlug);
 
   if (!result.success || !result.category) {
     notFound();
@@ -132,7 +133,7 @@ export default async function WikiCategoryPage({
               <Card
                 sx={{
                   borderRadius: borderRadius.lg,
-                  boxShadow: shadows.small,
+                  boxShadow: shadows.soft,
                   border: `1px solid ${colors.neutral[200]}`,
                   transition: 'all 0.2s',
                   '&:hover': {

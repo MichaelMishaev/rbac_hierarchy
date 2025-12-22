@@ -8614,3 +8614,126 @@ const onSubmit = async (data) => {
 **Compliance:** Aligned with form best practices
 
 ---
+
+## Bug #82: MUI Icons Server/Client Boundary Error in Wiki Page
+
+**Date:** 2025-12-22  
+**Severity:** HIGH (runtime error blocking page)  
+**Status:** ✅ FIXED  
+
+### Error
+```
+Attempted to call the default export of createSvgIcon.js from the server, but it's on the client. 
+It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.
+```
+
+### Root Cause
+- `app/app/[locale]/(dashboard)/wiki/page.tsx` is a Next.js **server component**
+- Was directly importing and rendering MUI icons: `<MenuBookIcon />`, `<TrendingUpIcon />`, etc.
+- MUI icons are **client-side only** components (require browser DOM)
+- Next.js cannot serialize client components for server-side rendering
+
+**Violation:** Next.js server/client boundary rules
+
+### Files Affected
+- `app/app/[locale]/(dashboard)/wiki/page.tsx` (server component)
+- Lines: 80 (header icon), 109 (trending), 160 (recent), 245 (category), 290 (empty state)
+
+### Solution
+Created separate 'use client' wrapper components for all icons:
+
+**1. CategoryIcon.tsx** - Dynamic category icons
+```typescript
+'use client';
+import * as Icons from '@mui/icons-material';
+
+export function CategoryIcon({ iconName }: { iconName: string | null }) {
+  if (!iconName) return <MenuBookIcon />;
+  const IconComponent = (Icons as any)[iconName];
+  return IconComponent ? <IconComponent /> : <MenuBookIcon />;
+}
+```
+
+**2. WikiHeaderIcon.tsx** - Header book icon
+```typescript
+'use client';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+
+export function WikiHeaderIcon({ sx }: { sx?: any }) {
+  return <MenuBookIcon sx={sx} />;
+}
+```
+
+**3. QuickLinkIcons.tsx** - Trending, recent, empty state icons
+```typescript
+'use client';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import HistoryIcon from '@mui/icons-material/History';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+
+export function WikiTrendingIcon({ sx }: { sx?: any }) {
+  return <TrendingUpIcon sx={sx} />;
+}
+
+export function WikiRecentIcon({ sx }: { sx?: any }) {
+  return <HistoryIcon sx={sx} />;
+}
+
+export function WikiEmptyIcon({ sx }: { sx?: any }) {
+  return <MenuBookIcon sx={sx} />;
+}
+```
+
+**4. Updated wiki/page.tsx imports**
+```typescript
+import { CategoryIcon } from './components/CategoryIcon';
+import { WikiHeaderIcon } from './components/WikiHeaderIcon';
+import { WikiTrendingIcon, WikiRecentIcon, WikiEmptyIcon } from './components/QuickLinkIcons';
+```
+
+### Result
+✅ Wiki page renders successfully with all content:
+- Header with book icon
+- Popular pages with trending icon
+- Recent pages with history icon  
+- Categories grid with dynamic icons
+- Empty state with book icon
+
+### Prevention Rule
+**NEVER import MUI components directly in server components**
+
+Instead:
+1. Create a client component wrapper with 'use client' directive
+2. Import MUI component inside the wrapper
+3. Import the wrapper in your server component
+
+**Pattern:**
+```typescript
+// ❌ WRONG - Server component
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+export default function Page() {
+  return <MenuBookIcon />;
+}
+
+// ✅ CORRECT - Client wrapper
+// IconWrapper.tsx
+'use client';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+export function IconWrapper() {
+  return <MenuBookIcon />;
+}
+
+// page.tsx (server component)
+import { IconWrapper } from './IconWrapper';
+export default function Page() {
+  return <IconWrapper />;
+}
+```
+
+**Applies to:** All MUI components with interactivity (icons, buttons, inputs, etc.)
+
+**Category:** Server/Client Boundary / Next.js Architecture  
+**Compliance:** Aligned with Next.js 15 App Router best practices  
+**Commit:** e6f0930
+
+---

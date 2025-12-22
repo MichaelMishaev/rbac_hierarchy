@@ -317,3 +317,4 @@ See `docs/syAnalyse/`:
 - PRD, Tech Stack, DB Schema, API Design, UI Specs, Implementation Plan, Docker Guide
 
 **File Structure:** `/app` (main), `/tests/e2e`, `/docs` (read-only), `/docker`
+- never push without me permission

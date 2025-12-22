@@ -862,6 +862,8 @@ model WikiPage {
   @@index([isPublished])
   @@index([viewCount(sort: Desc)]) // For "popular pages"
   @@index([lastViewedAt(sort: Desc)]) // For "recently viewed"
+  @@index([lastViewedBy, lastViewedAt(sort: Desc)]) // 🚀 PERFORMANCE: Composite index for recent pages query
+  @@index([isPublished, viewCount(sort: Desc)]) // 🚀 PERFORMANCE: Composite index for popular pages query
   @@map("wiki_pages")
 }
 

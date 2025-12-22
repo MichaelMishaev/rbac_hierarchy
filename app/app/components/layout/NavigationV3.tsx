@@ -43,6 +43,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PublicIcon from '@mui/icons-material/Public';
 import HistoryIcon from '@mui/icons-material/History';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 
 import HeaderNotificationToggle from './HeaderNotificationToggle';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
@@ -321,7 +322,10 @@ function NavigationV3Component({ role, userEmail, roleDescription, stats }: Navi
       {
         id: 'system',
         label: t('groupSystem'),
-        items: [{ path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> }],
+        items: [
+          { path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> },
+          { path: '/wiki', label: 'מערכת ויקי', icon: <MenuBookIcon /> },
+        ],
       },
     ],
     [t, stats?.activeSites, stats?.activeWorkers, unreadCount]
@@ -370,7 +374,10 @@ function NavigationV3Component({ role, userEmail, roleDescription, stats }: Navi
       {
         id: 'system',
         label: t('groupSystem'),
-        items: [{ path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> }],
+        items: [
+          { path: '/system-rules', label: t('systemRules'), icon: <RuleIcon /> },
+          { path: '/wiki', label: 'מערכת ויקי', icon: <MenuBookIcon /> },
+        ],
       },
     ],
     [t, stats?.activeSites, stats?.activeWorkers, unreadCount]

@@ -30,7 +30,15 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Link from 'next/link';
 import SecurityIcon from '@mui/icons-material/Security';
 import InfoIcon from '@mui/icons-material/Info';
+import TranslateIcon from '@mui/icons-material/Translate';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import LockIcon from '@mui/icons-material/Lock';
+import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
+import TrafficIcon from '@mui/icons-material/Traffic';
+import EventIcon from '@mui/icons-material/Event';
+import StorageIcon from '@mui/icons-material/Storage';
 import SystemRulesClient from '@/app/components/system-rules/SystemRulesClient';
+import type { ArchitectureConcept } from '@/app/components/system-rules/ArchitectureCard';
 
 export default async function SystemRulesPage() {
   const session = await auth();
@@ -156,6 +164,330 @@ export default async function SystemRulesPage() {
         'שמור ולחץ "צור פעיל"',
       ],
       tip: 'התחל עם 5-10 פעילים לשכונה כדי לבדוק את התהליך',
+    },
+  ];
+
+  // Architecture concepts
+  const architectureConcepts: ArchitectureConcept[] = [
+    {
+      id: 'hebrew-only',
+      order: 1,
+      title: 'מערכת עברית בלבד',
+      icon: 'TranslateIcon',
+      color: colors.pastel.blue,
+      realWorldExample: `דמיין שאתה פותח קמפיין בחו"ל ומנסה לתפעל אותו באנגלית. הפעילים שלך מדברים עברית, אבל המערכת מציגה להם טקסטים באנגלית. זה יוצר בלבול, טעויות ואיבוד זמן יקר.
+
+המערכת שלנו נבנתה **רק בעברית** כי כל הפעילים, הרכזים והמנהלים מדברים עברית. אין תמיכה בשפות נוספות כי זה מיותר ומסרבל.`,
+      whySuperAdminCares: [
+        'פעילי שטח עובדים בטלפונים ניידים תוך כדי תנועה - אין להם זמן לתרגם',
+        'טעויות תרגום יכולות לגרום לבעיות תפעוליות בקמפיין',
+        'פשטות = יעילות בעונת בחירות',
+      ],
+      technicalTranslation: `• כל ה-UI מוגדר עם \`dir="rtl"\` ו-\`lang="he"\`
+• לוקאל ברירת מחדל: \`he-IL\`, אזור זמן: \`Asia/Jerusalem\`
+• אין fallback לאנגלית - רק עברית
+• שימוש ב-\`marginInlineStart/End\` במקום \`left/right\`
+• CSS: כל הרווחים והמרווחים לוגיים (not directional)`,
+      keywords: ['עברית', 'RTL', 'ימין לשמאל', 'שפה', 'תרגום', 'לוקאל'],
+    },
+    {
+      id: 'rbac',
+      order: 2,
+      title: 'בקרת גישה מבוססת תפקידים (RBAC)',
+      icon: 'VpnKeyIcon',
+      color: colors.pastel.green,
+      realWorldExample: `דמיין בניין משרדים גדול. יש מפתחות שונים לכל קומה:
+
+• רכז שכונה מקבל מפתח רק לשכונות שלו (קומה 3)
+• רכז עיר מקבל מפתח לכל העיר (קומות 1-10)
+• אתה כמנהל על מקבל מפתח ראשי לכל הבניין
+
+**RBAC** זה המנגנון שמוודא שכל אחד רואה רק את מה שהוא צריך לראות.`,
+      whySuperAdminCares: [
+        'רכז עיר בתל אביב לא צריך (ולא יכול) לראות נתוני ירושלים',
+        'מניעת דליפת מידע בין קמפיינים במספר ערים',
+        'שמירה על סודיות אסטרטגית של הקמפיין',
+        'בקרת נזקים: אם מישהו טועה, הוא לא יכול לפגוע בעיר אחרת',
+      ],
+      technicalTranslation: `• 4 רמות תפקידים: **SuperAdmin** → **Area Manager** → **City Coordinator** → **Activist Coordinator**
+• כל שאילתה מסוננת לפי \`city_id\` / \`area\` (למעט SuperAdmin)
+• רכז שכונה מוגבל לשכונות שהוקצו לו בטבלת M2M (\`activist_coordinator_neighborhoods\`)
+• \`UNIQUE\` constraints מונעים כפילויות: \`(city_id, user_id)\` לרכזי עיר
+• Prisma middleware מכניס סינונים אוטומטית בכל query`,
+      keywords: ['הרשאות', 'גישה', 'תפקידים', 'אבטחה', 'פרטיות', 'סינון', 'RBAC'],
+    },
+    {
+      id: 'data-isolation',
+      order: 3,
+      title: 'בידוד נתונים (Data Isolation)',
+      icon: 'LockIcon',
+      color: colors.pastel.orange,
+      realWorldExample: `דמיין שיש לך קמפיינים בתל אביב, ירושלים וחיפה. כל עיר זה כמו כספת נפרדת:
+
+• רכז תל אביב לא יכול לפתוח את הכספת של ירושלים
+• גם אם הוא ינסה, המערכת תחסום אותו
+• רק אתה (SuperAdmin) מחזיק מפתח לכל הכספות
+
+**בידוד נתונים** מבטיח שכל מה שקורה בעיר אחת נשאר בעיר הזאת, אלא אם אתה מחליט אחרת.`,
+      whySuperAdminCares: [
+        'אי אפשר לטעות ולמחוק פעילים בעיר הלא נכונה',
+        'כל עיר יכולה לנהל את הקמפיין שלה בצורה עצמאית',
+        'אם יש דליפת מידע, היא מוגבלת לעיר אחת בלבד',
+        'בדיקות איכות: קל לזהות פעילות חריגה בעיר ספציפית',
+      ],
+      technicalTranslation: `• רכז עיר: \`WHERE neighborhood.cityId = session.user.cityId\`
+• רכז אזור: \`WHERE city.areaManagerId = areaManager.id\`
+• רכז שכונה: \`WHERE neighborhood_id IN assignedNeighborhoods\`
+• SuperAdmin: ללא סינון (גישה מלאה לכל הנתונים)
+• E2E tests: \`city-isolation.spec.ts\`, \`area-isolation.spec.ts\``,
+      keywords: ['אבטחה', 'הפרדה', 'סינון', 'עיר', 'שכונה', 'נתונים', 'בידוד'],
+    },
+    {
+      id: 'organizational-hierarchy',
+      order: 4,
+      title: 'היררכיה ארגונית (Organizational Hierarchy)',
+      icon: 'AccountTreeIcon',
+      color: colors.pastel.purple,
+      realWorldExample: `דמיין צבא קטן עם שרשרת פיקוד ברורה:
+
+1. **מפקד על** (אתה - SuperAdmin) - רואה את כולם
+2. **מפקדי גזרות** (Area Managers) - רואים מספר ערים
+3. **מפקדי עיר** (City Coordinators) - רואים עיר אחת
+4. **מפקדי פלוגה** (Activist Coordinators) - רואים 1-5 שכונות
+5. **חיילי שטח** (Activists) - לא נכנסים למערכת
+
+כל אחד רואה רק את מי שנמצא "מתחתיו" במבנה.`,
+      whySuperAdminCares: [
+        'מבנה ברור = אחריות ברורה (לא מתעורבבים תפקידים)',
+        'קל לעקוב אחרי מי אחראי על מה',
+        'אפשר להסמיך מנהלים ברמות שונות בלי לאבד שליטה',
+        'סקלביליות: קל להוסיף ערים/אזורים חדשים',
+      ],
+      technicalTranslation: `SuperAdmin (\`is_super_admin = true\`)
+  ↓ creates
+Area Manager (\`area_managers\` table)
+  ↓ manages
+Cities (\`cities\` table)
+  ↓ contains
+City Coordinator (\`city_coordinators\` table) + Neighborhoods
+  ↓ manages
+Activist Coordinator (\`activist_coordinators\` table) + M2M assignments
+  ↓ organizes
+Activists (\`activists\` table)
+
+• Referential integrity: Foreign keys cascade deletes
+• Soft deletes for activists: \`is_active = false\`
+• Orphaned entities: Script to detect & report`,
+      keywords: ['מבנה', 'היררכיה', 'ניהול', 'תפקידים', 'שרשרת פיקוד', 'ארגון'],
+    },
+    {
+      id: 'mobile-first',
+      order: 5,
+      title: 'עיצוב Mobile-First',
+      icon: 'PhoneAndroidIcon',
+      color: colors.pastel.teal,
+      realWorldExample: `דמיין רכז שטח שעומד ליד קלפי בשעה 18:00 ביום הבחירות:
+
+• יש לו טלפון בכיס, לא מחשב נייד
+• הוא צריך לרשום נוכחות של 10 פעילים תוך דקה
+• המסך קטן (5.5 אינץ'), האור חלש, והוא עומד בתנועה
+• אין זמן לגלילה או לחיפוש - צריך כפתורים גדולים ופשוטים
+
+המערכת נבנתה **קודם לטלפון, אחר כך למחשב** - כי ככה עובדים בשטח.`,
+      whySuperAdminCares: [
+        'פעילים עובדים בתנועה, לא בשולחן עבודה',
+        'מסך קטן = צריך UI ממוקד ופשוט (לא 20 שדות בטופס)',
+        'טפסים ארוכים לא עובדים בטלפון (אנשים מוותרים)',
+        'GPS integration: נוכחות עם מיקום - עובד רק במובייל',
+      ],
+      technicalTranslation: `• Viewport minimum: \`320px\` (iPhone SE - המכשיר הכי קטן)
+• Touch targets: \`44x44px\` minimum (Apple HIG standard)
+• Forms: Multi-step wizards instead of long scrolls
+• Tables: Collapsible columns on mobile (TanStack Table)
+• GPS integration: \`navigator.geolocation\` API
+• PWA: Service worker for offline attendance recording
+• Responsive breakpoints: \`xs (320px)\`, \`sm (600px)\`, \`md (900px)\``,
+      keywords: ['מובייל', 'טלפון', 'נייד', 'שטח', 'פעילים', 'נוחות', 'responsive'],
+    },
+    {
+      id: 'risk-levels',
+      order: 6,
+      title: 'רמות סיכון (Risk Levels)',
+      icon: 'TrafficIcon',
+      color: colors.status.orange,
+      realWorldExample: `דמיין שאתה מנהל קמפיין 3 ימים לפני הבחירות:
+
+**🔹 סיכון נמוך:** שינוי צבע של כפתור
+  → תוצאה: אף אחד לא שם לב, אין בעיה
+
+**🔸 סיכון בינוני:** הוספת שדה חדש לטופס משימות
+  → תוצאה: צריך לעדכן את הרכזים, אבל לא קריטי
+
+**🔴 סיכון גבוה:** שינוי של מי יכול לראות נתוני בוחרים
+  → תוצאה: אם משהו נשבר, דליפת מידע רגישה!
+
+המערכת מסווגת כל שינוי לפי רמת הסיכון כדי שתדע מתי לבדוק פעמיים.`,
+      whySuperAdminCares: [
+        'לדעת מתי אפשר לאשר שינוי מהר ומתי צריך לבדוק בזהירות',
+        'הבנה של מה יכול "לשבור" את המערכת',
+        'תכנון שינויים בעונת בחירות: פחות RBAC, יותר UI',
+        'בקרת איכות: שינויי 🔴 דורשים בדיקות מלאות',
+      ],
+      technicalTranslation: `🔴 **HIGH RISK** (RBAC, Auth, Data Filters)
+   → Requires: Explicit plan + Negative tests + Full test suite
+   → Examples: Change \`city_id\` filter, modify role permissions, auth flows
+   → Tests: \`app/tests/e2e/rbac/*.spec.ts\`
+
+🔸 **MEDIUM RISK** (Features, Forms, Tasks)
+   → Requires: E2E tests + Integration tests
+   → Examples: Add voter field, modify task assignment, new dashboard widget
+   → Tests: \`app/tests/e2e/features/*.spec.ts\`
+
+🔹 **LOW RISK** (UI Styling, Translations)
+   → Requires: Visual regression + RTL check
+   → Examples: Change button color, update Hebrew text, adjust spacing
+   → Tests: Lighthouse + manual visual check`,
+      keywords: ['סיכון', 'שינויים', 'בדיקות', 'אבטחה', 'תיקוני באגים', 'risk'],
+    },
+    {
+      id: 'superadmin-security',
+      order: 7,
+      title: 'אבטחת SuperAdmin',
+      icon: 'AdminPanelSettingsIcon',
+      color: colors.status.orange,
+      realWorldExample: `דמיין מפתח ראשי של בניין:
+
+• אתה לא יכול ללכת לחנות חומרה ולהעתיק אותו
+• צריך לפנות לחברת האבטחה ולעבור אימות מלא
+• רק טכנאי מוסמך יכול ליצור עותק נוסף
+
+כך גם SuperAdmin במערכת:
+
+• לא אפשר ליצור אותו דרך ה-UI (כמו שיוצרים רכז עיר)
+• רק ישירות במסד הנתונים (Prisma Studio או seed script)
+• זה מבטיח שאף אחד לא יכול "לקדם" את עצמו בטעות`,
+      whySuperAdminCares: [
+        'שמירה על הגישה העליונה של המערכת',
+        'מניעת "קידום עצמי" של משתמשים (privilege escalation)',
+        'בקרת נזקים: אם מישהו פורץ, הוא לא יכול ליצור SuperAdmin חדש',
+        'ביקורת: קל לבדוק מי יש לו is_super_admin = true (אמור להיות 1-2 בלבד)',
+      ],
+      technicalTranslation: `• SuperAdmin נוצר רק דרך:
+  1. Database seed: \`npm run db:seed\` (ראשוני)
+  2. Prisma Studio: \`npx prisma studio\` (manual creation)
+  3. SQL direct: \`psql\` command (advanced)
+
+• \`is_super_admin\` flag: NEVER exposed in public APIs
+• UI/API: Cannot create users with \`is_super_admin = true\`
+• Seed default: \`superadmin@election.test\` → **Must be changed!**
+• Security audit:
+  \`SELECT email FROM users WHERE is_super_admin = true;\`
+  (אמור להחזיר 1-2 משתמשים בלבד)`,
+      keywords: ['SuperAdmin', 'אבטחה', 'הרשאות', 'יצירה', 'ניהול', 'privilege'],
+    },
+    {
+      id: 'campaign-season',
+      order: 8,
+      title: 'עונת קמפיין (Campaign Season Context)',
+      icon: 'EventIcon',
+      color: colors.status.red,
+      realWorldExample: `דמיין שאתה ב-10 הימים האחרונים לפני הבחירות:
+
+**המצב:**
+• 500 פעילים בשטח, פועלים 12 שעות ביום
+• 100,000 בוחרים במאגר, 50,000 טלפונים ביום
+• 20 רכזים מתאמים 10 שכונות בו-זמנית
+• כל תקלה במערכת = אובדן קולות אמיתי
+
+**מה זה אומר?**
+
+זה **לא** הזמן לשנות:
+❌ מערכת הרשאות
+❌ פיצ'ר חדש של ניהול משימות
+❌ שדרוג גרסת React
+
+זה **כן** הזמן ל:
+✅ תיקוני באגים קטנים
+✅ שיפורי UI (צבעים, כפתורים)
+✅ תרגום עברי של טקסט שנשכח
+
+המערכת מתייחסת לעונת קמפיין כמו אירוע חי - **יציבות > חדשנות**.`,
+      whySuperAdminCares: [
+        'דעת מתי לאשר שינויים ומתי להמתין (timing is everything)',
+        'הבנה של איזון מהירות מול בטיחות',
+        'תכנון שדרוגים לפני/אחרי עונת הקמפיין',
+        'בקרת עדיפויות: באגים קריטיים vs nice-to-have features',
+      ],
+      technicalTranslation: `🟢 **SAFE TO ITERATE QUICKLY** (during campaign):
+   • UI styling (colors, spacing, borders, shadows)
+   • Hebrew translations (fix typos, clarify text)
+   • Mobile responsiveness tweaks (button size, padding)
+   • Non-behavioral changes (refactoring internals)
+   • Performance optimizations (no logic change)
+
+🔴 **SLOW DOWN AND TEST** (during campaign):
+   • RBAC changes (permissions, data filters, role assignments)
+   • Auth flows (login, password reset, session management)
+   • Locked pages (Cities, Manage Voters - see LOCKED_FLOWS)
+   • Database schema changes (migrations, new tables)
+   • Third-party integrations (SMS, email, payment)
+
+📅 **Campaign Calendar Planning:**
+   • 3 months before: Major features, RBAC changes, migrations
+   • 1 month before: Medium features, forms, dashboards
+   • 2 weeks before: UI polish, translations, bug fixes only
+   • 1 week before: Critical bugs only, no features
+   • Election day: Read-only (no deployments)`,
+      keywords: ['קמפיין', 'בחירות', 'לוחות זמנים', 'עדיפויות', 'דחיפות', 'יציבות'],
+    },
+    {
+      id: 'data-integrity',
+      order: 9,
+      title: 'שלמות נתונים (Data Integrity)',
+      icon: 'StorageIcon',
+      color: colors.pastel.cyan,
+      realWorldExample: `דמיין שרכז שכונה מוחק בטעות 50 פעילים במקום להסתיר אותם:
+
+**אם המחיקה קבועה (hard delete):**
+❌ כל ההיסטוריה שלהם נעלמת
+❌ רישומי נוכחות - נמחקו
+❌ משימות שהוקצו להם - נעלמו
+❌ קשרי בוחרים - אבדו לנצח
+
+**אבל במערכת שלנו (soft delete):**
+✅ הפעיל מסומן כ-\`is_active = false\`
+✅ כל הנתונים נשארים במסד הנתונים
+✅ אפשר לשחזר אותו בלחיצת כפתור
+✅ ההיסטוריה נשמרת לניתוח אחרי הקמפיין
+
+זה כמו "סל מחזור" במחשב - אתה לא באמת מוחק, רק מסתיר.`,
+      whySuperAdminCares: [
+        'הגנה מפני טעויות בלתי הפיכות (human error protection)',
+        'שמירה על היסטוריה לניתוח אחרי הקמפיין',
+        'אפשרות לשחזר נתונים במקרה חירום',
+        'ביקורת ותאימות: רישום מלא של כל הפעולות',
+      ],
+      technicalTranslation: `**Soft Deletes (מחיקה רכה):**
+• \`activists.is_active = false\` (NOT \`DELETE FROM activists\`)
+• Blocked: \`activists.delete()\` via Prisma middleware
+• Queries filter: \`WHERE is_active = true\` (אוטומטי)
+• Recovery: \`UPDATE activists SET is_active = true WHERE id = ?\`
+
+**Uniqueness Constraints (למניעת כפילויות):**
+• Activists: \`UNIQUE (neighborhood_id, full_name, phone)\`
+• City Coordinators: \`UNIQUE (city_id, user_id)\`
+• M2M Assignments: \`PRIMARY KEY (activist_coordinator_id, neighborhood_id)\`
+
+**Immutable Records (רשומות שלא ניתנות לשינוי):**
+• \`attendance_records\`: Cannot UPDATE/DELETE after creation
+• Audit trail must be tamper-proof (לא ניתן לשנות היסטוריה)
+• \`created_at\` timestamps: Auto-generated, never modified
+
+**Integrity Checks:**
+• \`npm run db:check-integrity\` (script to detect orphaned records)
+• Referential integrity: Foreign keys with CASCADE/RESTRICT
+• Data validation: Zod schemas on client + server`,
+      keywords: ['מחיקה', 'שחזור', 'היסטוריה', 'גיבוי', 'אובדן נתונים', 'integrity'],
     },
   ];
 
@@ -576,7 +908,11 @@ export default async function SystemRulesPage() {
       </Typography>
 
       <Box sx={{ mb: 4 }}>
-        <SystemRulesClient setupSteps={setupSteps} isRTL={isRTL} />
+        <SystemRulesClient
+          setupSteps={setupSteps}
+          architectureConcepts={architectureConcepts}
+          isRTL={isRTL}
+        />
       </Box>
 
       {/* Password Management Section */}

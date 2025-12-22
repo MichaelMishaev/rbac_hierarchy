@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { wikiCache, WIKI_CACHE_KEYS } from '@/lib/cache/wiki-cache';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -78,6 +79,7 @@ async function requireSuperAdmin() {
 /**
  * Get all wiki categories with their pages
  * SuperAdmin only
+ * 🚀 OPTIMIZED: Uses caching + efficient query with _count
  */
 export async function getWikiCategories(): Promise<{
   success: boolean;
@@ -87,39 +89,60 @@ export async function getWikiCategories(): Promise<{
   try {
     await requireSuperAdmin();
 
-    const categories = await prisma.wikiCategory.findMany({
-      where: { isActive: true },
-      orderBy: { order: 'asc' },
-      include: {
-        pages: {
-          where: { isPublished: true },
+    // 🚀 PERFORMANCE: Use cache with 5-minute TTL
+    const categories = await wikiCache.get(
+      WIKI_CACHE_KEYS.categories(),
+      async () => {
+        // 🚀 PERFORMANCE: Use _count to avoid loading all page data (fixes N+1 query)
+        const categoriesData = await prisma.wikiCategory.findMany({
+          where: { isActive: true },
           orderBy: { order: 'asc' },
           select: {
             id: true,
-            title: true,
+            name: true,
+            nameEn: true,
             slug: true,
-            excerpt: true,
-            tags: true,
-            viewCount: true,
+            description: true,
+            icon: true,
             order: true,
+            _count: {
+              select: {
+                pages: {
+                  where: { isPublished: true },
+                },
+              },
+            },
+            pages: {
+              where: { isPublished: true },
+              orderBy: { order: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                excerpt: true,
+                tags: true,
+                viewCount: true,
+                order: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
 
-    const categoriesWithCount = categories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      nameEn: cat.nameEn,
-      slug: cat.slug,
-      description: cat.description,
-      icon: cat.icon,
-      order: cat.order,
-      pageCount: cat.pages.length,
-      pages: cat.pages,
-    }));
+        return categoriesData.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          nameEn: cat.nameEn,
+          slug: cat.slug,
+          description: cat.description,
+          icon: cat.icon,
+          order: cat.order,
+          pageCount: cat._count.pages,
+          pages: cat.pages,
+        }));
+      }
+    );
 
-    return { success: true, categories: categoriesWithCount };
+    return { success: true, categories };
   } catch (error) {
     console.error('Error fetching wiki categories:', error);
     return {
@@ -258,6 +281,7 @@ export async function incrementWikiPageView(pageId: string): Promise<{
 
 /**
  * Get popular pages (most viewed)
+ * 🚀 OPTIMIZED: Uses caching with 5-minute TTL
  */
 export async function getPopularWikiPages(limit: number = 5): Promise<{
   success: boolean;
@@ -267,32 +291,43 @@ export async function getPopularWikiPages(limit: number = 5): Promise<{
   try {
     await requireSuperAdmin();
 
-    const pages = await prisma.wikiPage.findMany({
-      where: { isPublished: true },
-      orderBy: { viewCount: 'desc' },
-      take: limit,
-      include: {
-        category: {
+    // 🚀 PERFORMANCE: Use cache with limit-specific key
+    const pages = await wikiCache.get(
+      WIKI_CACHE_KEYS.popularPages(limit),
+      async () => {
+        const pagesData = await prisma.wikiPage.findMany({
+          where: { isPublished: true },
+          orderBy: { viewCount: 'desc' },
+          take: limit,
           select: {
-            name: true,
+            id: true,
+            title: true,
             slug: true,
+            excerpt: true,
+            tags: true,
+            category: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
 
-    const results: WikiSearchResult[] = pages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      slug: page.slug,
-      excerpt: page.excerpt,
-      categoryName: page.category.name,
-      categorySlug: page.category.slug,
-      tags: page.tags,
-      matchedIn: 'title' as const,
-    }));
+        return pagesData.map((page) => ({
+          id: page.id,
+          title: page.title,
+          slug: page.slug,
+          excerpt: page.excerpt,
+          categoryName: page.category.name,
+          categorySlug: page.category.slug,
+          tags: page.tags,
+          matchedIn: 'title' as const,
+        }));
+      }
+    );
 
-    return { success: true, pages: results };
+    return { success: true, pages };
   } catch (error) {
     console.error('Error fetching popular pages:', error);
     return {
@@ -304,6 +339,7 @@ export async function getPopularWikiPages(limit: number = 5): Promise<{
 
 /**
  * Get recently viewed pages
+ * 🚀 OPTIMIZED: Uses caching with user-specific key
  */
 export async function getRecentWikiPages(limit: number = 5): Promise<{
   success: boolean;
@@ -313,36 +349,48 @@ export async function getRecentWikiPages(limit: number = 5): Promise<{
   try {
     const user = await requireSuperAdmin();
 
-    const pages = await prisma.wikiPage.findMany({
-      where: {
-        isPublished: true,
-        lastViewedBy: user.id,
-        lastViewedAt: { not: null },
-      },
-      orderBy: { lastViewedAt: 'desc' },
-      take: limit,
-      include: {
-        category: {
-          select: {
-            name: true,
-            slug: true,
+    // 🚀 PERFORMANCE: Use cache with user-specific key (shorter TTL for recent pages)
+    const pages = await wikiCache.get(
+      `${WIKI_CACHE_KEYS.recentPages(limit)}:${user.id}`,
+      async () => {
+        const pagesData = await prisma.wikiPage.findMany({
+          where: {
+            isPublished: true,
+            lastViewedBy: user.id,
+            lastViewedAt: { not: null },
           },
-        },
+          orderBy: { lastViewedAt: 'desc' },
+          take: limit,
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            excerpt: true,
+            tags: true,
+            category: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        });
+
+        return pagesData.map((page) => ({
+          id: page.id,
+          title: page.title,
+          slug: page.slug,
+          excerpt: page.excerpt,
+          categoryName: page.category.name,
+          categorySlug: page.category.slug,
+          tags: page.tags,
+          matchedIn: 'title' as const,
+        }));
       },
-    });
+      60000 // 1-minute TTL for recent pages (more dynamic)
+    );
 
-    const results: WikiSearchResult[] = pages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      slug: page.slug,
-      excerpt: page.excerpt,
-      categoryName: page.category.name,
-      categorySlug: page.category.slug,
-      tags: page.tags,
-      matchedIn: 'title' as const,
-    }));
-
-    return { success: true, pages: results };
+    return { success: true, pages };
   } catch (error) {
     console.error('Error fetching recent pages:', error);
     return {

@@ -2,6 +2,6 @@
 
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 
-export function WikiHeaderIcon({ sx }: { sx?: any }) {
-  return <MenuBookIcon sx={sx} />;
+export function WikiHeaderIcon(props: any) {
+  return <MenuBookIcon {...props} />;
 }
