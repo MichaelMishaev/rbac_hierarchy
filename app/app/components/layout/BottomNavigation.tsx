@@ -18,12 +18,17 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { useUnreadTaskCount } from '@/app/hooks/useUnreadTaskCount';
+import { useUnreadNotificationCount } from '@/app/hooks/useUnreadNotificationCount';
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: unreadData } = useUnreadTaskCount();
   const unreadCount = unreadData?.unread_count || 0;
+
+  // Fetch unread notification count for "More" tab badge
+  const { data: notificationData } = useUnreadNotificationCount();
+  const unreadNotifications = notificationData?.unread_count || 0;
 
   // Remove locale from path for comparison
   const currentPath = pathname.replace(/^\/(he|en)/, '') || '/';
@@ -105,7 +110,11 @@ export default function MobileBottomNav() {
         <BottomNavigationAction
           data-testid="bottom-nav-more"
           label="עוד"
-          icon={<MoreHorizIcon />}
+          icon={
+            <Badge badgeContent={unreadNotifications} color="error" max={99}>
+              <MoreHorizIcon />
+            </Badge>
+          }
         />
       </BottomNavigation>
     </Paper>

@@ -23,3 +23,17 @@ export async function register() {
     initializeGlobalErrorHandlers();
   }
 }
+
+/**
+ * Capture errors from nested React Server Components
+ * See: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#errors-from-nested-react-server-components
+ */
+export async function onRequestError(err: unknown, request: Request, context: { routerKind: string; routeType: string }) {
+  // Only capture in production
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const Sentry = await import('@sentry/nextjs');
+  Sentry.captureRequestError(err, request, context);
+}

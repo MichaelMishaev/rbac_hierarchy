@@ -49,3 +49,9 @@ Sentry.init({
   // sessions when an error occurs.
   replaysOnErrorSampleRate: 1.0,
 });
+
+/**
+ * Export navigation tracking hook for Sentry
+ * Required for App Router navigation instrumentation
+ */
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
