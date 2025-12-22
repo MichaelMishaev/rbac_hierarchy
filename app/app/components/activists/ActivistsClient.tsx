@@ -38,6 +38,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import GridViewIcon from '@mui/icons-material/GridView';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import LockResetIcon from '@mui/icons-material/LockReset';
 import ActivistModal, { WorkerFormData } from '@/app/components/modals/ActivistModal';
 import DeleteConfirmationModal from '@/app/components/modals/DeleteConfirmationModal';
 import ActivistCardSwipeable from './ActivistCardSwipeable';
@@ -45,6 +46,7 @@ import SmartAssignmentDialog from '@/app/components/tasks/SmartAssignmentDialog'
 import RtlButton from '@/app/components/ui/RtlButton';
 import { EditableTextCell, StatusToggleCell } from './InlineEditableCells';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp';
+import ResetPasswordDialog from '@/app/components/users/ResetPasswordDialog';
 import toast from 'react-hot-toast';
 import {
   createWorker,
@@ -142,6 +144,7 @@ export default function ActivistsClient({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [smartAssignmentOpen, setSmartAssignmentOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
 
   // Listen for FAB button clicks to open create modal
   useEffect(() => {
@@ -342,6 +345,15 @@ export default function ActivistsClient({
   const handleDeleteClick = () => {
     setDeleteModalOpen(true);
     handleMenuClose();
+  };
+
+  const handleResetPasswordClick = () => {
+    setResetPasswordDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleResetPasswordSuccess = () => {
+    router.refresh();
   };
 
   const handleDeleteWorker = async () => {
@@ -1022,6 +1034,21 @@ export default function ActivistsClient({
           <Typography sx={{ fontWeight: 500 }}>{tCommon('edit')}</Typography>
         </MenuItem>
         <MenuItem
+          onClick={handleResetPasswordClick}
+          disabled={!selectedWorker?.userId}
+          sx={{
+            py: 1.5,
+            px: 2,
+            gap: 1.5,
+            '&:hover': {
+              backgroundColor: colors.pastel.orangeLight,
+            },
+          }}
+        >
+          <LockResetIcon sx={{ fontSize: 20, color: colors.status.orange }} />
+          <Typography sx={{ fontWeight: 500, color: colors.status.orange }}>אפס סיסמה</Typography>
+        </MenuItem>
+        <MenuItem
           onClick={handleDeleteClick}
           sx={{
             py: 1.5,
@@ -1121,6 +1148,19 @@ export default function ActivistsClient({
           isRTL={isRTL}
         />
       )}
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog
+        open={resetPasswordDialogOpen}
+        onClose={() => {
+          setResetPasswordDialogOpen(false);
+          setSelectedWorker(null);
+        }}
+        userId={selectedWorker?.userId || null}
+        userFullName={selectedWorker?.fullName || null}
+        userEmail={selectedWorker?.email || null}
+        onSuccess={handleResetPasswordSuccess}
+      />
     </Box>
   );
 }

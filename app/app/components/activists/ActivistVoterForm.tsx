@@ -46,14 +46,14 @@ export function ActivistVoterForm({
   initialData,
 }: ActivistVoterFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting: formIsSubmitting },
   } = useForm<VoterFormData>({
     resolver: zodResolver(voterSchema),
     defaultValues: initialData || {
@@ -61,8 +61,14 @@ export function ActivistVoterForm({
     },
   });
 
+  // Use both local state and form state for double protection
+  const isSubmitting = isSubmittingLocal || formIsSubmitting;
+
   const onSubmit = async (data: VoterFormData) => {
-    setIsSubmitting(true);
+    // Prevent double submissions
+    if (isSubmittingLocal) return;
+
+    setIsSubmittingLocal(true);
     setError(null);
 
     try {
@@ -99,7 +105,7 @@ export function ActivistVoterForm({
       console.error('Error saving voter:', err);
       setError(err instanceof Error ? err.message : 'שגיאה לא צפויה');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingLocal(false);
     }
   };
 

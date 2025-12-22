@@ -23,31 +23,38 @@
 import { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Box, Typography, IconButton, Avatar, Chip } from '@mui/material';
+import { Card, CardContent, Box, Typography, IconButton, Avatar, Chip, Menu, MenuItem } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import WorkIcon from '@mui/icons-material/Work';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
+import LockResetIcon from '@mui/icons-material/LockReset';
 import { EditableTextCell } from './InlineEditableCells';
 
 interface Activist {
   id: string;
   fullName: string;
   phone?: string | null;
+  email?: string | null;
   neighborhood?: {
     name: string;
   };
   position?: string | null;
   tags?: string[];
   isActive?: boolean;
+  userId?: string | null;
 }
 
 interface ActivistCardSwipeableProps {
   activist: Activist;
   onCheckIn?: (activistId: string) => void;
   onEdit?: (activistId: string) => void;
+  onDelete?: (activistId: string) => void;
+  onResetPassword?: (activistId: string) => void;
   isRTL?: boolean;
 }
 
@@ -55,10 +62,13 @@ export default function ActivistCardSwipeable({
   activist,
   onCheckIn,
   onEdit,
+  onDelete,
+  onResetPassword,
   isRTL = true,
 }: ActivistCardSwipeableProps) {
   const [offset, setOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const router = useRouter();
 
   const handlers = useSwipeable({
@@ -210,20 +220,21 @@ export default function ActivistCardSwipeable({
               </Box>
             </Box>
 
-            {/* Desktop Full Edit Button */}
+            {/* Three Dots Menu */}
             <IconButton
               size="small"
-              onClick={() => onEdit?.(activist.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setAnchorEl(e.currentTarget);
+              }}
               sx={{
-                display: { xs: 'none', md: 'flex' },
-                bgcolor: colors.primary.main + '15',
+                bgcolor: colors.neutral[100],
                 '&:hover': {
-                  bgcolor: colors.primary.main,
-                  color: 'white',
+                  bgcolor: colors.neutral[200],
                 },
               }}
             >
-              <EditIcon fontSize="small" />
+              <MoreVertIcon fontSize="small" />
             </IconButton>
           </Box>
 
@@ -378,6 +389,81 @@ export default function ActivistCardSwipeable({
           </Box>
         </CardContent>
       </Card>
+
+      {/* Context Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: isRTL ? 'left' : 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: isRTL ? 'left' : 'right',
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: borderRadius.lg,
+            boxShadow: shadows.large,
+            minWidth: 160,
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            onEdit?.(activist.id);
+            setAnchorEl(null);
+          }}
+          sx={{
+            py: 1.5,
+            px: 2,
+            gap: 1.5,
+            '&:hover': {
+              backgroundColor: colors.pastel.blueLight,
+            },
+          }}
+        >
+          <EditIcon sx={{ fontSize: 20, color: colors.pastel.blue }} />
+          <Typography sx={{ fontWeight: 500 }}>ערוך</Typography>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onResetPassword?.(activist.id);
+            setAnchorEl(null);
+          }}
+          disabled={!activist.userId}
+          sx={{
+            py: 1.5,
+            px: 2,
+            gap: 1.5,
+            '&:hover': {
+              backgroundColor: !activist.userId ? 'transparent' : colors.pastel.orangeLight,
+            },
+          }}
+        >
+          <LockResetIcon sx={{ fontSize: 20, color: colors.status.orange }} />
+          <Typography sx={{ fontWeight: 500, color: colors.status.orange }}>אפס סיסמה</Typography>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onDelete?.(activist.id);
+            setAnchorEl(null);
+          }}
+          sx={{
+            py: 1.5,
+            px: 2,
+            gap: 1.5,
+            '&:hover': {
+              backgroundColor: colors.pastel.redLight,
+            },
+          }}
+        >
+          <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
+          <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>מחק</Typography>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 }

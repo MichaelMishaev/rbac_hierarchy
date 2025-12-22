@@ -8402,3 +8402,122 @@ Users must export Numbers files to Excel format before upload (File → Export �
 
 **User Action Required:**
 Users must export Numbers files to Excel format before upload (File → Export → Excel)
+
+
+---
+
+## Bug #1: Missing Voter Detail Page Causing "Under Construction" Error (2025-12-22)
+
+**Date**: 2025-12-22  
+**Severity**: High (Broken Navigation)
+
+### Problem
+When clicking on a voter card in the `/voters` page, users encountered an "Under Construction" page instead of viewing voter details. This completely blocked access to voter information.
+
+**User Feedback**: "on http://localhost:3200/voters voter screen (NOT DASHBOARD!!) when press on voter: [Image #1] getting [Image #2] [Under Construction page]"
+
+### Root Cause
+The `ActivistVoterCard` component (line 59) navigated to `/voters/${voter.id}`, but no page component existed at that route. Next.js showed a fallback "Under Construction" page.
+
+**Files Missing:**
+- `app/app/[locale]/(activist)/voters/[id]/page.tsx`
+- `app/app/[locale]/(activist)/voters/[id]/VoterDetailClient.tsx`
+
+### Solution
+Created the missing voter detail page with:
+1. **Server Component** (`page.tsx`):
+   - Auth verification (ACTIVIST role only)
+   - Data validation (voter belongs to activist)
+   - Security check: `insertedByUserId === session.user.id`
+
+2. **Client Component** (`VoterDetailClient.tsx`):
+   - Display all voter information
+   - Edit button navigation
+   - Back navigation to voters list
+   - Hebrew RTL layout
+
+### Files Created
+- `app/app/[locale]/(activist)/voters/[id]/page.tsx`
+- `app/app/[locale]/(activist)/voters/[id]/VoterDetailClient.tsx`
+
+### Prevention Rule
+**ALWAYS create the destination page before implementing navigation links**
+- When adding `router.push()` or `<Link href="">`, verify the target page exists
+- Test navigation flow before marking feature complete
+- Use consistent routing patterns across the app
+
+---
+
+## Bug #2: Double-Click Submit Button Creates Duplicate Voters (2025-12-22)
+
+**Date**: 2025-12-22  
+**Severity**: High (Data Integrity)
+
+### Problem
+When creating a new voter in `/voters/new`, rapidly clicking the "שמור" (Save) button twice would create duplicate voter records in the database.
+
+**User Feedback**: "when create new voter: [Image #1] can press twice save, and it will create duplicate voter, bug!"
+
+### Root Cause
+The form's `isSubmitting` state was managed locally and set asynchronously. Between the first and second click:
+1. First click triggers `onSubmit()`
+2. `setIsSubmitting(true)` is called but hasn't re-rendered yet
+3. Second click finds `isSubmitting` still `false`
+4. Second `onSubmit()` starts, creating a duplicate
+
+### Files Affected
+- `app/app/components/activists/ActivistVoterForm.tsx` (lines 49-109)
+
+### Solution
+Implemented **double protection** against duplicate submissions:
+
+1. **Renamed State Variable**: Changed `isSubmitting` → `isSubmittingLocal` to avoid collision
+2. **Combined State**: Used both local state AND React Hook Form's `formIsSubmitting`:
+   ```typescript
+   const isSubmitting = isSubmittingLocal || formIsSubmitting;
+   ```
+3. **Early Return Guard**: Added check at start of `onSubmit()`:
+   ```typescript
+   if (isSubmittingLocal) return;
+   ```
+
+**Key Changes:**
+```typescript
+// Line 49: Renamed state variable
+const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
+
+// Line 56: Get form's isSubmitting state
+formState: { errors, isSubmitting: formIsSubmitting }
+
+// Line 65: Double protection
+const isSubmitting = isSubmittingLocal || formIsSubmitting;
+
+// Line 68-69: Early return guard
+if (isSubmittingLocal) return;
+```
+
+### Prevention Rule
+**ALWAYS use double protection for form submissions:**
+1. Check submission state at the START of the handler (before any async work)
+2. Use BOTH local state AND form library's built-in state
+3. Consider using React Hook Form's `isSubmitting` as primary source of truth
+4. Test rapid double-clicks during QA
+
+**Pattern to Follow:**
+```typescript
+const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
+const { formState: { isSubmitting: formIsSubmitting } } = useForm();
+const isSubmitting = isSubmittingLocal || formIsSubmitting;
+
+const onSubmit = async (data) => {
+  if (isSubmittingLocal) return; // Guard at start
+  setIsSubmittingLocal(true);
+  try { /* work */ } 
+  finally { setIsSubmittingLocal(false); }
+};
+```
+
+**Category:** Data Integrity / User Experience
+**Compliance:** Aligned with form best practices
+
+---
