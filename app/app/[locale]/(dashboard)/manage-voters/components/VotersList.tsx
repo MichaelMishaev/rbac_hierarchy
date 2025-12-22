@@ -335,7 +335,13 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
           רשימת בוחרים ({searchQuery ? filteredVoters.length : totalVoters})
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{
+          display: 'flex',
+          gap: { xs: 1.5, sm: 2 },
+          flexWrap: 'wrap',
+          width: { xs: '100%', sm: 'auto' },
+          flexDirection: { xs: 'column', sm: 'row' },
+        }}>
           {!selectionMode && (
             <Button
               variant="contained"
@@ -358,6 +364,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                 backgroundColor: 'success.main',
                 color: 'white',
                 boxShadow: 'none',
+                flex: { xs: 1, sm: 'none' }, // Flex on mobile, auto on desktop
                 '&:hover': {
                   backgroundColor: 'success.dark',
                   boxShadow: 1,
@@ -390,6 +397,7 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                 minHeight: 48,
                 fontSize: { xs: '0.9375rem', sm: '1rem' },
                 borderWidth: '1.5px',
+                flex: { xs: 1, sm: 'none' }, // Flex on mobile, auto on desktop
                 '&:hover': {
                   borderWidth: '1.5px',
                   backgroundColor: 'error.lighter',

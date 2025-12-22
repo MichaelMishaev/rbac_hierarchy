@@ -124,13 +124,13 @@ export default function VotersPageClient({ isSuperAdmin, canSeeDeletedVoters }: 
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 1.5, sm: 2 },
               mt: { xs: 0, sm: 0 },
+              width: { xs: '100%', sm: 'auto' },
             }}
           >
             <Button
               variant="outlined"
               startIcon={<UploadIcon />}
               onClick={() => setUploadDialogOpen(true)}
-              fullWidth={true}
               sx={{
                 borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
                 px: { xs: 2.5, sm: 3 },
@@ -139,9 +139,15 @@ export default function VotersPageClient({ isSuperAdmin, canSeeDeletedVoters }: 
                 minHeight: 48,
                 fontSize: { xs: '0.9375rem', sm: '1rem' },
                 borderWidth: '1.5px',
+                flex: { xs: 1, sm: 'none' }, // Flex on mobile, auto on desktop
                 '&:hover': {
                   borderWidth: '1.5px',
                   backgroundColor: 'action.hover',
+                },
+                // RTL fix: Add gap between icon and text
+                '& .MuiButton-startIcon': {
+                  marginInlineEnd: 1,
+                  marginInlineStart: 0,
                 },
               }}
             >
@@ -151,7 +157,6 @@ export default function VotersPageClient({ isSuperAdmin, canSeeDeletedVoters }: 
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setCreateDialogOpen(true)}
-              fullWidth={true}
               sx={{
                 borderRadius: '50px', // Pill-shaped (2025 UI/UX standard)
                 px: { xs: 2.5, sm: 3 },
@@ -160,8 +165,14 @@ export default function VotersPageClient({ isSuperAdmin, canSeeDeletedVoters }: 
                 minHeight: 48,
                 fontSize: { xs: '0.9375rem', sm: '1rem' },
                 boxShadow: 'none',
+                flex: { xs: 1, sm: 'none' }, // Flex on mobile, auto on desktop
                 '&:hover': {
                   boxShadow: 1,
+                },
+                // RTL fix: Add gap between icon and text
+                '& .MuiButton-startIcon': {
+                  marginInlineEnd: 1,
+                  marginInlineStart: 0,
                 },
               }}
             >
