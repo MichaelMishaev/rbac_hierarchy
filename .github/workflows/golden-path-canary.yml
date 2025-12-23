@@ -24,6 +24,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_canary_password
+          POSTGRES_DB: hierarchy_platform_canary
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,6 +64,18 @@ jobs:
         working-directory: ./app
         run: npm ci
 
+      - name: Generate Prisma Client
+        working-directory: ./app
+        run: npm run db:generate
+
+      - name: Setup database
+        working-directory: ./app
+        env:
+          DATABASE_URL: postgresql://postgres:postgres_canary_password@localhost:5432/hierarchy_platform_canary
+        run: |
+          npm run db:push
+          npm run db:seed
+
       - name: Install Playwright browsers
         working-directory: ./app
         run: npx playwright install --with-deps chromium
@@ -47,6 +84,14 @@ jobs:
         working-directory: ./app
         run: npx playwright test tests/canary/ --reporter=list --project=chromium-desktop
         env:
+          # Database
+          DATABASE_URL: postgresql://postgres:postgres_canary_password@localhost:5432/hierarchy_platform_canary
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_canary_password@localhost:5432/hierarchy_platform_canary?pgbouncer=true
+          # Auth
+          NEXTAUTH_URL: http://localhost:3200
+          NEXTAUTH_SECRET: test-secret-for-canary-ci-only
+          # Test configuration
+          BASE_URL: http://localhost:3200
           # Production canary credentials (read-only accounts)
           CANARY_USER_EMAIL: ${{ secrets.CANARY_USER_EMAIL }}
           CANARY_PASSWORD: ${{ secrets.CANARY_PASSWORD }}

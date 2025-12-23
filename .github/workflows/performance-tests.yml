@@ -65,6 +65,10 @@ jobs:
         env:
           NODE_ENV: production
           PORT: 3000
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
+          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
         run: |
           npm run start &
           # Wait for app to be ready
