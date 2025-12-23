@@ -34,7 +34,7 @@ export default async function middleware(req: NextRequest) {
   // Check authentication for protected pages
   const session = await auth();
 
-  if (!session) {
+  if (!session || !session.user) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 

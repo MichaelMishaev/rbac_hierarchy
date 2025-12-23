@@ -58,6 +58,10 @@ jobs:
         working-directory: ./app
         env:
           NODE_ENV: production
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
+          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
         run: npm run build
 
       - name: Start application
@@ -221,6 +225,10 @@ jobs:
         working-directory: ./app
         env:
           NODE_ENV: production
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
+          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
         run: npm run build
 
       - name: Start application
@@ -231,7 +239,7 @@ jobs:
           DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
           DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
           NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test-secret-for-ci-only
+          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
         run: |
           npm run start &
           # Wait for app to be ready
