@@ -80,9 +80,7 @@ jobs:
 
       - name: Run performance tests
         working-directory: ./app
-        env:
-          BASE_URL: http://localhost:3000
-        run: npx playwright test tests/e2e/performance --reporter=json --reporter=html --project=chromium-desktop
+        run: npx playwright test tests/e2e/performance --base-url=http://localhost:3000 --reporter=json --reporter=html --project=chromium-desktop
 
       - name: Parse performance results
         id: parse_results
