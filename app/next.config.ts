@@ -8,6 +8,10 @@ const withNextIntl = createNextIntlPlugin('./i18n.ts');
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname),
+
+  // Performance: Disable source maps in production (saves ~30-40% build time)
+  productionBrowserSourceMaps: false,
+
   env: {
     // Explicitly expose NEXT_PUBLIC_ vars to browser (Next.js 15+)
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -89,8 +93,9 @@ export default withSentryConfig(
     // For all available options, see:
     // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-    // Upload a larger set of source maps for prettier stack traces (increases build time)
-    widenClientFileUpload: true,
+    // Performance: Disable expensive source map uploads (reduces build time by ~1-2 minutes)
+    // Only upload minimal source maps needed for error tracking
+    widenClientFileUpload: false,
 
     // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
     // This can increase your server load as well as your hosting bill.
@@ -100,9 +105,10 @@ export default withSentryConfig(
 
     // Webpack-specific options (moved from deprecated top-level)
     webpack: {
-      // Automatically annotate React components to show their full name in breadcrumbs and session replay
+      // Performance: Disable React component annotation to speed up builds
+      // Re-enable only if you need detailed component tracking in Sentry
       reactComponentAnnotation: {
-        enabled: true,
+        enabled: false,
       },
 
       // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)

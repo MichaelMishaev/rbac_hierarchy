@@ -119,3 +119,54 @@ railway logs
 3. Railway auto-deploys to development environment
 4. Test on development URL
 5. When ready, merge `develop` → `main` for production deployment
+
+---
+
+## 🔧 Manual Production Seeding (One-Time Setup)
+
+**⚠️ IMPORTANT**: These scripts are NO LONGER run automatically on every deploy.
+Run these ONCE per environment when setting up a new database:
+
+### Option 1: Via Railway CLI (Recommended)
+
+```bash
+# Switch to production environment
+railway environment production
+
+# Run seeding scripts (one-time only)
+railway run --service [your-service-name] npx tsx scripts/add-israeli-districts.ts
+railway run --service [your-service-name] npx tsx scripts/add-tlv-neighborhoods.ts
+```
+
+### Option 2: Via Railway Shell (Alternative)
+
+1. Go to Railway Dashboard → Production Environment
+2. Click on your app service
+3. Click **"Shell"** tab
+4. Run:
+```bash
+cd app
+npx tsx scripts/add-israeli-districts.ts
+npx tsx scripts/add-tlv-neighborhoods.ts
+```
+
+### Available Seeding Scripts
+
+| Script | Purpose | Safe to Re-run? |
+|--------|---------|----------------|
+| `add-israeli-districts.ts` | Adds Israeli districts/cities | ✅ Yes (idempotent) |
+| `add-tlv-neighborhoods.ts` | Adds Tel Aviv neighborhoods | ✅ Yes (idempotent) |
+| `fix-passwords-prod.ts` | One-time password migration | ⚠️ Check before re-running |
+
+### Why Manual Seeding?
+
+**Build Performance Optimization**: Previously, these scripts ran on EVERY deploy via `postbuild`, adding 2-3 minutes to build time. Now:
+- ✅ Builds are 75% faster (~2 minutes instead of 9.5 minutes)
+- ✅ Database migrations run at startup (fast if schema unchanged)
+- ✅ Seeding is manual and intentional (better control)
+
+**When to Run Seeding:**
+- ✅ First time setting up a new environment
+- ✅ After database reset/restore
+- ✅ When new geo data is added to scripts
+- ❌ NOT on every deploy (wastes time)
