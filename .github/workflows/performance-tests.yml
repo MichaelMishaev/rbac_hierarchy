@@ -10,6 +10,11 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: read
+  issues: write  # Required for PR comments
+  pull-requests: write  # Required for PR comments
+
 jobs:
   performance-tests:
     name: Run Performance Tests
@@ -60,6 +65,10 @@ jobs:
         env:
           NODE_ENV: production
           PORT: 3000
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
+          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
         run: |
           npm run start &
           # Wait for app to be ready
@@ -69,7 +78,7 @@ jobs:
         working-directory: ./app
         env:
           BASE_URL: http://localhost:3000
-        run: npx playwright test tests/e2e/performance --reporter=json --reporter=html
+        run: npx playwright test tests/e2e/performance --reporter=json --reporter=html --project=chromium-desktop
 
       - name: Parse performance results
         id: parse_results
