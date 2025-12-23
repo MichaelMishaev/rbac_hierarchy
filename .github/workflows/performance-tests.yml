@@ -10,6 +10,11 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: read
+  issues: write  # Required for PR comments
+  pull-requests: write  # Required for PR comments
+
 jobs:
   performance-tests:
     name: Run Performance Tests
@@ -69,7 +74,7 @@ jobs:
         working-directory: ./app
         env:
           BASE_URL: http://localhost:3000
-        run: npx playwright test tests/e2e/performance --reporter=json --reporter=html
+        run: npx playwright test tests/e2e/performance --reporter=json --reporter=html --project=chromium-desktop
 
       - name: Parse performance results
         id: parse_results
