@@ -14,19 +14,27 @@ import { colors } from '@/lib/design-system';
  */
 export default function DarkModeToggle() {
   const [darkMode, setDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load preference on mount
   useEffect(() => {
+    if (!mounted || typeof window === 'undefined') return;
+
     const savedMode = localStorage.getItem('darkMode');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     const isDark = savedMode ? savedMode === 'true' : prefersDark;
     setDarkMode(isDark);
-    
+
     if (isDark) {
       document.documentElement.classList.add('dark');
     }
-  }, []);
+  }, [mounted]);
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;

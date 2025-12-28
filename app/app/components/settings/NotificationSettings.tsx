@@ -46,13 +46,21 @@ export default function NotificationSettings() {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Listen for PWA install prompt
   useEffect(() => {
+    if (!mounted || typeof window === 'undefined') return;
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -81,7 +89,7 @@ export default function NotificationSettings() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [mounted]);
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);

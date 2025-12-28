@@ -34,8 +34,17 @@ export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration issues - only run after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    // Wait for client-side mount to avoid hydration mismatch
+    if (!mounted || typeof window === 'undefined') return;
+
     // 1. Check if already installed (standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -124,7 +133,7 @@ export default function PwaInstallPrompt() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [mounted]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
