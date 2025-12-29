@@ -17,6 +17,7 @@ import IORedis from 'ioredis';
 interface RedisClient {
   sadd: (key: string, ...members: string[]) => Promise<number>;
   eval: (script: string, keys: string[], args: string[]) => Promise<unknown>;
+  evalsha: (sha: string, keys: string[], args: string[]) => Promise<unknown>;
   get: (key: string) => Promise<string | null>;
   set: (key: string, value: string, opts?: { ex?: number }) => Promise<string>;
   incr: (key: string) => Promise<number>;
@@ -67,6 +68,9 @@ function initializeRedis(): RedisClient {
         },
         eval: async (script: string, keys: string[], args: string[]) => {
           return await ioredis.eval(script, keys.length, ...keys, ...args);
+        },
+        evalsha: async (sha: string, keys: string[], args: string[]) => {
+          return await ioredis.evalsha(sha, keys.length, ...keys, ...args);
         },
         get: async (key: string) => {
           return await ioredis.get(key);
@@ -121,6 +125,7 @@ function createMockRedis(): RedisClient {
   return {
     sadd: async () => 1,
     eval: async () => null,
+    evalsha: async () => null,
     get: async () => null,
     set: async () => 'OK',
     incr: async () => 1,
