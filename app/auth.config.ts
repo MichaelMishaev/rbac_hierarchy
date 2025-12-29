@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for Railway and production deployments
@@ -75,6 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // ✅ SECURITY FIX (VULN-AUTH-002): Generate JTI for new tokens
       if (user) {
         token.id = user.id;
         token.name = user.name;
@@ -82,7 +84,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.avatar = user.avatar;
         token.isSuperAdmin = user.isSuperAdmin;
         token.requirePasswordChange = user.requirePasswordChange;
+        token.jti = randomUUID(); // Unique token ID for blacklist tracking
       }
+
+      // Note: Blacklist checking happens server-side in API routes/server actions
+      // Cannot check here due to Edge Runtime limitations (no Redis access)
+
       return token;
     },
     async session({ session, token }) {
@@ -105,7 +112,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // ✅ SECURITY FIX (VULN-AUTH-001): Reduced from 30 days to 7 days
   },
   secret: process.env.NEXTAUTH_SECRET,
 });

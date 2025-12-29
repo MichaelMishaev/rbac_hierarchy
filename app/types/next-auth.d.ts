@@ -42,5 +42,6 @@ declare module 'next-auth/jwt' {
     avatar: string | null;
     isSuperAdmin: boolean;
     requirePasswordChange: boolean;
+    jti: string; // ✅ SECURITY FIX (VULN-AUTH-002): JWT ID for token blacklisting
   }
 }
