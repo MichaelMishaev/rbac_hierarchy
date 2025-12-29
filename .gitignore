@@ -67,3 +67,7 @@ test-results/
 
 # Database backups
 backups/
+
+# Security audit reports (temporary documentation)
+SECURITY_*.md
+**/SECURITY_*.md

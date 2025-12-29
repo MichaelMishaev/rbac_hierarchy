@@ -163,9 +163,21 @@ export async function createWorker(data: CreateWorkerInput) {
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
       // CRITICAL M2M VALIDATION: Activist Coordinator can ONLY create in assigned neighborhoods
+      // ✅ SECURITY FIX (VULN-RBAC-003): Use correct M2M join pattern
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: currentUser.id, // Uses User.id from the M2M table
+          activistCoordinatorId: activistCoordinator.id, // ✅ CORRECT: Use activistCoordinatorId
           neighborhoodId: data.neighborhoodId,
         },
       });
@@ -345,9 +357,21 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
 
     // Role-based filtering
     if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // SUPERVISOR: Filter by specific assigned sites (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Use correct M2M join pattern
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+          data: { activists: [], total: 0, page: 1, limit: 10 },
+        };
+      }
+
       const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: currentUser.id },
+        where: { activistCoordinatorId: activistCoordinator.id }, // ✅ CORRECT: Use activistCoordinatorId
         select: { neighborhoodId: true },
       });
       const neighborhoodIds = activistCoordinatorNeighborhoods.map(ss => ss.neighborhoodId);
@@ -566,10 +590,21 @@ export async function getWorkerById(activistId: string) {
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Use correct M2M join pattern
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: currentUser.id,
+          activistCoordinatorId: activistCoordinator.id, // ✅ CORRECT: Use activistCoordinatorId
           neighborhoodId: activist.neighborhoodId,
         },
       });
@@ -635,10 +670,21 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Use correct M2M join pattern
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: currentUser.id,
+          activistCoordinatorId: activistCoordinator.id, // ✅ CORRECT: Use activistCoordinatorId
           neighborhoodId: existingActivist.neighborhoodId,
         },
       });
@@ -901,10 +947,21 @@ export async function deleteWorker(activistId: string) {
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Use correct M2M join pattern
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: currentUser.id,
+          activistCoordinatorId: activistCoordinator.id, // ✅ CORRECT: Use activistCoordinatorId
           neighborhoodId: activistToDelete.neighborhoodId,
         },
       });
@@ -1006,10 +1063,22 @@ export async function toggleWorkerStatus(activistId: string) {
         };
       }
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Check if supervisor has access to this worker's site (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
+      // Check if supervisor has access to this worker's site
       const activistCoordinatorNeighborhood = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: currentUser.id,
+          activistCoordinatorId: activistCoordinator.id,
           neighborhoodId: activist.neighborhoodId,
         },
       });
@@ -1148,9 +1217,25 @@ export async function getWorkerStats() {
 
     // Apply role-based filtering
     if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // SUPERVISOR: Filter by specific assigned sites (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          total: 0,
+          active: 0,
+          inactive: 0,
+          byCorp: [],
+          byNeighborhood: [],
+          byStatus: [],
+        };
+      }
+
+      // SUPERVISOR: Filter by specific assigned sites
       const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: currentUser.id },
+        where: { activistCoordinatorId: activistCoordinator.id },
         select: { neighborhoodId: true },
       });
       const neighborhoodIds = activistCoordinatorNeighborhoods.map(ss => ss.neighborhoodId);

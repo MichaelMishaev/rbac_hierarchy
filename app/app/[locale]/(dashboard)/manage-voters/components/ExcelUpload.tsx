@@ -32,7 +32,7 @@ import {
   Visibility as VisibilityIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { read, utils } from 'xlsx';
+import ExcelJS from 'exceljs';
 import { bulkImportVoters } from '@/app/actions/voters';
 import { checkExcelDuplicates } from '@/app/actions/voters-duplicate-check';
 
@@ -93,9 +93,32 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
 
     try {
       const data = await selectedFile.arrayBuffer();
-      const workbook = read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = utils.sheet_to_json<ExcelRow>(worksheet);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(data);
+      const worksheet = workbook.worksheets[0];
+
+      // Convert worksheet to JSON
+      const jsonData: ExcelRow[] = [];
+      const headers: string[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          // First row is headers
+          row.eachCell((cell) => {
+            headers.push(cell.value?.toString() || '');
+          });
+        } else {
+          // Data rows
+          const rowData: ExcelRow = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              rowData[header] = cell.value;
+            }
+          });
+          jsonData.push(rowData);
+        }
+      });
 
       // Validate columns
       if (jsonData.length === 0) {
@@ -174,9 +197,32 @@ export function ExcelUpload({ onSuccess }: ExcelUploadProps) {
 
     try {
       const data = await file.arrayBuffer();
-      const workbook = read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = utils.sheet_to_json<ExcelRow>(worksheet);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(data);
+      const worksheet = workbook.worksheets[0];
+
+      // Convert worksheet to JSON
+      const jsonData: ExcelRow[] = [];
+      const headers: string[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          // First row is headers
+          row.eachCell((cell) => {
+            headers.push(cell.value?.toString() || '');
+          });
+        } else {
+          // Data rows
+          const rowData: ExcelRow = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              rowData[header] = cell.value;
+            }
+          });
+          jsonData.push(rowData);
+        }
+      });
 
       // Transform to server format
       // Support columns with or without "(חובה)" suffix

@@ -70,12 +70,12 @@ export default async function SystemRulesPage() {
         'הזן קוד מחוז (לדוגמה: "CENTER", "NORTH")',
         'שמור ולחץ "צור מחוז"',
       ],
-      tip: 'קמפיין קטן? אתה יכול לדלג על שלב זה ולנהל ישירות ערים כ-SuperAdmin',
+      tip: 'שטח קטן? אתה יכול לדלג על שלב זה ולנהל ישירות ערים כ-SuperAdmin',
     },
     {
       order: 2,
       title: '🏙️ צור ערים',
-      description: 'כל עיר היא יחידה ארגונית עצמאית בקמפיין',
+      description: 'כל עיר היא יחידה ארגונית עצמאית בשטח',
       icon: <LocationCityIcon />,
       color: colors.pastel.blue,
       link: '/cities',
@@ -111,7 +111,7 @@ export default async function SystemRulesPage() {
     {
       order: 4,
       title: '🏘️ צור שכונות',
-      description: 'שכונות הן אזורי הקמפיין - אזורים גיאוגרפיים בתוך עיר',
+      description: 'שכונות הן אזורי השטח - אזורים גיאוגרפיים בתוך עיר',
       icon: <HomeWorkIcon />,
       color: colors.status.lightGreen,
       link: '/neighborhoods',
@@ -174,12 +174,12 @@ export default async function SystemRulesPage() {
       title: 'מערכת עברית בלבד',
       icon: 'TranslateIcon',
       color: colors.pastel.blue,
-      realWorldExample: `דמיין שאתה פותח קמפיין בחו"ל ומנסה לתפעל אותו באנגלית. הפעילים שלך מדברים עברית, אבל המערכת מציגה להם טקסטים באנגלית. זה יוצר בלבול, טעויות ואיבוד זמן יקר.
+      realWorldExample: `דמיין שאתה פותח שטח בחו"ל ומנסה לתפעל אותו באנגלית. הפעילים שלך מדברים עברית, אבל המערכת מציגה להם טקסטים באנגלית. זה יוצר בלבול, טעויות ואיבוד זמן יקר.
 
 המערכת שלנו נבנתה **רק בעברית** כי כל הפעילים, הרכזים והמנהלים מדברים עברית. אין תמיכה בשפות נוספות כי זה מיותר ומסרבל.`,
       whySuperAdminCares: [
         'פעילי שטח עובדים בטלפונים ניידים תוך כדי תנועה - אין להם זמן לתרגם',
-        'טעויות תרגום יכולות לגרום לבעיות תפעוליות בקמפיין',
+        'טעויות תרגום יכולות לגרום לבעיות תפעוליות בשטח',
         'פשטות = יעילות בעונת בחירות',
       ],
       technicalTranslation: `• כל ה-UI מוגדר עם \`dir="rtl"\` ו-\`lang="he"\`
@@ -205,7 +205,7 @@ export default async function SystemRulesPage() {
       whySuperAdminCares: [
         'רכז עיר בתל אביב לא צריך (ולא יכול) לראות נתוני ירושלים',
         'מניעת דליפת מידע בין קמפיינים במספר ערים',
-        'שמירה על סודיות אסטרטגית של הקמפיין',
+        'שמירה על סודיות אסטרטגית של השטח',
         'בקרת נזקים: אם מישהו טועה, הוא לא יכול לפגוע בעיר אחרת',
       ],
       technicalTranslation: `• 4 רמות תפקידים: **SuperAdmin** → **Area Manager** → **City Coordinator** → **Activist Coordinator**
@@ -230,7 +230,7 @@ export default async function SystemRulesPage() {
 **בידוד נתונים** מבטיח שכל מה שקורה בעיר אחת נשאר בעיר הזאת, אלא אם אתה מחליט אחרת.`,
       whySuperAdminCares: [
         'אי אפשר לטעות ולמחוק פעילים בעיר הלא נכונה',
-        'כל עיר יכולה לנהל את הקמפיין שלה בצורה עצמאית',
+        'כל עיר יכולה לנהל את השטח שלה בצורה עצמאית',
         'אם יש דליפת מידע, היא מוגבלת לעיר אחת בלבד',
         'בדיקות איכות: קל לזהות פעילות חריגה בעיר ספציפית',
       ],
@@ -314,7 +314,7 @@ Activists (\`activists\` table)
       title: 'רמות סיכון (Risk Levels)',
       icon: 'TrafficIcon',
       color: colors.status.orange,
-      realWorldExample: `דמיין שאתה מנהל קמפיין 3 ימים לפני הבחירות:
+      realWorldExample: `דמיין שאתה מנהל שטח 3 ימים לפני הבחירות:
 
 **🔹 סיכון נמוך:** שינוי צבע של כפתור
   → תוצאה: אף אחד לא שם לב, אין בעיה
@@ -387,7 +387,7 @@ Activists (\`activists\` table)
     {
       id: 'campaign-season',
       order: 8,
-      title: 'עונת קמפיין (Campaign Season Context)',
+      title: 'עונת שטח (Campaign Season Context)',
       icon: 'EventIcon',
       color: colors.status.red,
       realWorldExample: `דמיין שאתה ב-10 הימים האחרונים לפני הבחירות:
@@ -410,11 +410,11 @@ Activists (\`activists\` table)
 ✅ שיפורי UI (צבעים, כפתורים)
 ✅ תרגום עברי של טקסט שנשכח
 
-המערכת מתייחסת לעונת קמפיין כמו אירוע חי - **יציבות > חדשנות**.`,
+המערכת מתייחסת לעונת שטח כמו אירוע חי - **יציבות > חדשנות**.`,
       whySuperAdminCares: [
         'דעת מתי לאשר שינויים ומתי להמתין (timing is everything)',
         'הבנה של איזון מהירות מול בטיחות',
-        'תכנון שדרוגים לפני/אחרי עונת הקמפיין',
+        'תכנון שדרוגים לפני/אחרי עונת השטח',
         'בקרת עדיפויות: באגים קריטיים vs nice-to-have features',
       ],
       technicalTranslation: `🟢 **SAFE TO ITERATE QUICKLY** (during campaign):
@@ -437,7 +437,7 @@ Activists (\`activists\` table)
    • 2 weeks before: UI polish, translations, bug fixes only
    • 1 week before: Critical bugs only, no features
    • Election day: Read-only (no deployments)`,
-      keywords: ['קמפיין', 'בחירות', 'לוחות זמנים', 'עדיפויות', 'דחיפות', 'יציבות'],
+      keywords: ['שטח', 'בחירות', 'לוחות זמנים', 'עדיפויות', 'דחיפות', 'יציבות'],
     },
     {
       id: 'data-integrity',
@@ -457,12 +457,12 @@ Activists (\`activists\` table)
 ✅ הפעיל מסומן כ-\`is_active = false\`
 ✅ כל הנתונים נשארים במסד הנתונים
 ✅ אפשר לשחזר אותו בלחיצת כפתור
-✅ ההיסטוריה נשמרת לניתוח אחרי הקמפיין
+✅ ההיסטוריה נשמרת לניתוח אחרי השטח
 
 זה כמו "סל מחזור" במחשב - אתה לא באמת מוחק, רק מסתיר.`,
       whySuperAdminCares: [
         'הגנה מפני טעויות בלתי הפיכות (human error protection)',
-        'שמירה על היסטוריה לניתוח אחרי הקמפיין',
+        'שמירה על היסטוריה לניתוח אחרי השטח',
         'אפשרות לשחזר נתונים במקרה חירום',
         'ביקורת ותאימות: רישום מלא של כל הפעולות',
       ],
@@ -521,7 +521,7 @@ Activists (\`activists\` table)
                 fontWeight: 500,
               }}
             >
-              הדרכה שלב אחר שלב להקמת מערכת הקמפיין שלך
+              הדרכה שלב אחר שלב להקמת מערכת השטח שלך
             </Typography>
           </Box>
         </Box>
@@ -779,7 +779,7 @@ Activists (\`activists\` table)
                       שלב 4: שכונות
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      אזורי קמפיין - אזורים גיאוגרפיים בתוך עיר (פלורנטין, נווה צדק וכו&apos;)
+                      אזורי שטח - אזורים גיאוגרפיים בתוך עיר (פלורנטין, נווה צדק וכו&apos;)
                     </Typography>
                   </Box>
                   <Chip label="חובה" sx={{ background: colors.status.red, color: colors.neutral[0], fontWeight: 700 }} />
@@ -865,7 +865,7 @@ Activists (\`activists\` table)
                       שלב 6: Activists (פעילי שטח)
                     </Typography>
                     <Typography sx={{ fontSize: '14px', color: colors.neutral[600] }}>
-                      מתנדבי קמפיין בשטח - אלו שעושים את העבודה בפועל
+                      מתנדבי שטח בשטח - אלו שעושים את העבודה בפועל
                     </Typography>
                   </Box>
                   <Chip label="חובה" sx={{ background: colors.status.red, color: colors.neutral[0], fontWeight: 700 }} />

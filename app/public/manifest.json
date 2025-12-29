@@ -1,6 +1,6 @@
 {
-  "name": "מערכת ניהול קמפיין בחירות",
-  "short_name": "קמפיין",
+  "name": "מערכת ניהול שטח בחירות",
+  "short_name": "שטח",
   "description": "מערכת ניהול פעילויות בחירות וניהול פעילים במגרשים - Election Campaign Management System",
   "start_url": "/",
   "display": "standalone",

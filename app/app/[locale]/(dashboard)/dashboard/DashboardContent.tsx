@@ -302,7 +302,7 @@ export default async function DashboardContent() {
                 mb: 3,
               }}
             >
-              {isRTL ? 'היררכיית הקמפיין שלי' : 'My Campaign Hierarchy'}
+              {isRTL ? 'היררכיית השטח שלי' : 'My Campaign Hierarchy'}
             </Typography>
             <OrganizationalTreeD3 />
           </Box>

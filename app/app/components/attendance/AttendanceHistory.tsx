@@ -41,7 +41,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import InfoIcon from '@mui/icons-material/Info';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { getAttendanceHistory } from '@/actions/attendance';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 type AttendanceHistoryProps = {
   user: {
@@ -167,7 +167,7 @@ export default function AttendanceHistory({ user: _user }: AttendanceHistoryProp
   };
 
   // Export to Excel
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data?.records || data.records.length === 0) {
       alert('אין נתונים לייצוא');
       return;
@@ -188,29 +188,35 @@ export default function AttendanceHistory({ user: _user }: AttendanceHistoryProp
       הערות: record.notes || '-',
     }));
 
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(exportData);
-
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 12 }, // תאריך
-      { wch: 20 }, // פעיל
-      { wch: 15 }, // טלפון
-      { wch: 15 }, // תפקיד
-      { wch: 20 }, // שכונה
-      { wch: 10 }, // סטטוס
-      { wch: 12 }, // שעת נוכחות
-      { wch: 20 }, // נבדק על ידי
-      { wch: 30 }, // הערות
-    ];
-
     // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'נוכחות');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('נוכחות');
+
+    // Set columns with headers and widths
+    if (exportData.length > 0) {
+      const headers = Object.keys(exportData[0]);
+      worksheet.columns = headers.map((header, index) => ({
+        header,
+        key: header,
+        width: [12, 20, 15, 15, 20, 10, 12, 20, 30][index] || 15,
+      }));
+
+      // Add rows
+      exportData.forEach((row: Record<string, string>) => worksheet.addRow(row));
+    }
 
     // Download file
     const fileName = `attendance_${format(startDate!, 'yyyy-MM-dd')}_${format(endDate!, 'yyyy-MM-dd')}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   // Show record details

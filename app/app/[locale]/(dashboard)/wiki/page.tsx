@@ -125,7 +125,7 @@ export default async function WikiIndexPage() {
                 fontWeight: 500,
               }}
             >
-              כל מה שאתה צריך לדעת על ניהול מערכת הקמפיין במקום אחד
+              כל מה שאתה צריך לדעת על ניהול מערכת השטח במקום אחד
             </Typography>
           </Box>
         </Box>

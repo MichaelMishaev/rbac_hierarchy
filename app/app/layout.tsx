@@ -8,7 +8,7 @@ import ToastProvider from './components/ui/ToastProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'מערכת ניהול קמפיין בחירות - Election Campaign Management',
+  title: 'מערכת ניהול שטח בחירות - Election Campaign Management',
   description: 'מערכת ניהול פעילויות בחירות וניהול פעילים במגרשים - Campaign field operations platform',
   manifest: '/manifest.json',
   icons: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'קמפיין בחירות',
+    title: 'שטח בחירות',
   },
   formatDetection: {
     telephone: false,

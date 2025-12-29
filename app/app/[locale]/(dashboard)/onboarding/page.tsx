@@ -85,9 +85,9 @@ export default async function OnboardingPage() {
       icon: <TimelineIcon />,
       color: colors.pastel.blue,
       tasks: [
-        'קמפיין קטן (עיר אחת): מחק את כל ה-Area Managers',
-        'קמפיין בינוני (2-5 ערים): השתמש ב-1 Area Manager',
-        'קמפיין ארצי (6+ ערים): השתמש בכל 6 המחוזות',
+        'שטח קטן (עיר אחת): מחק את כל ה-Area Managers',
+        'שטח בינוני (2-5 ערים): השתמש ב-1 Area Manager',
+        'שטח ארצי (6+ ערים): השתמש בכל 6 המחוזות',
         'צור רשימה של ערים שתצטרך',
       ],
     },
@@ -100,13 +100,13 @@ export default async function OnboardingPage() {
       tasks: [
         'עבור דרך כל מנהל מחוז שתשאיר',
         'החלף אימייל, שם, טלפון בפרטים אמיתיים',
-        'מחק מנהלי אזור שלא צריך (אם קמפיין קטן)',
+        'מחק מנהלי אזור שלא צריך (אם שטח קטן)',
         'צור מנהלי אזור חדשים אם נדרש',
       ],
     },
     {
       label: 'שלב 3: יצירת ערים',
-      description: 'צור את הערים בהן הקמפיין יפעל',
+      description: 'צור את הערים בהן השטח יפעל',
       critical: false,
       icon: <LocationCityIcon />,
       color: colors.pastel.blue,
@@ -182,7 +182,7 @@ export default async function OnboardingPage() {
   // Organization size paths
   const organizationPaths = [
     {
-      title: 'קמפיין קטן',
+      title: 'שטח קטן',
       subtitle: 'עיר אחת, 50-200 פעילים',
       time: '2-4 שעות',
       color: colors.pastel.green,
@@ -194,7 +194,7 @@ export default async function OnboardingPage() {
       ],
     },
     {
-      title: 'קמפיין בינוני',
+      title: 'שטח בינוני',
       subtitle: '2-5 ערים, 200-1000 פעילים',
       time: '1-2 ימים',
       color: colors.pastel.blue,
@@ -208,7 +208,7 @@ export default async function OnboardingPage() {
       ],
     },
     {
-      title: 'קמפיין ארצי',
+      title: 'שטח ארצי',
       subtitle: '6+ ערים, 1000+ פעילים',
       time: '1-2 שבועות',
       color: colors.pastel.purple,
@@ -367,7 +367,7 @@ export default async function OnboardingPage() {
             🎯 בחר את המסלול שלך
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.95 }}>
-            בחר את המסלול המתאים לגודל הקמפיין שלך
+            בחר את המסלול המתאים לגודל השטח שלך
           </Typography>
         </Box>
 
@@ -674,24 +674,24 @@ export default async function OnboardingPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography sx={{ fontSize: '14px', color: colors.neutral[700] }}>
-                תלוי בגודל הקמפיין שלך:
+                תלוי בגודל השטח שלך:
               </Typography>
               <List dense>
                 <ListItem>
                   <ListItemText
-                    primary="קמפיין קטן (עיר אחת): מחק את כל ה-Area Managers"
+                    primary="שטח קטן (עיר אחת): מחק את כל ה-Area Managers"
                     primaryTypographyProps={{ fontSize: '13px' }}
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText
-                    primary="קמפיין בינוני (2-5 ערים): השתמש ב-1 Area Manager"
+                    primary="שטח בינוני (2-5 ערים): השתמש ב-1 Area Manager"
                     primaryTypographyProps={{ fontSize: '13px' }}
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText
-                    primary="קמפיין ארצי: השתמש בכל 6 המחוזות"
+                    primary="שטח ארצי: השתמש בכל 6 המחוזות"
                     primaryTypographyProps={{ fontSize: '13px' }}
                   />
                 </ListItem>

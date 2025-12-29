@@ -55,7 +55,7 @@ interface VoterFormProps {
   onCancel?: () => void;
 }
 
-const steps = ['מידע אישי', 'מידע גאוגרפי', 'סטטוס קמפיין'];
+const steps = ['מידע אישי', 'מידע גאוגרפי', 'סטטוס שטח'];
 
 export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -474,7 +474,7 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
                 <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
               </Box>
               <Typography variant="h6" fontWeight={600} color="text.primary">
-                סטטוס קמפיין
+                סטטוס שטח
               </Typography>
             </Box>
             <Divider sx={{ mb: 4, borderColor: 'primary.light', borderWidth: 2 }} />

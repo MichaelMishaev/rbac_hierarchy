@@ -84,7 +84,7 @@ export async function getDashboardStats(): Promise<{
   try {
     const currentUser = await getCurrentUser();
 
-    let stats: DashboardStats = {
+    const stats: DashboardStats = {
       recentActivity: [],
     };
 
@@ -478,9 +478,26 @@ async function getAreaManagerStatsUncached(cityIds: string[]): Promise<ManagerSt
 // ============================================
 
 async function getSupervisorStatsUncached(userId: string): Promise<SupervisorStats> {
-  // Get supervisor's assigned sites (using legacyActivistCoordinatorUserId for User.id)
+  // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
+  const activistCoordinator = await prisma.activistCoordinator.findFirst({
+    where: { userId },
+  });
+
+  if (!activistCoordinator) {
+    return {
+      neighborhood: null,
+      neighborhoods: [],
+      totalActivists: 0,
+      activeActivists: 0,
+      inactiveActivists: 0,
+      recentActivists: [],
+      activistsByPosition: [],
+    };
+  }
+
+  // Get supervisor's assigned sites
   const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-    where: { legacyActivistCoordinatorUserId: userId },
+    where: { activistCoordinatorId: activistCoordinator.id },
     select: { neighborhoodId: true },
   });
 
@@ -909,9 +926,21 @@ export async function getQuickStats() {
 
       stats = { managers, supervisors, sites, workers };
     } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
-      // Get supervisor's assigned sites (using legacyActivistCoordinatorUserId for User.id)
+      // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
+      // Get supervisor's assigned sites
       const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: currentUser.id },
+        where: { activistCoordinatorId: activistCoordinator.id },
         select: { neighborhoodId: true },
       });
 

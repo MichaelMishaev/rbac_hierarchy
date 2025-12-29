@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { withErrorHandler } from '@/lib/error-handler';
+import { withErrorHandler, ValidationError } from '@/lib/error-handler';
 import { logger, extractRequestContext } from '@/lib/logger';
+import { passwordChangeRateLimiter, checkRateLimit } from '@/lib/ratelimit';
 
 export const POST = withErrorHandler(async (req: Request) => {
   try {
@@ -15,14 +16,33 @@ export const POST = withErrorHandler(async (req: Request) => {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { newPassword } = await req.json();
-
-    if (!newPassword || typeof newPassword !== 'string') {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
+    // ✅ SECURITY FIX (2025 Standards): Rate limit password changes (5 per day per user)
+    const rateLimit = await checkRateLimit(passwordChangeRateLimiter, session.user.id);
+    if (!rateLimit.success) {
+      const context = await extractRequestContext(req);
+      logger.authFailure(`Password change rate limit exceeded (${rateLimit.remaining}/${rateLimit.limit})`, {
+        ...context,
+        userId: session.user.id,
+      });
+      return NextResponse.json(
+        {
+          error: 'ניסית לשנות סיסמה יותר מדי פעמים. נסה שוב מאוחר יותר',
+          resetAt: rateLimit.reset,
+        },
+        { status: 429 }
+      );
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    const { newPassword } = await req.json();
+
+    // ✅ SECURITY FIX (2025 Standards): Throw ValidationError for proper logging
+    if (!newPassword || typeof newPassword !== 'string') {
+      throw new ValidationError('הסיסמה לא חוקית');
+    }
+
+    // ✅ SECURITY FIX (OWASP 2025): Increase minimum from 6 to 8 characters
+    if (newPassword.length < 8) {
+      throw new ValidationError('הסיסמה חייבת להכיל לפחות 8 תווים');
     }
 
     // Hash the new password

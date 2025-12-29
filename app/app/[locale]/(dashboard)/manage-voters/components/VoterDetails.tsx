@@ -248,7 +248,7 @@ export function VoterDetails({ voterId, onEdit }: VoterDetailsProps) {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                סטטוס קמפיין
+                סטטוס שטח
               </Typography>
 
               <Grid container spacing={2}>

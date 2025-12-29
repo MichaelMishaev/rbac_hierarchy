@@ -345,7 +345,7 @@ export default function MorePageClient({ role, userEmail }: MorePageClientProps)
       {/* Version info */}
       <Box sx={{ mt: 4, textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
-          מערכת ניהול קמפיין בחירות v2.0
+          מערכת ניהול שטח בחירות v2.0
         </Typography>
         <Typography variant="caption" color="text.secondary">
           © 2025 כל הזכויות שמורות

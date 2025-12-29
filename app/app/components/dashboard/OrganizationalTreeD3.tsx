@@ -808,7 +808,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
         }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: colors.neutral[800] }}>
-          מקרא היררכיית הקמפיין:
+          מקרא היררכיית השטח:
         </Typography>
         <Box display="flex" flexWrap="wrap" gap={1.5}>
           <Box display="flex" alignItems="center" gap={0.75}>
