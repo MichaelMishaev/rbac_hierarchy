@@ -668,6 +668,10 @@ model AttendanceRecord {
   lastEditedAt   DateTime? @map("last_edited_at") @db.Timestamptz
   editReason     String?   @map("edit_reason") @db.Text
 
+  // Cancellation tracking (preserves immutability - INV-DATA-003)
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz
+  cancelledBy String?   @map("cancelled_by") // User ID who cancelled
+
   // GPS Tracking (Phase 5)
   checkedInLatitude  Float?    @map("checked_in_latitude")   // Decimal degrees (e.g., 32.0853)
   checkedInLongitude Float?    @map("checked_in_longitude")  // Decimal degrees (e.g., 34.7818)

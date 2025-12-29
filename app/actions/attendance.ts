@@ -451,20 +451,30 @@ export async function undoCheckIn(input: z.infer<typeof UndoCheckInSchema>) {
       }
     }
 
-    // 6. Delete the record (or mark as NOT_PRESENT)
-    const record = await prisma.attendanceRecord.delete({
+    // 6. Soft-cancel the record (preserves immutability - INV-DATA-003)
+    // ✅ SECURITY FIX: Update instead of delete to preserve audit trail
+    const record = await prisma.attendanceRecord.update({
       where: {
         activistId_date: {
           activistId: validated.activistId,
           date: new Date(validated.date),
         },
       },
+      data: {
+        status: 'NOT_PRESENT',
+        notes: `ביטול: ${validated.reason}`,
+        cancelledAt: new Date(),
+        cancelledBy: user.id,
+        lastEditedById: user.id,
+        lastEditedAt: new Date(),
+        editReason: validated.reason,
+      },
     });
 
     // 7. Audit log with cancellation reason
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE',
+        action: 'CANCEL_ATTENDANCE',
         entity: 'attendance_record',
         entityId: record.id,
         userId: user.id,
