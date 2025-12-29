@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { withErrorHandler, UnauthorizedError, ForbiddenError } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
@@ -99,9 +99,9 @@ export const GET = withErrorHandler(async (req: Request) => {
       hierarchyData.push({
         'רמה': 'מחוז',
         'מחוז': area.regionName,
-        'מנהל מחוז': area.user?.fullName || 'N/A',
-        'אימייל מנהל': area.user?.email || 'N/A',
-        'טלפון מנהל': area.user?.phone || 'N/A',
+        'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
+        'אימייל מנהל': area.user?.email || 'לא משויך',
+        'טלפון מנהל': area.user?.phone || 'לא משויך',
         'עיר': '',
         'רכז עיר': '',
         'רכז שכונתי': '',
@@ -120,7 +120,7 @@ export const GET = withErrorHandler(async (req: Request) => {
         hierarchyData.push({
           'רמה': 'עיר',
           'מחוז': area.regionName,
-          'מנהל מחוז': area.user?.fullName || 'N/A',
+          'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
           'אימייל מנהל': '',
           'טלפון מנהל': '',
           'עיר': city.name,
@@ -138,11 +138,11 @@ export const GET = withErrorHandler(async (req: Request) => {
           hierarchyData.push({
             'רמה': 'רכז עיר',
             'מחוז': area.regionName,
-            'מנהל מחוז': area.user?.fullName || 'N/A',
+            'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
             'אימייל מנהל': '',
             'טלפון מנהל': '',
             'עיר': city.name,
-            'רכז עיר': coord.user?.fullName || 'N/A',
+            'רכז עיר': coord.user?.fullName || 'ממתין למינוי',
             'רכז שכונתי': '',
             'שכונה': '',
             'פעיל': '',
@@ -157,12 +157,12 @@ export const GET = withErrorHandler(async (req: Request) => {
           hierarchyData.push({
             'רמה': 'רכז שכונתי',
             'מחוז': area.regionName,
-            'מנהל מחוז': area.user?.fullName || 'N/A',
+            'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
             'אימייל מנהל': '',
             'טלפון מנהל': '',
             'עיר': city.name,
             'רכז עיר': '',
-            'רכז שכונתי': coord.user?.fullName || 'N/A',
+            'רכז שכונתי': coord.user?.fullName || 'ממתין למינוי',
             'שכונה': '',
             'פעיל': '',
             'סה"כ ערים': '',
@@ -176,7 +176,7 @@ export const GET = withErrorHandler(async (req: Request) => {
           hierarchyData.push({
             'רמה': 'שכונה',
             'מחוז': area.regionName,
-            'מנהל מחוז': area.user?.fullName || 'N/A',
+            'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
             'אימייל מנהל': '',
             'טלפון מנהל': '',
             'עיר': city.name,
@@ -194,7 +194,7 @@ export const GET = withErrorHandler(async (req: Request) => {
             hierarchyData.push({
               'רמה': 'פעיל',
               'מחוז': area.regionName,
-              'מנהל מחוז': area.user?.fullName || 'N/A',
+              'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
               'אימייל מנהל': '',
               'טלפון מנהל': '',
               'עיר': city.name,
@@ -214,9 +214,9 @@ export const GET = withErrorHandler(async (req: Request) => {
     // Create summary sheet
     const summaryData = areaManagers.map((area) => ({
       'מחוז': area.regionName,
-      'מנהל מחוז': area.user?.fullName || 'N/A',
-      'אימייל': area.user?.email || 'N/A',
-      'טלפון': area.user?.phone || 'N/A',
+      'מנהל מחוז': area.user?.fullName || 'ממתין למינוי',
+      'אימייל': area.user?.email || 'לא משויך',
+      'טלפון': area.user?.phone || 'לא משויך',
       'מספר ערים': area.cities.length,
       'מספר שכונות': area.cities.reduce((sum, c) => sum + c.neighborhoods.length, 0),
       'מספר פעילים': area.cities.reduce(
@@ -226,18 +226,32 @@ export const GET = withErrorHandler(async (req: Request) => {
     }));
 
     // Create workbook
-    const workbook = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
 
     // Add summary sheet
-    const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'סיכום מחוזות');
+    const summarySheet = workbook.addWorksheet('סיכום מחוזות');
+    if (summaryData.length > 0) {
+      summarySheet.columns = Object.keys(summaryData[0]).map((key) => ({
+        header: key,
+        key,
+        width: 20,
+      }));
+      summaryData.forEach((row) => summarySheet.addRow(row));
+    }
 
     // Add full hierarchy sheet
-    const hierarchySheet = XLSX.utils.json_to_sheet(hierarchyData);
-    XLSX.utils.book_append_sheet(workbook, hierarchySheet, 'היררכיה מלאה');
+    const hierarchySheet = workbook.addWorksheet('היררכיה מלאה');
+    if (hierarchyData.length > 0) {
+      hierarchySheet.columns = Object.keys(hierarchyData[0]).map((key) => ({
+        header: key,
+        key,
+        width: 20,
+      }));
+      hierarchyData.forEach((row) => hierarchySheet.addRow(row));
+    }
 
     // Generate Excel file as buffer
-    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const excelBuffer = await workbook.xlsx.writeBuffer();
 
     // Create filename with current date
     const date = new Date().toISOString().split('T')[0];

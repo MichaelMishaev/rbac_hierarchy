@@ -117,10 +117,10 @@ export async function GET() {
         },
         children: [
           {
-            name: areaManager.user?.fullName || 'N/A',
+            name: areaManager.user?.fullName || 'ממתין למינוי',
             type: 'areamanager',
             attributes: {
-              email: areaManager.user?.email || 'N/A',
+              email: areaManager.user?.email || 'לא משויך',
               role: 'מנהל מחוז',
             },
             children: (areaManager.cities || []).map((city: any) => {
@@ -515,7 +515,7 @@ function generateStandaloneHTML(treeData: any): string {
 </head>
 <body>
     <div class="header">
-        <h1>🌳 עץ ארגוני - מערכת ניהול קמפיין בחירות</h1>
+        <h1>🌳 עץ ארגוני - מערכת ניהול שטח בחירות</h1>
         <p>תצוגה אינטראקטיבית של כל ההיררכיה הארגונית</p>
     </div>
 
