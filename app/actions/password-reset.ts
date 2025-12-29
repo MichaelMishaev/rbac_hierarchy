@@ -222,9 +222,18 @@ async function verifyManagerCanResetUser(
   }
 
   // Activist Coordinator can reset Activists in their assigned neighborhoods
+  // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
   if (manager.role === "ACTIVIST_COORDINATOR") {
+    const activistCoordinator = await prisma.activistCoordinator.findFirst({
+      where: { userId: managerId },
+    });
+
+    if (!activistCoordinator) {
+      return false; // No activist coordinator record found
+    }
+
     const managerNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-      where: { legacyActivistCoordinatorUserId: managerId },
+      where: { activistCoordinatorId: activistCoordinator.id },
       select: { neighborhoodId: true },
     });
 

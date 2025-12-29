@@ -97,10 +97,24 @@ export async function checkInActivist(input: z.infer<typeof CheckInActivistSchem
     }
 
     // 6. For activist coordinators, validate neighborhood access
+    // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
     if (user.role === 'ACTIVIST_COORDINATOR' && !user.isSuperAdmin) {
+      // First, get the activist coordinator record
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: user.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+        };
+      }
+
+      // Then check M2M assignment with correct FK
       const hasNeighborhoodAccess = await prisma.activistCoordinatorNeighborhood.findFirst({
         where: {
-          legacyActivistCoordinatorUserId: user.id,
+          activistCoordinatorId: activistCoordinator.id,
           neighborhoodId: validated.neighborhoodId,
         },
       });
@@ -232,8 +246,17 @@ async function getTodaysAttendanceUncached(userId: string, userRole: string, isS
   }
 
   if (userRole === 'ACTIVIST_COORDINATOR' && !isSuperAdmin) {
+    // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
+    const activistCoordinator = await prisma.activistCoordinator.findFirst({
+      where: { userId },
+    });
+
+    if (!activistCoordinator) {
+      throw new Error('רשומת רכז פעילים לא נמצאה');
+    }
+
     const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-      where: { legacyActivistCoordinatorUserId: userId },
+      where: { activistCoordinatorId: activistCoordinator.id },
       select: { neighborhoodId: true },
     });
     coordinatorNeighborhoodIds = activistCoordinatorNeighborhoods.map((acn) => acn.neighborhoodId);
@@ -560,9 +583,22 @@ export async function getAttendanceHistory(
     }
 
     // Activist coordinator-specific filtering
+    // ✅ SECURITY FIX (VULN-RBAC-003): Fix M2M query using correct FK
     if (user.role === 'ACTIVIST_COORDINATOR' && !user.isSuperAdmin) {
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: user.id },
+      });
+
+      if (!activistCoordinator) {
+        return {
+          success: false,
+          error: 'רשומת רכז פעילים לא נמצאה',
+          data: { records: [], total: 0, page: validated.page, limit: validated.limit },
+        };
+      }
+
       const activistCoordinatorNeighborhoods = await prisma.activistCoordinatorNeighborhood.findMany({
-        where: { legacyActivistCoordinatorUserId: user.id },
+        where: { activistCoordinatorId: activistCoordinator.id },
         select: { neighborhoodId: true },
       });
       where.neighborhoodId = { in: activistCoordinatorNeighborhoods.map((acn) => acn.neighborhoodId) };
