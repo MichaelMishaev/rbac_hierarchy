@@ -80,6 +80,17 @@ jobs:
         working-directory: ./app
         run: npx playwright install --with-deps chromium
 
+      - name: Build Next.js application
+        working-directory: ./app
+        env:
+          # Database
+          DATABASE_URL: postgresql://postgres:postgres_canary_password@localhost:5432/hierarchy_platform_canary
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_canary_password@localhost:5432/hierarchy_platform_canary?pgbouncer=true
+          # Auth
+          NEXTAUTH_URL: http://localhost:3200
+          NEXTAUTH_SECRET: test-secret-for-canary-ci-only
+        run: npm run build
+
       - name: Run Golden Path Canary Tests
         working-directory: ./app
         run: npx playwright test tests/e2e/canary/ --reporter=list --project=chromium-desktop

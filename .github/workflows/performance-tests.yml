@@ -42,8 +42,8 @@ jobs:
 
       - name: Start Docker services
         run: |
-          docker compose up -d postgres redis
-          sleep 10
+          docker compose up -d postgres pgbouncer redis
+          sleep 15
 
       - name: Setup database
         working-directory: ./app
@@ -207,8 +207,8 @@ jobs:
 
       - name: Start Docker services
         run: |
-          docker compose up -d postgres redis
-          sleep 10
+          docker compose up -d postgres pgbouncer redis
+          sleep 15
 
       - name: Setup database
         working-directory: ./app
