@@ -12,6 +12,20 @@ const nextConfig: NextConfig = {
   // Performance: Disable source maps in production (saves ~30-40% build time)
   productionBrowserSourceMaps: false,
 
+  // ✅ SECURITY FIX (VULN-AUTH-003): Strip dev-only credentials from production
+  webpack: (config, { isServer, webpack }) => {
+    // Replace DevTestUsers with empty module in production builds
+    if (process.env.NODE_ENV === 'production') {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /app\/\[locale\]\/\(auth\)\/login\/DevTestUsers\.tsx$/,
+          path.resolve(__dirname, 'lib/empty-module.ts')
+        )
+      );
+    }
+    return config;
+  },
+
   env: {
     // Explicitly expose NEXT_PUBLIC_ vars to browser (Next.js 15+)
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
