@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/api-auth';
 
 /**
  * Web Vitals Analytics Endpoint
@@ -6,8 +7,13 @@ import { NextResponse } from 'next/server';
  * Receives Core Web Vitals metrics from the client-side WebVitalsReporter.
  * Currently logs to console; can be extended to send to analytics services
  * like Vercel Analytics, Google Analytics, or custom tracking.
+ *
+ * ✅ SECURITY FIX (VULN-RBAC-001): Restricted to SUPERADMIN and AREA_MANAGER
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // ✅ SECURITY FIX (VULN-RBAC-001): Require SUPERADMIN or AREA_MANAGER role
+  const authResult = await requireRole(request, ['SUPERADMIN', 'AREA_MANAGER']);
+  if (authResult instanceof NextResponse) return authResult;
   try {
     const body = await request.json();
 

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { withErrorHandler } from '@/lib/error-handler';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api-auth';
 
 /**
  * Deep Tree Example API - 5 Levels Deep
@@ -11,9 +11,15 @@ import { withErrorHandler } from '@/lib/error-handler';
  * Level 4: Department (Engineering)
  * Level 5: Team (Frontend, Backend, DevOps)
  *
- * NOTE: This is static mock data for testing/examples. No RBAC required.
+ * NOTE: This is static mock data for testing/examples.
+ * ✅ SECURITY FIX (VULN-RBAC-001): Now requires authentication.
  */
-export const GET = withErrorHandler(async (_req: Request) => {
+export async function GET(req: NextRequest) {
+  // ✅ SECURITY FIX (VULN-RBAC-001): Require authentication
+  const authResult = await requireAuth(req);
+  if (authResult instanceof NextResponse) return authResult;
+
+  try {
   const deepTree = {
     id: 'superadmin-root',
     name: 'System Administrator',
@@ -150,5 +156,12 @@ export const GET = withErrorHandler(async (_req: Request) => {
     ],
   };
 
-  return NextResponse.json(deepTree);
-});
+    return NextResponse.json(deepTree);
+  } catch (error) {
+    console.error('[Org Tree Deep] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch organization tree' },
+      { status: 500 }
+    );
+  }
+}

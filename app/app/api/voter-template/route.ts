@@ -4,11 +4,15 @@
  * Serves the voter-template.xlsx file for download
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import { readFile } from 'fs/promises';
+import { requireAuth } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // ✅ SECURITY FIX (VULN-RBAC-001): Require authentication
+  const authResult = await requireAuth(request);
+  if (authResult instanceof NextResponse) return authResult;
   try {
     // Read the template file
     const filePath = path.join(process.cwd(), 'public', 'samples', 'voter-template.xlsx');

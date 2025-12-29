@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { requireAuth } from '@/lib/api-auth';
 
 // Initialize Redis client (if available)
 let redis: Redis | null = null;
@@ -19,6 +20,10 @@ if (process.env['REDIS_URL']) {
 }
 
 export async function POST(request: NextRequest) {
+  // ✅ SECURITY FIX (VULN-RBAC-001): Require authentication
+  const authResult = await requireAuth(request);
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const body = await request.json();
 
