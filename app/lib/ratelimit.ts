@@ -15,11 +15,12 @@ import IORedis from 'ioredis';
 
 // Type-safe Redis client interface compatible with @upstash/ratelimit
 // @upstash/ratelimit requires: Pick<Redis, "evalsha" | "get" | "set">
+// Exact signatures from @upstash/redis
 interface RedisClient {
-  evalsha: <TData = unknown>(
-    sha: string,
+  evalsha: <TArgs extends unknown[], TData = unknown>(
+    sha1: string,
     keys: string[],
-    args: string[]
+    args: TArgs
   ) => Promise<TData>;
   get: <TData = string>(key: string) => Promise<TData | null>;
   set: <TData = unknown>(
@@ -67,16 +68,21 @@ function initializeRedis(): RedisClient {
       // Wrap ioredis to be compatible with @upstash/ratelimit
       // Only implement methods required by ratelimit: evalsha, get, set
       const wrappedClient: RedisClient = {
-        evalsha: async <TData = unknown>(
-          sha: string,
+        evalsha: async <TArgs extends unknown[], TData = unknown>(
+          sha1: string,
           keys: string[],
-          args: string[]
+          args: TArgs
         ): Promise<TData> => {
+          // ioredis evalsha expects: evalsha(sha, numkeys, key[0], key[1], ..., arg[0], arg[1], ...)
+          // Convert args to string[] since ioredis accepts (string | Buffer | number)[]
+          const stringArgs = (args as unknown[]).map((arg) =>
+            String(arg)
+          ) as (string | Buffer | number)[];
           return (await ioredis.evalsha(
-            sha,
+            sha1,
             keys.length,
             ...keys,
-            ...args
+            ...stringArgs
           )) as TData;
         },
         get: async <TData = string>(key: string): Promise<TData | null> => {
@@ -135,7 +141,7 @@ function initializeRedis(): RedisClient {
  */
 function createMockRedis(): RedisClient {
   return {
-    evalsha: async <TData = unknown>(): Promise<TData> => {
+    evalsha: async <TArgs extends unknown[], TData = unknown>(): Promise<TData> => {
       return null as TData;
     },
     get: async <TData = string>(): Promise<TData | null> => {
