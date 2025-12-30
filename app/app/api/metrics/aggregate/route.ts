@@ -3,20 +3,78 @@
  *
  * Returns aggregated Web Vitals and custom metrics from Redis
  * for performance dashboard and monitoring.
+ *
+ * Supports both Railway Redis (ioredis) and Upstash Redis (REST API).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { Redis as UpstashRedis } from '@upstash/redis';
+import IORedis from 'ioredis';
 import { requireAuth } from '@/lib/api-auth';
 
-// Initialize Redis client (if available)
-let redis: Redis | null = null;
+// Type for Redis client interface
+interface RedisClient {
+  get: <TData = unknown>(key: string) => Promise<TData | null>;
+  zrange: (
+    key: string,
+    start: number,
+    stop: number,
+    options?: { byScore?: boolean; withScores?: boolean }
+  ) => Promise<(string | number)[]>;
+  keys: (pattern: string) => Promise<string[]>;
+}
 
-if (process.env['REDIS_URL']) {
-  redis = new Redis({
-    url: process.env['REDIS_URL'],
-    token: process.env['REDIS_TOKEN'] || '',
-  });
+// Initialize Redis client (if available)
+let redis: RedisClient | null = null;
+
+// Priority 1: Railway Redis (standard protocol)
+if (process.env['REDIS_URL'] && !process.env['UPSTASH_REDIS_REST_URL']) {
+  try {
+    const ioredis = new IORedis(process.env['REDIS_URL'], {
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: false,
+      lazyConnect: false,
+    });
+
+    // Wrap ioredis to match interface
+    redis = {
+      get: async <TData = unknown>(key: string): Promise<TData | null> => {
+        const result = await ioredis.get(key);
+        if (result === null) return null;
+        try {
+          return JSON.parse(result) as TData;
+        } catch {
+          return result as TData;
+        }
+      },
+      zrange: async (
+        key: string,
+        start: number,
+        stop: number,
+        options?: { byScore?: boolean; withScores?: boolean }
+      ) => {
+        if (options?.byScore) {
+          const args: (string | number)[] = options.withScores ? ['WITHSCORES'] : [];
+          return await ioredis.zrangebyscore(key, start, stop, ...args);
+        }
+        return await ioredis.zrange(key, start, stop);
+      },
+      keys: async (pattern: string) => {
+        return await ioredis.keys(pattern);
+      },
+    };
+    console.log('[Metrics] Initialized Railway Redis client');
+  } catch (error) {
+    console.error('[Metrics] Failed to initialize Railway Redis:', error);
+  }
+}
+// Priority 2: Upstash Redis (REST API)
+else if (process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_REST_TOKEN']) {
+  redis = new UpstashRedis({
+    url: process.env['UPSTASH_REDIS_REST_URL'],
+    token: process.env['UPSTASH_REDIS_REST_TOKEN'],
+  }) as unknown as RedisClient;
+  console.log('[Metrics] Initialized Upstash Redis client');
 }
 
 export async function GET(request: NextRequest) {
@@ -59,7 +117,7 @@ export async function GET(request: NextRequest) {
  * Get statistics for a specific metric
  */
 async function getMetricStats(
-  redis: Redis,
+  redis: RedisClient,
   type: string,
   name: string,
   timeframe: number
@@ -141,7 +199,7 @@ async function getMetricStats(
  * Get statistics for all metrics
  */
 async function getAllMetricsStats(
-  redis: Redis,
+  redis: RedisClient,
   type: string,
   timeframe: number
 ) {

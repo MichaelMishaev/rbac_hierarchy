@@ -3,20 +3,75 @@
  *
  * Receives Web Vitals and custom metrics from the client
  * and stores them in Redis for aggregation and analysis.
+ *
+ * Supports both Railway Redis (ioredis) and Upstash Redis (REST API).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { Redis as UpstashRedis } from '@upstash/redis';
+import IORedis from 'ioredis';
 import { requireAuth } from '@/lib/api-auth';
 
-// Initialize Redis client (if available)
-let redis: Redis | null = null;
+// Type for Redis client interface
+interface RedisClient {
+  setex: (key: string, seconds: number, value: string) => Promise<unknown>;
+  zadd: (
+    key: string,
+    scoreMembers: { score: number; member: string }
+  ) => Promise<number>;
+  get: <TData = unknown>(key: string) => Promise<TData | null>;
+  set: (key: string, value: string) => Promise<unknown>;
+  expire: (key: string, seconds: number) => Promise<number>;
+}
 
-if (process.env['REDIS_URL']) {
-  redis = new Redis({
-    url: process.env['REDIS_URL'],
-    token: process.env['REDIS_TOKEN'] || '',
-  });
+// Initialize Redis client (if available)
+let redis: RedisClient | null = null;
+
+// Priority 1: Railway Redis (standard protocol)
+if (process.env['REDIS_URL'] && !process.env['UPSTASH_REDIS_REST_URL']) {
+  try {
+    const ioredis = new IORedis(process.env['REDIS_URL'], {
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: false,
+      lazyConnect: false,
+    });
+
+    // Wrap ioredis to match interface
+    redis = {
+      setex: async (key: string, seconds: number, value: string) => {
+        return await ioredis.setex(key, seconds, value);
+      },
+      zadd: async (key: string, scoreMembers: { score: number; member: string }) => {
+        return await ioredis.zadd(key, scoreMembers.score, scoreMembers.member);
+      },
+      get: async <TData = unknown>(key: string): Promise<TData | null> => {
+        const result = await ioredis.get(key);
+        if (result === null) return null;
+        try {
+          return JSON.parse(result) as TData;
+        } catch {
+          return result as TData;
+        }
+      },
+      set: async (key: string, value: string) => {
+        return await ioredis.set(key, value);
+      },
+      expire: async (key: string, seconds: number) => {
+        return await ioredis.expire(key, seconds);
+      },
+    };
+    console.log('[Metrics] Initialized Railway Redis client');
+  } catch (error) {
+    console.error('[Metrics] Failed to initialize Railway Redis:', error);
+  }
+}
+// Priority 2: Upstash Redis (REST API)
+else if (process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_REST_TOKEN']) {
+  redis = new UpstashRedis({
+    url: process.env['UPSTASH_REDIS_REST_URL'],
+    token: process.env['UPSTASH_REDIS_REST_TOKEN'],
+  }) as unknown as RedisClient;
+  console.log('[Metrics] Initialized Upstash Redis client');
 }
 
 export async function POST(request: NextRequest) {
@@ -101,7 +156,7 @@ export async function POST(request: NextRequest) {
  * Update aggregated statistics in Redis
  */
 async function updateAggregatedStats(
-  redis: Redis,
+  redis: RedisClient,
   type: string,
   name: string,
   value: number,
