@@ -54,8 +54,10 @@ if (process.env['REDIS_URL'] && !process.env['UPSTASH_REDIS_REST_URL']) {
         options?: { byScore?: boolean; withScores?: boolean }
       ) => {
         if (options?.byScore) {
-          const args: (string | number)[] = options.withScores ? ['WITHSCORES'] : [];
-          return await ioredis.zrangebyscore(key, start, stop, ...args);
+          if (options.withScores) {
+            return await ioredis.zrangebyscore(key, start, stop, 'WITHSCORES');
+          }
+          return await ioredis.zrangebyscore(key, start, stop);
         }
         return await ioredis.zrange(key, start, stop);
       },
