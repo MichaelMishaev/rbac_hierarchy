@@ -112,7 +112,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // ✅ SECURITY FIX (VULN-AUTH-001): Reduced from 30 days to 7 days
+    maxAge: 1 * 24 * 60 * 60, // ✅ SECURITY FIX (2025 Standards): Reduced to 1 day (JWT RFC 8725 + OWASP 2025)
   },
   secret: process.env.NEXTAUTH_SECRET,
 });

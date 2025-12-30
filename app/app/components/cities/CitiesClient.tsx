@@ -583,7 +583,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
                             display: 'block',
                           }}
                         >
-                          מנהל: {corp.areaManager.user?.fullName || 'N/A'}
+                          מנהל: {corp.areaManager.user?.fullName || 'לא משויך'}
                         </Typography>
                       </Box>
                     )}

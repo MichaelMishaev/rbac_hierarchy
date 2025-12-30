@@ -65,7 +65,7 @@ async function getRedisClient() {
  *
  * @example
  * ```ts
- * await blacklistToken('abc-123-def', 7 * 24 * 60 * 60); // 7 days
+ * await blacklistToken('abc-123-def', 1 * 24 * 60 * 60); // 1 day (matches JWT maxAge)
  * ```
  */
 export async function blacklistToken(jti: string, ttl: number): Promise<void> {

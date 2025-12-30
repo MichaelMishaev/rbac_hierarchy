@@ -26,6 +26,12 @@ import {
   CardContent,
   useMediaQuery,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Divider,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -147,6 +153,10 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [existingRegions, setExistingRegions] = useState<string[]>([]);
 
+  // User details dialog state
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsUser, setDetailsUser] = useState<User | null>(null);
+
   // Filter state
   const [nameFilter, setNameFilter] = useState('');
   const [emailFilter, setEmailFilter] = useState('');
@@ -239,6 +249,16 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
 
   const handleResetPasswordSuccess = () => {
     router.refresh();
+  };
+
+  const handleRowClick = (user: User) => {
+    setDetailsUser(user);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false);
+    setDetailsUser(null);
   };
 
   const getRoleColor = (role: string) => {
@@ -352,6 +372,20 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
       return true;
     });
   }, [users, nameFilter, emailFilter, areaFilter, cityFilter]);
+
+  // Determine dynamic column header based on filtered users roles
+  const getScopeColumnHeader = () => {
+    const hasAreaManagers = filteredUsers.some(u => u.role === 'AREA_MANAGER');
+    const hasCoordinators = filteredUsers.some(u =>
+      u.role === 'CITY_COORDINATOR' || u.role === 'ACTIVIST_COORDINATOR'
+    );
+    const hasSuperAdmin = filteredUsers.some(u => u.role === 'SUPERADMIN');
+
+    if (hasSuperAdmin && filteredUsers.length === 1) return t('scope');
+    if (hasAreaManagers && !hasCoordinators) return t('region');
+    if (hasCoordinators && !hasAreaManagers) return t('city');
+    return t('scopeOfResponsibility');
+  };
 
   // Clear all filters
   const handleClearFilters = () => {
@@ -758,7 +792,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                   backgroundColor: colors.neutral[50],
                 }}
               >
-                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
+                <TableCell sx={{ fontWeight: 600, color: colors.neutral[700], paddingInlineStart: '48px' }}>
                   {t('name')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
@@ -771,7 +805,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                   {t('role')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
-                  {t('corporation')}
+                  {getScopeColumnHeader()}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, color: colors.neutral[700] }}>
                   {t('lastLogin')}
@@ -798,7 +832,9 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                 filteredUsers.map((user) => (
                   <TableRow
                     key={user.id}
+                    onClick={() => handleRowClick(user)}
                     sx={{
+                      cursor: 'pointer',
                       '&:hover': {
                         backgroundColor: colors.neutral[50],
                       },
@@ -872,7 +908,13 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                     {/* Actions */}
                     <TableCell align="right">
                       {canManageUser(currentUserRole, user.role) && (
-                        <IconButton onClick={(e) => handleMenuOpen(e, user)} size="small">
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click
+                            handleMenuOpen(e, user);
+                          }}
+                          size="small"
+                        >
                           <MoreVertIcon />
                         </IconButton>
                       )}
@@ -955,6 +997,231 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         userEmail={selectedUser?.email || null}
         onSuccess={handleResetPasswordSuccess}
       />
+
+      {/* User Details Dialog */}
+      <Dialog
+        open={detailsDialogOpen}
+        onClose={handleCloseDetailsDialog}
+        maxWidth="md"
+        fullWidth
+        dir="rtl"
+        PaperProps={{
+          sx: {
+            borderRadius: borderRadius.lg,
+            boxShadow: shadows.large,
+          },
+        }}
+      >
+        {detailsUser && (
+          <>
+            <DialogTitle sx={{ pb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar
+                  src={detailsUser.avatarUrl || undefined}
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    bgcolor: colors.primary.ultraLight,
+                    color: colors.primary.main,
+                    fontSize: '28px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {detailsUser.fullName.charAt(0).toUpperCase()}
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 600, color: colors.neutral[900], mb: 0.5 }}>
+                    {detailsUser.fullName}
+                  </Typography>
+                  <Chip
+                    label={getRoleLabel(detailsUser.role)}
+                    size="small"
+                    sx={{
+                      backgroundColor: `${getRoleColor(detailsUser.role)}20`,
+                      color: getRoleColor(detailsUser.role),
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      borderRadius: borderRadius.full,
+                    }}
+                  />
+                </Box>
+              </Box>
+            </DialogTitle>
+
+            <Divider />
+
+            <DialogContent sx={{ py: 3 }}>
+              {/* Section 1: Basic Info */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: colors.neutral[900], mb: 2 }}>
+                  {t('basicInfo')}
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
+                      {t('email')}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
+                      {detailsUser.email}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
+                      {t('phone')}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
+                      {detailsUser.phone || '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
+                      {t('joinDate')}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
+                      {new Date(detailsUser.createdAt).toLocaleDateString('he-IL', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
+                      {t('status')}
+                    </Typography>
+                    <Chip
+                      label={detailsUser.isActive ? t('active') : t('inactive')}
+                      color={detailsUser.isActive ? 'success' : 'default'}
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Section 2: Assigned Locations */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: colors.neutral[900], mb: 2 }}>
+                  {detailsUser.role === 'AREA_MANAGER' && t('assignedRegion')}
+                  {detailsUser.role === 'CITY_COORDINATOR' && t('assignedCities')}
+                  {detailsUser.role === 'ACTIVIST_COORDINATOR' && t('assignedNeighborhoods')}
+                  {detailsUser.role === 'SUPERADMIN' && t('fullAccess')}
+                </Typography>
+
+                {detailsUser.role === 'AREA_MANAGER' && detailsUser.areaManager && (
+                  <Chip
+                    label={detailsUser.areaManager.regionName}
+                    sx={{
+                      backgroundColor: colors.status.purple + '20',
+                      color: colors.status.purple,
+                      fontWeight: 600,
+                    }}
+                  />
+                )}
+
+                {detailsUser.role === 'CITY_COORDINATOR' && detailsUser.coordinatorOf && detailsUser.coordinatorOf.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {detailsUser.coordinatorOf.map((c) => (
+                      <Chip
+                        key={c.city.id}
+                        label={c.city.name}
+                        sx={{
+                          backgroundColor: colors.status.blue + '20',
+                          color: colors.status.blue,
+                          fontWeight: 600,
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+
+                {detailsUser.role === 'ACTIVIST_COORDINATOR' && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {detailsUser.activistCoordinatorOf && detailsUser.activistCoordinatorOf.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                        {detailsUser.activistCoordinatorOf.map((c) => (
+                          <Chip
+                            key={c.city.id}
+                            label={c.city.name}
+                            sx={{
+                              backgroundColor: colors.status.blue + '20',
+                              color: colors.status.blue,
+                              fontWeight: 600,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                    {detailsUser.activistCoordinatorNeighborhoods && detailsUser.activistCoordinatorNeighborhoods.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {detailsUser.activistCoordinatorNeighborhoods.map((n) => (
+                          <Chip
+                            key={n.neighborhood.id}
+                            label={n.neighborhood.name}
+                            size="small"
+                            sx={{
+                              backgroundColor: colors.status.green + '20',
+                              color: colors.status.green,
+                              fontWeight: 600,
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {detailsUser.role === 'SUPERADMIN' && (
+                  <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
+                    {t('allRegionsAndCities')}
+                  </Typography>
+                )}
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Section 3: Login History */}
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: colors.neutral[900], mb: 2 }}>
+                  {t('loginHistory')}
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
+                  {t('lastLogin')}:{' '}
+                  {detailsUser.lastLoginAt
+                    ? new Date(detailsUser.lastLoginAt).toLocaleString('he-IL', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : t('noLoginHistory')}
+                </Typography>
+              </Box>
+            </DialogContent>
+
+            <Divider />
+
+            <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
+              <RtlButton
+                onClick={handleCloseDetailsDialog}
+                variant="contained"
+                sx={{
+                  backgroundColor: colors.primary.main,
+                  color: '#fff',
+                  '&:hover': {
+                    backgroundColor: colors.primary.dark,
+                  },
+                }}
+              >
+                {t('close')}
+              </RtlButton>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }

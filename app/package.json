@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3200",
+    "dev:clean": "bash app/dev-clean.sh",
     "build": "prisma generate && next build && cp -r public .next/standalone/public",
     "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
     "lint": "next lint",
@@ -20,6 +21,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:prod": "tsx prisma/seed-prod.ts",
     "db:seed:prod-admin": "tsx scripts/seed-production-superadmin.ts",
+    "db:add-test-admin": "tsx prisma/add-test-superadmin.ts",
     "db:restore-prod": "tsx scripts/restore-local-to-prod.ts",
     "railway:sync": "bash scripts/railway-db-sync.sh",
     "db:seed:cities": "tsx scripts/seed-israeli-cities.ts",

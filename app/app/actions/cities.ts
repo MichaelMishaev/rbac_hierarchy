@@ -846,6 +846,9 @@ export async function getAreaManagers() {
 
     let whereClause: any = {
       isActive: true,
+      user: {
+        isNot: null, // CRITICAL: Only return area managers with valid user relationships
+      },
     };
 
     // ROLE-BASED SCOPE FILTERING
@@ -937,8 +940,8 @@ export async function getAreaManagers() {
         id: am.id,
         regionName: am.regionName,
         regionCode: am.regionCode,
-        fullName: am.user?.fullName || 'N/A',
-        email: am.user?.email || 'N/A',
+        fullName: am.user!.fullName, // Guaranteed to exist due to whereClause filter
+        email: am.user!.email,       // Guaranteed to exist due to whereClause filter
         corporationCount: am._count.cities,
       })),
     };

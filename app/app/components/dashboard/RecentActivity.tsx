@@ -42,12 +42,19 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
   const getEntityIcon = (entity: string) => {
     switch (entity.toLowerCase()) {
       case 'corporation':
+      case 'city':
         return <BusinessIcon />;
       case 'user':
+      case 'areamanager':
+      case 'citycoordinator':
+      case 'activistcoordinator':
         return <PersonIcon />;
       case 'site':
+      case 'neighborhood':
+      case 'area':
         return <LocationOnIcon />;
       case 'worker':
+      case 'activist':
         return <GroupIcon />;
       case 'invitation':
         return <MailIcon />;
@@ -68,12 +75,31 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
       'CREATE_CITY': 'יצירת עיר',
       'UPDATE_CITY': 'עדכון עיר',
       'DELETE_CITY': 'מחיקת עיר',
+      'CREATE_CORPORATION': 'יצירת עיר',
+      'UPDATE_CORPORATION': 'עדכון עיר',
+      'DELETE_CORPORATION': 'מחיקת עיר',
       'CREATE_NEIGHBORHOOD': 'יצירת שכונה',
       'UPDATE_NEIGHBORHOOD': 'עדכון שכונה',
       'DELETE_NEIGHBORHOOD': 'מחיקת שכונה',
       'CREATE_USER': 'יצירת משתמש',
       'UPDATE_USER': 'עדכון משתמש',
       'DELETE_USER': 'מחיקת משתמש',
+      'CREATE_AREA_MANAGER': 'יצירת מנהל מחוז',
+      'UPDATE_AREA_MANAGER': 'עדכון מנהל מחוז',
+      'DELETE_AREA_MANAGER': 'מחיקת מנהל מחוז',
+      'CREATE_CITY_COORDINATOR': 'יצירת רכז עיר',
+      'UPDATE_CITY_COORDINATOR': 'עדכון רכז עיר',
+      'DELETE_CITY_COORDINATOR': 'מחיקת רכז עיר',
+      'CREATE_ACTIVIST_COORDINATOR': 'יצירת רכז שכונתי',
+      'CREATE_ACTIVIST_COORDINATOR_QUICK': 'יצירת רכז שכונתי',
+      'UPDATE_ACTIVIST_COORDINATOR': 'עדכון רכז שכונתי',
+      'DELETE_ACTIVIST_COORDINATOR': 'מחיקת רכז שכונתי',
+      'CREATE_ACTIVIST': 'יצירת פעיל',
+      'UPDATE_ACTIVIST': 'עדכון פעיל',
+      'DELETE_ACTIVIST': 'מחיקת פעיל',
+      'CREATE_AREA': 'יצירת מחוז',
+      'UPDATE_AREA': 'עדכון מחוז',
+      'DELETE_AREA': 'מחיקת מחוז',
     };
     return actionMap[action] || action;
   };
@@ -82,12 +108,17 @@ export default function RecentActivity({ activities, maxItems = 10 }: RecentActi
   const formatEntity = (entity: string) => {
     const entityMap: Record<string, string> = {
       'Worker': 'פעיל',
+      'Activist': 'פעיל',
       'City': 'עיר',
+      'Corporation': 'עיר',
       'Neighborhood': 'שכונה',
+      'Site': 'שכונה',
       'User': 'משתמש',
       'Invitation': 'הזמנה',
-      'Corporation': 'עיר',
-      'Site': 'שכונה',
+      'AreaManager': 'מנהל מחוז',
+      'CityCoordinator': 'רכז עיר',
+      'ActivistCoordinator': 'רכז שכונתי',
+      'Area': 'מחוז',
     };
     return entityMap[entity] || entity;
   };

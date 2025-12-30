@@ -40,9 +40,10 @@ export const POST = withErrorHandler(async (req: Request) => {
       throw new ValidationError('הסיסמה לא חוקית');
     }
 
-    // ✅ SECURITY FIX (OWASP 2025): Increase minimum from 6 to 8 characters
-    if (newPassword.length < 8) {
-      throw new ValidationError('הסיסמה חייבת להכיל לפחות 8 תווים');
+    // ✅ SECURITY FIX (OWASP 2025): 15 characters minimum (no MFA implemented)
+    // OWASP 2025 Standard: 8+ chars WITH MFA OR 15+ chars WITHOUT MFA
+    if (newPassword.length < 15) {
+      throw new ValidationError('הסיסמה חייבת להכיל לפחות 15 תווים (ללא אימות דו-שלבי)');
     }
 
     // Hash the new password
