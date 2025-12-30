@@ -13,17 +13,20 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis as UpstashRedis } from '@upstash/redis';
 import IORedis from 'ioredis';
 
-// Type-safe Redis client interface for @upstash/ratelimit
+// Type-safe Redis client interface compatible with @upstash/ratelimit
+// @upstash/ratelimit requires: Pick<Redis, "evalsha" | "get" | "set">
 interface RedisClient {
-  sadd: (key: string, ...members: string[]) => Promise<number>;
-  eval: (script: string, keys: string[], args: string[]) => Promise<unknown>;
-  evalsha: (sha: string, keys: string[], args: string[]) => Promise<unknown>;
-  get: (key: string) => Promise<string | null>;
-  set: (key: string, value: string, opts?: { ex?: number }) => Promise<string>;
-  incr: (key: string) => Promise<number>;
-  decr: (key: string) => Promise<number>;
-  expire: (key: string, seconds: number) => Promise<number>;
-  del: (...keys: string[]) => Promise<number>;
+  evalsha: <TData = unknown>(
+    sha: string,
+    keys: string[],
+    args: string[]
+  ) => Promise<TData>;
+  get: <TData = string>(key: string) => Promise<TData | null>;
+  set: (
+    key: string,
+    value: string,
+    opts?: { ex?: number }
+  ) => Promise<'OK' | null>;
 }
 
 /**
@@ -62,36 +65,41 @@ function initializeRedis(): RedisClient {
       });
 
       // Wrap ioredis to be compatible with @upstash/ratelimit
+      // Only implement methods required by ratelimit: evalsha, get, set
       const wrappedClient: RedisClient = {
-        sadd: async (key: string, ...members: string[]) => {
-          return await ioredis.sadd(key, ...members);
+        evalsha: async <TData = unknown>(
+          sha: string,
+          keys: string[],
+          args: string[]
+        ): Promise<TData> => {
+          return (await ioredis.evalsha(
+            sha,
+            keys.length,
+            ...keys,
+            ...args
+          )) as TData;
         },
-        eval: async (script: string, keys: string[], args: string[]) => {
-          return await ioredis.eval(script, keys.length, ...keys, ...args);
-        },
-        evalsha: async (sha: string, keys: string[], args: string[]) => {
-          return await ioredis.evalsha(sha, keys.length, ...keys, ...args);
-        },
-        get: async (key: string) => {
-          return await ioredis.get(key);
-        },
-        set: async (key: string, value: string, opts?: { ex?: number }) => {
-          if (opts?.ex) {
-            return await ioredis.set(key, value, 'EX', opts.ex);
+        get: async <TData = string>(key: string): Promise<TData | null> => {
+          const result = await ioredis.get(key);
+          if (result === null) return null;
+          // Try to parse JSON if TData is object, otherwise return as string
+          try {
+            return JSON.parse(result) as TData;
+          } catch {
+            return result as TData;
           }
-          return await ioredis.set(key, value);
         },
-        incr: async (key: string) => {
-          return await ioredis.incr(key);
-        },
-        decr: async (key: string) => {
-          return await ioredis.decr(key);
-        },
-        expire: async (key: string, seconds: number) => {
-          return await ioredis.expire(key, seconds);
-        },
-        del: async (...keys: string[]) => {
-          return await ioredis.del(...keys);
+        set: async (
+          key: string,
+          value: string,
+          opts?: { ex?: number }
+        ): Promise<'OK' | null> => {
+          if (opts?.ex) {
+            const result = await ioredis.set(key, value, 'EX', opts.ex);
+            return result === 'OK' ? 'OK' : null;
+          }
+          const result = await ioredis.set(key, value);
+          return result === 'OK' ? 'OK' : null;
         },
       };
 
@@ -123,15 +131,15 @@ function initializeRedis(): RedisClient {
  */
 function createMockRedis(): RedisClient {
   return {
-    sadd: async () => 1,
-    eval: async () => null,
-    evalsha: async () => null,
-    get: async () => null,
-    set: async () => 'OK',
-    incr: async () => 1,
-    decr: async () => 0,
-    expire: async () => 1,
-    del: async () => 1,
+    evalsha: async <TData = unknown>(): Promise<TData> => {
+      return null as TData;
+    },
+    get: async <TData = string>(): Promise<TData | null> => {
+      return null;
+    },
+    set: async (): Promise<'OK' | null> => {
+      return 'OK';
+    },
   };
 }
 
