@@ -22,11 +22,11 @@ interface RedisClient {
     args: string[]
   ) => Promise<TData>;
   get: <TData = string>(key: string) => Promise<TData | null>;
-  set: (
+  set: <TData = unknown>(
     key: string,
-    value: string,
+    value: TData,
     opts?: { ex?: number }
-  ) => Promise<'OK' | null>;
+  ) => Promise<'OK' | TData | null>;
 }
 
 /**
@@ -89,16 +89,20 @@ function initializeRedis(): RedisClient {
             return result as TData;
           }
         },
-        set: async (
+        set: async <TData = unknown>(
           key: string,
-          value: string,
+          value: TData,
           opts?: { ex?: number }
-        ): Promise<'OK' | null> => {
+        ): Promise<'OK' | TData | null> => {
+          // Serialize value to string for ioredis
+          const serializedValue =
+            typeof value === 'string' ? value : JSON.stringify(value);
+
           if (opts?.ex) {
-            const result = await ioredis.set(key, value, 'EX', opts.ex);
+            const result = await ioredis.set(key, serializedValue, 'EX', opts.ex);
             return result === 'OK' ? 'OK' : null;
           }
-          const result = await ioredis.set(key, value);
+          const result = await ioredis.set(key, serializedValue);
           return result === 'OK' ? 'OK' : null;
         },
       };
@@ -137,7 +141,7 @@ function createMockRedis(): RedisClient {
     get: async <TData = string>(): Promise<TData | null> => {
       return null;
     },
-    set: async (): Promise<'OK' | null> => {
+    set: async <TData = unknown>(): Promise<'OK' | TData | null> => {
       return 'OK';
     },
   };
