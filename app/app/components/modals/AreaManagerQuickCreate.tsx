@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -12,12 +12,20 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  Autocomplete,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
 import BusinessIcon from '@mui/icons-material/Business';
-import { createArea } from '@/app/actions/areas';
+import { createArea, getAvailableAreaManagerUsers } from '@/app/actions/areas';
 import { generateCityCode } from '@/lib/transliteration';
+
+type AvailableUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+};
 
 type AreaManagerQuickCreateProps = {
   open: boolean;
@@ -36,10 +44,37 @@ export default function AreaManagerQuickCreate({
     regionName: '',
     regionCode: '',
     description: '',
+    userId: '', // REQUIRED - must select a user
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+
+  // Load available users when dialog opens
+  useEffect(() => {
+    if (open) {
+      loadAvailableUsers();
+    }
+  }, [open]);
+
+  const loadAvailableUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const result = await getAvailableAreaManagerUsers();
+      if (result.success && result.users) {
+        setAvailableUsers(result.users);
+      } else {
+        setError(result.error || 'Failed to load users');
+      }
+    } catch (err) {
+      console.error('Error loading users:', err);
+      setError('שגיאה בטעינת רשימת משתמשים');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   // Auto-generate code from region name
   const handleRegionNameChange = (value: string) => {
@@ -63,6 +98,11 @@ export default function AreaManagerQuickCreate({
       return;
     }
 
+    if (!formData.userId.trim()) {
+      setError('בחירת מנהל מחוז היא שדה חובה');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -72,7 +112,7 @@ export default function AreaManagerQuickCreate({
         regionCode: formData.regionCode,
         description: formData.description || undefined,
         isActive: true,
-        userId: undefined, // Explicitly undefined - creating an area without assigning a manager initially
+        userId: formData.userId, // REQUIRED - assign user to area
       });
 
       if (result.success && result.area) {
@@ -89,6 +129,7 @@ export default function AreaManagerQuickCreate({
           regionName: '',
           regionCode: '',
           description: '',
+          userId: '',
         });
 
         onClose();
@@ -109,6 +150,7 @@ export default function AreaManagerQuickCreate({
         regionName: '',
         regionCode: '',
         description: '',
+        userId: '',
       });
       setError(null);
       onClose();
@@ -247,11 +289,85 @@ export default function AreaManagerQuickCreate({
             }}
           />
 
-          <Alert severity="info" sx={{ borderRadius: borderRadius.md }}>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              ניתן לשייך מנהל מחוז מאוחר יותר דרך עמוד האזורים
-            </Typography>
-          </Alert>
+          <Autocomplete
+            value={availableUsers.find((u) => u.id === formData.userId) || null}
+            onChange={(event, newValue) => {
+              setFormData((prev) => ({ ...prev, userId: newValue?.id || '' }));
+              setError(null);
+            }}
+            options={availableUsers}
+            getOptionLabel={(option) => `${option.fullName} (${option.email})`}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            noOptionsText="אין משתמשים זמינים עם תפקיד מנהל מחוז"
+            loading={loadingUsers}
+            fullWidth
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="בחר מנהל מחוז *"
+                placeholder="חפש לפי שם או אימייל..."
+                required
+                error={!formData.userId && !!error}
+                helperText="רק משתמשים עם תפקיד 'מנהל מחוז' שטרם שויכו לאזור"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: borderRadius.lg,
+                    backgroundColor: colors.neutral[0],
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: `0 2px 8px ${colors.primary.main}20`,
+                    },
+                    '&.Mui-focused': {
+                      boxShadow: `0 4px 12px ${colors.primary.main}30`,
+                    },
+                  },
+                }}
+              />
+            )}
+            renderOption={(props, option) => {
+              const { key, ...otherProps } = props as any;
+              return (
+                <Box
+                  component="li"
+                  key={key}
+                  {...otherProps}
+                  sx={{
+                    padding: '12px 16px !important',
+                    '&:hover': {
+                      backgroundColor: `${colors.primary.main}15`,
+                    },
+                  }}
+                >
+                  <Box sx={{ width: '100%' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {option.fullName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {option.email}
+                      {option.phone && ` • ${option.phone}`}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            }}
+            filterOptions={(options, { inputValue }) => {
+              const searchTerm = inputValue.toLowerCase();
+              return options.filter(
+                (option) =>
+                  option.fullName.toLowerCase().includes(searchTerm) ||
+                  option.email.toLowerCase().includes(searchTerm) ||
+                  (option.phone && option.phone.includes(searchTerm))
+              );
+            }}
+          />
+
+          {availableUsers.length === 0 && !loadingUsers && (
+            <Alert severity="warning" sx={{ borderRadius: borderRadius.md }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                אין משתמשים זמינים עם תפקיד &quot;מנהל מחוז&quot;. צור משתמש חדש בעמוד המשתמשים תחילה.
+              </Typography>
+            </Alert>
+          )}
         </Box>
       </DialogContent>
 
