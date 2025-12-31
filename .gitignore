@@ -71,3 +71,13 @@ backups/
 # Security audit reports (temporary documentation)
 SECURITY_*.md
 **/SECURITY_*.md
+
+# Security/compliance documentation (auto-generated)
+/*_PROCEDURES.md
+/*_PROGRAM.md
+/*_DOCUMENTATION.md
+/*_APPOINTMENT.md
+/*_POLICY_*.md
+/*_VERIFICATION.md
+/*_PROCESS.md
+/*_COMPLIANCE.md
