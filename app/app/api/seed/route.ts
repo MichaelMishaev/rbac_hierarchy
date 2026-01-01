@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { withErrorHandler } from '@/lib/error-handler';
 
 const prisma = new PrismaClient();
 
 // IMPORTANT: Only allow in non-production or with secret key
 const SEED_SECRET = process.env['SEED_SECRET'] || 'change-me-in-production';
 
-export async function POST(request: Request) {
+export const POST = withErrorHandler(async (request: Request) => {
   try {
     // Get authorization header
     const authHeader = request.headers.get('authorization');
@@ -444,16 +445,7 @@ export async function POST(request: Request) {
         activistCoordinators: 'supervisor123',
       },
     });
-  } catch (error: any) {
-    console.error('❌ Seed failed:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message,
-      },
-      { status: 500 }
-    );
   } finally {
     await prisma.$disconnect();
   }
-}
+});

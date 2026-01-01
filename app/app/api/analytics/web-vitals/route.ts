@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/api-auth';
+import { withErrorHandler } from '@/lib/error-handler';
 
 /**
  * Web Vitals Analytics Endpoint
@@ -10,33 +11,26 @@ import { requireRole } from '@/lib/api-auth';
  *
  * ✅ SECURITY FIX (VULN-RBAC-001): Restricted to SUPERADMIN and AREA_MANAGER
  */
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: Request) => {
   // ✅ SECURITY FIX (VULN-RBAC-001): Require SUPERADMIN or AREA_MANAGER role
   const authResult = await requireRole(request, ['SUPERADMIN', 'AREA_MANAGER']);
   if (authResult instanceof NextResponse) return authResult;
-  try {
-    const body = await request.json();
 
-    // Log to console for debugging (can be removed in production)
-    console.log('[Web Vitals]', {
-      name: body.name,
-      value: body.value,
-      rating: body.rating,
-      id: body.id,
-    });
+  const body = await request.json();
 
-    // TODO: Send to analytics service
-    // Examples:
-    // - await sendToVercelAnalytics(body);
-    // - await sendToGoogleAnalytics(body);
-    // - await prisma.webVitals.create({ data: body });
+  // Log to console for debugging (can be removed in production)
+  console.log('[Web Vitals]', {
+    name: body.name,
+    value: body.value,
+    rating: body.rating,
+    id: body.id,
+  });
 
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error('[Web Vitals] Error processing metrics:', error);
-    return NextResponse.json(
-      { error: 'Failed to process web vitals' },
-      { status: 500 }
-    );
-  }
-}
+  // TODO: Send to analytics service
+  // Examples:
+  // - await sendToVercelAnalytics(body);
+  // - await sendToGoogleAnalytics(body);
+  // - await prisma.webVitals.create({ data: body });
+
+  return NextResponse.json({ success: true }, { status: 200 });
+});

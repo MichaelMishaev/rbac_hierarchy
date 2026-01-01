@@ -10,6 +10,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getUserContext } from '@/lib/voters/actions/context';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 type BulkVoterInput = {
   firstName: string;
@@ -40,7 +41,7 @@ type DuplicateInfo = {
 export async function checkExcelDuplicates(
   voters: BulkVoterInput[]
 ): Promise<{ success: true; duplicates: DuplicateInfo[] } | { success: false; error: string }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     const viewer = await getUserContext();
     const duplicates: DuplicateInfo[] = [];
 
@@ -106,13 +107,7 @@ export async function checkExcelDuplicates(
     console.log(`[checkExcelDuplicates] Found ${duplicates.length} duplicates for ${viewer.fullName}`);
 
     return { success: true, duplicates };
-  } catch (error) {
-    console.error('[checkExcelDuplicates] Error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  }, 'checkExcelDuplicates');
 }
 
 /**

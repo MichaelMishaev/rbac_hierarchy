@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, requireSupervisor, hasAccessToCorporation, getUserCorporations } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -81,7 +82,7 @@ export type ListWorkersFilters = {
  * - ACTIVIST_COORDINATOR: Can create activists in ASSIGNED neighborhoods ONLY (M2M validation)
  */
 export async function createWorker(data: CreateWorkerInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Get current user
     const currentUser = await getCurrentUser();
 
@@ -290,6 +291,25 @@ export async function createWorker(data: CreateWorkerInput) {
         },
       });
 
+      // Audit log for activist user account creation
+      await prisma.auditLog.create({
+        data: {
+          action: 'CREATE_ACTIVIST_USER_ACCOUNT',
+          entity: 'User',
+          entityId: activistUser.id,
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+          userRole: currentUser.role,
+          cityId: undefined, // cityId not available on currentUser, populated from context
+          after: {
+            email: activistUser.email,
+            fullName: activistUser.fullName,
+            role: activistUser.role,
+            linkedActivistId: newActivist.id,
+          },
+        },
+      });
+
       // Link activist to user
       await prisma.activist.update({
         where: { id: newActivist.id },
@@ -327,13 +347,7 @@ export async function createWorker(data: CreateWorkerInput) {
       success: true,
       activist: newActivist,
     };
-  } catch (error) {
-    console.error('Error creating activist:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create worker',
-    };
-  }
+  }, 'createWorker');
 }
 
 // ============================================
@@ -349,7 +363,7 @@ export async function createWorker(data: CreateWorkerInput) {
  * - SUPERVISOR: Can see workers in their site only
  */
 export async function listWorkers(filters: ListWorkersFilters = {}) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Build where clause based on role and filters
@@ -504,15 +518,7 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
       activists,
       count: activists.length,
     };
-  } catch (error) {
-    console.error('Error listing activists:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to list workers',
-      activists: [],
-      count: 0,
-    };
-  }
+  }, 'listWorkers');
 }
 
 // ============================================
@@ -528,7 +534,7 @@ export async function listWorkers(filters: ListWorkersFilters = {}) {
  * - SUPERVISOR: Can view workers in their site
  */
 export async function getWorkerById(activistId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Fetch activist without neighborhood include (Prisma composite FK issue)
@@ -621,13 +627,7 @@ export async function getWorkerById(activistId: string) {
       success: true,
       activist,
     };
-  } catch (error) {
-    console.error('Error getting activist:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get worker',
-    };
-  }
+  }, 'getWorkerById');
 }
 
 // ============================================
@@ -643,7 +643,7 @@ export async function getWorkerById(activistId: string) {
  * - SUPERVISOR: Can update workers in their site (limited fields)
  */
 export async function updateWorker(activistId: string, data: UpdateWorkerInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await requireSupervisor();
 
     // Get existing worker
@@ -803,6 +803,24 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
             },
           });
 
+          // Audit log for activist user account creation (update flow)
+          await prisma.auditLog.create({
+            data: {
+              action: 'UPDATE_ACTIVIST_USER_ACCOUNT',
+              entity: 'User',
+              entityId: activistUser.id,
+              userId: currentUser.id,
+              userEmail: currentUser.email,
+              userRole: currentUser.role,
+              cityId: undefined, // cityId not available on currentUser, populated from context
+              after: {
+                email: activistUser.email,
+                fullName: activistUser.fullName,
+                linkedActivistId: activistId,
+              },
+            },
+          });
+
           // Link activist to user (will be done in update below)
           existingActivist.userId = activistUser.id;
           console.log(`✅ Created activist user account: ${activistUser.email} (phone: ${data.phone})`);
@@ -898,13 +916,7 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
       success: true,
       activist: updatedActivist,
     };
-  } catch (error) {
-    console.error('Error updating activist:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update worker',
-    };
-  }
+  }, 'updateWorker');
 }
 
 // ============================================
@@ -920,7 +932,7 @@ export async function updateWorker(activistId: string, data: UpdateWorkerInput) 
  * - SUPERVISOR: Can delete workers in their site
  */
 export async function deleteWorker(activistId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await requireSupervisor();
 
     // Get worker to delete
@@ -1015,13 +1027,7 @@ export async function deleteWorker(activistId: string) {
       message: 'Worker deactivated successfully',
       activist: deletedActivist,
     };
-  } catch (error) {
-    console.error('Error deleting activist:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete worker',
-    };
-  }
+  }, 'deleteWorker');
 }
 
 // ============================================
@@ -1037,7 +1043,7 @@ export async function deleteWorker(activistId: string) {
  * - SUPERVISOR: Can toggle workers in their site
  */
 export async function toggleWorkerStatus(activistId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await requireSupervisor();
 
     const activist = await prisma.activist.findUnique({
@@ -1139,13 +1145,7 @@ export async function toggleWorkerStatus(activistId: string) {
       success: true,
       activist: updatedActivist,
     };
-  } catch (error) {
-    console.error('Error toggling worker status:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to toggle worker status',
-    };
-  }
+  }, 'toggleWorkerStatus');
 }
 
 // ============================================
@@ -1159,7 +1159,7 @@ export async function toggleWorkerStatus(activistId: string) {
  * - Same as createWorker for each worker
  */
 export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const results = {
       success: [] as any[],
       failed: [] as { activist: CreateWorkerInput; error: string }[],
@@ -1187,13 +1187,7 @@ export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
         failed: results.failed,
       },
     };
-  } catch (error) {
-    console.error('Error bulk creating activists:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to bulk create workers',
-    };
-  }
+  }, 'bulkCreateWorkers');
 }
 
 // ============================================
@@ -1207,7 +1201,7 @@ export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
  * - Based on role (same filtering as listWorkers)
  */
 export async function getWorkerStats() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     const where: any = {};
@@ -1313,13 +1307,7 @@ export async function getWorkerStats() {
         workersBySite,
       },
     };
-  } catch (error) {
-    console.error('Error getting worker stats:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get worker stats',
-    };
-  }
+  }, 'getWorkerStats');
 }
 
 // ============================================
@@ -1341,7 +1329,7 @@ export async function quickUpdateActivistField(
   field: 'phone' | 'email' | 'position' | 'isActive',
   value: string | boolean
 ) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Only authorized roles can update activists
@@ -1488,11 +1476,5 @@ export async function quickUpdateActivistField(
       success: true,
       activist: updatedActivist,
     };
-  } catch (error) {
-    console.error('Error updating activist field:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update activist',
-    };
-  }
+  }, 'quickUpdateActivistField');
 }

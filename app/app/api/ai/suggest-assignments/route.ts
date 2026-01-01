@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { predictOptimalAssignments } from '@/lib/ai/smartAssignment';
+import { withErrorHandler } from '@/lib/error-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,10 +35,9 @@ export const dynamic = 'force-dynamic';
  *   ]
  * }
  */
-export async function POST(req: NextRequest) {
-  try {
-    // 1. Authentication
-    const session = await auth();
+export const POST = withErrorHandler(async (req: Request) => {
+  // 1. Authentication
+  const session = await auth();
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -72,12 +72,4 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
       algorithm: 'smart_assignment_v1'
     });
-
-  } catch (error) {
-    console.error('AI prediction error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate predictions', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
+});

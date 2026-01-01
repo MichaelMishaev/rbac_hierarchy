@@ -7,10 +7,11 @@
  * Supports both Railway Redis (ioredis) and Upstash Redis (REST API).
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Redis as UpstashRedis } from '@upstash/redis';
 import IORedis from 'ioredis';
 import { requireAuth } from '@/lib/api-auth';
+import { withErrorHandler } from '@/lib/error-handler';
 
 // Type for Redis client interface
 interface RedisClient {
@@ -79,41 +80,34 @@ else if (process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_RES
   console.log('[Metrics] Initialized Upstash Redis client');
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async (request: Request) => {
   // ✅ SECURITY FIX (VULN-RBAC-001): Require authentication
   const authResult = await requireAuth(request);
   if (authResult instanceof NextResponse) return authResult;
 
-  try {
-    if (!redis) {
-      return NextResponse.json({
-        error: 'Redis not configured',
-        metrics: [],
-      });
-    }
-
-    const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get('type') || 'web-vital';
-    const name = searchParams.get('name');
-    const timeframe = parseInt(searchParams.get('timeframe') || '86400000'); // Default 24 hours
-
-    if (name) {
-      // Get stats for specific metric
-      const stats = await getMetricStats(redis, type, name, timeframe);
-      return NextResponse.json(stats);
-    } else {
-      // Get stats for all metrics
-      const allStats = await getAllMetricsStats(redis, type, timeframe);
-      return NextResponse.json(allStats);
-    }
-  } catch (error) {
-    console.error('[Metrics] Error fetching metrics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch metrics' },
-      { status: 500 }
-    );
+  if (!redis) {
+    return NextResponse.json({
+      error: 'Redis not configured',
+      metrics: [],
+    });
   }
-}
+
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
+  const type = searchParams.get('type') || 'web-vital';
+  const name = searchParams.get('name');
+  const timeframe = parseInt(searchParams.get('timeframe') || '86400000'); // Default 24 hours
+
+  if (name) {
+    // Get stats for specific metric
+    const stats = await getMetricStats(redis, type, name, timeframe);
+    return NextResponse.json(stats);
+  } else {
+    // Get stats for all metrics
+    const allStats = await getAllMetricsStats(redis, type, timeframe);
+    return NextResponse.json(allStats);
+  }
+});
 
 /**
  * Get statistics for a specific metric

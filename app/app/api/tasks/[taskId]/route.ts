@@ -7,28 +7,27 @@
  * Sets deleted_for_recipient_at on ALL task_assignments
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logTaskAudit } from '@/lib/tasks';
-import { ForbiddenError, UnauthorizedError, NotFoundError } from '@/lib/error-handler';
+import { ForbiddenError, UnauthorizedError, NotFoundError, withErrorHandler } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ taskId: string }> }
-) {
-  try {
-    // 1. Authenticate user
-    const session = await auth();
+export const DELETE = withErrorHandler(async (
+  request: Request,
+  { params }: { params: Promise<{ taskId: string }> }
+) => {
+  // 1. Authenticate user
+  const session = await auth();
     if (!session?.user) {
-      const context = await extractRequestContext(request);
-      logger.authFailure('Unauthenticated task deletion attempt', context);
+      const reqContext = await extractRequestContext(request);
+      logger.authFailure('Unauthenticated task deletion attempt', reqContext);
       throw new UnauthorizedError('נדרש אימות');
     }
 
     const userId = session.user.id as string;
-    const { taskId: taskIdStr } = await context.params;
+    const { taskId: taskIdStr } = await params;
     const taskId = BigInt(taskIdStr);
 
     // 2. Check if task exists and user is the sender
@@ -48,9 +47,9 @@ export async function DELETE(
     }
 
     if (task.senderUserId !== userId) {
-      const context = await extractRequestContext(request);
+      const reqContext = await extractRequestContext(request);
       logger.rbacViolation('User attempted to delete task they did not create', {
-        ...context,
+        ...reqContext,
         ...extractSessionContext(session),
         metadata: {
           taskId: taskId.toString(),
@@ -126,19 +125,4 @@ export async function DELETE(
       recipients_affected: updateResult.count,
       deleted_at: now.toISOString(),
     });
-  } catch (error: any) {
-    console.error('Error deleting task:', error);
-
-    if (error.message) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'שגיאה במחיקת המשימה' },
-      { status: 500 }
-    );
-  }
-}
+});

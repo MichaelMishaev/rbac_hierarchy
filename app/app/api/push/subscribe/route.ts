@@ -9,9 +9,10 @@
  *   - action: 'subscribe' | 'unsubscribe' | 'renew'
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler } from '@/lib/error-handler';
 
 interface SubscribeRequest {
   subscription: {
@@ -24,10 +25,9 @@ interface SubscribeRequest {
   action: 'subscribe' | 'unsubscribe' | 'renew';
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    // 1. Authenticate user
-    const session = await auth();
+export const POST = withErrorHandler(async (req: Request) => {
+  // 1. Authenticate user
+  const session = await auth();
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -122,19 +122,4 @@ export async function POST(req: NextRequest) {
       { error: 'פעולה לא נתמכת' },
       { status: 400 }
     );
-  } catch (error) {
-    console.error('[Push Subscribe] Error:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: `שגיאה בשמירת מנוי: ${error.message}` },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'שגיאה בלתי צפויה בשמירת מנוי' },
-      { status: 500 }
-    );
-  }
-}
+});

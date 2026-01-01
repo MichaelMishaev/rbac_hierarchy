@@ -88,14 +88,25 @@ function getUserMessage(error: Error): string {
 
 /**
  * Wrap API route handler with error handling
- * Next.js 15 compatible - supports optional context parameter
+ * Next.js 15 compatible - supports both static and dynamic routes
  */
+// Overload 1: Static routes (no context)
+export function withErrorHandler(
+  handler: (req: Request) => Promise<Response>
+): (req: Request) => Promise<Response>;
+
+// Overload 2: Dynamic routes (with context)
+export function withErrorHandler<T>(
+  handler: (req: Request, context: T) => Promise<Response>
+): (req: Request, context: T) => Promise<Response>;
+
+// Implementation
 export function withErrorHandler<T = any>(
   handler: (req: Request, context?: T) => Promise<Response>
 ) {
   return async (req: Request, context?: T): Promise<Response> => {
     try {
-      return await handler(req, context);
+      return await handler(req, context as T);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       const httpStatus = getHttpStatus(err);

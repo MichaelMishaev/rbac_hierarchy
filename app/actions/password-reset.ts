@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { revalidatePath } from "next/cache";
+import { logPasswordChangeAudit } from "@/lib/audit-logger";
 
 /**
  * Manager resets a subordinate user's password
@@ -43,6 +44,16 @@ export async function resetUserPasswordByManager(userId: string) {
       passwordHash,
       requirePasswordChange: true,
     },
+  });
+
+  // Log password reset audit
+  await logPasswordChangeAudit({
+    targetUserId: userId,
+    targetUserEmail: targetUser.email,
+    changedBy: session.user.id!,
+    changedByEmail: session.user.email!,
+    changedByRole: session.user.role!,
+    action: 'PASSWORD_RESET_BY_MANAGER',
   });
 
   // Log the reset action for audit trail
@@ -107,6 +118,16 @@ export async function changeOwnPassword(
         passwordHash: newPasswordHash,
         requirePasswordChange: false,
       },
+    });
+
+    // Log password change audit
+    await logPasswordChangeAudit({
+      targetUserId: session.user.id!,
+      targetUserEmail: session.user.email!,
+      changedBy: session.user.id!,
+      changedByEmail: session.user.email!,
+      changedByRole: session.user.role!,
+      action: 'PASSWORD_CHANGE',
     });
 
     console.log(`[Password Change] User ${session.user.email} changed their password`);

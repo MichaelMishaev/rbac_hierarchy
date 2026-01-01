@@ -8,6 +8,7 @@
 
 import { auth } from '@/auth.config';
 import { blacklistToken } from '@/lib/token-blacklist';
+import { logLogoutAudit } from '@/lib/audit-logger';
 
 /**
  * Logout with token blacklisting
@@ -60,6 +61,14 @@ export async function logoutWithBlacklist(): Promise<{ jti: string | null }> {
     // Blacklist token for remaining TTL (7 days)
     const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
     await blacklistToken(jti, maxAge);
+
+    // Log logout audit
+    await logLogoutAudit({
+      userId: session.user.id!,
+      userEmail: session.user.email!,
+      userRole: session.user.role!,
+      cityId: undefined, // cityId not available on session.user, populated from activistProfile
+    });
 
     console.log(`[Auth] Logout successful, token blacklisted: ${jti}`);
     return { jti };

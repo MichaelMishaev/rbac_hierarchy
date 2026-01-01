@@ -5,6 +5,7 @@ import { getCurrentUser, getUserCorporations, hasAccessToCorporation } from '@/l
 import { hash } from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { Role } from '@prisma/client';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // HIERARCHY HELPER FUNCTIONS
@@ -102,7 +103,7 @@ export type ListUsersFilters = {
  * - ACTIVIST_COORDINATOR: Cannot create users
  */
 export async function createUser(data: CreateUserInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // ACTIVIST_COORDINATOR cannot create users
@@ -286,13 +287,7 @@ export async function createUser(data: CreateUserInput) {
       // Return the password for display (only on creation)
       generatedPassword: data.password,
     };
-  } catch (error) {
-    console.error('Error creating user:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create user',
-    };
-  }
+  }, 'createUser');
 }
 
 // ============================================
@@ -311,7 +306,7 @@ export async function createUser(data: CreateUserInput) {
  * Rule: "Each user sees only themselves and what's UNDER them in hierarchy"
  */
 export async function listUsers(filters: ListUsersFilters = {}) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // ACTIVIST_COORDINATOR cannot see any users
@@ -448,15 +443,7 @@ export async function listUsers(filters: ListUsersFilters = {}) {
       users: sanitizedUsers,
       count: sanitizedUsers.length,
     };
-  } catch (error) {
-    console.error('Error listing users:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to list users',
-      users: [],
-      count: 0,
-    };
-  }
+  }, 'listUsers');
 }
 
 // ============================================
@@ -472,7 +459,7 @@ export async function listUsers(filters: ListUsersFilters = {}) {
  * - SUPERVISOR: Can view users in their assigned sites
  */
 export async function getUserById(userId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     const user = await prisma.user.findUnique({
@@ -546,13 +533,7 @@ export async function getUserById(userId: string) {
       success: true,
       user: userWithoutPassword,
     };
-  } catch (error) {
-    console.error('Error getting user:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get user',
-    };
-  }
+  }, 'getUserById');
 }
 
 // ============================================
@@ -571,7 +552,7 @@ export async function getUserById(userId: string) {
  * Rule: "You can only update users BELOW you in hierarchy"
  */
 export async function updateUser(userId: string, data: UpdateUserInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // ACTIVIST_COORDINATOR cannot update users
@@ -727,15 +708,31 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
 
     // Update corporation assignment if provided and role changed
     if (data.cityId && data.role) {
-      // Remove old role assignments
-      if (existingUser.role === 'CITY_COORDINATOR') {
-        await prisma.cityCoordinator.deleteMany({
-          where: { userId },
-        });
-      } else if (existingUser.role === 'ACTIVIST_COORDINATOR') {
-        await prisma.activistCoordinator.deleteMany({
-          where: { userId },
-        });
+      // Remove old role assignments using the existing records (to handle composite unique keys)
+      if (existingUser.role === 'CITY_COORDINATOR' && existingUserCorps?.coordinatorOf) {
+        // Delete all existing city coordinator records for this user
+        for (const coord of existingUserCorps.coordinatorOf) {
+          await prisma.cityCoordinator.delete({
+            where: {
+              cityId_userId: {
+                cityId: coord.cityId,
+                userId: userId,
+              },
+            },
+          });
+        }
+      } else if (existingUser.role === 'ACTIVIST_COORDINATOR' && existingUserCorps?.activistCoordinatorOf) {
+        // Delete all existing activist coordinator records for this user
+        for (const coord of existingUserCorps.activistCoordinatorOf) {
+          await prisma.activistCoordinator.delete({
+            where: {
+              cityId_userId: {
+                cityId: coord.cityId,
+                userId: userId,
+              },
+            },
+          });
+        }
       }
 
       // Create new role assignment
@@ -792,13 +789,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
       success: true,
       user: userWithoutPassword,
     };
-  } catch (error) {
-    console.error('Error updating user:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update user',
-    };
-  }
+  }, 'updateUser');
 }
 
 // ============================================
@@ -817,7 +808,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
  * Rule: "You can only delete users BELOW you in hierarchy"
  */
 export async function deleteUser(userId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // ACTIVIST_COORDINATOR cannot delete users
@@ -928,13 +919,7 @@ export async function deleteUser(userId: string) {
       success: true,
       message: 'User deleted successfully',
     };
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete user',
-    };
-  }
+  }, 'deleteUser');
 }
 
 // ============================================
@@ -951,7 +936,7 @@ export async function deleteUser(userId: string) {
  *   because these FKs do not cascade and would otherwise block deletion.
  */
 export async function deleteAllUsersExceptSystemAdmin() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     if (currentUser.role !== 'SUPERADMIN' && !currentUser.isSuperAdmin) {
@@ -1035,13 +1020,7 @@ export async function deleteAllUsersExceptSystemAdmin() {
       deletedCount: result.count,
       keptCount: keepIds.length,
     };
-  } catch (error) {
-    console.error('Error deleting all users except system admin:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete users',
-    };
-  }
+  }, 'deleteAllUsersExceptSystemAdmin');
 }
 
 // ============================================
@@ -1053,7 +1032,7 @@ export async function deleteAllUsersExceptSystemAdmin() {
  * Used for autocomplete in user creation modal
  */
 export async function getExistingRegions() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const regions = await prisma.areaManager.findMany({
       select: {
         regionName: true,
@@ -1068,14 +1047,7 @@ export async function getExistingRegions() {
       success: true,
       regions: regions.map(r => r.regionName),
     };
-  } catch (error) {
-    console.error('Error fetching regions:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch regions',
-      regions: [],
-    };
-  }
+  }, 'getExistingRegions');
 }
 
 // ============================================
@@ -1091,7 +1063,7 @@ export async function getExistingRegions() {
  * - SUPERVISOR: Stats for assigned sites
  */
 export async function getUserStats() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     const where: any = {};
@@ -1165,11 +1137,5 @@ export async function getUserStats() {
         recentUsers,
       },
     };
-  } catch (error) {
-    console.error('Error getting user stats:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get user stats',
-    };
-  }
+  }, 'getUserStats');
 }

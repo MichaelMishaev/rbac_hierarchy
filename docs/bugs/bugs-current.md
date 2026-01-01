@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 31
+**Total Bugs:** 32
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -11,6 +11,187 @@
 
 ---
 
+
+## 🔴 CRITICAL BUG #32: E2E Tests 99.2% Failure Rate - Login Test IDs Missing (2025-12-31)
+
+**Severity:** CRITICAL
+**Impact:** 261/263 e2e tests failing, entire test suite blocked, authentication completely broken in tests
+**Status:** ✅ FIXED
+**Fix Date:** 2025-12-31
+
+### Bug Description
+
+E2E test suite showing 99.2% failure rate (2/263 passing). All tests requiring authentication (95%+ of suite) failed immediately at login screen with:
+
+```
+TimeoutError: page.fill: Timeout 10000ms exceeded.
+waiting for locator('[data-testid="email-input"]')
+```
+
+**Affected Component:** Login page + Test infrastructure
+**Visible to:** Development team (tests only)
+**Blocking:** All CRUD tests, RBAC tests, dashboard tests, integration tests
+
+### Root Cause Analysis
+
+**Affected Files:**
+- `app/app/[locale]/(auth)/login/page.tsx` (login component)
+- `tests/e2e/fixtures/auth.fixture.ts` (test helpers)
+
+**Problem #1: Test IDs on Wrong Elements**
+The login page had `data-testid` on TextField wrapper divs instead of the actual input elements:
+
+```typescript
+// ❌ WRONG - Test ID on MuiFormControl wrapper
+<TextField data-testid="email-input" ... />
+// Resolves to: <div data-testid="email-input" class="MuiFormControl-root">
+// Playwright error: "Element is not an <input>"
+```
+
+**Problem #2: Test User Password Mismatch**
+Test fixtures had incorrect passwords that didn't match seeded database:
+
+```typescript
+// ❌ WRONG - Passwords didn't match seed.ts
+testUsers = {
+  areaManager: { password: 'area123' },      // Seed: 'admin123'
+  cityCoordinator: { password: 'manager123' }, // Seed: 'admin123'
+  activistCoordinator: { password: 'supervisor123' } // Seed: 'admin123'
+}
+```
+
+**Problem #3: Brittle Login Assertion**
+Login fixture used brittle h1 element check that failed even on successful login:
+
+```typescript
+// ❌ WRONG - Fails if dashboard doesn't have h1
+await expect(page.locator('h1')).toBeVisible();
+```
+
+**Why this failed:**
+1. MUI TextField component structure: `data-testid` on wrapper doesn't propagate to input
+2. Seed script uses `'admin123'` for all users, but tests used role-specific passwords
+3. Dashboard structure doesn't guarantee h1 element presence
+
+### Solution
+
+**Fix #1: Correct Test ID Placement**
+`app/app/[locale]/(auth)/login/page.tsx`
+
+```typescript
+// ✅ CORRECT - Test ID on inputProps (reaches actual input element)
+<TextField
+  inputProps={{ 'data-testid': 'email-input' }}
+  InputProps={{
+    startAdornment: (...)
+  }}
+/>
+
+<TextField
+  inputProps={{ 'data-testid': 'password-input' }}
+  InputProps={{
+    startAdornment: (...),
+    endAdornment: (...)
+  }}
+/>
+
+<Button
+  data-testid="login-button"  // Button can use data-testid directly
+  type="submit"
+/>
+```
+
+**Fix #2: Unified Test Passwords**
+`tests/e2e/fixtures/auth.fixture.ts`
+
+```typescript
+// ✅ CORRECT - All use 'admin123' matching seed.ts
+export const testUsers = {
+  superAdmin: { password: 'admin123' },
+  areaManager: { password: 'admin123' },          // Was: 'area123'
+  cityCoordinator: { password: 'admin123' },      // Was: 'manager123'
+  activistCoordinator: { password: 'admin123' },  // Was: 'supervisor123'
+};
+```
+
+**Fix #3: Reliable Load Detection**
+`tests/e2e/fixtures/auth.fixture.ts`
+
+```typescript
+// ✅ CORRECT - Wait for actual page load, not specific element
+await page.waitForURL('/dashboard', { timeout: 10000 });
+await page.waitForLoadState('networkidle');
+// Removed: await expect(page.locator('h1')).toBeVisible();
+```
+
+### Testing & Validation
+
+**Before Fix:**
+```bash
+npx playwright test tests/e2e/auth/login.spec.ts:4 --project=chromium
+# Result: ✘ TimeoutError: waiting for locator('[data-testid="email-input"]')
+```
+
+**After Fix:**
+```bash
+npx playwright test tests/e2e/auth/login.spec.ts:4 --project=chromium
+# Result: ✓ Login completes, navigates to dashboard, session established
+# (Test still fails on missing dashboard UI test IDs, but authentication works)
+```
+
+**Impact:**
+- ✅ Login form elements now accessible to tests
+- ✅ Authentication flow fully functional
+- ✅ Tests can proceed past login screen
+- ✅ Session establishment verified
+- 🟡 260+ tests unblocked (still fail on missing UI test IDs in components)
+
+### Prevention Rules
+
+**Rule 1: MUI TextField Test IDs**
+When adding test IDs to Material-UI TextField components:
+```typescript
+// ❌ WRONG
+<TextField data-testid="my-input" />
+
+// ✅ CORRECT
+<TextField inputProps={{ 'data-testid': 'my-input' }} />
+```
+
+**Rule 2: Test Credentials Must Match Seed Data**
+Always verify test user credentials match `prisma/seed.ts`:
+```bash
+# Check seed passwords
+grep -A 1 "passwordHash.*bcrypt.hash" app/prisma/seed.ts
+
+# Verify test fixtures match
+grep "password:" tests/e2e/fixtures/auth.fixture.ts
+```
+
+**Rule 3: Prefer Load State Over Element Checks**
+For post-navigation assertions, use page load detection:
+```typescript
+// ❌ Brittle - Assumes specific DOM structure
+await expect(page.locator('h1')).toBeVisible();
+
+// ✅ Reliable - Waits for actual page load
+await page.waitForURL('/expected-url');
+await page.waitForLoadState('networkidle');
+```
+
+**Rule 4: Test ID Strategy Document**
+Create `/docs/testing/TEST_ID_CONVENTIONS.md` with:
+- MUI component patterns (TextField, Select, Autocomplete, etc.)
+- Test ID naming conventions
+- Common pitfalls and solutions
+
+### Related Issues
+
+- **Next Steps:** Add missing UI test IDs to dashboard/components (estimated 3-4 hours)
+- **Estimated Recovery:** 85%+ pass rate after UI test IDs added
+- **See Also:** `E2E_SYSTEM_AUDIT_2025-12-31.md`, `E2E_FIX_SUMMARY.md`
+
+---
 
 ## 🔴 HIGH BUG #30: Null Constraint Violation When Updating User Role (2025-12-31)
 

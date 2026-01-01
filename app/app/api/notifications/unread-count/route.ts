@@ -10,34 +10,27 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler } from '@/lib/error-handler';
 
-export async function GET() {
-  try {
-    const session = await auth();
+export const GET = withErrorHandler(async () => {
+  const session = await auth();
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
-    // Count unread task assignments (notifications)
-    // Same logic as notifications page.tsx line 85
-    const unreadCount = await prisma.taskAssignment.count({
-      where: {
-        targetUserId: userId,
-        status: 'unread',
-      },
-    });
-
-    return NextResponse.json({
-      unread_count: unreadCount,
-    });
-  } catch (error) {
-    console.error('Error fetching unread notification count:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-}
+
+  const userId = session.user.id;
+
+  // Count unread task assignments (notifications)
+  // Same logic as notifications page.tsx line 85
+  const unreadCount = await prisma.taskAssignment.count({
+    where: {
+      targetUserId: userId,
+      status: 'unread',
+    },
+  });
+
+  return NextResponse.json({
+    unread_count: unreadCount,
+  });
+});

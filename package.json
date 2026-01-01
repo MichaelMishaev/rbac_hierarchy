@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "cd app && npm run dev",
+    "dev:clean": "cd app && npm run dev:clean",
     "build": "cd app && npm install && npm run build",
     "start": "cd app && npm run start",
     "test:e2e": "playwright test",

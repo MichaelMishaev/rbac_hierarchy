@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getUserContext } from '@/lib/voters/actions/context';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 type BulkVoterInput = {
   firstName: string;
@@ -44,13 +45,13 @@ type ImportResult = {
  * Validates required fields and creates voters (allows duplicates)
  */
 export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<ImportResult> {
-  const result: ImportResult = {
-    success: 0,
-    failed: 0,
-    errors: [],
-  };
+  return withServerActionErrorHandler(async () => {
+    const result: ImportResult = {
+      success: 0,
+      failed: 0,
+      errors: [],
+    };
 
-  try {
     const viewer = await getUserContext();
 
     console.log(`[bulkImportVoters] Starting import of ${voters.length} voters by ${viewer.fullName}`);
@@ -79,7 +80,7 @@ export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<Import
         const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
         // Create voter (allow duplicates from Excel import)
-        await prisma.voter.create({
+        const createdVoter = await prisma.voter.create({
           data: {
             fullName,
             phone,
@@ -103,6 +104,25 @@ export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<Import
           },
         });
 
+        // Audit log for voter creation
+        await prisma.auditLog.create({
+          data: {
+            action: 'CREATE_VOTER',
+            entity: 'Voter',
+            entityId: createdVoter.id,
+            userId: viewer.userId,
+            userEmail: viewer.email, // UserContext has 'email', not 'userEmail'
+            userRole: viewer.role,
+            cityId: viewer.cityId,
+            after: {
+              fullName: createdVoter.fullName,
+              phone: createdVoter.phone,
+              importSource: 'excel_bulk_import',
+              importedAt: new Date().toISOString(),
+            },
+          },
+        });
+
         result.success++;
         console.log(`[bulkImportVoters] Row ${rowNumber}: Created voter ${fullName} (${phone})`);
       } catch (error) {
@@ -122,17 +142,5 @@ export async function bulkImportVoters(voters: BulkVoterInput[]): Promise<Import
     revalidatePath('/dashboard');
 
     return result;
-  } catch (error) {
-    console.error('[bulkImportVoters] Fatal error:', error);
-    return {
-      success: 0,
-      failed: voters.length,
-      errors: [
-        {
-          row: 0,
-          error: error instanceof Error ? error.message : 'שגיאה קריטית בתהליך הייבוא',
-        },
-      ],
-    };
-  }
+  }, 'bulkImportVoters');
 }

@@ -8,6 +8,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getUserContext } from '@/lib/voters/actions/context';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 type VoterDuplicate = {
   id: string;
@@ -26,7 +27,7 @@ type VoterDuplicate = {
 export async function getVoterDuplicates(
   voterId: string
 ): Promise<{ success: true; duplicates: VoterDuplicate[] } | { success: false; error: string }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     const viewer = await getUserContext();
 
     // Get the target voter
@@ -122,13 +123,7 @@ export async function getVoterDuplicates(
     console.log(`[getVoterDuplicates] Found ${duplicates.length} duplicates for voter ${voterId} by ${viewer.fullName}`);
 
     return { success: true, duplicates };
-  } catch (error) {
-    console.error('[getVoterDuplicates] Error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  }, 'getVoterDuplicates');
 }
 
 /**
@@ -138,7 +133,7 @@ export async function getVoterDuplicates(
 export async function getVotersWithDuplicates(): Promise<
   { success: true; data: Record<string, number> } | { success: false; error: string }
 > {
-  try {
+  return withServerActionErrorHandler(async () => {
     const viewer = await getUserContext();
 
     // Get visible voters with RBAC filtering
@@ -213,11 +208,5 @@ export async function getVotersWithDuplicates(): Promise<
     });
 
     return { success: true, data: duplicateMap };
-  } catch (error) {
-    console.error('[getVotersWithDuplicates] Error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  }, 'getVotersWithDuplicates');
 }

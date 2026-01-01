@@ -10,6 +10,7 @@ import {
   reassignActivistsFromRemovedActivistCoordinator,
   canRemoveActivistCoordinatorFromNeighborhood,
 } from '@/lib/activist-coordinator-assignment';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -40,7 +41,7 @@ export type CreateActivistCoordinatorQuickInput = {
  * - MANAGER: Can create supervisors within their corporation only
  */
 export async function createActivistCoordinatorQuick(data: CreateActivistCoordinatorQuickInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Only SUPERADMIN and MANAGER can create supervisors
@@ -134,13 +135,7 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
       },
       tempPassword, // Return temp password to show to user
     };
-  } catch (error) {
-    console.error('Error creating activistCoordinator:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create supervisor',
-    };
-  }
+  }, 'createActivistCoordinatorQuick');
 }
 
 /**
@@ -153,7 +148,7 @@ export async function createActivistCoordinatorQuick(data: CreateActivistCoordin
  * - CITY_COORDINATOR: Can assign within their city
  */
 export async function assignSupervisorToSite(activistCoordinatorId: string, neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Get neighborhood to validate access
@@ -282,13 +277,7 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
         : 'Coordinator assigned to neighborhood.',
       activistsAutoAssigned: activistsAssigned,
     };
-  } catch (error) {
-    console.error('Error assigning supervisor to neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to assign supervisor',
-    };
-  }
+  }, 'assignSupervisorToSite');
 }
 
 /**
@@ -305,7 +294,7 @@ export async function assignSupervisorToSite(activistCoordinatorId: string, neig
  * - CITY_COORDINATOR: Can remove within their city
  */
 export async function removeSupervisorFromSite(activistCoordinatorId: string, neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Get neighborhood to validate access
@@ -407,13 +396,7 @@ export async function removeSupervisorFromSite(activistCoordinatorId: string, ne
       success: true,
       message: 'Activist coordinator removed from neighborhood.',
     };
-  } catch (error) {
-    console.error('Error removing coordinator from neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to remove coordinator',
-    };
-  }
+  }, 'removeSupervisorFromSite');
 }
 
 /**
@@ -428,7 +411,7 @@ export async function removeSupervisorFromSite(activistCoordinatorId: string, ne
  * - CITY_COORDINATOR: Can delete within their city
  */
 export async function deleteSupervisor(activistCoordinatorId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Get activist coordinator to validate
@@ -526,11 +509,5 @@ export async function deleteSupervisor(activistCoordinatorId: string) {
       message: `Activist coordinator deactivated. ${totalActivistsReassigned} activist(s) reassigned across ${assignedNeighborhoods.length} neighborhood(s).`,
       reassignmentResults,
     };
-  } catch (error) {
-    console.error('Error deleting activist coordinator:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete coordinator',
-    };
-  }
+  }, 'deleteSupervisor');
 }

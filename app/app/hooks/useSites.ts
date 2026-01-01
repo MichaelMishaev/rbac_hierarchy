@@ -8,9 +8,7 @@ export function useSites() {
     queryKey: ['sites'],
     queryFn: async () => {
       const result = await listNeighborhoods({});
-      if (!result.success) {
-        throw new Error(result.error);
-      }
+      // Exceptions are automatically thrown by error handler wrapper
       return result.neighborhoods || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

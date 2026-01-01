@@ -12,18 +12,13 @@ import {
   Alert,
   IconButton,
   InputAdornment,
-  Collapse,
-  Chip,
-  Divider,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import BusinessIcon from '@mui/icons-material/Business';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import LoginIcon from '@mui/icons-material/Login';
-import { colors, shadows, borderRadius } from '@/lib/design-system';
+import { colors, shadows } from '@/lib/design-system';
 import dynamic from 'next/dynamic';
 
 // ✅ SECURITY FIX (VULN-AUTH-003): Dev-only component stripped from production via webpack
@@ -169,6 +164,7 @@ export default function LoginPage() {
               required
               autoFocus
               autoComplete="username"
+              inputProps={{ 'data-testid': 'email-input' }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -201,6 +197,7 @@ export default function LoginPage() {
               required
               autoComplete="off"
               placeholder="הכנס סיסמה"
+              inputProps={{ 'data-testid': 'password-input' }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -240,6 +237,7 @@ export default function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
+              data-testid="login-button"
               sx={{
                 py: 1.75,
                 fontSize: '17px',

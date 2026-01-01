@@ -12,6 +12,7 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
+import { logger, extractSessionContext } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,46 +34,74 @@ export async function GET(req: NextRequest) {
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
 
-  // Send initial connection message
-  await writer.write(
-    encoder.encode(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`)
-  );
+  try {
+    // Send initial connection message
+    await writer.write(
+      encoder.encode(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`)
+    );
 
-  // Polling interval to check for new events
-  // TODO: Replace with Redis Pub/Sub or PostgreSQL LISTEN/NOTIFY in production
-  const interval = setInterval(async () => {
-    try {
-      const events = await fetchRecentEvents(session.user.id, session.user.role);
+    // Polling interval to check for new events
+    // TODO: Replace with Redis Pub/Sub or PostgreSQL LISTEN/NOTIFY in production
+    const interval = setInterval(async () => {
+      try {
+        const events = await fetchRecentEvents(session.user.id, session.user.role);
 
-      for (const event of events) {
-        await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        for (const event of events) {
+          await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        }
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('[SSE] Error fetching events', err, {
+          ...extractSessionContext(session),
+          metadata: { route: '/api/events/live-feed', operation: 'fetchEvents' },
+        });
+
+        // Send error event to client
+        try {
+          await writer.write(
+            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'Failed to fetch events', timestamp: Date.now() })}\n\n`)
+          );
+        } catch (writeError) {
+          console.error('[SSE] Failed to send error event to client:', writeError);
+        }
       }
-    } catch (error) {
-      console.error('[SSE] Error fetching events:', error);
-    }
-  }, 5000); // Poll every 5 seconds
+    }, 5000); // Poll every 5 seconds
 
-  // Keep-alive ping to prevent connection timeout
-  const keepAlive = setInterval(() => {
-    writer.write(encoder.encode(': ping\n\n'));
-  }, 30000); // Ping every 30 seconds
+    // Keep-alive ping to prevent connection timeout
+    const keepAlive = setInterval(() => {
+      try {
+        writer.write(encoder.encode(': ping\n\n'));
+      } catch (pingError) {
+        console.error('[SSE] Keep-alive ping failed:', pingError);
+      }
+    }, 30000); // Ping every 30 seconds
 
-  // Handle client disconnect
-  req.signal.addEventListener('abort', () => {
-    clearInterval(interval);
-    clearInterval(keepAlive);
-    writer.close();
-    console.log('[SSE] Client disconnected');
-  });
+    // Handle client disconnect
+    req.signal.addEventListener('abort', () => {
+      clearInterval(interval);
+      clearInterval(keepAlive);
+      writer.close();
+      console.log('[SSE] Client disconnected');
+    });
 
-  return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable nginx buffering
-    },
-  });
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // Disable nginx buffering
+      },
+    });
+  } catch (error) {
+    // Handle stream initialization errors
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('[SSE] Stream initialization error', err, {
+      ...extractSessionContext(session),
+      metadata: { route: '/api/events/live-feed', operation: 'initialize' },
+    });
+
+    return new Response('Internal Server Error', { status: 500 });
+  }
 }
 
 /**

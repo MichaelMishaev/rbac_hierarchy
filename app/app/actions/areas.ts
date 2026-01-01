@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, requireSuperAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -46,7 +47,7 @@ export type UpdateAreaInput = {
  * - ACTIVIST_COORDINATOR: Cannot create Area Managers
  */
 export async function createArea(data: CreateAreaInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // RULE 1: Only SUPERADMIN can create Area Managers
     const currentUser = await requireSuperAdmin();
 
@@ -179,13 +180,7 @@ export async function createArea(data: CreateAreaInput) {
         citiesCount: newAreaManager._count.cities,
       },
     };
-  } catch (error) {
-    console.error('Error creating area manager:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create area manager',
-    };
-  }
+  }, 'createArea');
 }
 
 // ============================================
@@ -200,7 +195,7 @@ export async function createArea(data: CreateAreaInput) {
  * - Others: Cannot update area managers
  */
 export async function updateArea(areaId: string, data: UpdateAreaInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN can update area managers
     const currentUser = await requireSuperAdmin();
 
@@ -376,13 +371,7 @@ export async function updateArea(areaId: string, data: UpdateAreaInput) {
         citiesCount: updatedArea._count.cities,
       },
     };
-  } catch (error) {
-    console.error('Error updating area manager:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update area manager',
-    };
-  }
+  }, 'updateArea');
 }
 
 // ============================================
@@ -399,7 +388,7 @@ export async function updateArea(areaId: string, data: UpdateAreaInput) {
  * WARNING: This will cascade delete all related cities!
  */
 export async function deleteArea(areaId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN can delete area managers
     const currentUser = await requireSuperAdmin();
 
@@ -468,13 +457,7 @@ export async function deleteArea(areaId: string) {
       success: true,
       message: 'Area Manager deleted successfully',
     };
-  } catch (error) {
-    console.error('Error deleting area manager:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete area manager',
-    };
-  }
+  }, 'deleteArea');
 }
 
 // ============================================
@@ -488,7 +471,7 @@ export async function deleteArea(areaId: string) {
  * - SUPERADMIN: Can access this list
  */
 export async function getAvailableAreaManagerUsers(currentAreaId?: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN can access
     await requireSuperAdmin();
 
@@ -536,14 +519,7 @@ export async function getAvailableAreaManagerUsers(currentAreaId?: string) {
       success: true,
       users: availableUsers,
     };
-  } catch (error) {
-    console.error('Error fetching available area manager users:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch users',
-      users: [],
-    };
-  }
+  }, 'getAvailableAreaManagerUsers');
 }
 
 // ============================================
@@ -564,7 +540,7 @@ export async function getAvailableAreaManagerUsers(currentAreaId?: string) {
  * - Others: Can list areas they have access to
  */
 export async function listAreas() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return { success: false, error: 'לא מחובר למערכת' };
@@ -590,17 +566,11 @@ export async function listAreas() {
       success: true,
       areas,
     };
-  } catch (error: any) {
-    console.error('Error listing areas:', error);
-    return {
-      success: false,
-      error: error.message || 'שגיאה בטעינת רשימת אזורים',
-    };
-  }
+  }, 'listAreas');
 }
 
 export async function toggleAreaStatus(areaId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN can toggle status
     const currentUser = await requireSuperAdmin();
 
@@ -663,11 +633,5 @@ export async function toggleAreaStatus(areaId: string) {
         citiesCount: updatedArea._count.cities,
       },
     };
-  } catch (error) {
-    console.error('Error toggling area manager status:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to toggle status',
-    };
-  }
+  }, 'toggleAreaStatus');
 }

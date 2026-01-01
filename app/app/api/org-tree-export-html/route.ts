@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth.config';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler } from '@/lib/error-handler';
 
-export async function GET() {
-  try {
-    const session = await auth();
+export const GET = withErrorHandler(async () => {
+  const session = await auth();
 
     // Only SuperAdmin can export organizational tree
     if (!session?.user || !session.user.isSuperAdmin) {
@@ -253,11 +253,7 @@ export async function GET() {
         'Content-Disposition': `attachment; filename="org-tree-${new Date().toISOString().split('T')[0]}.html"`,
       },
     });
-  } catch (error) {
-    console.error('Error generating HTML export:', error);
-    return NextResponse.json({ error: 'Failed to generate HTML export' }, { status: 500 });
-  }
-}
+});
 
 function generateStandaloneHTML(treeData: any): string {
   return `<!DOCTYPE html>

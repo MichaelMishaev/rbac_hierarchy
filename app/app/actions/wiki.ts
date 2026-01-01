@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { wikiCache, WIKI_CACHE_KEYS } from '@/lib/cache/wiki-cache';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -86,7 +87,7 @@ export async function getWikiCategories(): Promise<{
   categories?: WikiCategoryWithPages[];
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     await requireSuperAdmin();
 
     // 🚀 PERFORMANCE: Use cache with 5-minute TTL
@@ -143,13 +144,7 @@ export async function getWikiCategories(): Promise<{
     );
 
     return { success: true, categories };
-  } catch (error) {
-    console.error('Error fetching wiki categories:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch wiki categories',
-    };
-  }
+  }, 'getWikiCategories');
 }
 
 /**
@@ -160,7 +155,7 @@ export async function getWikiCategory(slug: string): Promise<{
   category?: WikiCategoryWithPages;
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     await requireSuperAdmin();
 
     const category = await prisma.wikiCategory.findUnique({
@@ -199,13 +194,7 @@ export async function getWikiCategory(slug: string): Promise<{
     };
 
     return { success: true, category: categoryWithCount };
-  } catch (error) {
-    console.error('Error fetching wiki category:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch wiki category',
-    };
-  }
+  }, 'getWikiCategory');
 }
 
 // ============================================
@@ -220,7 +209,7 @@ export async function getWikiPage(slug: string): Promise<{
   page?: WikiPageFull;
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     await requireSuperAdmin();
 
     const page = await prisma.wikiPage.findUnique({
@@ -241,13 +230,7 @@ export async function getWikiPage(slug: string): Promise<{
     }
 
     return { success: true, page };
-  } catch (error) {
-    console.error('Error fetching wiki page:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch wiki page',
-    };
-  }
+  }, 'getWikiPage');
 }
 
 /**
@@ -257,7 +240,7 @@ export async function incrementWikiPageView(pageId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     const user = await requireSuperAdmin();
 
     await prisma.wikiPage.update({
@@ -274,13 +257,7 @@ export async function incrementWikiPageView(pageId: string): Promise<{
     wikiCache.invalidatePattern(new RegExp(`^wiki:recent:.*:${user.id}$`)); // User's recent pages
 
     return { success: true };
-  } catch (error) {
-    console.error('Error incrementing page view:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to increment view count',
-    };
-  }
+  }, 'incrementWikiPageView');
 }
 
 /**
@@ -292,7 +269,7 @@ export async function getPopularWikiPages(limit: number = 5): Promise<{
   pages?: WikiSearchResult[];
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     await requireSuperAdmin();
 
     // 🚀 PERFORMANCE: Use cache with limit-specific key
@@ -332,13 +309,7 @@ export async function getPopularWikiPages(limit: number = 5): Promise<{
     );
 
     return { success: true, pages };
-  } catch (error) {
-    console.error('Error fetching popular pages:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch popular pages',
-    };
-  }
+  }, 'getPopularWikiPages');
 }
 
 /**
@@ -350,7 +321,7 @@ export async function getRecentWikiPages(limit: number = 5): Promise<{
   pages?: WikiSearchResult[];
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     const user = await requireSuperAdmin();
 
     // 🚀 PERFORMANCE: Use cache with user-specific key (shorter TTL for recent pages)
@@ -395,13 +366,7 @@ export async function getRecentWikiPages(limit: number = 5): Promise<{
     );
 
     return { success: true, pages };
-  } catch (error) {
-    console.error('Error fetching recent pages:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch recent pages',
-    };
-  }
+  }, 'getRecentWikiPages');
 }
 
 // ============================================
@@ -416,7 +381,7 @@ export async function searchWiki(query: string): Promise<{
   results?: WikiSearchResult[];
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     await requireSuperAdmin();
 
     if (!query || query.trim().length === 0) {
@@ -508,13 +473,7 @@ export async function searchWiki(query: string): Promise<{
     ];
 
     return { success: true, results };
-  } catch (error) {
-    console.error('Error searching wiki:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to search wiki',
-    };
-  }
+  }, 'searchWiki');
 }
 
 /**
@@ -525,7 +484,7 @@ export async function getWikiPagesByTag(tag: string): Promise<{
   pages?: WikiSearchResult[];
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     await requireSuperAdmin();
 
     const pages = await prisma.wikiPage.findMany({
@@ -553,11 +512,5 @@ export async function getWikiPagesByTag(tag: string): Promise<{
     }));
 
     return { success: true, pages: results };
-  } catch (error) {
-    console.error('Error fetching pages by tag:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch pages by tag',
-    };
-  }
+  }, 'getWikiPagesByTag');
 }

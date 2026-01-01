@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, requireSuperAdmin, getUserCorporations, hasAccessToCorporation } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -54,7 +55,7 @@ export type ListCitiesFilters = {
  * - ACTIVIST_COORDINATOR: Cannot create cities
  */
 export async function createCity(data: CreateCityInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Get current user (SuperAdmin OR Area Manager)
     const currentUser = await getCurrentUser();
 
@@ -189,13 +190,7 @@ export async function createCity(data: CreateCityInput) {
       success: true,
       city: newCorporation,
     };
-  } catch (error) {
-    console.error('Error creating city:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create corporation',
-    };
-  }
+  }, 'createCity');
 }
 
 // ============================================
@@ -211,7 +206,7 @@ export async function createCity(data: CreateCityInput) {
  * - SUPERVISOR: Can see only their corporation
  */
 export async function listCities(filters: ListCitiesFilters = {}) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Build where clause based on role and filters
@@ -261,15 +256,7 @@ export async function listCities(filters: ListCitiesFilters = {}) {
       cities: corporations,
       count: corporations.length,
     };
-  } catch (error) {
-    console.error('Error listing cities:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to list corporations',
-      cities: [],
-      count: 0,
-    };
-  }
+  }, 'listCities');
 }
 
 // ============================================
@@ -285,7 +272,7 @@ export async function listCities(filters: ListCitiesFilters = {}) {
  * - SUPERVISOR: Can view only their corporation
  */
 export async function getCityById(cityId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Non-superadmins can only view their corporations
@@ -351,13 +338,7 @@ export async function getCityById(cityId: string) {
       success: true,
       corporation,
     };
-  } catch (error) {
-    console.error('Error getting city:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get corporation',
-    };
-  }
+  }, 'getCityById');
 }
 
 // ============================================
@@ -373,7 +354,7 @@ export async function getCityById(cityId: string) {
  * - SUPERVISOR: Cannot update corporations
  */
 export async function updateCity(cityId: string, data: UpdateCityInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // SUPERVISOR cannot update corporations
@@ -524,13 +505,7 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
       success: true,
       city: updatedCorporation,
     };
-  } catch (error) {
-    console.error('Error updating city:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update corporation',
-    };
-  }
+  }, 'updateCity');
 }
 
 // ============================================
@@ -548,7 +523,7 @@ export async function updateCity(cityId: string, data: UpdateCityInput) {
  * WARNING: This will cascade delete all related data!
  */
 export async function deleteCity(cityId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN can delete corporations
     const currentUser = await requireSuperAdmin();
 
@@ -610,13 +585,7 @@ export async function deleteCity(cityId: string) {
       success: true,
       message: 'Corporation deleted successfully',
     };
-  } catch (error) {
-    console.error('Error deleting city:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete corporation',
-    };
-  }
+  }, 'deleteCity');
 }
 
 // ============================================
@@ -632,7 +601,7 @@ export async function deleteCity(cityId: string) {
  * - SUPERVISOR: Can get stats for their corporation only
  */
 export async function getCityStats(cityId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Validate access
@@ -746,13 +715,7 @@ export async function getCityStats(cityId: string) {
         recentSites,
       },
     };
-  } catch (error) {
-    console.error('Error getting corporation stats:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get corporation stats',
-    };
-  }
+  }, 'getCityStats');
 }
 
 // ============================================
@@ -768,7 +731,7 @@ export async function getCityStats(cityId: string) {
  * - SUPERVISOR: Cannot toggle corporation status
  */
 export async function toggleCityStatus(cityId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN can toggle status
     const currentUser = await requireSuperAdmin();
 
@@ -812,13 +775,7 @@ export async function toggleCityStatus(cityId: string) {
       success: true,
       city: updatedCorporation,
     };
-  } catch (error) {
-    console.error('Error toggling corporation status:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to toggle corporation status',
-    };
-  }
+  }, 'toggleCityStatus');
 }
 
 // ============================================
@@ -841,7 +798,7 @@ export async function toggleCityStatus(cityId: string) {
  * - ACTIVIST_COORDINATOR: Restricted to their city's area
  */
 export async function getAreaManagers() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     let whereClause: any = {
@@ -945,12 +902,5 @@ export async function getAreaManagers() {
         corporationCount: am._count.cities,
       })),
     };
-  } catch (error) {
-    console.error('Error fetching area managers:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch area managers',
-      areaManagers: [],
-    };
-  }
+  }, 'getAreaManagers');
 }

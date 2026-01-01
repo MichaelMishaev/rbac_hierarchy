@@ -7,10 +7,11 @@
  * Supports both Railway Redis (ioredis) and Upstash Redis (REST API).
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Redis as UpstashRedis } from '@upstash/redis';
 import IORedis from 'ioredis';
 import { requireAuth } from '@/lib/api-auth';
+import { withErrorHandler } from '@/lib/error-handler';
 
 // Type for Redis client interface
 interface RedisClient {
@@ -74,83 +75,75 @@ else if (process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_RES
   console.log('[Metrics] Initialized Upstash Redis client');
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: Request) => {
   // ✅ SECURITY FIX (VULN-RBAC-001): Require authentication
   const authResult = await requireAuth(request);
   if (authResult instanceof NextResponse) return authResult;
 
-  try {
-    const body = await request.json();
+  const body = await request.json();
 
-    const {
-      type, // 'web-vital' or 'custom'
-      name,
-      value,
-      rating,
-      timestamp,
-      url,
-    } = body;
+  const {
+    type, // 'web-vital' or 'custom'
+    name,
+    value,
+    rating,
+    timestamp,
+    url,
+  } = body;
 
-    // Validate required fields
-    if (!type || !name || value === undefined) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // If Redis is not configured, just log and return success
-    if (!redis) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Metrics] Redis not configured, skipping storage:', {
-          type,
-          name,
-          value,
-        });
-      }
-      return NextResponse.json({ success: true });
-    }
-
-    // Store metric in Redis
-    const metricKey = `metrics:${type}:${name}:${Date.now()}`;
-    const metricData = {
-      type,
-      name,
-      value,
-      rating,
-      timestamp,
-      url,
-      userAgent: request.headers.get('user-agent'),
-    };
-
-    // Store individual metric
-    await redis.setex(
-      metricKey,
-      60 * 60 * 24 * 7, // Keep for 7 days
-      JSON.stringify(metricData)
-    );
-
-    // Add to sorted set for time-series queries
-    await redis.zadd(
-      `metrics:${type}:${name}:timeseries`,
-      {
-        score: timestamp,
-        member: metricKey,
-      }
-    );
-
-    // Update aggregated statistics
-    await updateAggregatedStats(redis, type, name, value, rating);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('[Metrics] Error storing metric:', error);
+  // Validate required fields
+  if (!type || !name || value === undefined) {
     return NextResponse.json(
-      { error: 'Failed to store metric' },
-      { status: 500 }
+      { error: 'Missing required fields' },
+      { status: 400 }
     );
   }
-}
+
+  // If Redis is not configured, just log and return success
+  if (!redis) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Metrics] Redis not configured, skipping storage:', {
+        type,
+        name,
+        value,
+      });
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  // Store metric in Redis
+  const metricKey = `metrics:${type}:${name}:${Date.now()}`;
+  const metricData = {
+    type,
+    name,
+    value,
+    rating,
+    timestamp,
+    url,
+    userAgent: request.headers.get('user-agent'),
+  };
+
+  // Store individual metric
+  await redis.setex(
+    metricKey,
+    60 * 60 * 24 * 7, // Keep for 7 days
+    JSON.stringify(metricData)
+  );
+
+  // Add to sorted set for time-series queries
+  await redis.zadd(
+    `metrics:${type}:${name}:timeseries`,
+    {
+      score: timestamp,
+      member: metricKey,
+    }
+  );
+
+  // Update aggregated statistics
+  await updateAggregatedStats(redis, type, name, value, rating);
+
+  return NextResponse.json({ success: true });
+});
 
 /**
  * Update aggregated statistics in Redis

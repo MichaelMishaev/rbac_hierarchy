@@ -22,19 +22,19 @@ export const testUsers = {
   },
   areaManager: {
     email: 'sarah.cohen@telaviv-district.test',
-    password: 'area123',
+    password: 'admin123', // FIXED: seed.ts uses admin123 for ALL users
     role: 'AREA_MANAGER',
     name: 'מנהלת אזור - שרה כהן',
   },
   cityCoordinator: {
     email: 'david.levi@telaviv.test',
-    password: 'city123',
+    password: 'admin123', // FIXED: seed.ts uses admin123 for ALL users
     role: 'CITY_COORDINATOR',
     name: 'רכז עיר - דוד לוי (תל אביב)',
   },
   activistCoordinator: {
     email: 'rachel.bendavid@telaviv.test',
-    password: 'activist123',
+    password: 'admin123', // FIXED: seed.ts uses admin123 for ALL users
     role: 'ACTIVIST_COORDINATOR',
     name: 'רכזת פעילים - רחל בן-דוד',
   },
@@ -89,6 +89,7 @@ type AuthFixtures = {
 };
 
 export const test = base.extend<AuthFixtures>({
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   authenticatedRequest: async ({ page, baseURL }, use) => {
     // Default to cityCoordinator for most tests
     const context = await getAuthenticatedContext(page, testUsers.cityCoordinator, baseURL || 'http://localhost:3000');
@@ -96,6 +97,7 @@ export const test = base.extend<AuthFixtures>({
     await context.dispose();
   },
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   loginAsUser: async ({ page }, use) => {
     await use(async (user: AuthUser) => {
       await loginAs(page, user);

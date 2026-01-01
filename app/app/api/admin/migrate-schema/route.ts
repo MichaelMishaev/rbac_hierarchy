@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { withErrorHandler } from '@/lib/error-handler';
 
 const execAsync = promisify(exec);
 
-export async function POST(request: NextRequest) {
-  try {
-    // Simple auth check
-    const authHeader = request.headers.get('x-admin-secret');
+export const POST = withErrorHandler(async (request: Request) => {
+  // Simple auth check
+  const authHeader = request.headers.get('x-admin-secret');
     if (authHeader !== process.env.ADMIN_SECRET && authHeader !== 'temp-admin-2025') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -32,16 +32,4 @@ export async function POST(request: NextRequest) {
       stdout,
       stderr: stderr || null,
     });
-  } catch (error: any) {
-    console.error('❌ Error:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to migrate schema',
-        details: error.message,
-        stdout: error.stdout,
-        stderr: error.stderr,
-      },
-      { status: 500 }
-    );
-  }
-}
+});

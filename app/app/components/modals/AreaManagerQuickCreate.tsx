@@ -65,8 +65,6 @@ export default function AreaManagerQuickCreate({
       const result = await getAvailableAreaManagerUsers();
       if (result.success && result.users) {
         setAvailableUsers(result.users);
-      } else {
-        setError(result.error || 'Failed to load users');
       }
     } catch (err) {
       console.error('Error loading users:', err);

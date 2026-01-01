@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, getUserCorporations } from '@/lib/auth';
 import { unstable_cache } from 'next/cache';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -81,7 +82,7 @@ export async function getDashboardStats(): Promise<{
   stats?: DashboardStats;
   error?: string;
 }> {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     const stats: DashboardStats = {
@@ -121,13 +122,7 @@ export async function getDashboardStats(): Promise<{
       success: true,
       stats,
     };
-  } catch (error) {
-    console.error('Error getting dashboard stats:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get dashboard stats',
-    };
-  }
+  }, 'getDashboardStats');
 }
 
 // ============================================
@@ -669,7 +664,7 @@ async function getRecentActivity(currentUser: any): Promise<RecentActivity[]> {
  * Permissions: SUPERADMIN only
  */
 export async function getSystemOverview() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     if (currentUser.role !== 'SUPERADMIN') {
@@ -730,13 +725,7 @@ export async function getSystemOverview() {
         corporationGrowth,
       },
     };
-  } catch (error) {
-    console.error('Error getting system overview:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get system overview',
-    };
-  }
+  }, 'getSystemOverview');
 }
 
 // ============================================
@@ -749,7 +738,7 @@ export async function getSystemOverview() {
  * Permissions: Based on role
  */
 export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'month') {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Calculate date range
@@ -863,13 +852,7 @@ export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'm
         })),
       },
     };
-  } catch (error) {
-    console.error('Error getting analytics data:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get analytics data',
-    };
-  }
+  }, 'getAnalyticsData');
 }
 
 // ============================================
@@ -882,7 +865,7 @@ export async function getAnalyticsData(timeRange: 'week' | 'month' | 'year' = 'm
  * Permissions: Based on role
  */
 export async function getQuickStats() {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     let stats = {};
@@ -975,11 +958,5 @@ export async function getQuickStats() {
       success: true,
       stats,
     };
-  } catch (error) {
-    console.error('Error getting quick stats:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get quick stats',
-    };
-  }
+  }, 'getQuickStats');
 }

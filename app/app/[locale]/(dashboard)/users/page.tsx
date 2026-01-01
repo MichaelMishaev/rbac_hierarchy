@@ -28,16 +28,18 @@ export default async function UsersPage() {
   }
 
   // Fetch users, cities, and neighborhoods
-  const [usersResult, citiesResult, neighborhoodsResult] = await Promise.all([
-    listUsers(),
-    listCities(),
-    listNeighborhoods(),
-  ]);
-
-  if (!usersResult.success) {
+  let usersResult, citiesResult, neighborhoodsResult;
+  try {
+    [usersResult, citiesResult, neighborhoodsResult] = await Promise.all([
+      listUsers(),
+      listCities(),
+      listNeighborhoods(),
+    ]);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
     return (
       <div>
-        <p>Error loading users: {usersResult.error}</p>
+        <p>Error loading users: {errorMessage}</p>
       </div>
     );
   }
@@ -45,8 +47,8 @@ export default async function UsersPage() {
   return (
     <UsersClient
       users={usersResult.users}
-      cities={citiesResult.success ? citiesResult.cities : []}
-      neighborhoods={neighborhoodsResult.success ? neighborhoodsResult.neighborhoods : []}
+      cities={citiesResult.cities || []}
+      neighborhoods={neighborhoodsResult.neighborhoods || []}
       currentUserRole={session.user.role as 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR'}
       currentUserCityId={currentUserCityId}
     />

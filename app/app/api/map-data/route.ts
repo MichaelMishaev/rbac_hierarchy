@@ -9,10 +9,10 @@ import {
   isValidIsraelCoordinate,
   getCityFallbackCoordinates,
 } from '@/lib/geocoding';
+import { withErrorHandler } from '@/lib/error-handler';
 
-export async function GET(_request: Request) {
-  try {
-    let user;
+export const GET = withErrorHandler(async (_request: Request) => {
+  let user;
     try {
       user = await getCurrentUser();
     } catch (authError) {
@@ -519,11 +519,4 @@ export async function GET(_request: Request) {
         isSuperAdmin: user.isSuperAdmin,
       },
     });
-  } catch (error) {
-    console.error('Error fetching map data:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch map data' },
-      { status: 500 }
-    );
-  }
-}
+});

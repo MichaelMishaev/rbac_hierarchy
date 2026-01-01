@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { ForbiddenError } from '@/lib/error-handler';
+import { ForbiddenError, withErrorHandler } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
 const voterUpdateSchema = z.object({
@@ -19,18 +19,17 @@ const voterUpdateSchema = z.object({
  * PUT /api/activists/voters/[id]
  * Update voter (only if inserted by current activist)
  */
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
+export const PUT = withErrorHandler(async (
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const session = await auth();
 
     // CRITICAL: Only ACTIVIST role can access
     if (!session || session.user.role !== 'ACTIVIST') {
-      const context = await extractRequestContext(request);
+      const reqContext = await extractRequestContext(request);
       logger.rbacViolation('Non-activist attempted voter update', {
-        ...context,
+        ...reqContext,
         ...(session ? extractSessionContext(session) : {}),
         metadata: { attemptedRole: session?.user?.role || 'unauthenticated' },
       });
@@ -38,7 +37,7 @@ export async function PUT(
     }
 
     // Next.js 15: params is now a Promise
-    const { id } = await context.params;
+    const { id } = await params;
 
     // Check voter exists and was inserted by this user
     const existingVoter = await prisma.voter.findUnique({
@@ -51,9 +50,9 @@ export async function PUT(
 
     // CRITICAL: Verify ownership
     if (existingVoter.insertedByUserId !== session.user.id) {
-      const context = await extractRequestContext(request);
+      const reqContext = await extractRequestContext(request);
       logger.rbacViolation('Activist attempted to edit voter not created by them', {
-        ...context,
+        ...reqContext,
         ...extractSessionContext(session),
         metadata: {
           voterId: id,
@@ -73,39 +72,23 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedVoter);
-  } catch (error) {
-    console.error(`[PUT /api/activists/voters/[id]] Error:`, error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
+});
 
 /**
  * GET /api/activists/voters/[id]
  * Get single voter (only if inserted by current activist)
  */
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
+export const GET = withErrorHandler(async (
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const session = await auth();
 
     // CRITICAL: Only ACTIVIST role can access
     if (!session || session.user.role !== 'ACTIVIST') {
-      const context = await extractRequestContext(request);
+      const reqContext = await extractRequestContext(request);
       logger.rbacViolation('Non-activist attempted voter retrieval', {
-        ...context,
+        ...reqContext,
         ...(session ? extractSessionContext(session) : {}),
         metadata: { attemptedRole: session?.user?.role || 'unauthenticated' },
       });
@@ -113,7 +96,7 @@ export async function GET(
     }
 
     // Next.js 15: params is now a Promise
-    const { id } = await context.params;
+    const { id } = await params;
 
     const voter = await prisma.voter.findUnique({
       where: { id },
@@ -125,9 +108,9 @@ export async function GET(
 
     // CRITICAL: Verify ownership
     if (voter.insertedByUserId !== session.user.id) {
-      const context = await extractRequestContext(request);
+      const reqContext = await extractRequestContext(request);
       logger.rbacViolation('Activist attempted to view voter not created by them', {
-        ...context,
+        ...reqContext,
         ...extractSessionContext(session),
         metadata: {
           voterId: id,
@@ -138,11 +121,4 @@ export async function GET(
     }
 
     return NextResponse.json(voter);
-  } catch (error) {
-    console.error(`[GET /api/activists/voters/[id]] Error:`, error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
+});

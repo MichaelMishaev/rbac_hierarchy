@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * Require authentication for API route
  *
- * @param request - NextRequest object
+ * @param request - Request object
  * @returns Session if authenticated, NextResponse with 401 if not
  *
  * @example
@@ -26,7 +26,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * }
  * ```
  */
-export async function requireAuth(request: NextRequest) {
+export async function requireAuth(request: Request) {
   const session = await auth();
 
   if (!session?.user) {
@@ -40,7 +40,7 @@ export async function requireAuth(request: NextRequest) {
 /**
  * Require specific role(s) for API route
  *
- * @param request - NextRequest object
+ * @param request - Request object
  * @param allowedRoles - Array of allowed roles
  * @returns Session if authorized, NextResponse with 401/403 if not
  *
@@ -56,7 +56,7 @@ export async function requireAuth(request: NextRequest) {
  * ```
  */
 export async function requireRole(
-  request: NextRequest,
+  request: Request,
   allowedRoles: string[]
 ) {
   const session = await auth();
@@ -82,7 +82,7 @@ export async function requireRole(
 /**
  * Require SuperAdmin role for API route
  *
- * @param request - NextRequest object
+ * @param request - Request object
  * @returns Session if SuperAdmin, NextResponse with 401/403 if not
  */
 export async function requireSuperAdmin(request: NextRequest) {

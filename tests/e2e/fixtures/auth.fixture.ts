@@ -13,21 +13,21 @@ export const testUsers = {
   },
   areaManager: {
     email: 'sarah.cohen@telaviv-district.test',
-    password: 'area123',
+    password: 'admin123',
     role: 'AREA_MANAGER',
     displayName: 'מנהלת אזור - שרה כהן',
     regionName: 'מחוז תל אביב',
   },
   cityCoordinator: {
     email: 'david.levi@telaviv.test',
-    password: 'manager123',
+    password: 'admin123',
     role: 'CITY_COORDINATOR',
     displayName: 'רכז עיר - דוד לוי (תל אביב)',
     cityName: 'תל אביב-יפו',
   },
   activistCoordinator: {
     email: 'rachel.bendavid@telaviv.test',
-    password: 'supervisor123',
+    password: 'admin123',
     role: 'ACTIVIST_COORDINATOR',
     displayName: 'רכזת פעילים - רחל בן-דוד',
     neighborhoods: ['פלורנטין', 'נווה צדק'],
@@ -62,13 +62,10 @@ export const test = base.extend<AuthFixtures>({
       await page.click('[data-testid="login-button"]');
 
       // Wait for navigation to dashboard
-      await page.waitForURL('/dashboard');
+      await page.waitForURL('/dashboard', { timeout: 10000 });
 
-      // SuperAdmin has access to all cities and regions
-      if (role === 'superAdmin' && user.role === 'SUPERADMIN') {
-        // Dashboard should show system-wide overview
-        await expect(page.locator('h1')).toBeVisible();
-      }
+      // Wait for dashboard to load - just check page is loaded
+      await page.waitForLoadState('networkidle');
     };
 
     await use(login);

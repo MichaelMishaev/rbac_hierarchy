@@ -25,17 +25,29 @@ export default async function SitesPage() {
 
   // ALL roles can access - data filtering happens in listNeighborhoods() action
   // Fetch neighborhoods, cities, and areas
-  const [sitesResult, citiesResult, areasResult] = await Promise.all([
-    listNeighborhoods({}),
-    listCities({}),
-    listAreas(),
-  ]);
+  let sitesResult, citiesResult, areasResult;
+  try {
+    [sitesResult, citiesResult, areasResult] = await Promise.all([
+      listNeighborhoods({}),
+      listCities({}),
+      listAreas(),
+    ]);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
+    return (
+      <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
+        <Typography variant="h5" color="error">
+          {tCommon('error')}: {errorMessage}
+        </Typography>
+      </Box>
+    );
+  }
 
   if (!sitesResult.success) {
     return (
       <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
         <Typography variant="h5" color="error">
-          {tCommon('error')}: {sitesResult.error}
+          {tCommon('error')}: Failed to load neighborhoods
         </Typography>
       </Box>
     );

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser, requireManager, hasAccessToCorporation } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -65,7 +66,7 @@ export type ListNeighborhoodsFilters = {
  * - ACTIVIST_COORDINATOR: Cannot create neighborhoods
  */
 export async function createNeighborhood(data: CreateNeighborhoodInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Get current user
     const currentUser = await getCurrentUser();
 
@@ -246,13 +247,7 @@ export async function createNeighborhood(data: CreateNeighborhoodInput) {
       success: true,
       neighborhood: newNeighborhood,
     };
-  } catch (error) {
-    console.error('Error creating neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create site',
-    };
-  }
+  }, 'createNeighborhood');
 }
 
 // ============================================
@@ -268,7 +263,7 @@ export async function createNeighborhood(data: CreateNeighborhoodInput) {
  * - SUPERVISOR: Can see sites they are assigned to only
  */
 export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Build where clause based on role and filters
@@ -366,15 +361,7 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
       neighborhoods,
       count: neighborhoods.length,
     };
-  } catch (error) {
-    console.error('Error listing neighborhoods:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to list neighborhoods',
-      neighborhoods: [],
-      count: 0,
-    };
-  }
+  }, 'listNeighborhoods');
 }
 
 // ============================================
@@ -390,7 +377,7 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
  * - SUPERVISOR: Can view sites they are assigned to
  */
 export async function getNeighborhoodById(neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     const neighborhood = await prisma.neighborhood.findUnique({
@@ -492,13 +479,7 @@ export async function getNeighborhoodById(neighborhoodId: string) {
       success: true,
       neighborhood,
     };
-  } catch (error) {
-    console.error('Error getting neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get site',
-    };
-  }
+  }, 'getNeighborhoodById');
 }
 
 // ============================================
@@ -514,7 +495,7 @@ export async function getNeighborhoodById(neighborhoodId: string) {
  * - SUPERVISOR: Cannot update sites
  */
 export async function updateNeighborhood(neighborhoodId: string, data: UpdateNeighborhoodInput) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN and MANAGER can update sites
     const currentUser = await requireManager();
 
@@ -681,13 +662,7 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
       success: true,
       neighborhood: updatedNeighborhood,
     };
-  } catch (error) {
-    console.error('Error updating neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update site',
-    };
-  }
+  }, 'updateNeighborhood');
 }
 
 // ============================================
@@ -705,7 +680,7 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
  * WARNING: This will cascade delete all related activists!
  */
 export async function deleteNeighborhood(neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN and MANAGER can delete sites
     const currentUser = await requireManager();
 
@@ -776,13 +751,7 @@ export async function deleteNeighborhood(neighborhoodId: string) {
       success: true,
       message: 'Site deleted successfully',
     };
-  } catch (error) {
-    console.error('Error deleting neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete site',
-    };
-  }
+  }, 'deleteNeighborhood');
 }
 
 // ============================================
@@ -798,7 +767,7 @@ export async function deleteNeighborhood(neighborhoodId: string) {
  * - SUPERVISOR: Can get stats for their site only
  */
 export async function getNeighborhoodStats(neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Get site first to validate access
@@ -911,13 +880,7 @@ export async function getNeighborhoodStats(neighborhoodId: string) {
         recentActivists: recentWorkers,
       },
     };
-  } catch (error) {
-    console.error('Error getting site stats:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get site stats',
-    };
-  }
+  }, 'getNeighborhoodStats');
 }
 
 // ============================================
@@ -933,7 +896,7 @@ export async function getNeighborhoodStats(neighborhoodId: string) {
  * - SUPERVISOR: Cannot toggle site status
  */
 export async function toggleNeighborhoodStatus(neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     // Only SUPERADMIN and MANAGER can toggle status
     const currentUser = await requireManager();
 
@@ -994,13 +957,7 @@ export async function toggleNeighborhoodStatus(neighborhoodId: string) {
       success: true,
       neighborhood: updatedNeighborhood,
     };
-  } catch (error) {
-    console.error('Error toggling site status:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to toggle site status',
-    };
-  }
+  }, 'toggleNeighborhoodStatus');
 }
 
 // ============================================
@@ -1017,7 +974,7 @@ export async function toggleNeighborhoodStatus(neighborhoodId: string) {
  * - SUPERVISOR: Can list supervisors from their corporation only
  */
 export async function listActivistCoordinatorsByCity(cityId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Validate access to corporation
@@ -1089,14 +1046,7 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
         workerCount: s._count.activists,
       })),
     };
-  } catch (error) {
-    console.error('Error listing activistCoordinators:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to list supervisors',
-      activistCoordinators: [],
-    };
-  }
+  }, 'listActivistCoordinatorsByCity');
 }
 
 // ============================================
@@ -1111,7 +1061,7 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
  * - Any authenticated user can list coordinators for a neighborhood they have access to
  */
 export async function listActivistCoordinatorsByNeighborhood(neighborhoodId: string) {
-  try {
+  return withServerActionErrorHandler(async () => {
     const currentUser = await getCurrentUser();
 
     // Get neighborhood to validate access
@@ -1189,12 +1139,5 @@ export async function listActivistCoordinatorsByNeighborhood(neighborhoodId: str
         activistCount: a.activistCoordinator._count.activists,
       })),
     };
-  } catch (error) {
-    console.error('Error listing activistCoordinators for neighborhood:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to list coordinators',
-      activistCoordinators: [],
-    };
-  }
+  }, 'listActivistCoordinatorsByNeighborhood');
 }
