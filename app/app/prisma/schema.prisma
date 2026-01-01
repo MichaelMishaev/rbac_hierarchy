@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Prisma Schema for Election/Activism System v2.0
+// MIGRATED FROM: Corporate Hierarchy → Election/Activism Management
+// Premium UI Hierarchical Organization Management System
 
 generator client {
   provider = "prisma-client-js"
@@ -11,4 +9,895 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS TABLE
+// ============================================
+model User {
+  id String @id @default(uuid())
+
+  // v1.4: Renamed fields
+  email        String  @unique
+  fullName     String  @map("full_name")
+  phone        String?
+  avatarUrl    String? @map("avatar_url")
+  passwordHash String? @map("password_hash") // Nullable for external IdP support
+
+  // Role (keep enum for convenience, v1.4 uses separate tables + is_super_admin flag)
+  role Role @default(ACTIVIST_COORDINATOR)
+
+  // Status
+  isActive              Boolean @default(true) @map("is_active")
+  isSuperAdmin          Boolean @default(false) @map("is_super_admin")
+  requirePasswordChange Boolean @default(false) @map("require_password_change")
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  // Relations
+  areaManager                  AreaManager?                    @relation("AreaManagerUser")
+  coordinatorOf                CityCoordinator[]
+  activistCoordinatorOf        ActivistCoordinator[]
+  activistCoordinatorNeighborhoods ActivistCoordinatorNeighborhood[] @relation("ActivistCoordinatorAssignments")
+  invitationsSent              Invitation[]                    @relation("InvitationCreator")
+  tokens                       UserToken[]                     @relation("UserTokens")
+  tasksSent                    Task[]                          @relation("TasksSent")
+  tasksReceived                TaskAssignment[]                @relation("TasksReceived")
+  pushSubscriptions            PushSubscription[]              @relation("PushSubscriptions")
+  attendanceCheckedIn          AttendanceRecord[]              @relation("AttendanceCheckedInBy")
+  attendanceLastEdited         AttendanceRecord[]              @relation("AttendanceLastEditedBy")
+  votersInserted               Voter[]                         @relation("VoterInsertedBy")
+  activistProfile              Activist?                       @relation("ActivistUser")
+
+  @@index([email])
+  @@index([isActive])
+  @@index([isSuperAdmin])
+  @@map("users")
+}
+
+enum Role {
+  SUPERADMIN
+  AREA_MANAGER
+  CITY_COORDINATOR
+  ACTIVIST_COORDINATOR
+  ACTIVIST
+}
+
+// ============================================
+// USER TOKENS TABLE (PASSWORD RESET, EMAIL CONFIRMATION)
+// ============================================
+model UserToken {
+  id String @id @default(uuid())
+
+  // Relationships
+  userId String @map("user_id")
+  user   User   @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Token details
+  type      TokenType
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([token])
+  @@index([type])
+  @@map("user_tokens")
+}
+
+enum TokenType {
+  EMAIL_CONFIRMATION
+  PASSWORD_RESET
+}
+
+// ============================================
+// AREA MANAGERS TABLE
+// ============================================
+model AreaManager {
+  id String @id @default(uuid())
+
+  // Relationships - userId is OPTIONAL, areas persist even without a manager
+  userId String? @unique @map("user_id")
+  user   User?   @relation("AreaManagerUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  // v1.4: region_code is NOT NULL and UNIQUE
+  regionCode String @unique @map("region_code") // e.g., "IL-CENTER", "US-WEST"
+  regionName String @map("region_name")         // Human-readable name
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Metadata
+  metadata Json? @default("{}")
+
+  // Geographic coordinates (for map display)
+  centerLatitude  Float? @map("center_latitude")   // Region center latitude
+  centerLongitude Float? @map("center_longitude")  // Region center longitude
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  cities City[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([regionName])
+  @@index([regionCode])
+  @@map("area_managers")
+}
+
+// ============================================
+// CITIES TABLE (Previously: Corporations)
+// ============================================
+model City {
+  id          String  @id @default(uuid())
+  name        String
+  code        String  @unique // Short code (e.g., "TLV")
+  description String?
+
+  // v2.0: Renamed logo → logoUrl, area_manager_id is NOT NULL
+  logoUrl String? @map("logo_url")
+
+  // v2.0: Area Manager (optional for backwards compatibility with production)
+  areaManagerId String?      @map("area_manager_id")
+  areaManager   AreaManager? @relation(fields: [areaManagerId], references: [id], onDelete: Restrict)
+
+  // Settings
+  isActive Boolean @default(true) @map("is_active")
+  settings Json    @default("{}") // City-level configuration
+  metadata Json?                  // Flexible data storage
+
+  // Geographic coordinates (for map display)
+  centerLatitude  Float? @map("center_latitude")   // City center latitude
+  centerLongitude Float? @map("center_longitude")  // City center longitude
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  coordinators        CityCoordinator[]
+  activistCoordinators ActivistCoordinator[]
+  neighborhoods        Neighborhood[]
+  invitations          Invitation[]
+  activists            Activist[] @relation("CityToActivist")
+  attendanceRecords    AttendanceRecord[]
+  votersAssigned       Voter[]    @relation("VoterAssignedCity")
+
+  @@index([code])
+  @@index([isActive])
+  @@index([areaManagerId])
+  @@map("cities")
+}
+
+// ============================================
+// CITY COORDINATORS TABLE (Previously: Corporation Managers)
+// ============================================
+model CityCoordinator {
+  id String @id @default(uuid())
+
+  // Relationships
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Coordinator details
+  title String? // Job title
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Metadata
+  metadata Json? @default("{}")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  neighborhoods Neighborhood[] // v2.0.1: Neighborhoods managed by this City Coordinator
+
+  @@unique([cityId, userId]) // User can be coordinator once per city
+  @@unique([id, cityId])     // v2.0.1: Composite FK support for neighborhoods relation
+  @@index([cityId])
+  @@index([userId])
+  @@index([isActive])
+  @@index([cityId, isActive]) // Performance: Common filtered query
+  @@map("city_coordinators")
+}
+
+// ============================================
+// ACTIVIST COORDINATORS TABLE (Previously: Supervisors)
+// ============================================
+model ActivistCoordinator {
+  id String @id @default(uuid())
+
+  // Relationships
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Activist Coordinator details
+  title String? // Job title
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Metadata
+  metadata Json? @default("{}")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  neighborhoodAssignments ActivistCoordinatorNeighborhood[]
+  activists               Activist[] @relation("CoordinatorToActivist")
+
+  @@unique([cityId, userId]) // User can be activist coordinator once per city
+  @@unique([id, cityId])     // v2.0 compliance: composite FK support
+  @@index([cityId])
+  @@index([userId])
+  @@index([isActive])
+  @@index([cityId, isActive]) // Performance: Common filtered query
+  @@map("activist_coordinators")
+}
+
+// ============================================
+// NEIGHBORHOODS TABLE (Previously: Sites)
+// ============================================
+model Neighborhood {
+  id   String  @id @default(uuid())
+  name String
+
+  // v2.0: Includes all these fields
+  address String?
+  city    String?
+  country String? @default("Israel")
+
+  // Geolocation (for map-based features)
+  latitude  Float? // Decimal degrees
+  longitude Float? // Decimal degrees
+
+  // Contact
+  phone String?
+  email String?
+
+  // Settings
+  isActive Boolean @default(true) @map("is_active")
+  metadata Json?                  // Flexible data storage
+
+  // Relationships
+  cityId String @map("city_id")
+  cityRelation City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  // v2.0.1: City Coordinator assignment (each neighborhood belongs to one City Coordinator)
+  // FIX: Changed from composite FK to single-column FK to prevent NULL constraint violation during cascade deletions
+  cityCoordinatorId String?          @map("city_coordinator_id")
+  cityCoordinator   CityCoordinator? @relation(fields: [cityCoordinatorId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  activistCoordinatorAssignments ActivistCoordinatorNeighborhood[]
+  activists                      Activist[] @relation("NeighborhoodToActivist")
+  attendanceRecords              AttendanceRecord[]
+
+  @@unique([id, cityId]) // v2.0 compliance: composite FK support
+  @@index([cityId])
+  @@index([cityCoordinatorId])
+  @@index([isActive])
+  @@index([cityId, isActive]) // Performance: Common filtered query
+  @@map("neighborhoods")
+}
+
+// ============================================
+// ACTIVIST COORDINATOR-NEIGHBORHOOD ASSIGNMENTS (M2M JOIN TABLE)
+// Previously: SupervisorSite
+// ============================================
+model ActivistCoordinatorNeighborhood {
+  id String @id @default(uuid())
+
+  // v2.0 Compliance: City ID for composite FK
+  cityId String @map("city_id")
+
+  // v2.0: Relationships with composite FKs
+  activistCoordinatorId String              @map("activist_coordinator_id")
+  activistCoordinator   ActivistCoordinator @relation(fields: [activistCoordinatorId, cityId], references: [id, cityId], onDelete: Cascade)
+
+  neighborhoodId String       @map("neighborhood_id")
+  neighborhood   Neighborhood @relation(fields: [neighborhoodId, cityId], references: [id, cityId], onDelete: Cascade)
+
+  // Legacy: Keep user link for backward compatibility with existing code
+  legacyActivistCoordinatorUserId String @map("legacy_activist_coordinator_user_id")
+  legacyActivistCoordinatorUser   User   @relation("ActivistCoordinatorAssignments", fields: [legacyActivistCoordinatorUserId], references: [id], onDelete: Cascade)
+
+  // Assignment metadata
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by") // User ID who made the assignment
+  metadata   Json?    // v2.0 spec includes metadata
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([activistCoordinatorId, neighborhoodId]) // v2.0 composite PK
+  @@index([legacyActivistCoordinatorUserId])
+  @@index([activistCoordinatorId])
+  @@index([neighborhoodId])
+  @@index([cityId])
+  @@map("activist_coordinator_neighborhoods")
+}
+
+// ============================================
+// ACTIVISTS TABLE (Previously: Workers)
+// ============================================
+model Activist {
+  id String @id @default(uuid())
+
+  // v2.0: Renamed name → fullName, avatar → avatarUrl
+  fullName  String  @map("full_name")
+  phone     String?
+  email     String?
+  position  String? // Role in activism
+  avatarUrl String? @map("avatar_url")
+
+  // Activity details (v2.0 includes these fields)
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  isActive  Boolean   @default(true) @map("is_active")
+
+  // Additional info (v2.0 includes these fields)
+  notes    String?  // Coordinator notes
+  tags     String[] @default([]) // Skills, interests, etc.
+  metadata Json?    // Flexible data storage
+
+  // Relationships - CRITICAL: cityId for data integrity
+  cityId String @map("city_id")
+  city   City   @relation("CityToActivist", fields: [cityId], references: [id], onDelete: Cascade)
+
+  neighborhoodId String       @map("neighborhood_id")
+  neighborhood   Neighborhood @relation("NeighborhoodToActivist", fields: [neighborhoodId, cityId], references: [id, cityId], onDelete: Cascade)
+
+  // v2.0: activist_coordinator_id is NULLABLE (activist can be temporarily unassigned)
+  // FIX: Changed from composite FK to single-column FK to prevent NULL constraint violation during cascade deletions
+  activistCoordinatorId String?              @map("activist_coordinator_id")
+  activistCoordinator   ActivistCoordinator? @relation("CoordinatorToActivist", fields: [activistCoordinatorId], references: [id], onDelete: SetNull)
+
+  // v2.3: Optional link to User account (for activists with login access)
+  userId String? @unique @map("user_id")
+  user   User?   @relation("ActivistUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  attendanceRecords AttendanceRecord[]
+
+  // v2.0: Unique constraint on (neighborhood_id, full_name, phone)
+  @@unique([neighborhoodId, fullName, phone])
+  @@index([cityId])
+  @@index([neighborhoodId])
+  @@index([activistCoordinatorId])
+  @@index([isActive])
+  @@index([phone])
+  @@index([userId])
+  @@index([cityId, isActive]) // Performance: Common filtered query for city-scoped active activists
+  @@index([neighborhoodId, isActive]) // Performance: Common filtered query for neighborhood-scoped active activists
+  @@map("activists")
+}
+
+// ============================================
+// INVITATIONS TABLE
+// ============================================
+model Invitation {
+  id     String           @id @default(uuid())
+  email  String
+  role   Role
+  status InvitationStatus @default(PENDING)
+  token  String           @unique // Unique invitation token
+
+  // Invitation details
+  message   String? // Optional message to invitee
+  expiresAt DateTime @map("expires_at")
+
+  // Relationships
+  cityId String? @map("city_id")
+  city   City?   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  targetNeighborhoodId String? @map("target_neighborhood_id") // For neighborhood-specific activist coordinator invites
+
+  createdById String @map("created_by_id")
+  createdBy   User   @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Acceptance tracking
+  acceptedAt DateTime? @map("accepted_at")
+
+  // Metadata (v2.0: can store region info for Area Manager)
+  metadata Json? @default("{}")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([cityId])
+  @@index([targetNeighborhoodId])
+  @@map("invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+// ============================================
+// AUDIT LOGS TABLE
+// ============================================
+model AuditLog {
+  id       String @id @default(uuid())
+  action   String // "CREATE", "UPDATE", "DELETE"
+  entity   String // "City", "User", "Neighborhood", "Activist"
+  entityId String @map("entity_id")
+
+  // v2.0: Renamed oldValue → before, newValue → after
+  before Json? // JSON snapshot before change
+  after  Json? // JSON snapshot after change
+
+  // Actor
+  userId    String? @map("user_id")
+  userEmail String? @map("user_email")
+  userRole  String? @map("user_role")
+
+  // Context
+  cityId    String? @map("city_id")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([entity])
+  @@index([entityId])
+  @@index([userId])
+  @@index([cityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================
+// ERROR LOGS TABLE (Production Error Tracking)
+// ============================================
+model ErrorLog {
+  id String @id @default(uuid())
+
+  // Error classification
+  level       ErrorLevel @default(ERROR)
+  errorType   String     @map("error_type")   // "ValidationError", "AuthError", "RBACViolation", "DatabaseError", etc.
+  message     String     @db.Text              // Human-readable error message
+  stack       String?    @db.Text              // Stack trace (production should sanitize sensitive data)
+  code        String?                          // Error code (e.g., "ERR_RBAC_CITY_ACCESS_DENIED")
+
+  // HTTP context (for API errors)
+  httpMethod  String? @map("http_method")      // GET, POST, PUT, DELETE
+  httpStatus  Int?    @map("http_status")      // 400, 401, 403, 500, etc.
+  url         String? @db.Text                 // Request URL
+  referer     String? @db.Text                 // Referer header
+
+  // User context
+  userId      String? @map("user_id")
+  userEmail   String? @map("user_email")
+  userRole    String? @map("user_role")
+  cityId      String? @map("city_id")          // Multi-tenant context
+
+  // Request metadata
+  ipAddress   String? @map("ip_address")
+  userAgent   String? @map("user_agent") @db.Text
+  requestId   String? @map("request_id")       // For distributed tracing
+
+  // Additional context (flexible JSON)
+  metadata    Json?                            // Extra debug info (sanitized)
+
+  // Environment
+  environment String  @default("production")   // "production", "staging", "development"
+
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Indexes for fast queries
+  @@index([level])
+  @@index([errorType])
+  @@index([httpStatus])
+  @@index([userId])
+  @@index([cityId])
+  @@index([createdAt(sort: Desc)])
+  @@index([environment])
+  @@index([level, createdAt(sort: Desc)]) // Performance: Most common query (all errors by severity)
+  @@index([errorType, createdAt(sort: Desc)]) // Performance: Errors by type over time
+  @@map("error_logs")
+}
+
+enum ErrorLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+
+  @@map("error_level")
+}
+
+// ============================================
+// TASKS TABLE (v2.2: Task Broadcast System)
+// ============================================
+model Task {
+  id   BigInt @id @default(autoincrement())
+  type String @default("Task") // Hard-coded for v1.0, future: 'Announcement', 'Alert'
+  body String // Task description/details
+
+  // Sender relationship
+  senderUserId String @map("sender_user_id")
+  senderUser   User   @relation("TasksSent", fields: [senderUserId], references: [id], onDelete: Cascade)
+
+  // Task details
+  executionDate    DateTime @map("execution_date") @db.Date // When to execute (cannot be in past)
+  recipientsCount  Int      @map("recipients_count") // ⚠️ NO DEFAULT - must be set explicitly
+
+  // Soft delete
+  deletedBySenderAt DateTime? @map("deleted_by_sender_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  assignments TaskAssignment[]
+
+  @@index([senderUserId])
+  @@index([executionDate])
+  @@index([createdAt(sort: Desc)])
+  @@index([deletedBySenderAt])
+  @@map("tasks")
+}
+
+// ============================================
+// TASK ASSIGNMENTS TABLE (v2.2: Task Broadcast System)
+// ============================================
+model TaskAssignment {
+  id BigInt @id @default(autoincrement())
+
+  // Relationships
+  taskId       BigInt @map("task_id")
+  task         Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  targetUserId String @map("target_user_id")
+  targetUser   User   @relation("TasksReceived", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  // Assignment status
+  status         String    @default("unread") // unread/read/acknowledged/archived
+  readAt         DateTime? @map("read_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  archivedAt     DateTime? @map("archived_at")
+
+  // 🚨 CRITICAL: Sender deleted task (show greyed-out)
+  deletedForRecipientAt DateTime? @map("deleted_for_recipient_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([taskId, targetUserId])
+  @@index([targetUserId, status])
+  @@index([taskId])
+  @@index([targetUserId, archivedAt])
+  @@index([deletedForRecipientAt])
+  @@map("task_assignments")
+}
+
+// ============================================
+// PUSH SUBSCRIPTIONS TABLE (PWA Support)
+// ============================================
+model PushSubscription {
+  id       BigInt @id @default(autoincrement())
+
+  // Relationships
+  userId String @map("user_id")
+  user   User   @relation("PushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Push service details
+  endpoint  String // Push service endpoint URL
+  p256dh    String // Encryption key
+  auth      String // Auth secret
+  userAgent String? @map("user_agent") // Browser info
+
+  // Timestamps
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+
+  @@unique([userId, endpoint])
+  @@index([userId])
+  @@index([lastUsedAt])
+  @@map("push_subscriptions")
+}
+
+// ============================================
+// ATTENDANCE RECORDS TABLE (Activist Check-in System)
+// ============================================
+model AttendanceRecord {
+  id String @id @default(uuid())
+
+  // Relations (with RLS enforcement)
+  activistId String   @map("activist_id")
+  activist   Activist @relation(fields: [activistId], references: [id], onDelete: Cascade)
+
+  neighborhoodId String       @map("neighborhood_id")
+  neighborhood   Neighborhood @relation(fields: [neighborhoodId], references: [id], onDelete: Cascade)
+
+  cityId String @map("city_id")
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  // Attendance data
+  date        DateTime          @db.Date // Which day (2025-12-09)
+  checkedInAt DateTime?         @map("checked_in_at") @db.Timestamptz // Exact timestamp (2025-12-09T07:15:00+02:00)
+  status      AttendanceStatus  @default(PRESENT)
+
+  // Audit trail
+  checkedInById String @map("checked_in_by_id")
+  checkedInBy   User   @relation("AttendanceCheckedInBy", fields: [checkedInById], references: [id])
+  notes         String? @db.Text // Optional coordinator notes
+
+  // Edit tracking
+  lastEditedById String?   @map("last_edited_by_id")
+  lastEditedBy   User?     @relation("AttendanceLastEditedBy", fields: [lastEditedById], references: [id])
+  lastEditedAt   DateTime? @map("last_edited_at") @db.Timestamptz
+  editReason     String?   @map("edit_reason") @db.Text
+
+  // Cancellation tracking (preserves immutability - INV-DATA-003)
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz
+  cancelledBy String?   @map("cancelled_by") // User ID who cancelled
+
+  // GPS Tracking (Phase 5)
+  checkedInLatitude  Float?    @map("checked_in_latitude")   // Decimal degrees (e.g., 32.0853)
+  checkedInLongitude Float?    @map("checked_in_longitude")  // Decimal degrees (e.g., 34.7818)
+  checkedInAccuracy  Float?    @map("checked_in_accuracy")   // GPS accuracy in meters
+  checkedInGpsTime   DateTime? @map("checked_in_gps_time") @db.Timestamptz // GPS timestamp
+  isWithinGeofence   Boolean   @default(true) @map("is_within_geofence") // Was check-in within geofence?
+  distanceFromSite   Float?    @map("distance_from_site")    // Distance from neighborhood in meters
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([activistId, date]) // One record per activist per day
+  @@index([neighborhoodId, date]) // Fast lookup: all activists at neighborhood on date
+  @@index([cityId, date]) // Multi-tenant isolation
+  @@index([date]) // Fast lookup: all attendance on date
+  @@index([lastEditedAt]) // For audit queries
+  @@index([isWithinGeofence]) // Phase 5: GPS analytics
+  @@map("attendance_records")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  NOT_PRESENT
+
+  @@map("attendance_status")
+}
+
+// ============================================
+// VOTERS TABLE (v2.3: Voter Management System)
+// ============================================
+model Voter {
+  id String @id @default(uuid())
+
+  // === VOTER PERSONAL INFO ===
+  fullName    String
+  phone       String          // Primary identifier (not unique - duplicates allowed)
+  idNumber    String?         @map("id_number") // Israeli ID (9 digits)
+  email       String?
+  dateOfBirth DateTime?       @map("date_of_birth") @db.Date
+  gender      String?         // "זכר", "נקבה", "אחר"
+
+  // === GEOGRAPHIC INFO (TEXT ONLY - NOT FK) ===
+  voterAddress       String? @map("voter_address")       // Full address where voter lives
+  voterCity          String? @map("voter_city")          // City where voter lives (text)
+  voterNeighborhood  String? @map("voter_neighborhood")  // Neighborhood where voter lives (text)
+
+  // === CAMPAIGN STATUS ===
+  supportLevel  String? @map("support_level")  // "תומך", "מהסס", "מתנגד", "לא ענה"
+  contactStatus String? @map("contact_status") // "נוצר קשר", "נקבע פגישה", "הצביע", "לא זמין"
+  priority      String? // "גבוה", "בינוני", "נמוך"
+  notes         String? @db.Text // Free text notes
+  lastContactedAt DateTime? @map("last_contacted_at") @db.Timestamptz
+
+  // === ORGANIZATIONAL OWNERSHIP (WHO INSERTED) ===
+  insertedByUserId          String @map("inserted_by_user_id")
+  insertedByUserName        String @map("inserted_by_user_name")         // Denormalized: "יוסי כהן"
+  insertedByUserRole        String @map("inserted_by_user_role")         // Denormalized: "פעיל שטח", "רכז פעילים", etc
+  insertedByNeighborhoodName String? @map("inserted_by_neighborhood_name") // Activist's neighborhood (for context)
+  insertedByCityName         String? @map("inserted_by_city_name")        // Activist's city (for context)
+  insertedAt                 DateTime @default(now()) @map("inserted_at") @db.Timestamptz
+
+  // === OPTIONAL: FOR REPORTING (AREA MANAGER USE CASE) ===
+  assignedCityId   String? @map("assigned_city_id")   // Optional: Area Manager assigns voter to city for reporting
+  assignedCityName String? @map("assigned_city_name") // Denormalized for display
+  assignedCity     City?   @relation("VoterAssignedCity", fields: [assignedCityId], references: [id], onDelete: SetNull)
+
+  // === SOFT DELETE ===
+  isActive          Boolean   @default(true) @map("is_active")
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
+  deletedByUserId   String?   @map("deleted_by_user_id")
+  deletedByUserName String?   @map("deleted_by_user_name")
+
+  // === METADATA ===
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // === RELATIONS ===
+  insertedBy  User                @relation("VoterInsertedBy", fields: [insertedByUserId], references: [id], onDelete: Restrict)
+  editHistory VoterEditHistory[]
+
+  // === INDEXES (Performance-critical) ===
+  @@index([phone])                    // For duplicate detection
+  @@index([insertedByUserId])         // For visibility queries
+  @@index([isActive])                 // For filtering active voters
+  @@index([assignedCityId])           // For reporting queries
+  @@index([supportLevel])             // For filtering by support level
+  @@index([contactStatus])            // For filtering by contact status
+  @@index([lastContactedAt])          // For sorting by last contact
+  @@index([insertedAt(sort: Desc)])   // For recent voters
+  @@map("voters")
+}
+
+// ============================================
+// VOTER EDIT HISTORY TABLE (v2.3: Audit Trail)
+// ============================================
+model VoterEditHistory {
+  id BigInt @id @default(autoincrement())
+
+  // === VOTER RELATIONSHIP ===
+  voterId String @map("voter_id")
+  voter   Voter  @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  // === WHO EDITED (Denormalized for manager-friendly display) ===
+  editedByUserId   String @map("edited_by_user_id")
+  editedByUserName String @map("edited_by_user_name") // "שרה לוי" (denormalized)
+  editedByUserRole String @map("edited_by_user_role") // "רכז פעילים" (denormalized)
+
+  // === WHAT CHANGED ===
+  fieldName String  @map("field_name") // "supportLevel", "phone", "notes", etc
+  oldValue  String? @map("old_value") @db.Text  // JSON string if complex
+  newValue  String? @map("new_value") @db.Text  // JSON string if complex
+
+  // === WHEN ===
+  editedAt DateTime @default(now()) @map("edited_at") @db.Timestamptz
+
+  // === INDEXES ===
+  @@index([voterId])
+  @@index([editedByUserId])
+  @@index([editedAt(sort: Desc)]) // For recent edits
+  @@map("voter_edit_history")
+}
+
+// ============================================
+// WIKI SYSTEM (v2.4: SuperAdmin Knowledge Base)
+// ============================================
+model WikiCategory {
+  id String @id @default(uuid())
+
+  // Display info
+  name        String  // Hebrew: "תפקידים והרשאות"
+  nameEn      String  @map("name_en") // English reference: "Roles & Permissions"
+  slug        String  @unique // URL-friendly: "roles-permissions"
+  description String? @db.Text
+  icon        String? // MUI icon name: "Security", "People", "Settings"
+
+  // Ordering & visibility
+  order    Int     @default(0)
+  isActive Boolean @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  pages WikiPage[]
+
+  @@index([slug])
+  @@index([order])
+  @@index([isActive])
+  @@map("wiki_categories")
+}
+
+model WikiPage {
+  id String @id @default(uuid())
+
+  // Page content
+  title   String // Hebrew: "מטריצת הרשאות מלאה"
+  titleEn String? @map("title_en") // English reference: "Full Permissions Matrix"
+  slug    String  @unique // URL-friendly: "permissions-matrix"
+  excerpt String? @db.Text // Short summary for cards/search
+  content String  @db.Text // Full markdown/MDX content
+
+  // Categorization
+  categoryId String       @map("category_id")
+  category   WikiCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Tags for search/filtering (stored as array)
+  tags String[] @default([]) // ["rbac", "permissions", "city-coordinator"]
+
+  // Ordering & visibility
+  order       Int     @default(0)
+  isPublished Boolean @default(true) @map("is_published")
+
+  // Analytics
+  viewCount      Int       @default(0) @map("view_count")
+  lastViewedBy   String?   @map("last_viewed_by") // User ID
+  lastViewedAt   DateTime? @map("last_viewed_at") @db.Timestamptz
+
+  // SEO & metadata
+  metaTitle       String? @map("meta_title") @db.Text
+  metaDescription String? @map("meta_description") @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  versions WikiPageVersion[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([tags])
+  @@index([isPublished])
+  @@index([viewCount(sort: Desc)]) // For "popular pages"
+  @@index([lastViewedAt(sort: Desc)]) // For "recently viewed"
+  @@index([lastViewedBy, lastViewedAt(sort: Desc)]) // 🚀 PERFORMANCE: Composite index for recent pages query
+  @@index([isPublished, viewCount(sort: Desc)]) // 🚀 PERFORMANCE: Composite index for popular pages query
+  @@map("wiki_pages")
+}
+
+// ============================================
+// WIKI PAGE VERSIONS (Optional: Version Control)
+// ============================================
+model WikiPageVersion {
+  id BigInt @id @default(autoincrement())
+
+  // Relations
+  pageId String   @map("page_id")
+  page   WikiPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  // Version snapshot
+  title      String
+  content    String @db.Text
+  excerpt    String? @db.Text
+  versionNum Int    @map("version_num") // 1, 2, 3...
+
+  // Audit trail
+  createdByUserId   String @map("created_by_user_id")
+  createdByUserName String @map("created_by_user_name") // Denormalized
+  changeReason      String? @map("change_reason") @db.Text // Why this edit?
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([pageId])
+  @@index([createdAt(sort: Desc)])
+  @@map("wiki_page_versions")
 }
