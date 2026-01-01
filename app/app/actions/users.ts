@@ -54,6 +54,7 @@ export type CreateUserInput = {
   role: Role;
   cityId?: string;
   regionName?: string; // Required for AREA_MANAGER role
+  neighborhoodIds?: string[]; // For ACTIVIST_COORDINATOR role
 };
 
 export type UpdateUserInput = {
@@ -65,6 +66,7 @@ export type UpdateUserInput = {
   role?: Role;
   password?: string;
   regionName?: string; // For AREA_MANAGER role updates
+  neighborhoodIds?: string[]; // For ACTIVIST_COORDINATOR role updates
 };
 
 export type ListUsersFilters = {
@@ -249,13 +251,23 @@ export async function createUser(data: CreateUserInput) {
           },
         });
       } else if (data.role === 'ACTIVIST_COORDINATOR') {
-        await prisma.activistCoordinator.create({
+        const activistCoordinator = await prisma.activistCoordinator.create({
           data: {
             userId: newUser.id,
             cityId: data.cityId,
             title: 'Supervisor',
           },
         });
+
+        // Create neighborhood associations if provided
+        if (data.neighborhoodIds && data.neighborhoodIds.length > 0) {
+          await prisma.activistCoordinatorNeighborhood.createMany({
+            data: data.neighborhoodIds.map((neighborhoodId) => ({
+              activistCoordinatorId: activistCoordinator.id,
+              neighborhoodId,
+            })),
+          });
+        }
       }
     }
 
