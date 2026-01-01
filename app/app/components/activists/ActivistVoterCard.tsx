@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, Typography, Chip, Stack, Box, IconButton, Alert, Badge } from '@mui/material';
+import { Card, CardContent, Typography, Chip, Stack, Box, IconButton, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PhoneIcon from '@mui/icons-material/Phone';
 import HomeIcon from '@mui/icons-material/Home';
@@ -88,21 +88,19 @@ export function ActivistVoterCard({
         )}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box flex={1}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <Typography variant="h6">
                 {voter.fullName}
               </Typography>
               {duplicateCount && duplicateCount > 1 && (
-                <Badge
-                  badgeContent={`×${duplicateCount}`}
+                <Chip
+                  label={`×${duplicateCount}`}
                   color="error"
+                  size="small"
                   sx={{
-                    '& .MuiBadge-badge': {
-                      fontSize: '0.75rem',
-                      height: 20,
-                      minWidth: 20,
-                      padding: '0 6px',
-                    },
+                    height: 20,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
                   }}
                 />
               )}
