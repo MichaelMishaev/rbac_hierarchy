@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 34
+**Total Bugs:** 35
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -4210,4 +4210,172 @@ If issues arise, revert by:
 **Fixed By:** Bug Fix Protocol (5-step process)  
 **Verification:** Manual testing + code review  
 **Deploy Status:** Pending user approval
+
+
+---
+
+## 🔴 CRITICAL BUG #35: Service Worker Caching Next.js Chunks Causes Navigation Errors (2026-01-01)
+
+**Severity:** CRITICAL
+**Impact:** App crashes on navigation (menu clicks) - users see React error, cannot navigate between pages
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-01
+**Reported By:** User (Railway development environment)
+
+### Bug Description
+
+When navigating between pages using the menu in Railway development environment, the app crashes with:
+
+```
+Error: Minified React error #418 (hydration mismatch)
+TypeError: Cannot read properties of undefined (reading 'call')
+```
+
+**Error Logs (from Railway DB):**
+- 19 errors in 1 hour
+- Triggered when navigating to `/users` page
+- Service Worker v2.1.2 loads successfully
+- Then crashes on menu click
+
+**Affected Component:** Service Worker caching strategy
+**Visible to:** All users on Railway deployment
+**Blocking:** Navigation, menu usage, all page transitions
+
+**User Experience:**
+1. Service Worker loads successfully
+2. User clicks menu link (e.g., "Users")
+3. React tries to load page chunk
+4. Gets STALE cached chunk from Service Worker
+5. Webpack error: version mismatch
+6. App crashes with white screen
+
+### Root Cause Analysis
+
+**Affected Files:**
+- `app/public/sw.js:145-173` (Cache First strategy)
+
+**Technical Cause:**
+
+The Service Worker uses "Cache First" strategy for ALL static assets:
+
+```javascript
+// Static assets (JS, CSS, images): Cache First
+event.respondWith(
+  caches.match(request)
+    .then(cached => {
+      if (cached) {
+        return cached;  // ← Returns STALE Next.js chunks!
+      }
+      // ...
+    })
+);
+```
+
+**Why it breaks:**
+
+1. Next.js generates versioned chunks: `/dashboard-abc123.js`
+2. Service Worker caches them with "Cache First"
+3. New deployment generates `/dashboard-xyz456.js`
+4. User navigates → Service Worker returns **old cached chunk**
+5. New React code + old chunk = module mismatch
+6. Webpack fails: `Cannot read properties of undefined (reading 'call')`
+
+**Next.js chunks should NEVER be cached** because:
+- They're already versioned with content hashes
+- Next.js handles its own cache-busting
+- Caching them breaks incremental deployments
+
+### The Fix
+
+**File:** `app/public/sw.js`
+
+**Change 1 - Bump version (force cache clear):**
+```diff
+- const SW_VERSION = '2.1.2'; // Bumped to clear voter-template.xlsx cache
++ const SW_VERSION = '2.1.3'; // Fixed Next.js chunk caching issue (Bug #35)
+```
+
+**Change 2 - Exclude Next.js chunks from caching:**
+```diff
+  // Navigation requests (HTML pages): Network First, fallback to offline page
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          return caches.match(OFFLINE_PAGE);
+        })
+    );
+    return;
+  }
+
++ // Next.js internal files: NEVER cache (they're versioned with hashes)
++ // Caching these causes chunk mismatch errors on navigation
++ if (url.pathname.startsWith('/_next/')) {
++   event.respondWith(fetch(request));
++   return;
++ }
+
+  // Static assets (JS, CSS, images): Cache First
+```
+
+### Testing
+
+**Before Fix:**
+```bash
+# Deploy to Railway → Menu click → Crash
+# Error logs: 19 errors in 1 hour
+```
+
+**After Fix:**
+```bash
+# Deploy to Railway
+# Service Worker v2.1.3 loads
+# Menu navigation works
+# No chunk mismatch errors
+```
+
+### Prevention Strategy
+
+**Rule for Future PWA Development:**
+
+✅ **DO:**
+- Cache app shell (HTML, manifest, offline page)
+- Cache API responses (with Network First)
+- Cache user-uploaded images/assets
+
+❌ **NEVER:**
+- Cache framework build artifacts (`/_next/`, `/webpack/`, etc.)
+- Cache versioned/hashed files (framework handles this)
+- Use "Cache First" for JavaScript modules
+
+**Code Review Checklist:**
+```typescript
+// ✅ GOOD: Framework files bypass cache
+if (url.pathname.startsWith('/_next/')) {
+  return fetch(request); // Network only
+}
+
+// ❌ BAD: Cache everything
+event.respondWith(caches.match(request) || fetch(request));
+```
+
+**Testing Requirements:**
+1. Deploy new version
+2. Navigate WITHOUT hard refresh
+3. Click all menu items
+4. Check browser console for chunk errors
+5. Verify Service Worker version in `console.log`
+
+### Lessons Learned
+
+1. **PWA caching requires framework awareness** - Next.js has its own caching strategy
+2. **"Cache First" is dangerous for JS** - Module mismatch breaks apps
+3. **Monitor error logs** - 19 errors in 1 hour = critical issue
+4. **Version bumps force cache clear** - Essential for cache-related bugs
+
+### References
+
+- React Error #418: https://react.dev/errors/418 (Hydration mismatch)
+- Next.js Caching: https://nextjs.org/docs/app/building-your-application/deploying#caching-and-isrs
+- Service Worker Best Practices: https://web.dev/service-worker-caching-and-http-caching/
 

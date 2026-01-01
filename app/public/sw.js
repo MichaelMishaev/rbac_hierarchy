@@ -15,7 +15,7 @@
  * Version: 2.0.0 - PWA with Offline Support
  */
 
-const SW_VERSION = '2.1.2'; // Bumped to clear voter-template.xlsx cache
+const SW_VERSION = '2.1.3'; // Fixed Next.js chunk caching issue (Bug #32)
 const CACHE_NAME = `campaign-v${SW_VERSION}`;
 const OFFLINE_PAGE = '/offline.html';
 
@@ -139,6 +139,13 @@ self.addEventListener('fetch', (event) => {
           return caches.match(OFFLINE_PAGE);
         })
     );
+    return;
+  }
+
+  // Next.js internal files: NEVER cache (they're versioned with hashes)
+  // Caching these causes chunk mismatch errors on navigation
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(fetch(request));
     return;
   }
 
