@@ -39,3 +39,6 @@ next-env.d.ts
 # prisma
 prisma/migrations
 backups/
+
+# logs viewer (local development only)
+logs-viewer/

@@ -953,6 +953,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
         activistCoordinators={supervisors}
         onCityChange={fetchSupervisors}
         userCityId={userCityId}
+        onSupervisorCreated={fetchSupervisors}
       />
 
       {/* Edit Modal */}
@@ -976,6 +977,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
           activistCoordinators={supervisors}
           onCityChange={fetchSupervisors}
           userCityId={userCityId}
+          onSupervisorCreated={fetchSupervisors}
         />
       )}
 

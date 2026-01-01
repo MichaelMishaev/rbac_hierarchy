@@ -51,6 +51,7 @@ type CityModalProps = {
     fullName: string;
     email: string;
   } | null;
+  onAreaManagerCreated?: () => Promise<void>;
 };
 
 export default function CityModal({
@@ -62,6 +63,7 @@ export default function CityModal({
   areaManagers,
   userRole = 'SUPERADMIN',
   currentUserAreaManager,
+  onAreaManagerCreated,
 }: CityModalProps) {
   const t = useTranslations('citys');
   const tCommon = useTranslations('common');
@@ -99,7 +101,7 @@ export default function CityModal({
   }, [formData.name, mode]);
 
   // Handler for when a new area manager is created via quick create
-  const handleAreaManagerCreated = (newAreaManager: { id: string; regionName: string; fullName: string; email: string }) => {
+  const handleAreaManagerCreated = async (newAreaManager: { id: string; regionName: string; fullName: string; email: string }) => {
     // Add to local list
     setLocalAreaManagers((prev) => [
       ...prev,
@@ -117,6 +119,11 @@ export default function CityModal({
     // Clear any validation errors on areaManagerId
     if (errors.areaManagerId) {
       setErrors((prev) => ({ ...prev, areaManagerId: undefined }));
+    }
+
+    // Notify parent to refetch area managers list
+    if (onAreaManagerCreated) {
+      await onAreaManagerCreated();
     }
   };
 

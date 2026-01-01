@@ -104,6 +104,14 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
     fetchAreaManagers();
   }, []);
 
+  // Refetch area managers (called after quick create)
+  const refetchAreaManagers = async () => {
+    const result = await getAreaManagers();
+    if (result.success && result.areaManagers) {
+      setAreaManagers(result.areaManagers);
+    }
+  };
+
   // Filtered corporations based on search
   const filteredCorporations = useMemo(() => {
     if (!searchQuery.trim()) return corporations;
@@ -748,6 +756,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
         areaManagers={areaManagers}
         userRole={userRole}
         currentUserAreaManager={currentUserAreaManager}
+        onAreaManagerCreated={refetchAreaManagers}
       />
 
       {/* Edit Modal - KEEP */}
@@ -769,6 +778,8 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           mode="edit"
           areaManagers={areaManagers}
           userRole={userRole}
+          currentUserAreaManager={currentUserAreaManager}
+          onAreaManagerCreated={refetchAreaManagers}
         />
       )}
     </Box>

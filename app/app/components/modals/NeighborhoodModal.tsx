@@ -74,6 +74,7 @@ type NeighborhoodModalProps = {
   activistCoordinators: Supervisor[];
   onCityChange?: (cityId: string) => Promise<void>;
   userCityId?: string; // For City Coordinators - auto-select and lock their city
+  onSupervisorCreated?: (cityId: string) => Promise<void>;
 };
 
 export default function NeighborhoodModal({
@@ -87,6 +88,7 @@ export default function NeighborhoodModal({
   activistCoordinators,
   onCityChange,
   userCityId,
+  onSupervisorCreated,
 }: NeighborhoodModalProps) {
   const t = useTranslations('sites');
   const tCommon = useTranslations('common');
@@ -315,8 +317,8 @@ export default function NeighborhoodModal({
         justCreatedSupervisorRef.current = true;
 
         // Refresh activist coordinators list
-        if (onCityChange) {
-          await onCityChange(formData.cityId);
+        if (onSupervisorCreated) {
+          await onSupervisorCreated(formData.cityId);
         }
 
         // Auto-select the new activist coordinator
