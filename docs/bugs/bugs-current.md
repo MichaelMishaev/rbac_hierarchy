@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 35
+**Total Bugs:** 36
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -4378,4 +4378,760 @@ event.respondWith(caches.match(request) || fetch(request));
 - React Error #418: https://react.dev/errors/418 (Hydration mismatch)
 - Next.js Caching: https://nextjs.org/docs/app/building-your-application/deploying#caching-and-isrs
 - Service Worker Best Practices: https://web.dev/service-worker-caching-and-http-caching/
+
+
+## 🔴 CRITICAL BUG #36: Activist Coordinator Neighborhoods Not Saving on Railway (2026-01-01)
+
+**Severity:** CRITICAL
+**Impact:** Cannot assign or persist neighborhoods for activist coordinators - 500 errors on update
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-01
+**Reported By:** User (Railway development environment)
+
+### Bug Description
+
+When creating or editing an activist coordinator and selecting neighborhoods:
+
+1. **Create flow:** Neighborhoods appear to be selected, save succeeds, but when reopening user - no neighborhoods shown
+2. **Edit flow:** Adding neighborhoods throws 500 error with "Null constraint violation on the fields: (`city_id`)"
+
+**Error from Railway logs:**
+```
+Invalid `prisma.activistCoordinator.delete()` invocation:
+Null constraint violation on the fields: (`city_id`)
+```
+
+**Affected Component:** User management (createUser, updateUser server actions)
+**Visible to:** All users creating/editing activist coordinators
+**Blocking:** Activist coordinator neighborhood assignments, campaign organization
+
+**User Experience:**
+1. Edit activist coordinator user
+2. Select neighborhoods from autocomplete dropdown
+3. Click Save
+4. Get 500 error (or success with no effect on create)
+5. Neighborhoods are NOT saved to database
+6. Reopening user shows empty neighborhoods field
+
+### Root Cause Analysis
+
+**Affected Files:**
+- `app/app/actions/users.ts` (createUser, updateUser functions)
+- `app/app/components/users/UserModal.tsx` (form submission)
+- `app/app/components/users/UsersClient.tsx` (user editing)
+
+**The Problem: Missing Neighborhood Persistence Flow**
+
+The bug had **three interconnected issues**:
+
+#### 1. Frontend Never Sent Neighborhoods to Server
+
+In `UserModal.tsx` (lines 216-236):
+```typescript
+// ❌ WRONG - neighborhoodIds collected but never sent!
+if (isEdit) {
+  result = await updateUser(user.id, {
+    fullName: formData.name,
+    email: formData.email,
+    phone: formData.phone || undefined,
+    role: formData.role,
+    cityId: effectiveCityId || undefined,
+    // neighborhoodIds missing!
+  });
+}
+```
+
+The form had a `neighborhoodIds` field in `formData`, but it was never included in the `createUser` or `updateUser` calls.
+
+#### 2. Server Actions Didn't Accept Neighborhoods
+
+In `users.ts`:
+```typescript
+// ❌ WRONG - No neighborhoodIds parameter
+export type CreateUserInput = {
+  email: string;
+  fullName: string;
+  role: Role;
+  cityId?: string;
+  // neighborhoodIds missing!
+};
+```
+
+The server action type definitions didn't include `neighborhoodIds`, and the functions never created M2M records in `activist_coordinator_neighborhoods` table.
+
+#### 3. updateUser Deleted Activist Coordinator Record on Every Update
+
+In `users.ts` (lines 722-747):
+```typescript
+// ❌ WRONG - Deletes even when role unchanged!
+if (data.cityId && data.role) {
+  if (existingUser.role === 'ACTIVIST_COORDINATOR') {
+    await prisma.activistCoordinator.delete({
+      where: { cityId_userId: { cityId: coord.cityId, userId } }
+    });
+  }
+  // Then recreate without cityId when just updating neighborhoods
+  await prisma.activistCoordinator.create({ ... });
+}
+```
+
+The code checked if `data.cityId && data.role` were provided, but didn't check if the role had **actually changed**. When editing an existing activist coordinator to update neighborhoods:
+- Form sends `role: 'ACTIVIST_COORDINATOR'` (current role)
+- Code tries to delete the activist coordinator record
+- Code tries to recreate it but `data.cityId` is undefined (only neighborhoods changed)
+- Delete succeeds but create fails → "Null constraint violation on city_id"
+
+#### 4. Existing Neighborhoods Not Loaded When Editing
+
+In `UsersClient.tsx` (lines 200-229):
+```typescript
+// ❌ WRONG - Only extracts cityId, not neighborhoodIds
+const handleEditUser = () => {
+  let cityId: string | null = null;
+  if (selectedUser.role === 'ACTIVIST_COORDINATOR') {
+    cityId = selectedUser.activistCoordinatorOf[0].city.id;
+    // Missing: Extract neighborhoodIds from activistCoordinatorNeighborhoods
+  }
+  setEditingUser({ ...selectedUser, cityId });
+};
+```
+
+Even if neighborhoods were saved, they weren't loaded back when editing the user.
+
+### Solution
+
+**Fix 1: Add neighborhoodIds to Server Action Types**
+
+`app/app/actions/users.ts`:
+```typescript
+// ✅ CORRECT - Include neighborhoodIds
+export type CreateUserInput = {
+  email: string;
+  fullName: string;
+  role: Role;
+  cityId?: string;
+  neighborhoodIds?: string[]; // For ACTIVIST_COORDINATOR role
+};
+
+export type UpdateUserInput = {
+  fullName?: string;
+  role?: Role;
+  cityId?: string;
+  neighborhoodIds?: string[]; // For ACTIVIST_COORDINATOR role updates
+};
+```
+
+**Fix 2: createUser - Save Neighborhoods to M2M Table**
+
+`app/app/actions/users.ts` (lines 253-279):
+```typescript
+// ✅ CORRECT - Create neighborhood associations with composite FK
+if (data.role === 'ACTIVIST_COORDINATOR') {
+  const activistCoordinator = await prisma.activistCoordinator.create({
+    data: { userId: newUser.id, cityId: data.cityId, title: 'Supervisor' },
+  });
+
+  if (data.neighborhoodIds && data.neighborhoodIds.length > 0) {
+    // Fetch neighborhoods to get cityId for composite FK constraint
+    const neighborhoods = await prisma.neighborhood.findMany({
+      where: { id: { in: data.neighborhoodIds } },
+      select: { id: true, cityId: true },
+    });
+
+    await prisma.activistCoordinatorNeighborhood.createMany({
+      data: neighborhoods.map((neighborhood) => ({
+        activistCoordinatorId: activistCoordinator.id,
+        neighborhoodId: neighborhood.id,
+        cityId: neighborhood.cityId, // Required for composite FK
+        legacyActivistCoordinatorUserId: newUser.id, // Required for backward compat
+      })),
+    });
+  }
+}
+```
+
+**Schema Compliance Note:**
+The `ActivistCoordinatorNeighborhood` table requires:
+- `activistCoordinatorId` - M2M relationship
+- `neighborhoodId` - M2M relationship
+- `cityId` - For composite foreign key constraint
+- `legacyActivistCoordinatorUserId` - For backward compatibility with existing code
+
+**Fix 3: updateUser - Check Role Changed Before Deleting**
+
+`app/app/actions/users.ts` (lines 721-828):
+```typescript
+// ✅ CORRECT - Only delete role record if role actually changed
+const roleChanged = data.role && existingUser.role !== data.role;
+
+if (roleChanged && data.cityId) {
+  // Delete old role records
+  if (existingUser.role === 'ACTIVIST_COORDINATOR') {
+    await prisma.activistCoordinator.delete({ ... });
+  }
+  
+  // Create new role assignment
+  if (data.role === 'ACTIVIST_COORDINATOR') {
+    const activistCoordinator = await prisma.activistCoordinator.create({ ... });
+    
+    // Create neighborhoods with composite FK
+    if (data.neighborhoodIds && data.neighborhoodIds.length > 0) {
+      const neighborhoods = await prisma.neighborhood.findMany({
+        where: { id: { in: data.neighborhoodIds } },
+        select: { id: true, cityId: true },
+      });
+
+      await prisma.activistCoordinatorNeighborhood.createMany({
+        data: neighborhoods.map((n) => ({
+          activistCoordinatorId: activistCoordinator.id,
+          neighborhoodId: n.id,
+          cityId: n.cityId,
+          legacyActivistCoordinatorUserId: userId,
+        })),
+      });
+    }
+  }
+}
+// Update neighborhoods when role HASN'T changed
+else if (!roleChanged && existingUser.role === 'ACTIVIST_COORDINATOR' && data.neighborhoodIds !== undefined) {
+  const activistCoord = existingUserCorps?.activistCoordinatorOf?.[0];
+  if (activistCoord) {
+    // Delete existing associations
+    await prisma.activistCoordinatorNeighborhood.deleteMany({
+      where: { activistCoordinatorId: activistCoord.id },
+    });
+
+    // Create new associations with composite FK
+    if (data.neighborhoodIds.length > 0) {
+      const neighborhoods = await prisma.neighborhood.findMany({
+        where: { id: { in: data.neighborhoodIds } },
+        select: { id: true, cityId: true },
+      });
+
+      await prisma.activistCoordinatorNeighborhood.createMany({
+        data: neighborhoods.map((n) => ({
+          activistCoordinatorId: activistCoord.id,
+          neighborhoodId: n.id,
+          cityId: n.cityId,
+          legacyActivistCoordinatorUserId: userId,
+        })),
+      });
+    }
+  }
+}
+```
+
+**Fix 4: UserModal - Send Neighborhoods on Submission**
+
+`app/app/components/users/UserModal.tsx` (lines 216-238):
+```typescript
+// ✅ CORRECT - Include neighborhoodIds in submission
+if (isEdit) {
+  result = await updateUser(user.id, {
+    fullName: formData.name,
+    email: formData.email,
+    phone: formData.phone || undefined,
+    role: formData.role,
+    cityId: effectiveCityId || undefined,
+    neighborhoodIds: formData.role === 'ACTIVIST_COORDINATOR' ? formData.neighborhoodIds : undefined,
+    ...(formData.password && { password: formData.password }),
+  });
+} else {
+  result = await createUser({
+    fullName: formData.name,
+    email: formData.email,
+    phone: formData.phone || undefined,
+    password: formData.password,
+    role: formData.role,
+    cityId: effectiveCityId || undefined,
+    neighborhoodIds: formData.role === 'ACTIVIST_COORDINATOR' ? formData.neighborhoodIds : undefined,
+  });
+}
+```
+
+**Fix 5: UserModal - Initialize Form with Existing Neighborhoods**
+
+`app/app/components/users/UserModal.tsx` (lines 30-40, 93-136):
+```typescript
+// ✅ CORRECT - Add neighborhoodIds to User type and form initialization
+type User = {
+  id: string;
+  fullName: string;
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR';
+  cityId?: string | null;
+  neighborhoodIds?: string[]; // For Activist Coordinator
+};
+
+const [formData, setFormData] = useState<FormData>({
+  name: user?.fullName || '',
+  role: user?.role || 'ACTIVIST_COORDINATOR',
+  neighborhoodIds: user?.neighborhoodIds || [], // Initialize from existing
+});
+
+useEffect(() => {
+  if (user) {
+    setFormData({
+      name: user.fullName,
+      role: user.role,
+      neighborhoodIds: user.neighborhoodIds || [], // Load existing
+    });
+  }
+}, [user]);
+```
+
+**Fix 6: UsersClient - Load Existing Neighborhoods When Editing**
+
+`app/app/components/users/UsersClient.tsx` (lines 200-236):
+```typescript
+// ✅ CORRECT - Extract neighborhoodIds from user relations
+const handleEditUser = () => {
+  let cityId: string | null = null;
+  let neighborhoodIds: string[] = [];
+
+  if (selectedUser.role === 'ACTIVIST_COORDINATOR') {
+    if (selectedUser.activistCoordinatorOf?.length > 0) {
+      cityId = selectedUser.activistCoordinatorOf[0].city.id;
+    }
+    
+    // Extract neighborhood IDs from M2M table
+    if (selectedUser.activistCoordinatorNeighborhoods?.length > 0) {
+      neighborhoodIds = selectedUser.activistCoordinatorNeighborhoods.map(
+        acn => acn.neighborhood.id
+      );
+    }
+  }
+
+  setEditingUser({ ...selectedUser, cityId, neighborhoodIds } as any);
+};
+```
+
+### Files Changed
+
+**Server Actions:**
+- `app/app/actions/users.ts:49-70` - Added `neighborhoodIds` to input types
+- `app/app/actions/users.ts:253-279` - createUser neighborhood persistence
+- `app/app/actions/users.ts:721-828` - updateUser role change detection + neighborhood updates
+
+**Frontend Components:**
+- `app/app/components/users/UserModal.tsx:30-40` - Added `neighborhoodIds` to User type
+- `app/app/components/users/UserModal.tsx:93-136` - Form initialization with existing neighborhoods
+- `app/app/components/users/UserModal.tsx:216-238` - Send neighborhoods on submit
+- `app/app/components/users/UsersClient.tsx:200-236` - Extract neighborhoods when editing
+
+### Deployment & Verification
+
+**Deployment:**
+```bash
+git add app/app/actions/users.ts app/app/components/users/UserModal.tsx app/app/components/users/UsersClient.tsx
+git commit -m "fix: activist coordinator neighborhoods not saving (Bug #36)"
+git push origin develop  # Auto-deploys to Railway development
+```
+
+**Verification Steps:**
+
+1. **Create New Activist Coordinator:**
+   - Go to Users page → Add User
+   - Select role: "רכז פעילים" (Activist Coordinator)
+   - Select multiple neighborhoods
+   - Click Save
+   - Reopen user → Verify neighborhoods are shown
+
+2. **Update Existing Activist Coordinator:**
+   - Edit existing activist coordinator
+   - Change neighborhoods (add/remove)
+   - Click Save
+   - Verify no 500 error
+   - Reopen user → Verify updated neighborhoods
+
+3. **Database Verification:**
+   ```sql
+   SELECT ac.id, ac.user_id, u.full_name,
+          COUNT(acn.id) as neighborhood_count
+   FROM activist_coordinators ac
+   JOIN users u ON ac.user_id = u.id
+   LEFT JOIN activist_coordinator_neighborhoods acn ON acn.activist_coordinator_id = ac.id
+   GROUP BY ac.id, ac.user_id, u.full_name;
+   ```
+
+### Prevention Rules
+
+#### 1. **Data Flow Validation**
+**Rule:** For any UI form field, verify the complete data flow:
+- Form state → Form submission → Server action → Database
+
+**How to Prevent:**
+- Before completing a feature, trace data from UI to DB
+- Check TypeScript types match across all layers
+- Verify server actions actually use all provided parameters
+
+**Code Pattern:**
+```typescript
+// ✅ CHECKLIST for new form fields:
+// 1. Add to formData type
+// 2. Add to server action input type
+// 3. Use in server action implementation
+// 4. Save to database
+// 5. Load from database when editing
+// 6. Initialize form with loaded data
+```
+
+#### 2. **Avoid Destructive Updates Without Checking State**
+**Rule:** Before deleting and recreating role records, check if the role has actually changed
+
+**How to Prevent:**
+- Always compare existing vs new values before destructive operations
+- Use `const roleChanged = existingRole !== newRole` checks
+- Separate "role change" logic from "role data update" logic
+
+**Code Pattern:**
+```typescript
+// ✅ CORRECT - Check before delete
+const roleChanged = data.role && existingUser.role !== data.role;
+
+if (roleChanged) {
+  // Delete old role record
+  // Create new role record
+} else {
+  // Just update role data (neighborhoods, etc.)
+}
+```
+
+#### 3. **Handle M2M Relationships Completely**
+**Rule:** When implementing M2M relationships, handle create, update, read, and load flows
+
+**How to Prevent:**
+- Document required fields for M2M tables (especially composite FKs)
+- Fetch related data when needed for composite FK constraints
+- Test both create and update flows
+- Load existing associations when editing
+
+**Code Pattern:**
+```typescript
+// ✅ CORRECT - Complete M2M handling
+// 1. CREATE: Fetch related data for composite FK
+const neighborhoods = await prisma.neighborhood.findMany({
+  where: { id: { in: data.neighborhoodIds } },
+  select: { id: true, cityId: true }, // cityId needed for composite FK
+});
+
+await prisma.activistCoordinatorNeighborhood.createMany({
+  data: neighborhoods.map(n => ({
+    activistCoordinatorId: coordinator.id,
+    neighborhoodId: n.id,
+    cityId: n.cityId, // Composite FK field
+    legacyActivistCoordinatorUserId: userId, // Backward compat field
+  })),
+});
+
+// 2. UPDATE: Delete existing then recreate
+await prisma.activistCoordinatorNeighborhood.deleteMany({
+  where: { activistCoordinatorId: coordinator.id },
+});
+// ... then create new associations
+
+// 3. READ: Include in queries
+const user = await prisma.user.findUnique({
+  include: {
+    activistCoordinatorNeighborhoods: {
+      include: { neighborhood: true },
+    },
+  },
+});
+
+// 4. LOAD: Extract for form initialization
+const neighborhoodIds = user.activistCoordinatorNeighborhoods.map(
+  acn => acn.neighborhood.id
+);
+```
+
+#### 4. **Schema Compliance for Composite FKs**
+**Rule:** When working with tables that have composite foreign keys, always provide all required fields
+
+**How to Prevent:**
+- Document composite FK requirements in code comments
+- Check Prisma schema for `@@unique` constraints on related models
+- Fetch additional data if needed to satisfy composite FK constraints
+- Run type checking (`npx tsc --noEmit`) after schema changes
+
+**Code Pattern:**
+```typescript
+// ✅ Document composite FK requirements
+// ActivistCoordinatorNeighborhood requires:
+// - activistCoordinatorId (M2M)
+// - neighborhoodId (M2M)
+// - cityId (for composite FK constraint)
+// - legacyActivistCoordinatorUserId (backward compatibility)
+
+// Fetch neighborhood data to get cityId
+const neighborhoods = await prisma.neighborhood.findMany({
+  where: { id: { in: data.neighborhoodIds } },
+  select: { id: true, cityId: true },
+});
+```
+
+#### 5. **End-to-End Testing for CRUD Operations**
+**Rule:** For any data entity, test the complete CRUD flow (Create, Read, Update, Delete)
+
+**How to Prevent:**
+- Write E2E tests that:
+  1. Create entity with all fields
+  2. Read entity and verify all fields
+  3. Update entity and verify changes
+  4. Delete entity and verify removal
+- Test on both local and staging environments
+- Include negative tests (validation failures)
+
+**Test Pattern:**
+```typescript
+// ✅ Complete CRUD test
+test('Activist Coordinator neighborhoods CRUD', async () => {
+  // CREATE
+  const user = await createUser({
+    role: 'ACTIVIST_COORDINATOR',
+    neighborhoodIds: ['n1', 'n2'],
+  });
+  expect(user.success).toBe(true);
+
+  // READ
+  const loaded = await getUserById(user.user.id);
+  expect(loaded.user.activistCoordinatorNeighborhoods).toHaveLength(2);
+
+  // UPDATE
+  const updated = await updateUser(user.user.id, {
+    neighborhoodIds: ['n2', 'n3'], // Change neighborhoods
+  });
+  expect(updated.success).toBe(true);
+
+  // VERIFY UPDATE
+  const reloaded = await getUserById(user.user.id);
+  expect(reloaded.user.activistCoordinatorNeighborhoods).toHaveLength(2);
+  expect(
+    reloaded.user.activistCoordinatorNeighborhoods.map(n => n.neighborhoodId)
+  ).toEqual(['n2', 'n3']);
+
+  // DELETE
+  await deleteUser(user.user.id);
+});
+```
+
+### Related Issues
+
+- Bug #34: User Deletion NULL Constraint - Similar composite FK issue
+- Bug #30: User Role Update NULL Violation - Related to role change detection
+
+### Tags
+
+`#user-management` `#activist-coordinator` `#neighborhoods` `#m2m-relationships` `#composite-fk` `#data-persistence` `#railway` `#500-error` `#critical`
+
+---
+
+
+---
+
+## 🔴 CRITICAL BUG #36: updateUser Fails When Changing Role - NULL Constraint Violation (2026-01-01)
+
+**Severity:** CRITICAL
+**Impact:** Cannot change user roles from ACTIVIST_COORDINATOR or CITY_COORDINATOR - 500 errors, role management broken
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-01
+**Reported By:** Discovered via error logs (Railway production environment)
+
+### Bug Description
+
+When attempting to update a user's role (e.g., changing from `ACTIVIST_COORDINATOR` to another role) on Railway development environment, the update fails with:
+
+```
+Error: Server action failed: updateUser
+PrismaClientKnownRequestError:
+Invalid `prisma.activistCoordinator.delete()` invocation:
+Null constraint violation on the fields: (`city_id`)
+```
+
+**Error Logs (from Railway DB):**
+- 3 errors between 19:36-20:04
+- All from SuperAdmin (test@test.com) trying to update users
+- Stack trace shows deletion attempt using composite key
+
+**Affected Component:** updateUser server action
+**Visible to:** All users (SuperAdmin, Area Managers) trying to change user roles
+**Blocking:** Role management, user reassignment, organizational changes
+
+**User Experience:**
+1. Edit user and change role (e.g., ACTIVIST_COORDINATOR → CITY_COORDINATOR)
+2. Click save
+3. Get 500 error + Prisma exception
+4. User role is NOT updated
+5. Page shows stale data
+
+### Root Cause Analysis
+
+**Affected Files:**
+- `app/app/actions/users.ts:738-757` (role assignment deletion logic)
+
+**Technical Cause:**
+
+When changing a user's role, the `updateUser` function tries to delete old role assignments using composite keys:
+
+```typescript
+// ❌ BROKEN CODE
+for (const coord of existingUserCorps.activistCoordinatorOf) {
+  await prisma.activistCoordinator.delete({
+    where: {
+      cityId_userId: {
+        cityId: coord.cityId,  // ← coord.cityId can be undefined/null in memory!
+        userId: userId,
+      },
+    },
+  });
+}
+```
+
+**Why it breaks:**
+
+1. Prisma query uses `include: { city: true }` to load related data
+2. Foreign key field `coord.cityId` might not be properly populated in memory object
+3. When `coord.cityId` is undefined, Prisma interprets it as NULL
+4. Database constraint rejects NULL for `city_id` column
+5. Delete operation fails before role can be updated
+
+**Database confirms:**
+- All `activist_coordinators` records have valid `city_id` (NOT NULL)
+- No data corruption
+- Issue is in-memory object structure from Prisma query
+
+**Same pattern exists for:**
+- `cityCoordinator.delete()` on line 738
+- Both use composite keys `cityId_userId` which are vulnerable
+
+### The Fix
+
+**File:** `app/app/actions/users.ts:734-749`
+
+**Change: Use record ID instead of composite key**
+
+```diff
+- // Remove old role assignments using the existing records (to handle composite unique keys)
++ // Remove old role assignments using record IDs (prevents NULL constraint violations)
+  if (existingUser.role === 'CITY_COORDINATOR' && existingUserCorps?.coordinatorOf) {
+    // Delete all existing city coordinator records for this user
+    for (const coord of existingUserCorps.coordinatorOf) {
+      await prisma.cityCoordinator.delete({
+-       where: {
+-         cityId_userId: {
+-           cityId: coord.cityId,
+-           userId: userId,
+-         },
+-       },
++       where: { id: coord.id }, // Use ID instead of composite key (Bug #36 fix)
+      });
+    }
+  } else if (existingUser.role === 'ACTIVIST_COORDINATOR' && existingUserCorps?.activistCoordinatorOf) {
+    // Delete all existing activist coordinator records for this user (including neighborhoods cascade)
+    for (const coord of existingUserCorps.activistCoordinatorOf) {
+      await prisma.activistCoordinator.delete({
+-       where: {
+-         cityId_userId: {
+-           cityId: coord.cityId,
+-           userId: userId,
+-         },
+-       },
++       where: { id: coord.id }, // Use ID instead of composite key (Bug #36 fix)
+      });
+    }
+  }
+```
+
+**Why this works:**
+
+✅ `coord.id` is always available (primary key, always populated)  
+✅ Simpler query - single field lookup  
+✅ No dependency on foreign key fields being populated  
+✅ Consistent with Prisma best practices  
+✅ Same pattern used successfully in `deleteUser` function
+
+### Testing
+
+**Before Fix:**
+```bash
+# Edit user role: ACTIVIST_COORDINATOR → CITY_COORDINATOR
+# Result: 500 error, role not changed
+# Error: NULL constraint violation on city_id
+```
+
+**After Fix:**
+```bash
+# Edit user role: ACTIVIST_COORDINATOR → CITY_COORDINATOR
+# Result: Success, role changed
+# Old activist_coordinator record deleted
+# New city_coordinator record created
+```
+
+**Test Cases:**
+```typescript
+// 1. Change ACTIVIST_COORDINATOR → CITY_COORDINATOR
+// 2. Change CITY_COORDINATOR → ACTIVIST_COORDINATOR
+// 3. Change ACTIVIST_COORDINATOR → AREA_MANAGER
+// 4. Change role without changing city (should work)
+// 5. Change role with changing city (full migration)
+```
+
+### Prevention Strategy
+
+**Rule for Future Prisma Operations:**
+
+✅ **DO:**
+- Use primary key (`id`) for delete operations when available
+- Use composite keys only when necessary (unique constraints)
+- Test foreign key field availability when using `include`
+
+❌ **NEVER:**
+- Assume foreign key fields are populated from `include`
+- Use composite keys unnecessarily
+- Delete using potentially undefined fields
+
+**Code Review Checklist:**
+```typescript
+// ✅ GOOD: Use primary key
+await prisma.model.delete({ where: { id: record.id } });
+
+// ⚠️ RISKY: Composite key with included relation
+await prisma.model.delete({ 
+  where: { 
+    field1_field2: { 
+      field1: record.field1,  // Might be undefined!
+      field2: record.field2 
+    } 
+  } 
+});
+
+// ✅ BETTER: Explicitly select fields or use ID
+await prisma.model.delete({ where: { id: record.id } });
+```
+
+**Testing Requirements:**
+1. Test role changes for all role combinations
+2. Verify old role records are deleted
+3. Verify new role records are created
+4. Check database for orphaned records
+5. Test with users having multiple role assignments
+
+### Lessons Learned
+
+1. **Prisma `include` doesn't guarantee foreign key availability** - Use primary keys when possible
+2. **Composite keys are fragile** - Only use when truly necessary for business logic
+3. **Error logs are valuable** - 3 production errors revealed the pattern
+4. **Similar bugs cluster** - Bug #34 (deleteUser) and #36 (updateUser) had same root cause
+5. **Simple is better** - ID-based deletes are simpler and more reliable
+
+### Related Bugs
+
+- **Bug #34**: User Deletion Fails with NULL Constraint Violation (similar pattern)
+  - Fixed by removing manual deletes, relying on CASCADE
+  - updateUser requires manual deletes, so different solution needed
+
+### References
+
+- Prisma Docs: https://www.prisma.io/docs/reference/api-reference/prisma-client-reference#delete
+- Composite Keys: https://www.prisma.io/docs/concepts/components/prisma-schema/data-model#composite-unique-keys
+- `include` behavior: https://www.prisma.io/docs/concepts/components/prisma-client/relation-queries#include
 

@@ -731,29 +731,19 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
 
     // Update corporation assignment if role changed
     if (roleChanged && data.cityId) {
-      // Remove old role assignments using the existing records (to handle composite unique keys)
+      // Remove old role assignments using record IDs (prevents NULL constraint violations)
       if (existingUser.role === 'CITY_COORDINATOR' && existingUserCorps?.coordinatorOf) {
         // Delete all existing city coordinator records for this user
         for (const coord of existingUserCorps.coordinatorOf) {
           await prisma.cityCoordinator.delete({
-            where: {
-              cityId_userId: {
-                cityId: coord.cityId,
-                userId: userId,
-              },
-            },
+            where: { id: coord.id }, // Use ID instead of composite key (Bug #36 fix)
           });
         }
       } else if (existingUser.role === 'ACTIVIST_COORDINATOR' && existingUserCorps?.activistCoordinatorOf) {
         // Delete all existing activist coordinator records for this user (including neighborhoods cascade)
         for (const coord of existingUserCorps.activistCoordinatorOf) {
           await prisma.activistCoordinator.delete({
-            where: {
-              cityId_userId: {
-                cityId: coord.cityId,
-                userId: userId,
-              },
-            },
+            where: { id: coord.id }, // Use ID instead of composite key (Bug #36 fix)
           });
         }
       }
