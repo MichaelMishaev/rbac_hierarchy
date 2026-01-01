@@ -48,6 +48,7 @@
     "scripts/**/*",
     "playwright.config.ts",
     "playwright.demo.config.ts",
-    "verify-org-tree.ts"
+    "verify-org-tree.ts",
+    "logs-viewer/**/*"
   ]
 }

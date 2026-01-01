@@ -195,12 +195,14 @@ class EnhancedErrorTracker {
   private longTasks: LongTask[] = [];
   private pageLoadTime: number = 0;
   private interactionCount: number = 0;
-  private originalFetch: typeof fetch;
-  private originalXHR: typeof XMLHttpRequest;
+  private originalFetch: typeof fetch = fetch;
+  private originalXHR: typeof XMLHttpRequest = XMLHttpRequest;
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.pageLoadTime = Date.now();
+      this.originalFetch = window.fetch;
+      this.originalXHR = window.XMLHttpRequest;
       this.init();
     }
   }
@@ -232,7 +234,11 @@ class EnhancedErrorTracker {
 
     window.fetch = async (...args: Parameters<typeof fetch>): Promise<Response> => {
       const startTime = Date.now();
-      const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+      const url = typeof args[0] === 'string'
+        ? args[0]
+        : args[0] instanceof Request
+          ? args[0].url
+          : args[0].toString();
       const options = args[1] || {};
 
       const apiCall: APICall = {

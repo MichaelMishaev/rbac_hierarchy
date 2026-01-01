@@ -5135,3 +5135,109 @@ await prisma.model.delete({ where: { id: record.id } });
 - Composite Keys: https://www.prisma.io/docs/concepts/components/prisma-schema/data-model#composite-unique-keys
 - `include` behavior: https://www.prisma.io/docs/concepts/components/prisma-client/relation-queries#include
 
+
+---
+
+## Bug #37: Users List Showing City Instead of Neighborhoods for Activist Coordinators
+
+**Date:** 2026-01-01  
+**Severity:** Medium (UI Display Issue)  
+**Status:** Fixed  
+**Component:** Users List (Desktop & Mobile)  
+**File:** `app/app/components/users/UsersClient.tsx`
+
+### Problem
+
+In the users list table, Activist Coordinators (רכז שכונתי) were displaying their **city name** ("באר שבע") in the location column instead of their **assigned neighborhoods** ("שכונה ד").
+
+This was confusing because:
+1. The edit modal correctly showed neighborhoods
+2. The user details dialog correctly showed neighborhoods
+3. Only the main table/list view showed the city
+
+### Root Cause
+
+The `getCorporationDisplay()` function at line 337-339 was using `activistCoordinatorOf.city.name` instead of `activistCoordinatorNeighborhoods.neighborhood.name`:
+
+```typescript
+// ❌ WRONG - Shows city
+if (user.role === 'ACTIVIST_COORDINATOR' && user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
+  return user.activistCoordinatorOf.map(s => s.city.name).join(', ');
+}
+```
+
+### Solution
+
+Changed to prioritize neighborhoods, with city as fallback:
+
+```typescript
+// ✅ CORRECT - Shows neighborhoods, fallback to city
+if (user.role === 'ACTIVIST_COORDINATOR') {
+  // Show neighborhoods for Activist Coordinators
+  if (user.activistCoordinatorNeighborhoods && user.activistCoordinatorNeighborhoods.length > 0) {
+    return user.activistCoordinatorNeighborhoods.map(n => n.neighborhood.name).join(', ');
+  }
+  // Fallback to city if no neighborhoods assigned yet
+  if (user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
+    return user.activistCoordinatorOf.map(s => s.city.name).join(', ');
+  }
+}
+```
+
+### Files Changed
+
+- `app/app/components/users/UsersClient.tsx:337-346` - Updated `getCorporationDisplay()` function
+
+### Prevention Rule
+
+**RULE: Always display the most specific location data for each role:**
+- SuperAdmin → "כל התאגידים"
+- Area Manager → Region name
+- City Coordinator → City name(s)
+- **Activist Coordinator → Neighborhood name(s)** ⚠️ NOT city!
+
+**Code Review Checklist:**
+```typescript
+// ✅ Role-to-Location Mapping
+const locationDisplay = {
+  SUPERADMIN: 'all',
+  AREA_MANAGER: 'region',
+  CITY_COORDINATOR: 'city',
+  ACTIVIST_COORDINATOR: 'neighborhoods'  // Most specific!
+};
+
+// ⚠️ Common Mistake: Using city for Activist Coordinators
+// Activist Coordinators are NEIGHBORHOOD-scoped, not city-scoped
+```
+
+### Testing Verification
+
+1. Create Activist Coordinator with neighborhoods
+2. View users list table
+3. Verify neighborhoods appear (e.g., "שכונה ד, שכונה ה")
+4. Verify edit modal shows same neighborhoods
+5. Verify details dialog shows same neighborhoods
+
+### Related Code
+
+The user details dialog (lines 1180-1213) correctly shows both city AND neighborhoods:
+```typescript
+{detailsUser.role === 'ACTIVIST_COORDINATOR' && (
+  <Box>
+    {/* City badge */}
+    {detailsUser.activistCoordinatorOf?.map(c => <Chip label={c.city.name} />)}
+    {/* Neighborhood badges */}
+    {detailsUser.activistCoordinatorNeighborhoods?.map(n => 
+      <Chip label={n.neighborhood.name} />
+    )}
+  </Box>
+)}
+```
+
+### Lessons Learned
+
+1. **Display consistency matters** - All views (table, modal, dialog) should show the same data
+2. **Role hierarchy = location specificity** - Lower roles have more specific locations
+3. **Test data visibility across all UI views** - Don't just test one component
+4. **User Type determines correct data field** - Don't assume structure, check role first
+
