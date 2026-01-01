@@ -1,9 +1,10 @@
 'use client';
 
-import { Card, CardContent, Typography, Chip, Stack, Box, IconButton } from '@mui/material';
+import { Card, CardContent, Typography, Chip, Stack, Box, IconButton, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PhoneIcon from '@mui/icons-material/Phone';
 import HomeIcon from '@mui/icons-material/Home';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useRouter } from 'next/navigation';
 
 interface Voter {
@@ -17,7 +18,7 @@ interface Voter {
   notes: string | null;
 }
 
-export function ActivistVoterCard({ voter }: { voter: Voter }) {
+export function ActivistVoterCard({ voter, isDuplicate }: { voter: Voter; isDuplicate?: boolean }) {
   const router = useRouter();
 
   const getSupportColor = (level: string | null) => {
@@ -51,6 +52,8 @@ export function ActivistVoterCard({ voter }: { voter: Voter }) {
       sx={{
         cursor: 'pointer',
         transition: 'all 0.2s',
+        border: isDuplicate ? '2px solid' : 'none',
+        borderColor: isDuplicate ? 'error.main' : 'transparent',
         '&:hover': {
           boxShadow: 4,
           transform: 'translateY(-2px)',
@@ -61,6 +64,13 @@ export function ActivistVoterCard({ voter }: { voter: Voter }) {
       data-inserted-by={voter.id}
     >
       <CardContent>
+        {isDuplicate && (
+          <Alert severity="warning" sx={{ mb: 2 }} icon={<WarningIcon />}>
+            <Typography variant="caption">
+              <strong>כפילות:</strong> נמצא בוחר נוסף עם אותו שם ומספר טלפון
+            </Typography>
+          </Alert>
+        )}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box flex={1}>
             <Typography variant="h6" sx={{ mb: 1 }}>

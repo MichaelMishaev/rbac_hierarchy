@@ -10,7 +10,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -24,11 +24,17 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  TextField,
+  InputAdornment,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Upload as UploadIcon,
   Close as CloseIcon,
+  Search as SearchIcon,
+  SortByAlpha as SortByAlphaIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { ActivistVoterCard } from '@/app/components/activists/ActivistVoterCard';
@@ -53,17 +59,79 @@ type ActivistVotersClientProps = {
 export default function ActivistVotersClient({ user, voters: initialVoters }: ActivistVotersClientProps) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
 
-  // Use refreshKey to trigger re-render after import
-  const voters = initialVoters;
+  // Detect duplicates (same fullName + phone)
+  const duplicateMap = useMemo(() => {
+    const map = new Map<string, string[]>();
 
-  // Calculate stats
+    initialVoters.forEach((voter) => {
+      const key = `${voter.fullName.trim().toLowerCase()}|${voter.phone?.trim() || ''}`;
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(voter.id);
+    });
+
+    // Filter to only entries with > 1 voter
+    const duplicates = new Map<string, string[]>();
+    map.forEach((ids, key) => {
+      if (ids.length > 1) {
+        duplicates.set(key, ids);
+      }
+    });
+
+    return duplicates;
+  }, [initialVoters]);
+
+  // Get set of duplicate voter IDs for quick lookup
+  const duplicateVoterIds = useMemo(() => {
+    const ids = new Set<string>();
+    duplicateMap.forEach((voterIds) => {
+      voterIds.forEach((id) => ids.add(id));
+    });
+    return ids;
+  }, [duplicateMap]);
+
+  // Filter and sort voters
+  const filteredAndSortedVoters = useMemo(() => {
+    let result = [...initialVoters];
+
+    // Filter by duplicates if enabled
+    if (showDuplicatesOnly) {
+      result = result.filter((voter) => duplicateVoterIds.has(voter.id));
+    }
+
+    // Filter by search query (name or phone)
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter(
+        (voter) =>
+          voter.fullName.toLowerCase().includes(query) ||
+          (voter.phone && voter.phone.includes(query))
+      );
+    }
+
+    // Sort by Hebrew alphabetical order
+    result.sort((a, b) => {
+      const comparison = a.fullName.localeCompare(b.fullName, 'he');
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [initialVoters, searchQuery, sortOrder, showDuplicatesOnly, duplicateVoterIds]);
+
+  // Calculate stats (use filtered voters for accurate counts)
   const stats = {
-    total: voters.length,
-    supporter: voters.filter((v) => v.supportLevel === 'תומך').length,
-    hesitant: voters.filter((v) => v.supportLevel === 'מהסס').length,
-    opposed: voters.filter((v) => v.supportLevel === 'מתנגד').length,
-    noAnswer: voters.filter((v) => v.supportLevel === 'לא ענה').length,
+    total: filteredAndSortedVoters.length,
+    totalAll: initialVoters.length,
+    duplicates: duplicateVoterIds.size,
+    supporter: filteredAndSortedVoters.filter((v) => v.supportLevel === 'תומך').length,
+    hesitant: filteredAndSortedVoters.filter((v) => v.supportLevel === 'מהסס').length,
+    opposed: filteredAndSortedVoters.filter((v) => v.supportLevel === 'מתנגד').length,
+    noAnswer: filteredAndSortedVoters.filter((v) => v.supportLevel === 'לא ענה').length,
   };
 
   const handleUploadSuccess = () => {
@@ -89,7 +157,7 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2 }}>
-            📊 הבוחרים שלי ({stats.total})
+            📊 הבוחרים שלי ({searchQuery || showDuplicatesOnly ? `${stats.total} מתוך ${stats.totalAll}` : stats.totalAll})
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
             <Chip
@@ -116,6 +184,72 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
               variant="outlined"
               size="small"
             />
+            {stats.duplicates > 0 && (
+              <Chip
+                label={`⚠️ כפילויות: ${stats.duplicates}`}
+                color="error"
+                variant={showDuplicatesOnly ? 'filled' : 'outlined'}
+                size="small"
+                onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
+                sx={{ cursor: 'pointer' }}
+                data-testid="duplicates-chip"
+              />
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Filter and Sort Controls */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack spacing={2}>
+            {/* Search Filter */}
+            <TextField
+              fullWidth
+              placeholder="חיפוש לפי שם או טלפון"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '50px',
+                },
+              }}
+              data-testid="voter-search-input"
+            />
+
+            {/* Sort Buttons */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                <SortByAlphaIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                מיון:
+              </Typography>
+              <ToggleButtonGroup
+                value={sortOrder}
+                exclusive
+                onChange={(_, value) => value && setSortOrder(value)}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    borderRadius: '50px',
+                    px: 3,
+                  },
+                }}
+              >
+                <ToggleButton value="asc" data-testid="sort-asc-button">
+                  א-ת
+                </ToggleButton>
+                <ToggleButton value="desc" data-testid="sort-desc-button">
+                  ת-א
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
           </Stack>
         </CardContent>
       </Card>
@@ -156,7 +290,7 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
       <Divider sx={{ mb: 2 }} />
 
       {/* Voters List */}
-      {voters.length === 0 ? (
+      {initialVoters.length === 0 ? (
         <Card>
           <CardContent>
             <Typography variant="body1" color="text.secondary" textAlign="center">
@@ -167,10 +301,25 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
             </Typography>
           </CardContent>
         </Card>
+      ) : filteredAndSortedVoters.length === 0 ? (
+        <Card>
+          <CardContent>
+            <Typography variant="body1" color="text.secondary" textAlign="center">
+              לא נמצאו בוחרים התואמים לחיפוש &quot;{searchQuery}&quot;
+            </Typography>
+            <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 1 }}>
+              נסה לחפש במונח אחר או נקה את החיפוש.
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
         <Stack spacing={2}>
-          {voters.map((voter) => (
-            <ActivistVoterCard key={voter.id} voter={voter} />
+          {filteredAndSortedVoters.map((voter) => (
+            <ActivistVoterCard
+              key={voter.id}
+              voter={voter}
+              isDuplicate={duplicateVoterIds.has(voter.id)}
+            />
           ))}
         </Stack>
       )}
