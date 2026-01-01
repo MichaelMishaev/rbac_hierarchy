@@ -8,7 +8,12 @@
  * - Mobile-responsive
  * - Visibility-aware (only shows visible voters)
  * - Actions (view, edit, delete)
- * - Pagination for large datasets
+ * - Pagination for large datasets (top + bottom for better UX)
+ *
+ * ⚠️ LOCKED FILE (Last modified: 2026-01-01)
+ * Last change: Added top pagination for improved UX
+ * Reason: Stable voter management component with dual pagination
+ * Any modifications require explicit approval.
  */
 
 'use client';
@@ -551,6 +556,42 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
           </Select>
         </FormControl>
       </Box>
+
+      {/* Top Pagination - UX Enhancement */}
+      <TablePagination
+        component="div"
+        count={searchQuery ? filteredVoters.length : totalVoters}
+        page={page}
+        onPageChange={(_, newPage) => {
+          setPage(newPage);
+        }}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={(event) => {
+          setRowsPerPage(parseInt(event.target.value, 10));
+          setPage(0);
+        }}
+        rowsPerPageOptions={[50, 100, 200, 400]}
+        labelRowsPerPage="שורות לעמוד:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} מתוך ${count}`}
+        sx={{
+          direction: 'rtl',
+          '.MuiTablePagination-toolbar': {
+            flexDirection: 'row-reverse',
+          },
+          '.MuiTablePagination-selectLabel': {
+            marginInlineStart: 0,
+            marginInlineEnd: 'auto',
+          },
+          '.MuiTablePagination-displayedRows': {
+            marginInlineStart: 'auto',
+            marginInlineEnd: 0,
+          },
+          mb: 2,
+          backgroundColor: 'background.paper',
+          borderRadius: { xs: '16px', sm: '32px' },
+          boxShadow: 1,
+        }}
+      />
 
       {/* Table */}
       <TableContainer
