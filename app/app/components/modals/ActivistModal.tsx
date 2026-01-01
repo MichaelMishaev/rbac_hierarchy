@@ -133,6 +133,7 @@ export default function ActivistModal({
     supervisorId: initialData?.supervisorId || defaultSupervisorId || '',
     isActive: initialData?.isActive ?? true,
     startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
+    giveLoginAccess: initialData?.giveLoginAccess ?? true, // Default to true
   });
 
   const [loading, setLoading] = useState(false);
@@ -225,6 +226,7 @@ export default function ActivistModal({
         supervisorId: initialData?.supervisorId || defaultSupervisorId || activistCoordinators[0]?.id || '',
         isActive: initialData?.isActive ?? true,
         startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
+        giveLoginAccess: initialData?.giveLoginAccess ?? true, // Default to true
       });
       setErrors({});
     }
@@ -315,9 +317,9 @@ export default function ActivistModal({
       newErrors.email = 'פורמט אימייל שגוי';
     }
 
-    // Validate phone is provided when login access is enabled
-    if (formData.giveLoginAccess && !formData.phone?.trim()) {
-      newErrors.phone = 'מספר טלפון נדרש כאשר גישה למערכת מופעלת';
+    // Phone is always required
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'מספר טלפון נדרש';
     }
 
     setErrors(newErrors);
@@ -414,7 +416,8 @@ export default function ActivistModal({
         });
       }, 100); // Small delay to allow DOM to update
     } else if (field === 'giveLoginAccess' && value === false) {
-      setFormData((prev) => ({ ...prev, [field]: value, generatedPassword: undefined, phone: '' }));
+      // Keep phone number, only clear password
+      setFormData((prev) => ({ ...prev, [field]: value, generatedPassword: undefined }));
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
@@ -682,51 +685,8 @@ export default function ActivistModal({
                     >
                       <Typography sx={{ fontSize: { xs: '16px', sm: '20px' } }}>ℹ️</Typography>
                       <Typography variant="caption" sx={{ color: '#1565c0', flex: 1, lineHeight: 1.4 }}>
-                        מספר הטלפון ישמש להתחברות. הסיסמה למטה.
+                        מספר הטלפון (למעלה) ישמש להתחברות. הסיסמה למטה.
                       </Typography>
-                    </Box>
-
-                    {/* Phone Number Field */}
-                    <Box ref={(el: HTMLDivElement | null) => { fieldRefs.current.phone = el; }}>
-                      <TextField
-                        fullWidth
-                        label="📱 מספר טלפון *"
-                        value={formData.phone}
-                        onChange={handleChange('phone')}
-                        required={formData.giveLoginAccess}
-                        error={!!(validationErrors.phone || errors.phone)}
-                        helperText={validationErrors.phone || errors.phone || 'ישמש כשם משתמש להתחברות'}
-                        placeholder="0501234567"
-                        type="tel"
-                      InputProps={{
-                        endAdornment: validationErrors.phone ? (
-                          <InputAdornment position="end">
-                            <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                          </InputAdornment>
-                        ) : formData.phone && !validationErrors.phone ? (
-                          <InputAdornment position="end">
-                            <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
-                          </InputAdornment>
-                        ) : null,
-                      }}
-                      sx={{
-                        '& input': {
-                          fontSize: '16px',
-                          minHeight: '24px',
-                          padding: '16px 14px',
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          minHeight: '56px',
-                          borderRadius: '12px',
-                          backgroundColor: validationErrors.phone
-                            ? 'rgba(211, 47, 47, 0.04)'
-                            : formData.phone && !validationErrors.phone
-                            ? 'rgba(56, 142, 60, 0.04)'
-                            : 'white',
-                          transition: 'all 0.2s ease',
-                        },
-                      }}
-                      />
                     </Box>
 
                     {/* Password Display - Ultra-compact mobile design with proper RTL */}
@@ -949,6 +909,59 @@ export default function ActivistModal({
                       backgroundColor: validationErrors.name
                         ? 'rgba(211, 47, 47, 0.04)'
                         : formData.name && !validationErrors.name
+                        ? 'rgba(56, 142, 60, 0.04)'
+                        : 'white',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 2px 8px rgba(97, 97, 255, 0.1)',
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: '0 4px 12px rgba(97, 97, 255, 0.15)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Phone Number Field - Always visible and required */}
+              <Box ref={(el: HTMLDivElement | null) => { fieldRefs.current.phone = el; }}>
+                <TextField
+                  fullWidth
+                  label="📱 מספר טלפון"
+                  value={formData.phone}
+                  onChange={handleChange('phone')}
+                  required
+                  error={!!(validationErrors.phone || errors.phone)}
+                  helperText={validationErrors.phone || errors.phone || (formData.giveLoginAccess ? 'ישמש כשם משתמש להתחברות' : 'לתקשורת עם הפעיל')}
+                  placeholder="0501234567"
+                  type="tel"
+                  InputProps={{
+                    endAdornment: validationErrors.phone ? (
+                      <InputAdornment position="end">
+                        <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : formData.phone && !validationErrors.phone ? (
+                      <InputAdornment position="end">
+                        <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : null,
+                  }}
+                  sx={{
+                    '& input': {
+                      fontSize: '16px',
+                      minHeight: '24px',
+                      padding: '16px 14px',
+                    },
+                    '& .MuiOutlinedInput-root': {
+                      minHeight: '56px',
+                      borderRadius: '12px',
+                      backgroundColor: validationErrors.phone
+                        ? 'rgba(211, 47, 47, 0.04)'
+                        : formData.phone && !validationErrors.phone
                         ? 'rgba(56, 142, 60, 0.04)'
                         : 'white',
                       transition: 'all 0.2s ease',
