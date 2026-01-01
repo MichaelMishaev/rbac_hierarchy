@@ -28,6 +28,8 @@ import {
   InputAdornment,
   ToggleButton,
   ToggleButtonGroup,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,8 +37,10 @@ import {
   Close as CloseIcon,
   Search as SearchIcon,
   SortByAlpha as SortByAlphaIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import ExcelJS from 'exceljs';
 import { ActivistVoterCard } from '@/app/components/activists/ActivistVoterCard';
 import { ExcelUpload } from './components/ExcelUpload';
 import type { Voter } from '@prisma/client';
@@ -62,9 +66,10 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+  const [showDistinctOnly, setShowDistinctOnly] = useState(false);
 
   // Detect duplicates (same fullName + phone)
-  const duplicateMap = useMemo(() => {
+  const { duplicateVoterIds, duplicateCountMap } = useMemo(() => {
     const map = new Map<string, string[]>();
 
     initialVoters.forEach((voter) => {
@@ -77,23 +82,26 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
 
     // Filter to only entries with > 1 voter
     const duplicates = new Map<string, string[]>();
-    map.forEach((ids, key) => {
+    const countMap = new Map<string, number>();
+
+    map.forEach((ids) => {
       if (ids.length > 1) {
-        duplicates.set(key, ids);
+        duplicates.set(ids[0], ids);
+        // Map each voter ID to its duplicate count
+        ids.forEach((id) => countMap.set(id, ids.length));
       }
     });
 
-    return duplicates;
-  }, [initialVoters]);
-
-  // Get set of duplicate voter IDs for quick lookup
-  const duplicateVoterIds = useMemo(() => {
     const ids = new Set<string>();
-    duplicateMap.forEach((voterIds) => {
+    duplicates.forEach((voterIds) => {
       voterIds.forEach((id) => ids.add(id));
     });
-    return ids;
-  }, [duplicateMap]);
+
+    return {
+      duplicateVoterIds: ids,
+      duplicateCountMap: countMap,
+    };
+  }, [initialVoters]);
 
   // Filter and sort voters
   const filteredAndSortedVoters = useMemo(() => {
@@ -102,6 +110,19 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
     // Filter by duplicates if enabled
     if (showDuplicatesOnly) {
       result = result.filter((voter) => duplicateVoterIds.has(voter.id));
+    }
+
+    // Show distinct only (one per duplicate group)
+    if (showDistinctOnly) {
+      const seen = new Set<string>();
+      result = result.filter((voter) => {
+        const key = `${voter.fullName.trim().toLowerCase()}|${voter.phone?.trim() || ''}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
     }
 
     // Filter by search query (name or phone)
@@ -121,12 +142,23 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
     });
 
     return result;
-  }, [initialVoters, searchQuery, sortOrder, showDuplicatesOnly, duplicateVoterIds]);
+  }, [initialVoters, searchQuery, sortOrder, showDuplicatesOnly, showDistinctOnly, duplicateVoterIds]);
+
+  // Calculate distinct count
+  const distinctCount = useMemo(() => {
+    const seen = new Set<string>();
+    initialVoters.forEach((voter) => {
+      const key = `${voter.fullName.trim().toLowerCase()}|${voter.phone?.trim() || ''}`;
+      seen.add(key);
+    });
+    return seen.size;
+  }, [initialVoters]);
 
   // Calculate stats (use filtered voters for accurate counts)
   const stats = {
     total: filteredAndSortedVoters.length,
     totalAll: initialVoters.length,
+    distinct: distinctCount,
     duplicates: duplicateVoterIds.size,
     supporter: filteredAndSortedVoters.filter((v) => v.supportLevel === 'תומך').length,
     hesitant: filteredAndSortedVoters.filter((v) => v.supportLevel === 'מהסס').length,
@@ -139,6 +171,56 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
     setRefreshKey((prev) => prev + 1);
     // Refresh the page to show new voters
     window.location.reload();
+  };
+
+  const handleExportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('בוחרים');
+
+    // Set RTL
+    worksheet.views = [{ rightToLeft: true }];
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'שם מלא', key: 'fullName', width: 20 },
+      { header: 'טלפון', key: 'phone', width: 15 },
+      { header: 'כתובת', key: 'voterAddress', width: 30 },
+      { header: 'רמת תמיכה', key: 'supportLevel', width: 15 },
+      { header: 'סטטוס יצירת קשר', key: 'contactStatus', width: 20 },
+      { header: 'הערות', key: 'notes', width: 30 },
+    ];
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    // Add data (use current filtered view)
+    filteredAndSortedVoters.forEach((voter) => {
+      worksheet.addRow({
+        fullName: voter.fullName,
+        phone: voter.phone || '',
+        voterAddress: voter.voterAddress || '',
+        supportLevel: voter.supportLevel || '',
+        contactStatus: voter.contactStatus || '',
+        notes: voter.notes || '',
+      });
+    });
+
+    // Generate Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `בוחרים_${user.fullName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -157,9 +239,9 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2 }}>
-            📊 הבוחרים שלי ({searchQuery || showDuplicatesOnly ? `${stats.total} מתוך ${stats.totalAll}` : stats.totalAll})
+            📊 הבוחרים שלי ({searchQuery || showDuplicatesOnly || showDistinctOnly ? `${stats.total} מתוך ${stats.totalAll}` : stats.totalAll})
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
             <Chip
               label={`🟢 תומך: ${stats.supporter}`}
               color="success"
@@ -184,13 +266,24 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
               variant="outlined"
               size="small"
             />
+          </Stack>
+          <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+            <Chip
+              label={`📋 סה"כ ייחודיים: ${stats.distinct}`}
+              color="info"
+              variant="outlined"
+              size="small"
+            />
             {stats.duplicates > 0 && (
               <Chip
                 label={`⚠️ כפילויות: ${stats.duplicates}`}
                 color="error"
                 variant={showDuplicatesOnly ? 'filled' : 'outlined'}
                 size="small"
-                onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
+                onClick={() => {
+                  setShowDuplicatesOnly(!showDuplicatesOnly);
+                  if (!showDuplicatesOnly) setShowDistinctOnly(false);
+                }}
                 sx={{ cursor: 'pointer' }}
                 data-testid="duplicates-chip"
               />
@@ -225,7 +318,7 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
             />
 
             {/* Sort Buttons */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
                 <SortByAlphaIcon sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
                 מיון:
@@ -250,42 +343,76 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
                 </ToggleButton>
               </ToggleButtonGroup>
             </Box>
+
+            {/* Distinct Checkbox */}
+            {stats.duplicates > 0 && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={showDistinctOnly}
+                    onChange={(e) => {
+                      setShowDistinctOnly(e.target.checked);
+                      if (e.target.checked) setShowDuplicatesOnly(false);
+                    }}
+                    data-testid="show-distinct-checkbox"
+                  />
+                }
+                label="הצג רק ייחודיים (1 לכל כפילות)"
+              />
+            )}
           </Stack>
         </CardContent>
       </Card>
 
       {/* Action Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+      <Stack spacing={2} sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => setUploadDialogOpen(true)}
+            sx={{
+              flex: 1,
+              borderRadius: '50px',
+              py: 1.5,
+              fontWeight: 600,
+            }}
+            data-testid="import-excel-button"
+          >
+            ייבוא מאקסל
+          </Button>
+          <Button
+            component={Link}
+            href="/voters/new"
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{
+              flex: 1,
+              borderRadius: '50px',
+              py: 1.5,
+              fontWeight: 600,
+            }}
+            data-testid="add-voter-button"
+          >
+            הוסף בוחר חדש
+          </Button>
+        </Box>
         <Button
           variant="outlined"
-          startIcon={<UploadIcon />}
-          onClick={() => setUploadDialogOpen(true)}
+          color="success"
+          startIcon={<DownloadIcon />}
+          onClick={handleExportToExcel}
+          disabled={filteredAndSortedVoters.length === 0}
           sx={{
-            flex: 1,
             borderRadius: '50px',
             py: 1.5,
             fontWeight: 600,
           }}
-          data-testid="import-excel-button"
+          data-testid="export-excel-button"
         >
-          ייבוא מאקסל
+          ייצוא לאקסל ({filteredAndSortedVoters.length} בוחרים)
         </Button>
-        <Button
-          component={Link}
-          href="/voters/new"
-          variant="contained"
-          startIcon={<AddIcon />}
-          sx={{
-            flex: 1,
-            borderRadius: '50px',
-            py: 1.5,
-            fontWeight: 600,
-          }}
-          data-testid="add-voter-button"
-        >
-          הוסף בוחר חדש
-        </Button>
-      </Box>
+      </Stack>
 
       <Divider sx={{ mb: 2 }} />
 
@@ -319,6 +446,7 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
               key={voter.id}
               voter={voter}
               isDuplicate={duplicateVoterIds.has(voter.id)}
+              duplicateCount={showDistinctOnly ? duplicateCountMap.get(voter.id) : undefined}
             />
           ))}
         </Stack>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, Typography, Chip, Stack, Box, IconButton, Alert } from '@mui/material';
+import { Card, CardContent, Typography, Chip, Stack, Box, IconButton, Alert, Badge } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PhoneIcon from '@mui/icons-material/Phone';
 import HomeIcon from '@mui/icons-material/Home';
@@ -18,7 +18,15 @@ interface Voter {
   notes: string | null;
 }
 
-export function ActivistVoterCard({ voter, isDuplicate }: { voter: Voter; isDuplicate?: boolean }) {
+export function ActivistVoterCard({
+  voter,
+  isDuplicate,
+  duplicateCount,
+}: {
+  voter: Voter;
+  isDuplicate?: boolean;
+  duplicateCount?: number;
+}) {
   const router = useRouter();
 
   const getSupportColor = (level: string | null) => {
@@ -64,18 +72,41 @@ export function ActivistVoterCard({ voter, isDuplicate }: { voter: Voter; isDupl
       data-inserted-by={voter.id}
     >
       <CardContent>
-        {isDuplicate && (
+        {isDuplicate && !duplicateCount && (
           <Alert severity="warning" sx={{ mb: 2 }} icon={<WarningIcon />}>
             <Typography variant="caption">
               <strong>כפילות:</strong> נמצא בוחר נוסף עם אותו שם ומספר טלפון
             </Typography>
           </Alert>
         )}
+        {duplicateCount && duplicateCount > 1 && (
+          <Alert severity="info" sx={{ mb: 2 }} icon={<WarningIcon />}>
+            <Typography variant="caption">
+              <strong>כפילויות:</strong> {duplicateCount} רשומות זהות (שם + טלפון)
+            </Typography>
+          </Alert>
+        )}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box flex={1}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              {voter.fullName}
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                {voter.fullName}
+              </Typography>
+              {duplicateCount && duplicateCount > 1 && (
+                <Badge
+                  badgeContent={`×${duplicateCount}`}
+                  color="error"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '0.75rem',
+                      height: 20,
+                      minWidth: 20,
+                      padding: '0 6px',
+                    },
+                  }}
+                />
+              )}
+            </Stack>
 
             <Stack spacing={1}>
               {/* Phone */}
