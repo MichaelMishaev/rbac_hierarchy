@@ -27,20 +27,12 @@ export default function Error({
     // Log to console (server logs will be visible in Railway)
     console.error('[Error Boundary] Error caught:', error);
 
-    // Send to our error logging API (client-side)
-    fetch('/api/log-error', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: error.message,
-        stack: error.stack,
+    // Use enhanced error tracker with ALL details
+    import('@/app/lib/error-tracker').then(({ errorTracker }) => {
+      errorTracker?.sendError(error, {
+        errorBoundary: 'error.tsx',
         digest: error.digest,
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString(),
-      }),
-    }).catch((fetchError) => {
-      console.error('[Error Boundary] Failed to log error:', fetchError);
+      });
     });
   }, [error]);
 
