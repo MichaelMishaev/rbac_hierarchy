@@ -145,6 +145,10 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+  // Local users state for optimistic updates
+  const [localUsers, setLocalUsers] = useState<User[]>(users);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userModalOpen, setUserModalOpen] = useState(false);
@@ -162,6 +166,11 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const [emailFilter, setEmailFilter] = useState('');
   const [areaFilter, setAreaFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+
+  // Sync local users with server users when props change
+  useEffect(() => {
+    setLocalUsers(users);
+  }, [users]);
 
   // Fetch existing regions on mount
   useEffect(() => {
@@ -232,12 +241,36 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   const handleDeleteConfirm = async () => {
     if (!selectedUser) return;
 
-    const result = await deleteUser(selectedUser.id);
+    const userIdToDelete = selectedUser.id;
 
-    if (result.success) {
+    // OPTIMISTIC UPDATE: Remove user from local state immediately
+    setDeletingUserId(userIdToDelete);
+    setLocalUsers(prev => prev.filter(u => u.id !== userIdToDelete));
+
+    try {
+      // Call server action
+      const result = await deleteUser(userIdToDelete);
+
+      if (result.success) {
+        // Success - close modal and force router refresh to sync with server
+        setDeleteModalOpen(false);
+        setSelectedUser(null);
+        router.refresh();
+      } else {
+        // Failure - restore user to local state and close modal
+        setLocalUsers(users);
+        setDeleteModalOpen(false);
+        setSelectedUser(null);
+        console.error('Failed to delete user:', result.message);
+      }
+    } catch (error) {
+      // Error - restore user to local state and close modal
+      setLocalUsers(users);
       setDeleteModalOpen(false);
       setSelectedUser(null);
-      router.refresh();
+      console.error('Error deleting user:', error);
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -323,26 +356,26 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
   // Get unique areas from users
   const uniqueAreas = useMemo(() => {
     const areas = new Set<string>();
-    users.forEach(user => {
+    localUsers.forEach(user => {
       const area = getUserArea(user);
       if (area) areas.add(area);
     });
     return Array.from(areas).sort();
-  }, [users]);
+  }, [localUsers]);
 
   // Get unique cities from users
   const uniqueCities = useMemo(() => {
     const citiesSet = new Set<string>();
-    users.forEach(user => {
+    localUsers.forEach(user => {
       const userCities = getUserCities(user);
       userCities.forEach(city => citiesSet.add(city));
     });
     return Array.from(citiesSet).sort();
-  }, [users]);
+  }, [localUsers]);
 
   // Filter users based on search criteria
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    return localUsers.filter(user => {
       // Name filter
       if (nameFilter && !user.fullName.toLowerCase().includes(nameFilter.toLowerCase())) {
         return false;
@@ -371,7 +404,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
 
       return true;
     });
-  }, [users, nameFilter, emailFilter, areaFilter, cityFilter]);
+  }, [localUsers, nameFilter, emailFilter, areaFilter, cityFilter]);
 
   // Determine dynamic column header based on filtered users roles
   const getScopeColumnHeader = () => {
@@ -482,7 +515,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
             {t('filters')}
           </Typography>
           <Chip
-            label={`${filteredUsers.length} מתוך ${users.length}`}
+            label={`${filteredUsers.length} מתוך ${localUsers.length}`}
             size="small"
             sx={{
               backgroundColor: colors.primary.ultraLight,

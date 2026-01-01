@@ -6,8 +6,8 @@ import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { getCurrentUser } from '@/lib/auth';
 import UsersClient from '@/app/components/users/UsersClient';
 
-// Enable route caching - revalidate every 30 seconds
-export const revalidate = 30;
+// Force dynamic rendering to prevent stale cache after deletions
+export const dynamic = 'force-dynamic';
 
 export default async function UsersPage() {
   const session = await auth();
