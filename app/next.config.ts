@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
   // Performance: Disable source maps in production (saves ~30-40% build time)
   productionBrowserSourceMaps: false,
 
+  // Skip ESLint and TypeScript checks during builds (Railway CI handles these separately)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // ✅ SECURITY FIX (VULN-AUTH-003): Strip dev-only credentials from production
   webpack: (config, { isServer, webpack }) => {
     // Replace DevTestUsers with empty module in production builds
