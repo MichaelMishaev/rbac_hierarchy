@@ -36,6 +36,7 @@ type User = {
   // Note: cityId is derived from role tables, not stored directly on User
   cityId?: string | null;
   regionName?: string | null; // For Area Manager
+  neighborhoodIds?: string[]; // For Activist Coordinator
 };
 
 type Corporation = {
@@ -97,7 +98,7 @@ export default function UserModal({
     role: (user?.role && user.role !== 'ACTIVIST') ? user.role : 'ACTIVIST_COORDINATOR',
     cityId: user?.cityId || currentUserCityId || '',
     regionName: user?.regionName || '',
-    neighborhoodIds: [],
+    neighborhoodIds: user?.neighborhoodIds || [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -117,7 +118,7 @@ export default function UserModal({
         role: user.role !== 'ACTIVIST' ? user.role : 'ACTIVIST_COORDINATOR',
         cityId: user.cityId || currentUserCityId || '',
         regionName: user.regionName || '',
-        neighborhoodIds: [],
+        neighborhoodIds: user.neighborhoodIds || [],
       });
     } else {
       setFormData({
@@ -221,6 +222,7 @@ export default function UserModal({
           phone: formData.phone || undefined,
           role: formData.role,
           cityId: effectiveCityId || undefined,
+          neighborhoodIds: formData.role === 'ACTIVIST_COORDINATOR' ? formData.neighborhoodIds : undefined,
           ...(formData.password && { password: formData.password }),
         });
       } else {
@@ -232,6 +234,7 @@ export default function UserModal({
           password: formData.password,
           role: formData.role,
           cityId: effectiveCityId || undefined,
+          neighborhoodIds: formData.role === 'ACTIVIST_COORDINATOR' ? formData.neighborhoodIds : undefined,
         });
       }
 

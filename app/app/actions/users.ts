@@ -261,10 +261,18 @@ export async function createUser(data: CreateUserInput) {
 
         // Create neighborhood associations if provided
         if (data.neighborhoodIds && data.neighborhoodIds.length > 0) {
+          // Get neighborhoods to extract cityId for composite FK
+          const neighborhoods = await prisma.neighborhood.findMany({
+            where: { id: { in: data.neighborhoodIds } },
+            select: { id: true, cityId: true },
+          });
+
           await prisma.activistCoordinatorNeighborhood.createMany({
-            data: data.neighborhoodIds.map((neighborhoodId) => ({
+            data: neighborhoods.map((neighborhood) => ({
               activistCoordinatorId: activistCoordinator.id,
-              neighborhoodId,
+              neighborhoodId: neighborhood.id,
+              cityId: neighborhood.cityId,
+              legacyActivistCoordinatorUserId: newUser.id,
             })),
           });
         }
@@ -718,8 +726,11 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
       },
     });
 
-    // Update corporation assignment if provided and role changed
-    if (data.cityId && data.role) {
+    // Check if role has changed
+    const roleChanged = data.role && existingUser.role !== data.role;
+
+    // Update corporation assignment if role changed
+    if (roleChanged && data.cityId) {
       // Remove old role assignments using the existing records (to handle composite unique keys)
       if (existingUser.role === 'CITY_COORDINATOR' && existingUserCorps?.coordinatorOf) {
         // Delete all existing city coordinator records for this user
@@ -734,7 +745,7 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
           });
         }
       } else if (existingUser.role === 'ACTIVIST_COORDINATOR' && existingUserCorps?.activistCoordinatorOf) {
-        // Delete all existing activist coordinator records for this user
+        // Delete all existing activist coordinator records for this user (including neighborhoods cascade)
         for (const coord of existingUserCorps.activistCoordinatorOf) {
           await prisma.activistCoordinator.delete({
             where: {
@@ -757,13 +768,62 @@ export async function updateUser(userId: string, data: UpdateUserInput) {
           },
         });
       } else if (data.role === 'ACTIVIST_COORDINATOR') {
-        await prisma.activistCoordinator.create({
+        const activistCoordinator = await prisma.activistCoordinator.create({
           data: {
             userId,
             cityId: data.cityId,
             title: 'Supervisor',
           },
         });
+
+        // Create neighborhood associations if provided
+        if (data.neighborhoodIds && data.neighborhoodIds.length > 0) {
+          // Get neighborhoods to extract cityId for composite FK
+          const neighborhoods = await prisma.neighborhood.findMany({
+            where: { id: { in: data.neighborhoodIds } },
+            select: { id: true, cityId: true },
+          });
+
+          await prisma.activistCoordinatorNeighborhood.createMany({
+            data: neighborhoods.map((neighborhood) => ({
+              activistCoordinatorId: activistCoordinator.id,
+              neighborhoodId: neighborhood.id,
+              cityId: neighborhood.cityId,
+              legacyActivistCoordinatorUserId: userId,
+            })),
+          });
+        }
+      }
+    }
+    // Update neighborhoods for ACTIVIST_COORDINATOR when role hasn't changed
+    else if (!roleChanged && existingUser.role === 'ACTIVIST_COORDINATOR' && data.neighborhoodIds !== undefined) {
+      // Get the activist coordinator record
+      const activistCoord = existingUserCorps?.activistCoordinatorOf?.[0];
+      if (activistCoord) {
+        // Delete existing neighborhood associations
+        await prisma.activistCoordinatorNeighborhood.deleteMany({
+          where: {
+            activistCoordinatorId: activistCoord.id,
+          },
+        });
+
+        // Create new neighborhood associations
+        if (data.neighborhoodIds.length > 0) {
+          // Get neighborhoods to extract cityId for composite FK
+          const neighborhoods = await prisma.neighborhood.findMany({
+            where: { id: { in: data.neighborhoodIds } },
+            select: { id: true, cityId: true },
+          });
+
+          await prisma.activistCoordinatorNeighborhood.createMany({
+            data: neighborhoods.map((neighborhood) => ({
+              activistCoordinatorId: activistCoord.id,
+              neighborhoodId: neighborhood.id,
+              cityId: neighborhood.cityId,
+              legacyActivistCoordinatorUserId: userId,
+            })),
+          });
+        }
       }
     }
 

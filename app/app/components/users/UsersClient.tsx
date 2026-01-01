@@ -203,6 +203,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
     // Extract role-specific data from relations
     let cityId: string | null = null;
     let regionName: string | null = null;
+    let neighborhoodIds: string[] = [];
 
     // Area Manager: Extract regionName
     if (selectedUser.role === 'AREA_MANAGER' && selectedUser.areaManager) {
@@ -212,9 +213,14 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
     else if (selectedUser.role === 'CITY_COORDINATOR' && selectedUser.coordinatorOf && selectedUser.coordinatorOf.length > 0) {
       cityId = selectedUser.coordinatorOf[0].city.id;
     }
-    // Activist Coordinator: Extract cityId
+    // Activist Coordinator: Extract cityId and neighborhoodIds
     else if (selectedUser.role === 'ACTIVIST_COORDINATOR' && selectedUser.activistCoordinatorOf && selectedUser.activistCoordinatorOf.length > 0) {
       cityId = selectedUser.activistCoordinatorOf[0].city.id;
+
+      // Extract neighborhood IDs from activistCoordinatorNeighborhoods
+      if (selectedUser.activistCoordinatorNeighborhoods && selectedUser.activistCoordinatorNeighborhoods.length > 0) {
+        neighborhoodIds = selectedUser.activistCoordinatorNeighborhoods.map(acn => acn.neighborhood.id);
+      }
     }
 
     // Pass user with extracted role-specific data to modal
@@ -223,6 +229,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
       ...selectedUser,
       cityId,
       regionName,
+      neighborhoodIds,
     } as any);
     setUserModalOpen(true);
     handleMenuClose();
