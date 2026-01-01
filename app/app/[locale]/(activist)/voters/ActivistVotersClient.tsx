@@ -174,53 +174,60 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
   };
 
   const handleExportToExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('בוחרים');
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('בוחרים');
 
-    // Set RTL
-    worksheet.views = [{ rightToLeft: true }];
+      // Set RTL
+      worksheet.views = [{ rightToLeft: true }];
 
-    // Define columns
-    worksheet.columns = [
-      { header: 'שם מלא', key: 'fullName', width: 20 },
-      { header: 'טלפון', key: 'phone', width: 15 },
-      { header: 'כתובת', key: 'voterAddress', width: 30 },
-      { header: 'רמת תמיכה', key: 'supportLevel', width: 15 },
-      { header: 'סטטוס יצירת קשר', key: 'contactStatus', width: 20 },
-      { header: 'הערות', key: 'notes', width: 30 },
-    ];
+      // Define columns
+      worksheet.columns = [
+        { header: 'שם מלא', key: 'fullName', width: 20 },
+        { header: 'טלפון', key: 'phone', width: 15 },
+        { header: 'כתובת', key: 'voterAddress', width: 30 },
+        { header: 'רמת תמיכה', key: 'supportLevel', width: 15 },
+        { header: 'סטטוס יצירת קשר', key: 'contactStatus', width: 20 },
+        { header: 'הערות', key: 'notes', width: 30 },
+      ];
 
-    // Style header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' },
-    };
+      // Style header row
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
 
-    // Add data (use current filtered view)
-    filteredAndSortedVoters.forEach((voter) => {
-      worksheet.addRow({
-        fullName: voter.fullName,
-        phone: voter.phone || '',
-        voterAddress: voter.voterAddress || '',
-        supportLevel: voter.supportLevel || '',
-        contactStatus: voter.contactStatus || '',
-        notes: voter.notes || '',
+      // Add data (use current filtered view)
+      filteredAndSortedVoters.forEach((voter) => {
+        worksheet.addRow({
+          fullName: voter.fullName,
+          phone: voter.phone || '',
+          voterAddress: voter.voterAddress || '',
+          supportLevel: voter.supportLevel || '',
+          contactStatus: voter.contactStatus || '',
+          notes: voter.notes || '',
+        });
       });
-    });
 
-    // Generate Excel file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `בוחרים_${user.fullName}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
+      // Generate Excel file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `בוחרים_${user.fullName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+
+      // Clean up after download starts
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      alert('שגיאה בייצוא קובץ האקסל. אנא נסה שוב.');
+    }
   };
 
   return (
