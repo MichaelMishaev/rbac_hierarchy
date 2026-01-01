@@ -6,17 +6,14 @@ import { colors, shadows, borderRadius } from '@/lib/design-system';
 import { getDashboardStats } from '@/app/actions/dashboard';
 import { getTranslations, getLocale } from 'next-intl/server';
 import DashboardClient from '@/app/components/dashboard/DashboardClient';
-import RecentActivity from '@/app/components/dashboard/RecentActivity';
 import MonthlyTrendsChart from '@/app/components/dashboard/MonthlyTrendsChart';
 import StatusDistributionChart from '@/app/components/dashboard/StatusDistributionChart';
 import CollapsibleCard from '@/app/components/ui/CollapsibleCard';
-import EmptyState from '@/app/components/ui/EmptyState';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import GroupIcon from '@mui/icons-material/Group';
 import MailIcon from '@mui/icons-material/Mail';
-import InboxIcon from '@mui/icons-material/Inbox';
 
 // 🚀 PERFORMANCE: Lazy load heavy D3 Tree component (728 KB)
 // This component is large and not immediately critical for first paint
@@ -436,34 +433,6 @@ export default async function DashboardContent() {
 
       {/* Role-Specific Dashboard Content */}
       {renderDashboard()}
-
-      {/* Recent Activity Section with Empty State */}
-      {stats.recentActivity && stats.recentActivity.length > 0 ? (
-        <Box sx={{ mt: 4 }}>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 600,
-              color: colors.neutral[800],
-              mb: 3,
-            }}
-          >
-            {t('recentActivity')}
-          </Typography>
-          <RecentActivity activities={stats.recentActivity} maxItems={10} />
-        </Box>
-      ) : (
-        <Box sx={{ mt: 4 }}>
-          <EmptyState
-            title={isRTL ? 'אין פעילות עדיין' : 'No activity yet'}
-            description={isRTL
-              ? 'התחל בהוספת תאגיד ראשון כדי לראות סטטיסטיקות ופעילות במערכת'
-              : 'Start by adding your first corporation to see statistics and activity in the system'
-            }
-            icon={<InboxIcon />}
-          />
-        </Box>
-      )}
     </Box>
   );
 }
