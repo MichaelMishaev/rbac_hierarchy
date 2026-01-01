@@ -108,8 +108,8 @@ export function ActivistVoterCard({
 
             <Stack spacing={1}>
               {/* Phone */}
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <PhoneIcon fontSize="small" color="action" />
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <PhoneIcon sx={{ fontSize: 16 }} color="action" />
                 <Typography variant="body2" color="text.secondary">
                   {voter.phone}
                 </Typography>
@@ -117,8 +117,8 @@ export function ActivistVoterCard({
 
               {/* Address */}
               {voter.voterAddress && (
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <HomeIcon fontSize="small" color="action" />
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <HomeIcon sx={{ fontSize: 16 }} color="action" />
                   <Typography variant="body2" color="text.secondary">
                     {voter.voterAddress}
                   </Typography>
