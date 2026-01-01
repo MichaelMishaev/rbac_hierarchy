@@ -34,18 +34,15 @@ export default function ServiceWorkerRegistration() {
       }, 60000); // Check every minute
 
       // Handle updates
+      // Note: Update UI is handled by VersionChecker component
+      // This handler is kept for logging purposes only
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
 
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[PWA] New version available! Please refresh the page.');
-
-              // Show notification to user (you can customize this)
-              if (confirm('גרסה חדשה זמינה! לחץ OK כדי לרענן את העמוד.')) {
-                window.location.reload();
-              }
+              console.log('[PWA] New version available! VersionChecker will handle the UI.');
             }
           });
         }

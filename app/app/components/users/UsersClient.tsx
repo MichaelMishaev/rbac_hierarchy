@@ -334,8 +334,15 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
       return user.coordinatorOf.map(m => m.city.name).join(', ');
     }
 
-    if (user.role === 'ACTIVIST_COORDINATOR' && user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
-      return user.activistCoordinatorOf.map(s => s.city.name).join(', ');
+    if (user.role === 'ACTIVIST_COORDINATOR') {
+      // Show neighborhoods for Activist Coordinators
+      if (user.activistCoordinatorNeighborhoods && user.activistCoordinatorNeighborhoods.length > 0) {
+        return user.activistCoordinatorNeighborhoods.map(n => n.neighborhood.name).join(', ');
+      }
+      // Fallback to city if no neighborhoods assigned yet
+      if (user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
+        return user.activistCoordinatorOf.map(s => s.city.name).join(', ');
+      }
     }
 
     return '-';

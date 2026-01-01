@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import ToastProvider from '@/app/components/ui/ToastProvider';
+import { VersionChecker } from '@/app/components/ui/VersionChecker';
 
 export default async function LocaleLayout({
   children,
@@ -24,6 +25,7 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages}>
       {children}
       <ToastProvider />
+      <VersionChecker />
     </NextIntlClientProvider>
   );
 }

@@ -322,5 +322,18 @@ self.addEventListener('pushsubscriptionchange', (event) => {
   );
 });
 
+/**
+ * Message Event - Handle messages from clients
+ * Used for version update coordination
+ */
+self.addEventListener('message', (event) => {
+  console.log('[Service Worker] Message received:', event.data);
+
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[Service Worker] SKIP_WAITING requested - activating new version');
+    self.skipWaiting();
+  }
+});
+
 console.log(`[Service Worker ${SW_VERSION}] Loaded successfully`);
 console.log('[Service Worker] Features: Push Notifications + Offline Caching + Background Sync');
