@@ -1,0 +1,17 @@
+# Railway.app Configuration
+# https://docs.railway.com/reference/config-as-code
+
+[deploy]
+# Pre-deploy command runs BEFORE app starts
+# If this fails, deployment is aborted (safe!)
+preDeployCommand = "npx prisma migrate deploy"
+
+# Build command (optional - Railway auto-detects)
+# buildCommand = "npm run build"
+
+# Start command (optional - Railway auto-detects from package.json)
+# startCommand = "npm start"
+
+[build]
+# Make sure prisma is in production dependencies for migration access
+builder = "NIXPACKS"

@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { withErrorHandler } from '@/lib/error-handler';
 import { logger, extractRequestContext } from '@/lib/logger';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export const POST = withErrorHandler(async (request: Request) => {
   try {
@@ -88,7 +86,5 @@ export const POST = withErrorHandler(async (request: Request) => {
       { error: 'Failed to update passwords', details: String(error) },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 });

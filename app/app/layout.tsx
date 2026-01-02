@@ -5,6 +5,7 @@ import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import OfflineBanner from './components/OfflineBanner';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import ToastProvider from './components/ui/ToastProvider';
+import SessionTrackerProvider from './components/SessionTrackerProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -59,7 +60,11 @@ export default async function RootLayout({
         <ServiceWorkerRegistration />
         <OfflineBanner />
         <PwaInstallPrompt />
-        <Providers>{children}</Providers>
+        <Providers>
+          <SessionTrackerProvider>
+            {children}
+          </SessionTrackerProvider>
+        </Providers>
         <ToastProvider />
       </body>
     </html>

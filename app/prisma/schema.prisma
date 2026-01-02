@@ -547,6 +547,38 @@ enum ErrorLevel {
 }
 
 // ============================================
+// SESSION EVENTS TABLE (User Journey Tracking)
+// ============================================
+model SessionEvent {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")      // Browser session ID (from sessionStorage)
+  userId    String?  @map("user_id")         // Authenticated user (null if not logged in)
+  eventType String   @map("event_type")      // "navigation", "click", "form_submit", "form_error"
+
+  // Event data
+  page     String? @db.Text                  // Current page URL
+  element  String? @db.Text                  // Clicked element (button text, ID, data-testid)
+  formName String? @map("form_name")         // Form identifier
+  formData Json?   @map("form_data")         // Sanitized form data (no passwords)
+
+  // Context
+  timestamp DateTime @default(now())
+  userAgent String?  @map("user_agent") @db.Text
+  cityId    String?  @map("city_id")         // Multi-tenant context
+
+  // Performance
+  loadTime Int? @map("load_time")            // Page load time (ms)
+
+  // Indexes for fast queries
+  @@index([sessionId])
+  @@index([userId])
+  @@index([timestamp(sort: Desc)])
+  @@index([eventType])
+  @@index([sessionId, timestamp(sort: Desc)]) // Most common query: session journey
+  @@map("session_events")
+}
+
+// ============================================
 // TASKS TABLE (v2.2: Task Broadcast System)
 // ============================================
 model Task {

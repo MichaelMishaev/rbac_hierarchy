@@ -470,10 +470,43 @@ class ErrorTracker {
     return context;
   }
 
+  /**
+   * Fetch recent session events for additional context
+   */
+  private async fetchSessionJourney(): Promise<any[] | null> {
+    try {
+      // Get session ID from sessionStorage
+      const sessionId = sessionStorage.getItem('session_tracker_id');
+      if (!sessionId) return null;
+
+      // Fetch last 20 session events
+      const response = await fetch(`/api/session-event/journey?sessionId=${sessionId}&limit=20`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data.events || null;
+    } catch (err) {
+      console.warn('[ErrorTracker] Failed to fetch session journey:', err);
+      return null;
+    }
+  }
+
   async sendError(error: Error, additionalContext?: Record<string, any>) {
     const context = this.captureError(error, additionalContext);
 
+    // Fetch session journey (non-blocking)
+    const sessionJourneyPromise = this.fetchSessionJourney();
+
     try {
+      // Wait for session journey (with timeout)
+      const sessionJourney = await Promise.race([
+        sessionJourneyPromise,
+        new Promise(resolve => setTimeout(() => resolve(null), 1000)), // 1s timeout
+      ]);
+
       await fetch('/api/log-error', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -486,7 +519,11 @@ class ErrorTracker {
           url: window.location.href,
           userAgent: navigator.userAgent,
           timestamp: new Date().toISOString(),
-          metadata: context,
+          metadata: {
+            ...context,
+            // Add session journey to metadata
+            sessionJourney,
+          },
         }),
       });
     } catch (fetchError) {

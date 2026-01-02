@@ -12,6 +12,75 @@ npm run dev                                           # → http://localhost:320
 # Login: superadmin@election.test / admin123
 ```
 
+## 🚢 PRODUCTION DEPLOYMENT SAFETY (2026-01-02)
+
+**CRITICAL: Recent database changes are SAFE for production merge**
+
+### Phase 1: Error Dashboard (✅ Deployed)
+- **Schema Changes:** NONE
+- **Migration Required:** NO
+- **Risk:** ZERO - Uses existing `ErrorLog` table
+
+### Phase 2: Session Tracking (✅ Deployed)
+- **Schema Changes:** Added `SessionEvent` table (NEW TABLE ONLY)
+- **Migration Required:** YES (but SAFE - additive only)
+- **Risk:** VERY LOW - New table, no existing data affected
+- **Migration Command:**
+  ```bash
+  cd app && npm run db:generate && npm run db:push
+  ```
+- **Feature Flag:** `NEXT_PUBLIC_ENABLE_SESSION_TRACKING=true` (default enabled)
+- **Rollback:** Set flag to `false` (instant rollback, no code changes)
+
+### Phase 3: Audit Logging (✅ Deployed)
+- **Schema Changes:** NONE
+- **Migration Required:** NO
+- **Risk:** ZERO - Uses existing `AuditLog` table (already in production)
+- **Feature Flag:** `ENABLE_AUDIT_LOGGING=true` (default enabled)
+- **Rollback:** Set flag to `false` (instant rollback)
+
+### Deployment Checklist
+
+**Before merging to main:**
+- [ ] Run `npm run build` (verify compilation)
+- [ ] Run `npm run test:e2e` (verify tests pass)
+- [ ] Review `git diff app/prisma/schema.prisma` (only SessionEvent table added)
+
+**On production:**
+```bash
+# 1. Pull latest code
+git pull origin main
+
+# 2. Install dependencies
+cd app && npm install
+
+# 3. Apply schema changes (SAFE - only adds SessionEvent table)
+npm run db:generate && npm run db:push
+
+# 4. Build and restart
+npm run build
+pm2 restart all  # or Railway auto-deploy
+```
+
+**If any issues occur:**
+```bash
+# Disable session tracking (instant rollback)
+export NEXT_PUBLIC_ENABLE_SESSION_TRACKING=false
+
+# Disable audit logging (instant rollback)
+export ENABLE_AUDIT_LOGGING=false
+```
+
+**Database Safety Guarantees:**
+- ✅ NO existing tables modified
+- ✅ NO existing columns changed
+- ✅ NO data migrations required
+- ✅ Only ADDITIVE changes (new table: `session_events`)
+- ✅ All new fields are nullable/optional
+- ✅ Backward compatible (old code works without changes)
+
+---
+
 ## ⚠️ AI DEVELOPMENT RULES (READ FIRST)
 
 **BEFORE writing ANY code, AI MUST:**
@@ -19,7 +88,7 @@ npm run dev                                           # → http://localhost:320
 1. **Read** `/docs/infrastructure/base/baseRules.md` (system invariants, RBAC rules, Hebrew/RTL)
 2. **Classify risk level:** 🔴 HIGH (RBAC/auth) | 🔸 MEDIUM (features) | 🔹 LOW (UI)
 3. **Declare change boundary:** Allowed files vs forbidden files
-4. **Check locked flows:** `/cities` page, `/manage-voters` page
+4. **Check locked screens:** ALL screens locked (see "🔒 ALL SCREENS LOCKED" section) - modifications require approval
 5. **State assumptions:** "I assume city-scoped query", "I assume Hebrew-only"
 
 **For 🔴 HIGH RISK changes (RBAC, auth, data filters):**
@@ -83,33 +152,73 @@ SuperAdmin (system-wide)
 - **SuperAdmin/Area Manager**: Dashboard, Attendance, Map, Areas, Cities, Neighborhoods, Activists, Users
 - **City/Activist Coordinator**: Dashboard, Attendance, Neighborhoods, Activists, Users (NO Cities tab)
 
-### 🔒 LOCKED Pages
+### 🔒 ALL SCREENS LOCKED (2026-01-02)
 
-#### Cities Page
-**File**: `app/app/[locale]/(dashboard)/cities/page.tsx`
-**Access**: SuperAdmin & Area Manager ONLY (locked 2025-12-15)
-```typescript
-// ⚠️ DO NOT MODIFY
-if (session.user.role !== 'SUPERADMIN' && session.user.role !== 'AREA_MANAGER') {
-  return <AccessDenied />;
-}
-```
+**⚠️ CRITICAL**: All pages and their associated logic are now LOCKED. Any modifications require explicit user approval.
 
-#### Manage Voters Page (Admin/Coordinator)
-**File**: `app/app/[locale]/(dashboard)/manage-voters/page.tsx`
-**Last locked**: 2025-12-20
-**Reason**: Stable voter management with Excel import functionality
-**Related files (also locked)**:
-- `VotersPageClient.tsx` - Main client component with tabs
-- `components/ExcelUpload.tsx` - Excel import with duplicate detection
-- `components/VotersList.tsx` - Voter list table
-- `components/VoterForm.tsx` - Create/edit voter form
-- `components/VoterDetails.tsx` - Voter detail view
-- `components/VoterStatistics.tsx` - Statistics dashboard
-- `components/DuplicatesDashboard.tsx` - Duplicate voters report
+**Lock Status**: PRODUCTION STABLE - Do not modify without permission
 
-**⚠️ WARNING**: These files are locked. Any modifications require explicit approval.
-**URL**: `/manage-voters` (admin/coordinators auto-redirected from `/voters`)
+#### Authentication Screens
+- `/login` - `app/app/[locale]/(auth)/login/page.tsx`
+- `/change-password` - `app/app/[locale]/(auth)/change-password/page.tsx`
+
+#### Dashboard Screens (Admin/Coordinators)
+- `/dashboard` - `app/app/[locale]/(dashboard)/dashboard/page.tsx`
+- `/areas` - `app/app/[locale]/(dashboard)/areas/page.tsx`
+- `/cities` - `app/app/[locale]/(dashboard)/cities/page.tsx` (SuperAdmin/Area Manager only)
+- `/neighborhoods` - `app/app/[locale]/(dashboard)/neighborhoods/page.tsx`
+- `/activists` - `app/app/[locale]/(dashboard)/activists/page.tsx`
+- `/users` - `app/app/[locale]/(dashboard)/users/page.tsx`
+- `/attendance` - `app/app/[locale]/(dashboard)/attendance/page.tsx`
+- `/tasks` - `app/app/[locale]/(dashboard)/tasks/page.tsx`
+- `/tasks/inbox` - `app/app/[locale]/(dashboard)/tasks/inbox/page.tsx`
+- `/tasks/new` - `app/app/[locale]/(dashboard)/tasks/new/page.tsx`
+- `/manage-voters` - `app/app/[locale]/(dashboard)/manage-voters/page.tsx`
+- `/map` - `app/app/[locale]/(dashboard)/map/page.tsx`
+- `/map/leaflet` - `app/app/[locale]/(dashboard)/map/leaflet/page.tsx`
+
+#### Activist Screens (Mobile-First)
+- `/voters` - `app/app/[locale]/(activist)/voters/page.tsx`
+- `/voters/new` - `app/app/[locale]/(activist)/voters/new/page.tsx`
+- `/voters/[id]` - `app/app/[locale]/(activist)/voters/[id]/page.tsx`
+- `/voters/[id]/edit` - `app/app/[locale]/(activist)/voters/[id]/edit/page.tsx`
+- `/profile` - `app/app/[locale]/(activist)/profile/page.tsx`
+
+#### System/Utility Screens
+- `/settings/notifications` - `app/app/[locale]/(dashboard)/settings/notifications/page.tsx`
+- `/notifications` - `app/app/[locale]/(dashboard)/notifications/page.tsx`
+- `/more` - `app/app/[locale]/(dashboard)/more/page.tsx`
+- `/wiki` - `app/app/[locale]/(dashboard)/wiki/page.tsx`
+- `/wiki/[categorySlug]` - `app/app/[locale]/(dashboard)/wiki/[categorySlug]/page.tsx`
+- `/wiki/[categorySlug]/[pageSlug]` - `app/app/[locale]/(dashboard)/wiki/[categorySlug]/[pageSlug]/page.tsx`
+- `/system-rules` - `app/app/[locale]/(dashboard)/system-rules/page.tsx`
+- `/onboarding` - `app/app/[locale]/(dashboard)/onboarding/page.tsx`
+- `/org-tree-demo` - `app/app/[locale]/(dashboard)/org-tree-demo/page.tsx`
+- `/performance` - `app/app/[locale]/(dashboard)/performance/page.tsx`
+
+#### Root Pages
+- `/` - `app/app/page.tsx`
+- `/[locale]` - `app/app/[locale]/page.tsx`
+
+**Lock Scope Includes**:
+- All `page.tsx` files listed above
+- All associated client components (`*Client.tsx`, `*PageClient.tsx`)
+- All page-specific component directories
+- All server actions directly called by these pages
+- All API routes exclusively used by these pages
+
+**Modification Protocol**:
+1. AI must ASK for explicit permission before modifying ANY locked screen
+2. State which screen(s) will be modified and why
+3. Wait for user approval with "yes" or "approved"
+4. Only proceed after confirmation
+
+**Allowed Without Permission**:
+- Bug fixes for critical errors (crashes, data corruption)
+- Security vulnerabilities (RBAC bypass, data leakage)
+- Build failures blocking deployment
+
+**All other changes require approval.**
 
 ## Development Commands
 
@@ -285,6 +394,7 @@ const activists = await prisma.activist.findMany({
 - Follow Bug Fix Protocol
 
 ### ❌ NEVER DO
+- Modify locked screens without explicit user approval (see "🔒 ALL SCREENS LOCKED")
 - Create SuperAdmin via UI/API (seed only)
 - Expose `is_super_admin` in public APIs
 - Skip RBAC validation
@@ -296,6 +406,7 @@ const activists = await prisma.activist.findMany({
 - Show entire files (use diffs)
 
 ### ⚠️ Stop and Ask If
+- Any locked screen needs modification (see "🔒 ALL SCREENS LOCKED")
 - Required file/command doesn't exist
 - Package versions/APIs uncertain
 - Schema change implied but not specified

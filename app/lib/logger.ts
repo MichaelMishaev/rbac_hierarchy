@@ -10,7 +10,6 @@
  * - Sanitization: removes sensitive data from stack traces
  */
 
-import { prisma } from './prisma';
 import { ErrorLevel } from '@prisma/client';
 
 // Environment detection
@@ -73,6 +72,8 @@ function sanitizeMetadata(metadata?: Record<string, unknown>): Record<string, un
 // Write error to database (async, non-blocking)
 async function persistErrorToDb(data: ErrorLogData): Promise<void> {
   try {
+    // Lazy import to avoid circular dependency at module load time
+    const { prisma } = await import('./prisma');
     await prisma.errorLog.create({
       data: {
         level: data.level || ErrorLevel.ERROR,
