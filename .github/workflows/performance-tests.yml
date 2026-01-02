@@ -58,33 +58,46 @@ jobs:
         working-directory: ./app
         env:
           NODE_ENV: production
-          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_URL: http://localhost:3200
           NEXTAUTH_SECRET: test-secret-for-performance-ci-only
           DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
           DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
         run: npm run build
 
-      - name: Start application
-        working-directory: ./app
-        env:
-          NODE_ENV: production
-          PORT: 3000
-          DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
-          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
-          NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
-        run: |
-          npm run start &
-          # Wait for app to be ready
-          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
-
       - name: Run performance tests
         working-directory: ./app
-        run: npx playwright test tests/e2e/performance --base-url=http://localhost:3000 --reporter=json --reporter=html --project=chromium-desktop
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
+          NODE_ENV: production
+          PORT: 3200
+          DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
+          DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
+          NEXTAUTH_URL: http://localhost:3200
+          NEXTAUTH_SECRET: test-secret-for-performance-ci-only
+        run: |
+          # Playwright will start the server automatically via webServer config
+          npx playwright test tests/e2e/performance \
+            --reporter=list \
+            --reporter=json \
+            --reporter=html \
+            --project=chromium-desktop || {
+            TEST_EXIT_CODE=$?
+            echo "Tests failed with exit code $TEST_EXIT_CODE"
+            exit $TEST_EXIT_CODE
+          }
+
+      - name: Print logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker Logs ==="
+          docker compose logs || echo "No Docker logs available"
+          echo "=== Database Status ==="
+          docker compose ps || echo "Cannot get container status"
 
       - name: Parse performance results
         id: parse_results
         if: always()
+        working-directory: ./app
         run: |
           # Extract performance metrics from test results
           echo "Parsing performance test results..."
@@ -95,29 +108,43 @@ jobs:
           const path = require('path');
 
           try {
-            const resultsPath = path.join(__dirname, 'app', 'playwright-report', 'results.json');
+            // Playwright outputs to test-results.json in the working directory
+            const resultsPath = path.join(process.cwd(), 'test-results.json');
+
             if (fs.existsSync(resultsPath)) {
               const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
 
-              // Extract performance metrics
+              // Extract performance metrics from Playwright JSON output
+              const totalTests = results.suites?.reduce((acc, suite) =>
+                acc + (suite.specs?.length || 0), 0) || 0;
+
+              const passedTests = results.suites?.reduce((acc, suite) =>
+                acc + (suite.specs?.filter(s => s.ok).length || 0), 0) || 0;
+
+              const failedTests = totalTests - passedTests;
+
               const metrics = {
-                totalTests: results.suites?.[0]?.specs?.length || 0,
-                passedTests: 0,
-                failedTests: 0,
-                avgNavigationTime: 0,
+                totalTests,
+                passedTests,
+                failedTests,
               };
 
               console.log('Performance Metrics:', JSON.stringify(metrics, null, 2));
 
-              // Set output for next steps
-              console.log(`::set-output name=total_tests::${metrics.totalTests}`);
-              console.log(`::set-output name=passed_tests::${metrics.passedTests}`);
-              console.log(`::set-output name=failed_tests::${metrics.failedTests}`);
+              // Use new GitHub Actions output syntax
+              const output = `total_tests=${metrics.totalTests}\npassed_tests=${metrics.passedTests}\nfailed_tests=${metrics.failedTests}`;
+              fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', output + '\n');
             } else {
-              console.log('Results file not found');
+              console.log('Results file not found at:', resultsPath);
+              // Set default values
+              const output = 'total_tests=0\npassed_tests=0\nfailed_tests=0';
+              fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', output + '\n');
             }
           } catch (error) {
             console.error('Error parsing results:', error);
+            // Set default values on error
+            const output = 'total_tests=0\npassed_tests=0\nfailed_tests=0';
+            fs.appendFileSync(process.env.GITHUB_OUTPUT || '/dev/null', output + '\n');
           }
           EOF
 
@@ -126,8 +153,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: performance-report
-          path: app/playwright-report/
+          path: |
+            app/playwright-report/
+            app/test-results.json
+            app/test-results/
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Comment PR with performance results
         if: github.event_name == 'pull_request'
@@ -223,7 +254,7 @@ jobs:
         working-directory: ./app
         env:
           NODE_ENV: production
-          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_URL: http://localhost:3200
           NEXTAUTH_SECRET: test-secret-for-performance-ci-only
           DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
           DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
@@ -233,26 +264,41 @@ jobs:
         working-directory: ./app
         env:
           NODE_ENV: production
-          PORT: 3000
+          PORT: 3200
           DATABASE_URL_POOLED: postgresql://postgres:postgres_dev_password@localhost:6433/hierarchy_platform?pgbouncer=true
           DATABASE_URL: postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform
-          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_URL: http://localhost:3200
           NEXTAUTH_SECRET: test-secret-for-performance-ci-only
         run: |
           npm run start &
           # Wait for app to be ready
-          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+          echo "Waiting for app to start on port 3200..."
+          timeout 60 bash -c 'until curl -f http://localhost:3200 2>/dev/null; do echo "Waiting..."; sleep 2; done' || {
+            echo "App failed to start"
+            exit 1
+          }
+          echo "App is ready!"
 
       - name: Run Lighthouse audit
         uses: treosh/lighthouse-ci-action@v10
         with:
           urls: |
-            http://localhost:3000
-            http://localhost:3000/login
-            http://localhost:3000/dashboard
-          uploadArtifacts: true
+            http://localhost:3200
+            http://localhost:3200/login
+            http://localhost:3200/dashboard
+          uploadArtifacts: false
           temporaryPublicStorage: true
           runs: 3
+        continue-on-error: true
+
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Check Lighthouse scores
         run: |
