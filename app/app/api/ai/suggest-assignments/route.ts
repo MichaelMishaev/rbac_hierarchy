@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { predictOptimalAssignments } from '@/lib/ai/smartAssignment';
 import { withErrorHandler } from '@/lib/error-handler';
 

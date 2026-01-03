@@ -9,7 +9,7 @@
  * Hebrew-only, RTL interface
  */
 
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import {

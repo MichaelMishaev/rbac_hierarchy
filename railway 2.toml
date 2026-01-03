@@ -1,0 +1,28 @@
+[build]
+builder = "NIXPACKS"
+
+[build.nixpacksPlan]
+providers = ["node"]
+
+[build.nixpacksCommands]
+# Install dependencies
+install = "npm ci"
+# Build the Next.js app
+build = "npx prisma generate && npm run build"
+
+[deploy]
+# Start command for production
+startCommand = "npm start"
+# Restart policy
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[deploy.healthcheck]
+path = "/"
+timeout = 100
+interval = 10
+
+# Service settings
+[service]
+# Root directory where package.json lives
+rootDirectory = "app"

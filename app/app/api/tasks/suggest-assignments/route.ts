@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { suggestTaskAssignments, type TaskLocation } from '@/lib/smartAssignment';
 
 export async function POST(req: NextRequest) {

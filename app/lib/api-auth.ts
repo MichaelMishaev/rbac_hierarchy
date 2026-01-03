@@ -6,7 +6,7 @@
  * Provides reusable authentication and authorization helpers for API endpoints.
  */
 
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**

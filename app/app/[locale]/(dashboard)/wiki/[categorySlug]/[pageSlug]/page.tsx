@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
 import { Box, Typography, Chip, Breadcrumbs } from '@mui/material';
 import { colors, shadows, borderRadius } from '@/lib/design-system';

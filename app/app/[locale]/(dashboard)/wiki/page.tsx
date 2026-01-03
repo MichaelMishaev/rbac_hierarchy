@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Box, Typography, Grid, Card, CardContent, Breadcrumbs, Divider, Badge } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';

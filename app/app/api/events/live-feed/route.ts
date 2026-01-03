@@ -10,7 +10,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { logger, extractSessionContext } from '@/lib/logger';
 

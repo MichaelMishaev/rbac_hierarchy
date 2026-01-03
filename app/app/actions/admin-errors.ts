@@ -7,7 +7,7 @@
 
 'use server';
 
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { ErrorLevel } from '@prisma/client';
 import { redirect } from 'next/navigation';

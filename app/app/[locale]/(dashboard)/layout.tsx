@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Box } from '@mui/material';
 import { getLocale } from 'next-intl/server';

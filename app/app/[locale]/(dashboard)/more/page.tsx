@@ -3,7 +3,7 @@
  * Shows additional menu items organized in collapsible groups
  */
 
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import MorePageClient from './MorePageClient';
 

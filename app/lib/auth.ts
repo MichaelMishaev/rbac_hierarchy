@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { unstable_cache } from 'next/cache';
 

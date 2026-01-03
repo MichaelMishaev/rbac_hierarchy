@@ -1,7 +1,7 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Box, Typography, Grid, Button, Skeleton } from '@mui/material';
-import { signOut } from '@/auth.config';
+import { signOut } from '@/auth';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
 import { getDashboardStats } from '@/app/actions/dashboard';
 import { getTranslations, getLocale } from 'next-intl/server';

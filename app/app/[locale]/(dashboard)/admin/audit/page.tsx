@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { listAuditLogs, getEntityTypes, getAuditStats } from '@/app/actions/admin-audit';
 import AuditLogsDashboardClient from '@/app/components/admin/AuditLogsDashboardClient';

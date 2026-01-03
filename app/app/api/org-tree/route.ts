@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { withErrorHandler, UnauthorizedError, ForbiddenError } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';

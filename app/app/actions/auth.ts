@@ -1,6 +1,6 @@
 'use server';
 
-import { signOut } from '@/auth.config';
+import { signOut } from '@/auth';
 import { withServerActionErrorHandler } from '@/lib/server-action-error-handler';
 
 export async function logout() {

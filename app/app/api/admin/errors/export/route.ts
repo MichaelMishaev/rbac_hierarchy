@@ -4,7 +4,7 @@
  * Exports filtered errors to CSV file
  */
 
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorLevel } from '@prisma/client';

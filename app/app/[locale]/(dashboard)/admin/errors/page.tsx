@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { listErrors, getErrorTypes, getErrorStats } from '@/app/actions/admin-errors';
 import ErrorsDashboardClient from '@/app/components/admin/ErrorsDashboardClient';

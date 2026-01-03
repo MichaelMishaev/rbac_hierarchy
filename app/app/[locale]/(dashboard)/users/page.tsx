@@ -1,4 +1,4 @@
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { listUsers } from '@/app/actions/users';
 import { listCities } from '@/app/actions/cities';

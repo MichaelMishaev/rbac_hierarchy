@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { withErrorHandler } from '@/lib/error-handler';
 
