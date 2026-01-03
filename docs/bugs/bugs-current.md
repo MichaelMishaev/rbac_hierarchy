@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 38
+**Total Bugs:** 39
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -5556,3 +5556,180 @@ Created three-tier auth architecture following NextAuth v5 best practices:
 ### Related
 - Railway deployment guide: `/docs/infrastructure/integration/devToPRodSchemDB.md`
 - Commits: `6dcd836` (initial fix), `e772cb4` (complete fix)
+
+---
+
+## 🔧 BUG #39: User Deletion 500 Error - Hard Delete Blocked by Middleware (2026-01-03)
+
+**Severity:** HIGH
+**Impact:** User deletion feature completely broken, 500 Internal Server Error on production
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-03
+**Reported By:** User (production error: POST https://test.rbac.shop/users 500)
+
+### Bug Description
+
+When attempting to delete a user from the Users page (`/users`), the operation fails with:
+```
+POST https://test.rbac.shop/users 500 (Internal Server Error)
+Error deleting user: Error: An error occurred in the Server Components render
+```
+
+**Affected Components:**
+- `app/actions/users.ts` - `deleteUser` function
+- `app/lib/prisma-middleware.ts` - INV-005 guard
+- Users management page (`/users`)
+
+**Visible to:** SuperAdmin, Area Managers, City Coordinators (anyone who can delete users)
+**Blocking:** User management, data cleanup operations
+
+### Root Cause Analysis
+
+**Middleware Guard Blocking Hard Deletes:**
+The Prisma middleware in `app/lib/prisma-middleware.ts` (lines 48-55) enforces INV-005 invariant:
+
+```typescript
+// Block hard deletes on users
+if (params.model === 'User' && params.action === 'delete') {
+  logger.error('🚨 INVARIANT VIOLATION: Hard delete attempted on User', {
+    invariant: 'INV-005',
+    params: params.args
+  });
+  throw new Error('Hard deletes not allowed on users. Use isActive = false (INV-005)');
+}
+```
+
+**Conflicting Code:**
+The `deleteUser` function (line 955) was calling `prisma.user.delete()`:
+
+```typescript
+// Delete user
+await prisma.user.delete({
+  where: { id: userId },
+});
+```
+
+**Why It Happened:**
+1. Middleware guard (INV-005) was added to prevent accidental data loss
+2. The `deleteUser` function was not updated to use soft delete
+3. Hard delete + middleware guard = immediate exception → 500 error
+
+**Impact Chain:**
+1. User clicks "Delete User" button
+2. `deleteUser` server action calls `prisma.user.delete()`
+3. Prisma middleware intercepts the delete operation
+4. Middleware throws error: "Hard deletes not allowed on users"
+5. Error bubbles up as 500 Internal Server Error
+6. User deletion fails, UI shows error message
+
+### Solution
+
+**Fix Applied:**
+
+1. **Changed deleteUser to use soft delete:**
+```typescript
+// BEFORE (line 954-957)
+// Delete user
+await prisma.user.delete({
+  where: { id: userId },
+});
+
+// AFTER
+// Soft delete user (set isActive = false)
+// INV-005: Hard deletes blocked by Prisma middleware for data safety
+await prisma.user.update({
+  where: { id: userId },
+  data: { isActive: false },
+});
+```
+
+2. **Updated audit log action:**
+```typescript
+// BEFORE
+action: 'DELETE_USER',
+
+// AFTER
+action: 'SOFT_DELETE_USER',
+```
+
+3. **Added isActive filter to listUsers:**
+```typescript
+// BEFORE (line 342)
+const where: any = {};
+
+// AFTER
+const where: any = {
+  // Only show active users (soft deletes hidden)
+  isActive: true,
+};
+```
+
+**Files Changed:**
+- `app/actions/users.ts` - Lines 954-981 (soft delete implementation), Line 342 (filter inactive users)
+- Created `app/test-user-delete.ts` - Test script to verify fix
+
+**Testing:**
+```bash
+✅ Soft delete successful (isActive: true → false)
+✅ User hidden from active users list
+✅ No 500 error from Prisma middleware
+✅ Audit log tracks soft deletes correctly
+```
+
+### Benefits of Soft Delete
+
+**Data Safety:**
+- User records preserved for audit trail
+- Related data remains intact (session_events, audit_logs, attendance_records)
+- Can restore users if deletion was accidental
+
+**Compliance:**
+- Maintains data history for audit requirements
+- Supports "right to be forgotten" requests (hard delete only when legally required)
+
+**System Integrity:**
+- No orphaned foreign keys
+- No cascade delete issues
+- Simpler rollback procedure
+
+### Prevention Rule
+
+**RULE:** Always use soft deletes for Users and Activists. Never bypass INV-005 guard.
+**CHECK:** Before implementing delete operations, verify if model has `isActive` field → use soft delete
+**PATTERN:** 
+```typescript
+// ✅ CORRECT - Soft delete
+await prisma.user.update({
+  where: { id },
+  data: { isActive: false }
+});
+
+// ❌ WRONG - Hard delete (blocked by middleware)
+await prisma.user.delete({
+  where: { id }
+});
+```
+
+**Filtering Inactive Records:**
+Always filter by `isActive: true` when listing users/activists:
+```typescript
+const users = await prisma.user.findMany({
+  where: { isActive: true }, // Hide soft-deleted records
+});
+```
+
+### Related
+
+- Prisma Middleware Guards: `/app/lib/prisma-middleware.ts`
+- Invariants Documentation: `/docs/infrastructure/base/baseRules.md` (section 7)
+- Soft Delete Pattern: User, Activist models (schema: `isActive Boolean @default(true)`)
+
+### Deployment Note
+
+This fix is **SAFE for production**:
+- ✅ No schema changes required (isActive field already exists)
+- ✅ No migrations needed
+- ✅ Backward compatible (users marked inactive stay inactive)
+- ✅ Forward compatible (new code handles both active and inactive users)
+- ✅ Tested locally with 100% success rate
+

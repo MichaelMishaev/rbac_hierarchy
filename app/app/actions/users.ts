@@ -339,7 +339,10 @@ export async function listUsers(filters: ListUsersFilters = {}) {
     }
 
     // Build where clause based on role and filters
-    const where: any = {};
+    const where: any = {
+      // Only show active users (soft deletes hidden)
+      isActive: true,
+    };
 
     // CRITICAL: Hierarchy filtering - show only users BELOW current user
     // Get roles that are below current user in hierarchy
@@ -951,15 +954,17 @@ export async function deleteUser(userId: string) {
       }
     }
 
-    // Delete user
-    await prisma.user.delete({
+    // Soft delete user (set isActive = false)
+    // INV-005: Hard deletes blocked by Prisma middleware for data safety
+    await prisma.user.update({
       where: { id: userId },
+      data: { isActive: false },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_USER',
+        action: 'SOFT_DELETE_USER',
         entity: 'User',
         entityId: userId,
         userId: currentUser.id,
@@ -970,6 +975,10 @@ export async function deleteUser(userId: string) {
           email: userToDelete.email,
           fullName: userToDelete.fullName,
           role: userToDelete.role,
+          isActive: userToDelete.isActive,
+        },
+        after: {
+          isActive: false,
         },
       },
     });
