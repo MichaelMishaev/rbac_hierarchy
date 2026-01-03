@@ -11,6 +11,9 @@ install = "npm ci"
 build = "npx prisma generate && npm run build"
 
 [deploy]
+# CRITICAL: Run migrations BEFORE app starts
+# If this fails, deployment is aborted (safe!)
+preDeployCommand = "npx prisma migrate deploy"
 # Start command for production
 startCommand = "npm start"
 # Restart policy
