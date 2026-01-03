@@ -15,7 +15,7 @@ build = "npx prisma generate && npm run build"
 # If this fails, deployment is aborted (safe!)
 # 1. Run manual SQL migrations (session_events table)
 # 2. Run Prisma migrations
-preDeployCommand = "bash railway-migrate.sh && npx prisma migrate deploy"
+preDeployCommand = "cd app && bash railway-migrate.sh && npx prisma migrate deploy"
 # Start command for production
 startCommand = "npm start"
 # Restart policy
