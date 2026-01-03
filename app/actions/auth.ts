@@ -6,7 +6,7 @@
  * Security Fix: VULN-AUTH-002 - Implements token blacklisting on logout
  */
 
-import { auth } from '@/auth.config';
+import { auth } from '@/auth';
 import { blacklistToken } from '@/lib/token-blacklist';
 import { logLogoutAudit } from '@/lib/audit-logger';
 

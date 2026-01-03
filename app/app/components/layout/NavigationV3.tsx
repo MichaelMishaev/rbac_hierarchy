@@ -656,6 +656,19 @@ function NavigationV3Component({ role, userEmail, roleDescription, stats }: Navi
                   {userEmail}
                 </Typography>
               )}
+
+              {/* Version Number */}
+              <Typography
+                sx={{
+                  fontSize: '10px',
+                  color: colors.neutral[300],
+                  fontWeight: 400,
+                  mt: 0.5,
+                  fontFamily: 'monospace',
+                }}
+              >
+                v{process.env.NEXT_PUBLIC_APP_VERSION || '1.1.1'}
+              </Typography>
             </Box>
 
             {/* Close button for mobile */}

@@ -1,13 +1,131 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 37
+**Total Bugs:** 38
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🔧 BUG #38: Circular Import in auth.ts Causing Build Failure (2026-01-03)
+
+**Severity:** HIGH
+**Impact:** Build failure, runtime authentication errors
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-03
+**Reported By:** User (build error and runtime "Unauthorized" errors)
+
+### Bug Description
+
+Build error: `Attempted import error: 'authConfig' is not exported from '@/auth' (imported as 'authConfig')`
+
+Runtime error when accessing `/dashboard`: `Error: Unauthorized at getCurrentUser (auth.ts:17:11)`
+
+**Affected Components:**
+- `app/auth.ts` (circular import)
+- All protected routes (authentication failing)
+- Build process (compilation failure)
+
+**Visible to:** All users (prevents login and access to dashboard)
+**Blocking:** Development, production deployment
+
+### Root Cause Analysis
+
+**Circular Dependency:**
+- `auth.ts` was importing `authConfig` from `@/auth` (itself) on line 3
+- Correct source is `@/auth.config` (Edge-compatible auth config)
+- This created a circular dependency: `auth.ts` → `@/auth` → `auth.ts`
+
+**Architecture Context:**
+The authentication system has 3 files:
+1. `auth.config.ts` - Edge-compatible config (no Prisma, for middleware)
+2. `auth.edge.ts` - Edge runtime auth instance (uses `auth.config`)
+3. `auth.ts` - Full Node.js auth with Prisma (for API routes/server components)
+
+**Why It Happened:**
+- Previous working state likely had `authConfig` defined in `auth.ts` itself
+- During refactoring to split Edge and Node.js auth (for Railway deployment fix), `authConfig` was moved to `auth.config.ts`
+- Import in `auth.ts` was not updated to point to new location
+
+### Solution
+
+**Fix Applied:**
+```typescript
+// BEFORE (auth.ts line 3)
+import { authConfig } from '@/auth';
+
+// AFTER
+import { authConfig } from '@/auth.config';
+```
+
+**Files Changed:**
+- `app/auth.ts` (1 line changed)
+
+**Testing:**
+- Build now completes successfully
+- Routes compile without module errors
+- Authentication flow requires session refresh (users must clear cookies)
+
+### Side Effects
+
+**JWT Token Staleness:**
+After fixing the circular import, existing JWT session tokens became invalid because:
+1. Auth configuration structure changed
+2. Token signing might have changed
+3. Session callbacks were updated
+
+**User Impact:**
+- Users who were logged in before the fix see "Unauthorized" errors
+- Solution: Clear browser cookies and re-login
+
+**Mitigation Provided:**
+Created clear instructions for users to:
+1. Clear browser cookies for localhost:3200
+2. Sign out via `/api/auth/signout`
+3. Log back in with credentials
+
+**OpenTelemetry Bundling Error (Secondary Issue):**
+After the auth.ts fix, a secondary error appeared:
+```
+Error: Cannot find module './vendor-chunks/@opentelemetry.js'
+```
+
+**Cause:** Stale Next.js build cache (`app/.next`) referencing old Sentry instrumentation bundles
+
+**Solution:**
+```bash
+rm -rf .next node_modules/.cache
+npm run dev
+```
+
+This clean rebuild resolved the OpenTelemetry vendor chunk error
+
+### Prevention Strategy
+
+**Pre-Commit Checks:**
+1. ✅ Run `npm run build` before committing auth changes
+2. ✅ Test authentication flow in incognito/private window
+3. ✅ Verify no circular imports: `import { X } from '@/current-file'`
+4. ✅ Clean build cache after auth config changes: `rm -rf .next node_modules/.cache`
+
+**Code Review Checklist:**
+- [ ] All imports point to correct source files (not self)
+- [ ] Auth config changes trigger session invalidation warning
+- [ ] Build passes locally before pushing
+- [ ] Clean rebuild performed after auth system changes
+
+**Architecture Documentation:**
+- Document auth file responsibilities in `/docs/infrastructure/auth-architecture.md`
+- Add diagram showing: `auth.config.ts` ← `auth.edge.ts` (middleware) and `auth.ts` (server)
+- Prevent future confusion about which file to import from
+
+### Related Issues
+- Related to recent auth split for Railway Edge Runtime compatibility (commit: `e772cb4`)
+- Part of ongoing auth security improvements
 
 ---
 
@@ -5383,3 +5501,58 @@ The user details dialog (lines 1180-1213) correctly shows both city AND neighbor
 3. **Test data visibility across all UI views** - Don't just test one component
 4. **User Type determines correct data field** - Don't assume structure, check role first
 
+
+## [2026-01-03] CRITICAL FIX: Prisma Edge Runtime Error (Production 502)
+
+### Bug
+**Severity:** 🔴 CRITICAL (Production Down)  
+**Impact:** Production deployment failing with 502 error  
+**Error:** `PrismaClient is not configured to run in Edge Runtime (Next.js Middleware)`
+
+### Root Cause
+1. `middleware.ts` was importing `auth` from `@/auth` (full Prisma-based auth.ts)
+2. Next.js bundles middleware imports into Edge Runtime
+3. Edge Runtime cannot use Prisma Client
+4. Middleware failed to start, causing 502 errors
+
+### Solution
+Created three-tier auth architecture following NextAuth v5 best practices:
+
+1. **`auth.config.ts`** - Edge-compatible configuration (shared)
+   - NO Prisma imports
+   - Only JWT/session callbacks (stateless)
+   - Exported as `authConfig`
+
+2. **`auth.edge.ts`** - Edge Runtime auth instance (middleware only)
+   - Imports ONLY `authConfig` (no Prisma)
+   - Used by `middleware.ts`
+   - Runs in Edge Runtime
+
+3. **`auth.ts`** - Full auth with Prisma (API routes, server actions)
+   - Imports `authConfig` + Prisma
+   - Includes Credentials provider with DB queries
+   - Runs in Node.js runtime
+
+### Files Changed
+- `app/auth.config.ts` - Refactored to Edge-compatible (removed Prisma, audit logging)
+- `app/auth.edge.ts` - NEW - Edge Runtime auth instance
+- `app/auth.ts` - NEW - Full Node.js auth with Prisma
+- `app/middleware.ts` - Import from `@/auth.edge` (was `@/auth`)
+- 43 other files - Updated imports from `@/auth.config` → `@/auth`
+
+### Testing
+✅ Build succeeds: "Compiled successfully in 25.3s"  
+✅ No Edge Runtime errors in webpack output  
+✅ Production deployment successful: "✓ Ready in 993ms"  
+✅ App responds to HTTP requests  
+✅ Redis connected  
+✅ Prisma middleware initialized (in Node.js runtime only)
+
+### Prevention Rule
+**RULE:** Never import Prisma (directly or indirectly) in middleware or any Edge Runtime code.  
+**CHECK:** Before deploying, verify `.next/server/middleware.js` doesn't contain Prisma imports.  
+**PATTERN:** Use separate auth instances for Edge vs Node.js runtimes.
+
+### Related
+- Railway deployment guide: `/docs/infrastructure/integration/devToPRodSchemDB.md`
+- Commits: `6dcd836` (initial fix), `e772cb4` (complete fix)
