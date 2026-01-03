@@ -49,33 +49,38 @@ async function main() {
     if (!tableExists) {
       console.log('⚠️  session_events table not found, creating it...');
 
-      // Read SQL file
-      const sqlPath = path.join(__dirname, '../prisma/migrations/manual/create_session_events_table.sql');
-      const sql = fs.readFileSync(sqlPath, 'utf8');
+      // Create table
+      await prisma.$executeRaw`
+        CREATE TABLE IF NOT EXISTS "session_events" (
+          "id" TEXT PRIMARY KEY,
+          "session_id" TEXT NOT NULL,
+          "user_id" TEXT,
+          "event_type" TEXT NOT NULL,
+          "page" TEXT,
+          "element" TEXT,
+          "form_name" TEXT,
+          "form_data" JSONB,
+          "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "user_agent" TEXT,
+          "city_id" TEXT,
+          "load_time" INTEGER
+        )
+      `;
 
-      // Split by semicolons and execute each statement
-      const statements = sql
-        .split(';')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--'));
+      // Create indexes
+      const indexes = [
+        'CREATE INDEX IF NOT EXISTS "session_events_session_id_idx" ON "session_events"("session_id")',
+        'CREATE INDEX IF NOT EXISTS "session_events_user_id_idx" ON "session_events"("user_id")',
+        'CREATE INDEX IF NOT EXISTS "session_events_timestamp_idx" ON "session_events"("timestamp" DESC)',
+        'CREATE INDEX IF NOT EXISTS "session_events_event_type_idx" ON "session_events"("event_type")',
+        'CREATE INDEX IF NOT EXISTS "session_events_session_id_timestamp_idx" ON "session_events"("session_id", "timestamp" DESC)',
+      ];
 
-      for (const statement of statements) {
-        // Skip DO blocks (they're procedural, not standard SQL)
-        if (statement.trim().toUpperCase().startsWith('DO $$')) {
-          continue;
-        }
-
-        try {
-          await prisma.$executeRawUnsafe(statement);
-        } catch (error) {
-          // Ignore errors for CREATE IF NOT EXISTS (table might exist)
-          if (!error.message.includes('already exists')) {
-            throw error;
-          }
-        }
+      for (const indexSql of indexes) {
+        await prisma.$executeRawUnsafe(indexSql);
       }
 
-      console.log('✅ session_events table created');
+      console.log('✅ session_events table created with 5 indexes');
     } else {
       console.log('✅ session_events table already exists, skipping');
     }
