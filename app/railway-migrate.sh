@@ -8,9 +8,15 @@
 
 set -e  # Exit on error
 
-# Set version from version.json
+# Set version from version.json (portable - no -P flag)
 if [ -f "version.json" ]; then
-    VERSION=$(grep -oP '"version":\s*"\K[^"]+' version.json || echo "1.1.1")
+    # Try jq first (most reliable), fall back to sed
+    if command -v jq >/dev/null 2>&1; then
+        VERSION=$(jq -r '.version' version.json 2>/dev/null || echo "1.1.1")
+    else
+        # Fallback to sed (POSIX compatible)
+        VERSION=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' version.json 2>/dev/null || echo "1.1.1")
+    fi
     export NEXT_PUBLIC_APP_VERSION="$VERSION"
     echo "📦 App Version: $VERSION"
 fi
