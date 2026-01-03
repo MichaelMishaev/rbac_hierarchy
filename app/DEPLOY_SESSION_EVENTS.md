@@ -3,7 +3,7 @@
 ## ✅ What I've Created
 
 1. **SQL Migration Script** (Idempotent)
-   - `prisma/migrations/manual/create_session_events_table.sql`
+   - `scripts/migrations/create_session_events_table.sql`
    - Safe to run multiple times (uses `IF NOT EXISTS`)
    - Creates `session_events` table + 5 indexes
 
@@ -29,8 +29,8 @@ git status
 #   modified: railway.json
 #   modified: railway.toml
 #   new file: railway-migrate.sh
-#   new file: prisma/migrations/manual/create_session_events_table.sql
-#   new file: prisma/migrations/manual/README.md
+#   new file: scripts/migrations/create_session_events_table.sql
+#   new file: scripts/migrations/README.md
 #   new file: scripts/migrate-session-events-railway.sh
 #   new file: DEPLOY_SESSION_EVENTS.md
 
@@ -116,7 +116,7 @@ Once deployed:
 | `railway-migrate.sh` | New | Auto-migration script |
 | `create_session_events_table.sql` | New | SQL migration (idempotent) |
 | `migrate-session-events-railway.sh` | New | Manual migration helper |
-| `prisma/migrations/manual/README.md` | New | Migration docs |
+| `scripts/migrations/README.md` | New | Migration docs |
 
 ## 🎯 Testing Locally First (Optional)
 
@@ -124,7 +124,7 @@ If you want to test before pushing to Railway:
 
 ```bash
 # Test the SQL migration locally
-psql "postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform" -f prisma/migrations/manual/create_session_events_table.sql
+psql "postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform" -f scripts/migrations/create_session_events_table.sql
 
 # Should see:
 # NOTICE:  ✅ session_events table exists
@@ -149,7 +149,7 @@ Script will skip creation (safe). Check logs:
 **If you need to manually run migration:**
 
 ```bash
-railway run --environment development psql $DATABASE_URL -f prisma/migrations/manual/create_session_events_table.sql
+railway run --environment development psql $DATABASE_URL -f scripts/migrations/create_session_events_table.sql
 ```
 
 ## ✅ Next Steps

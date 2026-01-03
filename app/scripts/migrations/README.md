@@ -17,10 +17,10 @@ Creates the `session_events` table for user journey tracking.
 cd /Users/michaelmishayev/Desktop/Projects/corporations/app
 
 # Development
-railway run --environment development psql $DATABASE_URL -f prisma/migrations/manual/create_session_events_table.sql
+railway run --environment development psql $DATABASE_URL -f scripts/migrations/create_session_events_table.sql
 
 # Production (CAREFUL!)
-railway run --environment production psql $DATABASE_URL -f prisma/migrations/manual/create_session_events_table.sql
+railway run --environment production psql $DATABASE_URL -f scripts/migrations/create_session_events_table.sql
 ```
 
 #### Option 2: Using Helper Script
@@ -41,7 +41,7 @@ railway run --environment production psql $DATABASE_URL -f prisma/migrations/man
 #### Option 4: Local Testing
 
 ```bash
-psql "postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform" -f prisma/migrations/manual/create_session_events_table.sql
+psql "postgresql://postgres:postgres_dev_password@localhost:5434/hierarchy_platform" -f scripts/migrations/create_session_events_table.sql
 ```
 
 ### Verification
