@@ -1,7 +1,18 @@
 {
-  "version": "1.1.1",
-  "releaseDate": "2026-01-03",
+  "version": "1.2.0",
+  "releaseDate": "2026-01-04",
   "changelog": [
+    {
+      "version": "1.2.0",
+      "date": "2026-01-04",
+      "type": "production",
+      "changes": [
+        "Fixed user deletion 500 error (Bug #39 - soft delete implementation)",
+        "Changed deleteUser to use soft delete (isActive = false)",
+        "Added isActive filter to listUsers query",
+        "Updated audit logging for soft deletes"
+      ]
+    },
     {
       "version": "1.1.1",
       "date": "2026-01-03",
