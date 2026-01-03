@@ -1,7 +1,7 @@
 import createIntlMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/auth';
+import { auth } from '@/auth.edge';
 
 const intlMiddleware = createIntlMiddleware({
   locales: ['he', 'en'],
