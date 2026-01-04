@@ -6,8 +6,9 @@ import { colors } from '@/lib/design-system';
 import { prisma } from '@/lib/prisma';
 import AreasClient from '@/app/components/areas/AreasClient';
 
-// Enable route caching - revalidate every 30 seconds
-export const revalidate = 30;
+// Disable caching for sensitive user data (deleted users should disappear immediately)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function AreasPage() {
   const session = await auth();
@@ -57,10 +58,14 @@ export default async function AreasPage() {
   // SuperAdmin sees all areas (no filter)
 
   // Fetch area managers with their associated data
+  // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
   const areasData = await prisma.areaManager.findMany({
     where: whereClause,
     include: {
       user: {
+        where: {
+          isActive: true, // Only include active users (filters soft-deleted)
+        },
         select: {
           id: true,
           fullName: true,

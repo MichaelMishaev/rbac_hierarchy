@@ -9,8 +9,9 @@ import { getAreaManagers, listCities } from '@/app/actions/cities';
 import { prisma } from '@/lib/prisma';
 import ActivistsClient from '@/app/components/activists/ActivistsClient';
 
-// Enable route caching - revalidate every 30 seconds
-export const revalidate = 30;
+// Disable caching for sensitive user data (deleted users should disappear immediately)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function WorkersPage() {
   const session = await auth();
@@ -32,6 +33,7 @@ export default async function WorkersPage() {
   ]);
 
   // Fetch activist coordinators (ActivistCoordinator records, not User records!)
+  // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
   const activistCoordinators = await prisma.activistCoordinator.findMany({
     where: {
       isActive: true,
@@ -40,6 +42,9 @@ export default async function WorkersPage() {
       id: true,  // ActivistCoordinator record ID
       userId: true,  // Include userId to find current user's coordinator record
       user: {
+        where: {
+          isActive: true, // Only include active users (filters soft-deleted)
+        },
         select: {
           fullName: true,
           email: true,

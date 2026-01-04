@@ -6,8 +6,9 @@ import { colors } from '@/lib/design-system';
 import { prisma } from '@/lib/prisma';
 import CitiesClient from '@/app/components/cities/CitiesClient';
 
-// Enable route caching - revalidate every 30 seconds
-export const revalidate = 30;
+// Disable caching for sensitive user data (deleted users should disappear immediately)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function CorporationsPage() {
   const session = await auth();
@@ -95,12 +96,16 @@ export default async function CorporationsPage() {
   // SUPERADMIN: See all cities (no filter needed)
 
   // v1.4: Fetch cities with areaManager relation
+  // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
   const citiesData = await prisma.city.findMany({
     where: whereClause,
     include: {
       areaManager: {
         include: {
           user: {
+            where: {
+              isActive: true, // Only include active users (filters soft-deleted)
+            },
             select: {
               fullName: true,
               email: true,
