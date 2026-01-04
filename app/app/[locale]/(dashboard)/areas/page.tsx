@@ -60,13 +60,11 @@ export default async function AreasPage() {
 
   // Fetch area managers with their associated data
   // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
+  // NOTE: Cannot use 'where' clause in one-to-one/many-to-one includes
   const areasData = await prisma.areaManager.findMany({
     where: whereClause,
     include: {
       user: {
-        where: {
-          isActive: true, // Only include active users (filters soft-deleted)
-        },
         select: {
           id: true,
           fullName: true,
@@ -91,6 +89,7 @@ export default async function AreasPage() {
   });
 
   // Transform data for client component
+  // Filter out soft-deleted users by setting user to null if isActive = false
   const areas = areasData.map(area => ({
     id: area.id,
     regionName: area.regionName,
@@ -99,7 +98,7 @@ export default async function AreasPage() {
     createdAt: area.createdAt,
     updatedAt: area.updatedAt,
     metadata: area.metadata,
-    user: area.user,
+    user: area.user && area.user.isActive ? area.user : null,
     cities: area.cities,
     citiesCount: area.cities.length,
   }));
