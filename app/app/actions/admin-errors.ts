@@ -21,6 +21,7 @@ export interface ErrorLogFilters {
   userEmail?: string;
   cityId?: string;
   httpStatus?: number;
+  environment?: string; // 'development', 'production'
   page?: number;
   limit?: number;
   sortBy?: 'createdAt' | 'level' | 'errorType';
@@ -138,6 +139,11 @@ export async function listErrors(filters: ErrorLogFilters = {}): Promise<ListErr
   // HTTP status filter
   if (filters.httpStatus) {
     where.httpStatus = filters.httpStatus;
+  }
+
+  // Environment filter
+  if (filters.environment) {
+    where.environment = filters.environment;
   }
 
   // Pagination

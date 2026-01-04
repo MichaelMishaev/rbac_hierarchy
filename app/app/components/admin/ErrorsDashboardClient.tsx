@@ -23,6 +23,8 @@ import {
   Tooltip,
   Card,
   CardContent,
+  Button,
+  ButtonGroup,
 } from '@mui/material';
 import { ErrorLevel } from '@prisma/client';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -57,6 +59,7 @@ interface ErrorsDashboardClientProps {
     userEmail?: string;
     cityId?: string;
     httpStatus?: number;
+    environment?: string;
   };
 }
 
@@ -73,6 +76,7 @@ export default function ErrorsDashboardClient({
   const searchParams = useSearchParams();
 
   // Filters
+  const [environment, setEnvironment] = useState(initialFilters.environment || 'development');
   const [dateRange, setDateRange] = useState(initialFilters.dateRange || '7d');
   const [customDateFrom, setCustomDateFrom] = useState(initialFilters.customDateFrom || '');
   const [customDateTo, setCustomDateTo] = useState(initialFilters.customDateTo || '');
@@ -87,6 +91,7 @@ export default function ErrorsDashboardClient({
   // Apply filters
   const applyFilters = () => {
     const params = new URLSearchParams();
+    if (environment) params.set('environment', environment);
     if (dateRange) params.set('dateRange', dateRange);
     if (dateRange === 'custom') {
       if (customDateFrom) params.set('customDateFrom', customDateFrom);
@@ -103,6 +108,7 @@ export default function ErrorsDashboardClient({
 
   // Clear filters
   const clearFilters = () => {
+    setEnvironment('development');
     setDateRange('7d');
     setCustomDateFrom('');
     setCustomDateTo('');
@@ -125,6 +131,40 @@ export default function ErrorsDashboardClient({
     const params = new URLSearchParams(searchParams.toString());
     window.open(`/api/admin/errors/export?${params.toString()}`, '_blank');
   };
+
+  // Handle environment switch (quick toggle)
+  const handleEnvironmentSwitch = (newEnv: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('environment', newEnv);
+    params.set('page', '1'); // Reset to first page
+    router.push(`?${params.toString()}`);
+  };
+
+  // Get environment display info
+  const getEnvironmentInfo = () => {
+    switch (environment) {
+      case 'production':
+        return {
+          label: 'Production Logs - Railway Database',
+          color: colors.error,
+          emoji: '🔴',
+        };
+      case 'development':
+        return {
+          label: 'Development Logs - Railway Database',
+          color: '#FFA500', // Orange
+          emoji: '🟡',
+        };
+      default:
+        return {
+          label: 'Local Development Logs',
+          color: colors.neutral[600],
+          emoji: '💻',
+        };
+    }
+  };
+
+  const envInfo = getEnvironmentInfo();
 
   // Get level icon and color
   const getLevelDisplay = (level: ErrorLevel) => {
@@ -166,14 +206,53 @@ export default function ErrorsDashboardClient({
     <Box dir="rtl" lang="he" sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          לוח בקרת שגיאות
-        </Typography>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Error Tracking Dashboard
+          </Typography>
+          <Typography variant="body2" sx={{ color: envInfo.color, fontWeight: 600 }}>
+            {envInfo.label}
+          </Typography>
+        </Box>
         <Tooltip title="ייצא לקובץ CSV">
           <IconButton onClick={handleExport} color="primary">
             <GetAppIcon />
           </IconButton>
         </Tooltip>
+      </Box>
+
+      {/* Environment Toggle */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+        <ButtonGroup variant="contained" size="large" sx={{ boxShadow: shadows.md }}>
+          <Button
+            onClick={() => handleEnvironmentSwitch('development')}
+            sx={{
+              bgcolor: environment === 'development' ? '#FFA500' : colors.neutral[300],
+              color: environment === 'development' ? colors.neutral[0] : colors.neutral[700],
+              fontWeight: 600,
+              px: 4,
+              '&:hover': {
+                bgcolor: environment === 'development' ? '#FF8C00' : colors.neutral[400],
+              },
+            }}
+          >
+            🟡 DEV
+          </Button>
+          <Button
+            onClick={() => handleEnvironmentSwitch('production')}
+            sx={{
+              bgcolor: environment === 'production' ? colors.error : colors.neutral[300],
+              color: environment === 'production' ? colors.neutral[0] : colors.neutral[700],
+              fontWeight: 600,
+              px: 4,
+              '&:hover': {
+                bgcolor: environment === 'production' ? '#d32f2f' : colors.neutral[400],
+              },
+            }}
+          >
+            🔴 PROD
+          </Button>
+        </ButtonGroup>
       </Box>
 
       {/* Analytics Summary */}
