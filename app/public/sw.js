@@ -15,7 +15,7 @@
  * Version: 2.0.0 - PWA with Offline Support
  */
 
-const SW_VERSION = '2.1.3'; // Fixed Next.js chunk caching issue (Bug #32)
+const SW_VERSION = '2.1.4'; // Fixed Next.js chunk loading failure (Bug #33: bypass SW for /_next/)
 const CACHE_NAME = `campaign-v${SW_VERSION}`;
 const OFFLINE_PAGE = '/offline.html';
 
@@ -142,10 +142,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Next.js internal files: NEVER cache (they're versioned with hashes)
-  // Caching these causes chunk mismatch errors on navigation
+  // Next.js internal files: BYPASS service worker entirely
+  // Let browser fetch directly to avoid chunk mismatch errors after deployments
+  // (fixes Bug #33: "Cannot read properties of undefined (reading 'call')")
   if (url.pathname.startsWith('/_next/')) {
-    event.respondWith(fetch(request));
+    // Don't intercept - let request bypass service worker
     return;
   }
 
