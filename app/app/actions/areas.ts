@@ -392,6 +392,15 @@ export async function deleteArea(areaId: string) {
     // Only SUPERADMIN can delete area managers
     const currentUser = await requireSuperAdmin();
 
+    // CRITICAL: Restrict deletion to specific authorized emails only
+    const AUTHORIZED_DELETE_EMAILS = ['dima@gmail.com', 'test@test.com'];
+    if (!AUTHORIZED_DELETE_EMAILS.includes(currentUser.email)) {
+      return {
+        success: false,
+        error: 'Only authorized users can delete areas. Contact system administrator.',
+      };
+    }
+
     // Get area manager to delete
     const areaToDelete = await prisma.areaManager.findUnique({
       where: { id: areaId },

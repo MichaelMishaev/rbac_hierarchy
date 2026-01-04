@@ -143,6 +143,7 @@ export default async function AreasPage() {
       <AreasClient
         areas={areas}
         userRole={session.user.role}
+        userEmail={session.user.email}
         superiorUser={superiorUser}
       />
     </Box>

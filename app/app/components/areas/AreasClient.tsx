@@ -72,10 +72,11 @@ type Area = {
 type AreasClientProps = {
   areas: Area[];
   userRole: string;
+  userEmail: string;
   superiorUser: { fullName: string; email: string } | null;
 };
 
-export default function AreasClient({ areas: initialAreas, userRole, superiorUser }: AreasClientProps) {
+export default function AreasClient({ areas: initialAreas, userRole, userEmail, superiorUser }: AreasClientProps) {
   const t = useTranslations('areas');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -91,8 +92,12 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
 
-  // Check if user is SuperAdmin (only SuperAdmin can create/edit/delete areas)
+  // Check if user is SuperAdmin (only SuperAdmin can create/edit areas)
   const isSuperAdmin = userRole === 'SUPERADMIN';
+
+  // CRITICAL: Only specific authorized emails can delete areas
+  const AUTHORIZED_DELETE_EMAILS = ['dima@gmail.com', 'test@test.com'];
+  const canDeleteAreas = isSuperAdmin && AUTHORIZED_DELETE_EMAILS.includes(userEmail);
 
   // Fetch available users when opening create or edit modal
   useEffect(() => {
@@ -661,22 +666,25 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
           <EditIcon sx={{ fontSize: 20, color: colors.pastel.blue }} />
           <Typography sx={{ fontWeight: 500 }}>{tCommon('edit')}</Typography>
         </MenuItem>
-        <MenuItem
-          onClick={handleDeleteClick}
-          sx={{
-            py: 1.5,
-            px: 2,
-            gap: 1.5,
-            '&:hover': {
-              backgroundColor: colors.pastel.redLight,
-            },
-          }}
-        >
-          <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
-          <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>
-            {tCommon('delete')}
-          </Typography>
-        </MenuItem>
+        {/* Only specific authorized users can delete areas */}
+        {canDeleteAreas && (
+          <MenuItem
+            onClick={handleDeleteClick}
+            sx={{
+              py: 1.5,
+              px: 2,
+              gap: 1.5,
+              '&:hover': {
+                backgroundColor: colors.pastel.redLight,
+              },
+            }}
+          >
+            <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
+            <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>
+              {tCommon('delete')}
+            </Typography>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Create Modal */}
