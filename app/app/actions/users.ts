@@ -983,8 +983,16 @@ export async function deleteUser(userId: string) {
       },
     });
 
-    revalidatePath('/users');
-    revalidatePath('/dashboard');
+    // CRITICAL FIX: Use revalidateTag instead of revalidatePath
+    // This allows background cache updates WITHOUT closing modals/dialogs
+    // See: https://nextjs.org/docs/app/api-reference/functions/revalidateTag
+    const { revalidateTag } = await import('next/cache');
+
+    // Invalidate all user-related data
+    revalidateTag('users');
+    revalidateTag('areas');
+    revalidateTag('cities');
+    revalidateTag('activists');
 
     return {
       success: true,

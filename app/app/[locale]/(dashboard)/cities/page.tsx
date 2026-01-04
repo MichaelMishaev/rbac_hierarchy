@@ -6,9 +6,10 @@ import { colors } from '@/lib/design-system';
 import { prisma } from '@/lib/prisma';
 import CitiesClient from '@/app/components/cities/CitiesClient';
 
-// Disable caching for sensitive user data (deleted users should disappear immediately)
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Enable ISR (Incremental Static Regeneration) for background updates
+// This allows pages to update in the background without disrupting user interactions
+// See: https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config
+export const revalidate = 30; // Revalidate every 30 seconds
 
 export default async function CorporationsPage() {
   const session = await auth();
