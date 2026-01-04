@@ -1,13 +1,181 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 39
+**Total Bugs:** 40
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🔧 BUG #39: Service Worker Causing Webpack Chunk Loading Failures After Deployment (2026-01-04)
+
+**Severity:** CRITICAL
+**Impact:** Complete page crash for users during navigation after deployments
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-04
+**Reported By:** Production error monitoring (error ID: 6bab4857-d235-48a5-bb76-4388e39f959f)
+
+### Bug Description
+
+Users navigating to `/users` page experienced complete page crashes with error:
+```
+TypeError: Cannot read properties of undefined (reading 'call')
+```
+
+**Error Context:**
+- **Environment:** Production (https://app.rbac.shop/users)
+- **Trigger:** Navigation from `/areas` to `/users` without full page refresh
+- **Stack Trace:** Webpack module loader (`webpack-e03c7e19e24b415c.js:1:511`)
+- **User Journey:** Clicked "משתמשים" (Users) navigation link → immediate crash
+- **Error Boundary:** Caught by global error boundary
+
+**Affected Components:**
+- Service Worker (`public/sw.js`)
+- All page navigations after new deployments
+- PWA users (Service Worker is registered and active)
+
+**Visible to:** All users with active Service Worker (PWA users)
+**Blocking:** Critical user flows - unable to navigate between pages
+
+### Root Cause Analysis
+
+**Service Worker Chunk Interception Bug:**
+
+The Service Worker was intercepting `/_next/` requests (Next.js internal chunks) but **failing to handle fetch errors** when those chunks no longer existed after deployments.
+
+**File:** `public/sw.js` lines 145-150 (before fix)
+```javascript
+// Next.js internal files: NEVER cache (they're versioned with hashes)
+if (url.pathname.startsWith('/_next/')) {
+  event.respondWith(fetch(request));  // ❌ BUG: No .catch() handler!
+  return;
+}
+```
+
+**Failure Sequence:**
+1. **T0:** User loads app (Build A) → Service Worker caches HTML
+2. **T1:** New deployment (Build B) → Old webpack chunks are replaced
+3. **T2:** User navigates to `/users` (no full refresh)
+4. **T3:** Service Worker intercepts request for `/_next/static/chunks/9764-40373192a4b49c3b.js` (Build A chunk)
+5. **T4:** `fetch(request)` returns 404 (chunk doesn't exist in Build B)
+6. **T5:** **Unhandled fetch error** → Webpack module loader receives `undefined`
+7. **T6:** `Cannot read properties of undefined (reading 'call')` → **PAGE CRASH**
+
+**Why This Happens During Deployments:**
+- Next.js uses **content-hash** file names for chunks (`9764-40373192a4b49c3b.js`)
+- Each build generates **new hashes** → Old chunks are deleted
+- Service Worker was trying to fetch **old chunks that no longer exist**
+- No error handling meant the error propagated to Webpack's module system
+
+**Evidence from Error Log:**
+```json
+{
+  "consoleLogs": [
+    "[PWA] Service Worker registered successfully",
+    "[Push] Service worker already registered"
+  ],
+  "localStorage": {
+    "pwa-visit-count": 10,
+    "recentPages": [
+      {"path": "/areas", "timestamp": 1767558403582},
+      {"path": "/users", "timestamp": 1767558418} // ← Crash here
+    ]
+  }
+}
+```
+
+### Solution
+
+**Fix Applied:**
+```javascript
+// BEFORE (public/sw.js:145-150)
+if (url.pathname.startsWith('/_next/')) {
+  event.respondWith(fetch(request));  // ❌ Intercepts but doesn't handle errors
+  return;
+}
+
+// AFTER
+if (url.pathname.startsWith('/_next/')) {
+  // Don't intercept - let request bypass service worker entirely
+  // This prevents chunk mismatch errors after deployments
+  return;  // ✅ Browser fetches directly without SW interference
+}
+```
+
+**Key Change:** Instead of intercepting `/_next/` requests with `event.respondWith()`, we now **bypass the Service Worker completely** by simply returning. This lets the browser handle the request directly, ensuring fresh chunks are always fetched.
+
+**Version Bump:** Service Worker version bumped from `2.1.3` → `2.1.4` to force all clients to update.
+
+**Files Changed:**
+- `app/public/sw.js` (lines 145-150 modified, line 18 version bump)
+
+**Testing:**
+```bash
+# Clean build to regenerate chunks with new hashes
+rm -rf .next && npm run build
+
+# Verify Service Worker no longer intercepts /_next/ requests
+# 1. Open DevTools → Application → Service Workers
+# 2. Navigate between pages
+# 3. Check Network tab: /_next/ requests should bypass SW (no "ServiceWorker" in Size column)
+```
+
+### Side Effects
+
+**Automatic Service Worker Update:**
+- Existing users will automatically receive SW v2.1.4 on next page visit
+- Old cache (`campaign-v2.1.3`) will be deleted by new SW's activate event
+- No user action required (happens transparently)
+
+**Performance:**
+- Slight increase in network requests for `/_next/` files (no longer cached)
+- Trade-off: Reliability > Performance (chunks MUST be fresh after deployments)
+- Static assets (images, fonts) still cached normally
+
+### Prevention Strategy
+
+**Pre-Deployment Checks:**
+1. ✅ Test Service Worker behavior with multiple builds:
+   ```bash
+   npm run build && npm run start  # Deploy A
+   # Navigate app, register SW
+   npm run build && npm run start  # Deploy B
+   # Navigate again - should NOT crash
+   ```
+2. ✅ Monitor error logs for webpack chunk errors after deployments
+3. ✅ Add integration test: "Service Worker should not cache /_next/ requests"
+
+**Code Review Checklist:**
+- [ ] Service Worker `fetch` handlers ALWAYS have `.catch()` error handling
+- [ ] Critical resources (`/_next/`, `/api/`) bypass SW or have fallback logic
+- [ ] SW version bumped whenever fetch logic changes
+
+**Architecture Documentation:**
+- **Service Worker Caching Strategy** (add to `/docs/infrastructure/pwa-architecture.md`):
+  - ✅ **App Shell** (HTML): Cache First
+  - ✅ **Static APIs** (cities, areas): Network First with cache fallback
+  - ✅ **Dynamic APIs** (voters, attendance): Network Only
+  - ✅ **Next.js Chunks** (`/_next/`): **BYPASS SERVICE WORKER** ← Critical!
+  - ✅ **Static Assets** (images, fonts): Cache First
+
+**Monitoring:**
+- Set up alert for error pattern: `TypeError.*reading 'call'` in production
+- Track Service Worker version distribution in analytics
+
+### Related Issues
+- Similar to Bug #32 (Next.js chunk caching issue)
+- Related to PWA implementation (commit: `a1c7ca3`)
+- Part of Progressive Web App feature (offline support)
+
+**Deployment Notes:**
+- No database migration required
+- No environment variable changes
+- Service Worker will auto-update on user's next visit
+- Users may need to hard-refresh once (Cmd+Shift+R / Ctrl+Shift+F5) if they still see errors
 
 ---
 
@@ -5732,4 +5900,165 @@ This fix is **SAFE for production**:
 - ✅ Backward compatible (users marked inactive stay inactive)
 - ✅ Forward compatible (new code handles both active and inactive users)
 - ✅ Tested locally with 100% success rate
+
+
+---
+
+## BUG-2026-01-04-001: Deleted Users Appearing in Neighborhood Activist Coordinator Dropdown
+
+**Date Reported:** 2026-01-04  
+**Severity:** 🔸 MEDIUM  
+**Status:** ✅ FIXED  
+**Environment:** Production  
+**Reporter:** User (via screenshot)
+
+### 📋 Description
+
+Deleted users (users with `is_active = false`) were appearing in the Activist Coordinator dropdown when creating/editing neighborhoods. This allowed assignment of deleted users to neighborhoods.
+
+### 🔍 Root Cause
+
+**File:** `app/app/actions/neighborhoods.ts`
+
+Two functions had incomplete WHERE clauses:
+
+1. **`listActivistCoordinatorsByCity()` (line 1008)**
+   - ❌ Only filtered `activist_coordinator.is_active = true`
+   - ❌ Missing `user.is_active = true` filter
+
+2. **`listActivistCoordinatorsByNeighborhood()` (line 1096)**
+   - ❌ Only filtered `activist_coordinator.is_active = true`
+   - ❌ Missing `user.is_active = true` filter
+
+**Why this happened:**
+- The system has TWO `isActive` flags:
+  - `users.is_active` - User-level soft delete
+  - `activist_coordinators.is_active` - Role-level status
+- When a user is "deleted", only `users.is_active` is set to `false`
+- The queries only checked the role-level flag, not the user-level flag
+
+### ✅ Solution
+
+**File:** `app/app/actions/neighborhoods.ts`
+
+**Function 1: `listActivistCoordinatorsByCity()` (line 1008-1036)**
+
+```typescript
+// BEFORE
+const supervisors = await prisma.activistCoordinator.findMany({
+  where: {
+    cityId,
+    isActive: true,
+  },
+  // ...
+});
+
+// AFTER
+const supervisors = await prisma.activistCoordinator.findMany({
+  where: {
+    cityId,
+    isActive: true,
+    user: {
+      isActive: true, // ✅ ADD: Filter deleted users
+    },
+  },
+  // ...
+});
+```
+
+**Function 2: `listActivistCoordinatorsByNeighborhood()` (line 1096-1134)**
+
+```typescript
+// BEFORE
+const assignments = await prisma.activistCoordinatorNeighborhood.findMany({
+  where: {
+    neighborhoodId,
+    activistCoordinator: {
+      isActive: true,
+    },
+  },
+  // ...
+});
+
+// AFTER
+const assignments = await prisma.activistCoordinatorNeighborhood.findMany({
+  where: {
+    neighborhoodId,
+    activistCoordinator: {
+      isActive: true,
+      user: {
+        isActive: true, // ✅ ADD: Filter deleted users
+      },
+    },
+  },
+  // ...
+});
+```
+
+### 🧪 Testing
+
+**Manual Test:**
+1. Delete a user (set `is_active = false`)
+2. Navigate to `/neighborhoods`
+3. Create/edit a neighborhood
+4. Open "Activist Coordinator" dropdown
+5. ✅ Verify deleted user does NOT appear
+
+**QA Command:**
+```bash
+make qa
+```
+
+### 🛡️ Prevention Rule
+
+**RULE:** When querying ActivistCoordinator (or any role table) for dropdowns/lists:
+- ✅ ALWAYS filter both `activist_coordinator.is_active = true` AND `user.is_active = true`
+- ✅ Use nested `where` clauses to access related user status
+- ✅ Apply same pattern to all role tables: `CityCoordinator`, `AreaManager`, etc.
+
+**Pattern to follow:**
+```typescript
+// ✅ CORRECT: Filter both role and user status
+await prisma.activistCoordinator.findMany({
+  where: {
+    isActive: true,
+    user: {
+      isActive: true, // Don't forget this!
+    },
+  },
+});
+
+// ❌ WRONG: Only filters role status
+await prisma.activistCoordinator.findMany({
+  where: {
+    isActive: true, // Missing user.isActive check!
+  },
+});
+```
+
+### 📝 Related Files
+
+- `app/app/actions/neighborhoods.ts:1008` - `listActivistCoordinatorsByCity()`
+- `app/app/actions/neighborhoods.ts:1096` - `listActivistCoordinatorsByNeighborhood()`
+- `app/app/components/neighborhoods/NeighborhoodsClient.tsx:167` - Client component that calls these functions
+
+### 🔄 Deployment
+
+- **Branch:** `develop`
+- **Commit:** (will be added after push)
+- **Impact:** All dropdowns showing activist coordinators
+- **Migration Required:** NO
+- **Backward Compatible:** YES (stricter filtering is always safe)
+
+### 📊 Impact Analysis
+
+**Before Fix:**
+- Deleted users appeared in dropdown
+- Risk of assigning deleted users to neighborhoods
+- Confusing UI (showing inactive/deleted users)
+
+**After Fix:**
+- Only active users with active coordinator roles appear
+- Clean dropdown (no deleted users)
+- Consistent with soft-delete expectations
 

@@ -1009,6 +1009,9 @@ export async function listActivistCoordinatorsByCity(cityId: string) {
       where: {
         cityId,
         isActive: true,
+        user: {
+          isActive: true, // Filter deleted users
+        },
       },
       include: {
         user: {
@@ -1095,6 +1098,9 @@ export async function listActivistCoordinatorsByNeighborhood(neighborhoodId: str
         neighborhoodId,
         activistCoordinator: {
           isActive: true,
+          user: {
+            isActive: true, // Filter deleted users
+          },
         },
       },
       include: {
