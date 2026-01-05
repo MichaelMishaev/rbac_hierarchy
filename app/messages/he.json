@@ -450,5 +450,22 @@
     "status": "סטטוס",
     "deleteTask": "מחק משימה",
     "deleteTaskConfirm": "האם אתה בטוח שברצונך למחוק משימה זו? הנמענים יראו אותה כמחוקה."
+  },
+  "version": {
+    "title": "ניהול גרסאות",
+    "currentVersions": "גרסאות נוכחיות",
+    "appVersion": "גרסת אפליקציה",
+    "swVersion": "גרסת Service Worker",
+    "buildId": "מזהה Build",
+    "gitSha": "Git SHA",
+    "environment": "סביבה",
+    "branch": "ענף",
+    "deploymentHistory": "היסטוריית פריסות",
+    "deployedAt": "תאריך פריסה",
+    "noDeployments": "עדיין לא בוצעו פריסות במערכת זו",
+    "refresh": "רענן",
+    "accessDenied": "גישה נדחתה",
+    "accessDeniedMessage": "עמוד זה זמין רק למנהלי מערכת",
+    "loadError": "שגיאה בטעינת נתוני גרסאות"
   }
 }
