@@ -863,20 +863,6 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
             האם אתה בטוח שברצונך למחוק את העיר{' '}
             <strong>{selectedCorp?.name}</strong>?
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              mt: 2,
-              p: 2,
-              borderRadius: borderRadius.md,
-              backgroundColor: colors.pastel.redLight,
-              color: colors.pastel.red,
-              fontWeight: 600,
-            }}
-          >
-            ⚠️ פעולה זו תמחק גם את כל השכונות והרכזים המשויכים לעיר ולא ניתן לבטל אותה!
-          </Typography>
-
           {/* Show error when deletion is blocked */}
           {deleteError && (
             <Alert

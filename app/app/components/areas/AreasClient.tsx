@@ -99,6 +99,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
     areaId: string;
     areaName: string;
     cityCount: number;
+    cities: Array<{ id: string; name: string; code: string }>;
   } | null>(null);
 
   // Check if user is SuperAdmin (only SuperAdmin can create/edit areas)
@@ -206,7 +207,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
       router.refresh();
     } else {
       // Check if error is due to existing cities
-      if (result.code === 'CITIES_EXIST' && result.cityCount) {
+      if (result.code === 'CITIES_EXIST' && result.cityCount && result.cities) {
         // Close the delete confirmation modal
         setDeleteModalOpen(false);
 
@@ -216,6 +217,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
           areaId: selectedArea.id,
           areaName: result.areaName || selectedArea.regionName,
           cityCount: result.cityCount,
+          cities: result.cities,
         });
       } else {
         // Show generic error message from server
@@ -778,6 +780,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
               areaId={deletionAlert.areaId}
               areaName={deletionAlert.areaName}
               cityCount={deletionAlert.cityCount}
+              cities={deletionAlert.cities}
               onClose={() => setDeletionAlert(null)}
             />
           )}

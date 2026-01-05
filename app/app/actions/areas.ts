@@ -452,15 +452,17 @@ export async function deleteArea(areaId: string) {
       };
     }
 
-    // Delete area manager
-    await prisma.areaManager.delete({
+    // Soft delete area manager (set isActive = false)
+    // INV-DATA-001: Preserves historical data for campaign analytics
+    await prisma.areaManager.update({
       where: { id: areaId },
+      data: { isActive: false },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_AREA_MANAGER',
+        action: 'SOFT_DELETE_AREA_MANAGER',
         entity: 'AreaManager',
         entityId: areaId,
         userId: currentUser.id,
@@ -473,6 +475,10 @@ export async function deleteArea(areaId: string) {
           userId: areaToDelete.userId,
           userEmail: areaToDelete.user?.email || 'N/A',
           cityCount: areaToDelete._count.cities,
+          isActive: true,
+        },
+        after: {
+          isActive: false,
         },
       },
     });

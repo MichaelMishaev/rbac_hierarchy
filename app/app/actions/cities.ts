@@ -527,10 +527,20 @@ export async function deleteCity(cityId: string) {
     // Only SUPERADMIN can delete corporations
     const currentUser = await requireSuperAdmin();
 
-    // Get corporation to delete
+    // Get corporation to delete with neighborhoods list
     const corpToDelete = await prisma.city.findUnique({
       where: { id: cityId },
       include: {
+        neighborhoods: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
         _count: {
           select: {
             coordinators: true,
@@ -547,13 +557,18 @@ export async function deleteCity(cityId: string) {
       };
     }
 
-    // CRITICAL: Block deletion if city has neighborhoods
+    // CRITICAL: Block deletion if city has neighborhoods - return full neighborhood list
     if (corpToDelete._count.neighborhoods > 0) {
       return {
         success: false,
         code: 'NEIGHBORHOODS_EXIST',
         neighborhoodCount: corpToDelete._count.neighborhoods,
         cityName: corpToDelete.name,
+        neighborhoods: corpToDelete.neighborhoods.map(neighborhood => ({
+          id: neighborhood.id,
+          name: neighborhood.name,
+          code: neighborhood.code,
+        })),
         error: `לא ניתן למחוק עיר עם ${corpToDelete._count.neighborhoods} ${corpToDelete._count.neighborhoods === 1 ? 'שכונה פעילה' : 'שכונות פעילות'}`,
       };
     }
