@@ -1,13 +1,233 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 44
+**Total Bugs:** 45
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🐛 BUG #45: 500 Error on City Deletion - Soft-Deleted Entities Counted in Queries (2026-01-05)
+
+**Severity:** HIGH (Breaks deletion protection logic)
+**Impact:** Cannot delete cities with neighborhoods - 500 Internal Server Error, modal stuck
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-05
+**Reported By:** User feedback - "500 error + modal stays open no matter what button pressed"
+
+### Bug Description
+
+**Symptoms:**
+- User tries to delete city that has neighborhoods
+- Modal shows deletion protection message
+- Regardless of button clicked ("צפה בשכונות" or "הבנתי"), modal stays open
+- Browser console shows: `POST /cities 500 (Internal Server Error)`
+
+**Expected Behavior:**
+- Should show `CityDeletionAlert` with list of blocking neighborhoods
+- Buttons should work normally
+- Should return graceful error code `NEIGHBORHOODS_EXIST` (not 500)
+
+### Root Cause
+
+**Soft-Deleted Entities Not Filtered in `_count` Queries**
+
+After the soft delete conversion (INV-DATA-001), deletion queries weren't filtering by `isActive: true` when counting related entities. This caused:
+
+1. **In `deleteCity()`** (`app/app/actions/cities.ts`):
+```typescript
+// PROBLEM: Counts ALL neighborhoods/coordinators (including soft-deleted)
+_count: {
+  select: {
+    coordinators: true,  // ❌ Includes deleted coordinators
+    neighborhoods: true, // ❌ Includes deleted neighborhoods
+  },
+}
+
+// Later: Fetch neighborhoods
+neighborhoods: {
+  where: { isActive: true },  // ✅ Only active neighborhoods
+  select: { id: true, name: true, code: true },
+}
+```
+
+**The Issue:**
+- If city has 5 neighborhoods (3 active, 2 soft-deleted)
+- `_count.neighborhoods` returns 5 (includes deleted)
+- `neighborhoods` array returns 3 (active only)
+- Mismatch: count=5 but array length=3
+- Code tries to access `neighborhoods[4]` → undefined → 500 error
+
+2. **In `deleteArea()`** (`app/app/actions/areas.ts`):
+```typescript
+// Same problem with cities count
+_count: {
+  select: {
+    cities: true,  // ❌ Includes soft-deleted cities
+  },
+}
+```
+
+### Fix Applied
+
+**Added `isActive: true` filters to all `_count` queries:**
+
+**1. Fixed `deleteCity()`** (`app/app/actions/cities.ts`):
+```diff
+// Count only active entities
+_count: {
+  select: {
+-   coordinators: true,
+-   neighborhoods: true,
++   coordinators: {
++     where: { isActive: true },
++   },
++   neighborhoods: {
++     where: { isActive: true },
++   },
+  },
+}
+
+// Fetch neighborhoods with isActive filter (already correct)
+neighborhoods: {
+  where: { isActive: true },  // ✅ Consistent with count
+  select: { id: true, name: true, code: true },
+  orderBy: { name: 'asc' },
+},
+```
+
+**2. Fixed `deleteArea()`** (`app/app/actions/areas.ts`):
+```diff
+_count: {
+  select: {
+-   cities: true,
++   cities: {
++     where: { isActive: true },
++   },
+  },
+}
+```
+
+**3. Added Error Boundary** (`app/app/components/cities/CitiesClient.tsx`):
+```diff
+const handleDeleteConfirm = async () => {
++ try {
+    const result = await deleteCity(selectedCorp.id);
+
+    if (result.code === 'NEIGHBORHOODS_EXIST' && result.neighborhoods) {
+      setDeletionAlert({
+        open: true,
+        cityId: selectedCorp.id,
+        cityName: result.cityName || selectedCorp.name,
+        neighborhoodCount: result.neighborhoodCount,
+        neighborhoods: result.neighborhoods,
+      });
+    }
++ } catch (error) {
++   console.error('Error in handleDeleteConfirm:', error);
++   setDeleteError('שגיאה לא צפויה במחיקת העיר. אנא נסה שוב.');
++ } finally {
++   setDeleteDialogOpen(false);
++ }
+};
+```
+
+### Files Modified
+
+1. `app/app/actions/areas.ts`:
+   - Added `where: { isActive: true }` to cities count
+
+2. `app/app/actions/cities.ts`:
+   - Added `where: { isActive: true }` to coordinators count
+   - Added `where: { isActive: true }` to neighborhoods count
+
+3. `app/app/components/cities/CitiesClient.tsx`:
+   - Added try-catch error boundary to `handleDeleteConfirm`
+   - Ensures modal closes even on errors via `finally` block
+
+### Prevention Rule
+
+**DB-COUNT-001: Always Filter Soft-Deleted Entities in `_count` Queries**
+
+**RULE:**
+- When using `_count` on relations with soft deletes, always filter by `isActive: true`
+- Ensure count filters match the actual query filters
+- Never rely on raw counts without filtering deleted entities
+
+**WHY:**
+- Soft-deleted entities remain in the database
+- `_count` includes ALL rows unless explicitly filtered
+- Mismatched counts can cause array access errors and 500s
+- Count should reflect what the user actually sees
+
+**CORRECT PATTERN:**
+```typescript
+// ✅ GOOD - Count matches query filters
+const result = await prisma.city.findUnique({
+  where: { id },
+  include: {
+    neighborhoods: {
+      where: { isActive: true },  // Filter active
+      select: { id: true, name: true },
+    },
+    _count: {
+      select: {
+        neighborhoods: {
+          where: { isActive: true },  // Same filter as above
+        },
+      },
+    },
+  },
+});
+// count = neighborhoods.length ✅
+```
+
+**INCORRECT PATTERN:**
+```typescript
+// ❌ BAD - Count includes deleted, query doesn't
+const result = await prisma.city.findUnique({
+  where: { id },
+  include: {
+    neighborhoods: {
+      where: { isActive: true },  // Only active
+      select: { id: true, name: true },
+    },
+    _count: {
+      select: {
+        neighborhoods: true,  // ALL (including deleted)
+      },
+    },
+  },
+});
+// count > neighborhoods.length ❌ MISMATCH!
+```
+
+**APPLY TO:**
+- All `_count` queries on relations
+- Any soft-delete enabled tables
+- Especially when count is used for UI display or array sizing
+- Before accessing arrays based on count values
+
+### Test Cases
+
+**Manual test:**
+1. ✅ Create city with 3 neighborhoods
+2. ✅ Soft-delete 1 neighborhood (`UPDATE neighborhoods SET is_active = false`)
+3. ✅ Try to delete the city
+4. ✅ Verify deletion protection message appears with 2 neighborhoods (not 3)
+5. ✅ Verify no 500 error
+6. ✅ Verify modal buttons work correctly
+
+**Edge case test:**
+1. ✅ City with ALL neighborhoods soft-deleted (count=0, should allow deletion)
+2. ✅ City with mix of active/deleted neighborhoods (should show only active)
+3. ✅ Area with ALL cities soft-deleted (count=0, should allow deletion)
+
+**Build verified:** ✅ `npm run build` successful
 
 ---
 
