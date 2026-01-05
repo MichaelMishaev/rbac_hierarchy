@@ -102,7 +102,7 @@ export default function AreaDeletionAlert({
         sx={{
           margin: 0,
           paddingInlineStart: { xs: '20px', sm: '24px' },
-          marginBottom: { xs: '16px', sm: '20px' },
+          marginBottom: { xs: '12px', sm: '16px' },
           '& li': {
             fontSize: { xs: '14px', sm: '15px' },
             color: '#78350F',
@@ -113,6 +113,74 @@ export default function AreaDeletionAlert({
       >
         <li>להעביר את {cityCount === 1 ? 'העיר' : 'הערים'} למחוז אחר, או</li>
         <li>למחוק את {cityCount === 1 ? 'העיר' : 'הערים'}</li>
+      </Box>
+
+      {/* Cities List */}
+      <Box
+        sx={{
+          backgroundColor: '#FED7AA',
+          borderRadius: '10px',
+          padding: { xs: '12px', sm: '16px' },
+          marginBottom: { xs: '16px', sm: '20px' },
+          maxHeight: { xs: '150px', sm: '200px' },
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#FFEDD5',
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#F59E0B',
+            borderRadius: '3px',
+            '&:hover': {
+              background: '#D97706',
+            },
+          },
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            fontWeight: 700,
+            color: '#92400E',
+            marginBottom: '8px',
+            fontSize: { xs: '12px', sm: '13px' },
+          }}
+        >
+          {cityCount === 1 ? 'עיר פעילה:' : `${cityCount} ערים פעילות:`}
+        </Typography>
+        <Box component="ul" sx={{ margin: 0, paddingInlineStart: '20px', listStyleType: 'disc' }}>
+          {cities.map((city) => (
+            <Box
+              component="li"
+              key={city.id}
+              sx={{
+                fontSize: { xs: '13px', sm: '14px' },
+                color: '#78350F',
+                fontWeight: 600,
+                marginBottom: '6px',
+                lineHeight: 1.6,
+              }}
+            >
+              {city.name}
+              <Box
+                component="span"
+                sx={{
+                  marginInlineStart: '6px',
+                  fontSize: { xs: '11px', sm: '12px' },
+                  color: '#92400E',
+                  fontFamily: 'monospace',
+                  opacity: 0.8,
+                }}
+              >
+                ({city.code})
+              </Box>
+            </Box>
+          ))}
+        </Box>
       </Box>
 
       <Box
