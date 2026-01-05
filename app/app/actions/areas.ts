@@ -401,7 +401,7 @@ export async function deleteArea(areaId: string) {
       };
     }
 
-    // Get area manager to delete with cities list
+    // Get area manager to delete with active cities list
     const areaToDelete = await prisma.areaManager.findUnique({
       where: { id: areaId },
       include: {
@@ -412,6 +412,9 @@ export async function deleteArea(areaId: string) {
           },
         },
         cities: {
+          where: {
+            isActive: true,
+          },
           select: {
             id: true,
             name: true,
@@ -423,7 +426,11 @@ export async function deleteArea(areaId: string) {
         },
         _count: {
           select: {
-            cities: true,
+            cities: {
+              where: {
+                isActive: true,
+              },
+            },
           },
         },
       },

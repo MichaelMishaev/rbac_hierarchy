@@ -530,11 +530,14 @@ export async function deleteCity(cityId: string) {
     // Only SUPERADMIN can delete corporations
     const currentUser = await requireSuperAdmin();
 
-    // Get corporation to delete with neighborhoods list
+    // Get corporation to delete with active neighborhoods list
     const corpToDelete = await prisma.city.findUnique({
       where: { id: cityId },
       include: {
         neighborhoods: {
+          where: {
+            isActive: true,
+          },
           select: {
             id: true,
             name: true,
@@ -546,8 +549,16 @@ export async function deleteCity(cityId: string) {
         },
         _count: {
           select: {
-            coordinators: true,
-            neighborhoods: true,
+            coordinators: {
+              where: {
+                isActive: true,
+              },
+            },
+            neighborhoods: {
+              where: {
+                isActive: true,
+              },
+            },
           },
         },
       },

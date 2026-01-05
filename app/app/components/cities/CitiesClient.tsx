@@ -188,31 +188,37 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const handleDeleteConfirm = async () => {
     if (!selectedCorp) return;
 
-    setDeleteError(''); // Clear previous errors
-    const result = await deleteCity(selectedCorp.id);
-    if (result.success) {
-      setCorporations((prev) => prev.filter((corp) => corp.id !== selectedCorp.id));
-      setDeleteConfirmOpen(false);
-      setSelectedCorp(null);
-      router.refresh();
-    } else {
-      // Check if error is due to existing neighborhoods
-      if (result.code === 'NEIGHBORHOODS_EXIST' && result.neighborhoodCount && result.neighborhoods) {
-        // Close the delete confirmation modal
-        setDeleteConfirmOpen(false);
+    try {
+      setDeleteError(''); // Clear previous errors
+      const result = await deleteCity(selectedCorp.id);
 
-        // Show the custom deletion alert
-        setDeletionAlert({
-          open: true,
-          cityId: selectedCorp.id,
-          cityName: result.cityName || selectedCorp.name,
-          neighborhoodCount: result.neighborhoodCount,
-          neighborhoods: result.neighborhoods,
-        });
+      if (result.success) {
+        setCorporations((prev) => prev.filter((corp) => corp.id !== selectedCorp.id));
+        setDeleteConfirmOpen(false);
+        setSelectedCorp(null);
+        router.refresh();
       } else {
-        // Show other errors in dialog
-        setDeleteError(result.error || 'שגיאה במחיקת העיר');
+        // Check if error is due to existing neighborhoods
+        if (result.code === 'NEIGHBORHOODS_EXIST' && result.neighborhoodCount && result.neighborhoods) {
+          // Close the delete confirmation modal
+          setDeleteConfirmOpen(false);
+
+          // Show the custom deletion alert
+          setDeletionAlert({
+            open: true,
+            cityId: selectedCorp.id,
+            cityName: result.cityName || selectedCorp.name,
+            neighborhoodCount: result.neighborhoodCount,
+            neighborhoods: result.neighborhoods,
+          });
+        } else {
+          // Show other errors in dialog
+          setDeleteError(result.error || 'שגיאה במחיקת העיר');
+        }
       }
+    } catch (error) {
+      console.error('Error deleting city:', error);
+      setDeleteError('שגיאה לא צפויה במחיקת העיר. אנא נסה שוב.');
     }
   };
 
