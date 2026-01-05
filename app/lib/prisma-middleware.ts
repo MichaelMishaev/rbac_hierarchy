@@ -34,24 +34,51 @@ export function registerPrismaMiddleware(prisma: any) {
     return result;
   });
 
-  // Guard 2: INV-005 - Soft Deletes Only
+  // Guard 2: INV-DATA-001 - Soft Deletes Only
   prisma.$use(async (params: Prisma.MiddlewareParams, next: any) => {
     // Block hard deletes on activists
     if (params.model === 'Activist' && params.action === 'delete') {
       logger.error('🚨 INVARIANT VIOLATION: Hard delete attempted on Activist', {
-        invariant: 'INV-005',
+        invariant: 'INV-DATA-001',
         params: params.args
       });
-      throw new Error('Hard deletes not allowed on activists. Use isActive = false (INV-005)');
+      throw new Error('Hard deletes not allowed on activists. Use isActive = false (INV-DATA-001)');
     }
 
     // Block hard deletes on users
     if (params.model === 'User' && params.action === 'delete') {
       logger.error('🚨 INVARIANT VIOLATION: Hard delete attempted on User', {
-        invariant: 'INV-005',
+        invariant: 'INV-DATA-001',
         params: params.args
       });
-      throw new Error('Hard deletes not allowed on users. Use isActive = false (INV-005)');
+      throw new Error('Hard deletes not allowed on users. Use isActive = false (INV-DATA-001)');
+    }
+
+    // Block hard deletes on area managers
+    if (params.model === 'AreaManager' && params.action === 'delete') {
+      logger.error('🚨 INVARIANT VIOLATION: Hard delete attempted on AreaManager', {
+        invariant: 'INV-DATA-001',
+        params: params.args
+      });
+      throw new Error('Hard deletes not allowed on area managers. Use isActive = false (INV-DATA-001)');
+    }
+
+    // Block hard deletes on cities
+    if (params.model === 'City' && params.action === 'delete') {
+      logger.error('🚨 INVARIANT VIOLATION: Hard delete attempted on City', {
+        invariant: 'INV-DATA-001',
+        params: params.args
+      });
+      throw new Error('Hard deletes not allowed on cities. Use isActive = false (INV-DATA-001)');
+    }
+
+    // Block hard deletes on neighborhoods
+    if (params.model === 'Neighborhood' && params.action === 'delete') {
+      logger.error('🚨 INVARIANT VIOLATION: Hard delete attempted on Neighborhood', {
+        invariant: 'INV-DATA-001',
+        params: params.args
+      });
+      throw new Error('Hard deletes not allowed on neighborhoods. Use isActive = false (INV-DATA-001)');
     }
 
     return next(params);
@@ -110,7 +137,10 @@ export function registerPrismaMiddleware(prisma: any) {
   });
 
   logger.info('✅ Prisma middleware registered: 4 runtime guards active', {
-    metadata: { guards: ['INV-001', 'INV-004', 'INV-005', 'INV-002'] }
+    metadata: {
+      guards: ['INV-001', 'INV-DATA-001', 'INV-004', 'INV-002'],
+      softDeleteModels: ['User', 'Activist', 'AreaManager', 'City', 'Neighborhood']
+    }
   });
 }
 

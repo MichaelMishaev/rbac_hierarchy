@@ -579,10 +579,13 @@ export async function listAreas() {
       return { success: false, error: 'לא מחובר למערכת' };
     }
 
-    // Fetch all areas (SuperAdmin sees all, others see only their areas)
+    // Fetch all active areas (SuperAdmin sees all, others see only their areas)
     const areas = await prisma.areaManager.findMany({
-      where: currentUser.isSuperAdmin ? {} : {
+      where: currentUser.isSuperAdmin ? {
+        isActive: true, // Hide soft-deleted areas
+      } : {
         userId: currentUser.id,
+        isActive: true, // Hide soft-deleted areas
       },
       select: {
         id: true,

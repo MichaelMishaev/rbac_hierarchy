@@ -19,8 +19,10 @@ import {
   DialogActions,
   Button,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import RtlButton from '@/app/components/ui/RtlButton';
+import CityDeletionAlert from '@/app/components/alerts/CityDeletionAlert';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -102,6 +104,13 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const [areaManagers, setAreaManagers] = useState<AreaManager[]>([]); // v1.4: Area Managers list
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string>('');
+  const [deletionAlert, setDeletionAlert] = useState<{
+    open: boolean;
+    cityId: string;
+    cityName: string;
+    neighborhoodCount: number;
+    neighborhoods: Array<{ id: string; name: string; code: string }>;
+  } | null>(null);
 
   // v1.4: Fetch area managers on mount
   useEffect(() => {
@@ -187,8 +196,23 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
       setSelectedCorp(null);
       router.refresh();
     } else {
-      // Show error message in dialog
-      setDeleteError(result.error || 'שגיאה במחיקת העיר');
+      // Check if error is due to existing neighborhoods
+      if (result.code === 'NEIGHBORHOODS_EXIST' && result.neighborhoodCount && result.neighborhoods) {
+        // Close the delete confirmation modal
+        setDeleteConfirmOpen(false);
+
+        // Show the custom deletion alert
+        setDeletionAlert({
+          open: true,
+          cityId: selectedCorp.id,
+          cityName: result.cityName || selectedCorp.name,
+          neighborhoodCount: result.neighborhoodCount,
+          neighborhoods: result.neighborhoods,
+        });
+      } else {
+        // Show other errors in dialog
+        setDeleteError(result.error || 'שגיאה במחיקת העיר');
+      }
     }
   };
 
@@ -917,6 +941,31 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* City Deletion Alert - Shown when city has neighborhoods */}
+      <Snackbar
+        open={deletionAlert?.open ?? false}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{
+          top: { xs: '16px !important', sm: '24px !important' },
+          left: { xs: '8px !important', sm: 'auto !important' },
+          right: { xs: '8px !important', sm: 'auto !important' },
+          maxWidth: { xs: 'calc(100% - 16px)', sm: '700px' },
+          width: { xs: 'calc(100% - 16px)', sm: 'auto' },
+        }}
+      >
+        <div>
+          {deletionAlert && (
+            <CityDeletionAlert
+              cityId={deletionAlert.cityId}
+              cityName={deletionAlert.cityName}
+              neighborhoodCount={deletionAlert.neighborhoodCount}
+              neighborhoods={deletionAlert.neighborhoods}
+              onClose={() => setDeletionAlert(null)}
+            />
+          )}
+        </div>
+      </Snackbar>
     </Box>
   );
 }

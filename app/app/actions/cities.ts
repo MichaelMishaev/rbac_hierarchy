@@ -228,8 +228,11 @@ export async function listCities(filters: ListCitiesFilters = {}) {
       ];
     }
 
+    // Default to showing only active cities (hide soft-deleted)
     if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
+    } else {
+      where.isActive = true; // Hide soft-deleted cities by default
     }
 
     // Query corporations
@@ -584,16 +587,18 @@ export async function deleteCity(cityId: string) {
       };
     }
 
-    // Delete corporation (safe - no data underneath)
-    await prisma.city.delete({
+    // Soft delete city (set isActive = false)
+    // INV-DATA-001: Preserves historical data for campaign analytics
+    await prisma.city.update({
       where: { id: cityId },
+      data: { isActive: false },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_CORPORATION',
-        entity: 'Corporation',
+        action: 'SOFT_DELETE_CITY',
+        entity: 'City',
         entityId: cityId,
         userId: currentUser.id,
         userEmail: currentUser.email,
@@ -604,6 +609,10 @@ export async function deleteCity(cityId: string) {
           code: corpToDelete.code,
           coordinatorCount: corpToDelete._count.coordinators,
           neighborhoodCount: corpToDelete._count.neighborhoods,
+          isActive: true,
+        },
+        after: {
+          isActive: false,
         },
       },
     });
