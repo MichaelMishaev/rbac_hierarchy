@@ -1,9 +1,13 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { withSentryConfig } from '@sentry/nextjs';
+import bundleAnalyzer from '@next/bundle-analyzer';
 import path from 'path';
 
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -19,6 +23,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // ⚡ Build Performance: Externalize heavy server packages (moved from experimental in Next.js 15+)
+  serverExternalPackages: [
+    'bcryptjs',
+    'prisma',
+    '@prisma/client',
+    'exceljs',
+    'web-push',
+    'ioredis',
+    'leaflet',
+  ],
 
   // ✅ SECURITY FIX (VULN-AUTH-003): Strip dev-only credentials from production
   webpack: (config, { isServer, webpack }) => {
@@ -46,23 +61,19 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    // instrumentationHook is now default in Next.js 15+, no longer needed
 
-    // ⚡ Build Performance: Faster dependency tracing (saves ~10-15s)
-    turbotrace: {
-      logLevel: 'error',
+    // ⚡ Bundle Size: Optimize tree-shaking for better dead code elimination
+    optimizePackageImports: ['date-fns', 'date-fns-tz', 'lucide-react', 'recharts'],
+  },
+
+  // ⚡ Bundle Size: Modularize imports for better tree-shaking
+  modularizeImports: {
+    'date-fns': {
+      transform: 'date-fns/{{member}}',
     },
-
-    // ⚡ Build Performance: Externalize heavy server packages (saves ~5-10s)
-    serverComponentsExternalPackages: [
-      'bcryptjs',
-      'prisma',
-      '@prisma/client',
-      'exceljs',
-      'web-push',
-      'ioredis',
-      'leaflet',
-    ],
+    'date-fns-tz': {
+      transform: 'date-fns-tz/{{member}}',
+    },
   },
   images: {
     remotePatterns: [
@@ -131,9 +142,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Wrap with Sentry config
-export default withSentryConfig(
-  withNextIntl(nextConfig),
+// Wrap with Sentry config and Bundle Analyzer
+export default withBundleAnalyzer(
+  withSentryConfig(withNextIntl(nextConfig),
   {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
@@ -171,5 +182,5 @@ export default withSentryConfig(
       // https://vercel.com/docs/cron-jobs
       automaticVercelMonitors: true,
     },
-  }
+  })
 );

@@ -11,6 +11,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Box,
   Typography,
@@ -30,6 +31,7 @@ import {
   ToggleButtonGroup,
   FormControlLabel,
   Checkbox,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -40,10 +42,21 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
-import ExcelJS from 'exceljs';
 import { ActivistVoterCard } from '@/app/components/activists/ActivistVoterCard';
-import { ExcelUpload } from './components/ExcelUpload';
 import type { Voter } from '@prisma/client';
+
+// ⚡ Performance: Lazy load ExcelUpload (22MB ExcelJS library)
+const ExcelUpload = dynamic(
+  () => import('./components/ExcelUpload').then((mod) => ({ default: mod.ExcelUpload })),
+  {
+    loading: () => (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    ),
+    ssr: false,
+  }
+);
 
 type ActivistVotersClientProps = {
   user: {
@@ -175,6 +188,8 @@ export default function ActivistVotersClient({ user, voters: initialVoters }: Ac
 
   const handleExportToExcel = async () => {
     try {
+      // ⚡ Performance: Lazy load ExcelJS (22MB) only when exporting
+      const ExcelJS = (await import('exceljs')).default;
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('בוחרים');
 
