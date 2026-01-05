@@ -63,17 +63,8 @@ const nextConfig: NextConfig = {
     },
 
     // ⚡ Bundle Size: Optimize tree-shaking for better dead code elimination
-    optimizePackageImports: ['date-fns', 'date-fns-tz', 'lucide-react', 'recharts'],
-  },
-
-  // ⚡ Bundle Size: Modularize imports for better tree-shaking
-  modularizeImports: {
-    'date-fns': {
-      transform: 'date-fns/{{member}}',
-    },
-    'date-fns-tz': {
-      transform: 'date-fns-tz/{{member}}',
-    },
+    // NOTE: optimizePackageImports handles modularization automatically in Next.js 15+
+    optimizePackageImports: ['date-fns', 'date-fns-tz', 'lucide-react', 'recharts', '@mui/material', '@mui/icons-material'],
   },
   images: {
     remotePatterns: [
@@ -143,9 +134,9 @@ const nextConfig: NextConfig = {
 };
 
 // Wrap with Sentry config and Bundle Analyzer
-export default withBundleAnalyzer(
-  withSentryConfig(withNextIntl(nextConfig),
-  {
+// ⚡ Performance: Only wrap with bundle analyzer when explicitly requested
+const configWithIntl = withNextIntl(nextConfig);
+const configWithSentry = withSentryConfig(configWithIntl, {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
 
@@ -158,9 +149,14 @@ export default withBundleAnalyzer(
     // For all available options, see:
     // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
+    // ⚡ Performance: COMPLETELY DISABLE source map uploads in Railway builds
+    disableServerWebpackPlugin: process.env.RAILWAY_ENVIRONMENT !== undefined,
+    disableClientWebpackPlugin: process.env.RAILWAY_ENVIRONMENT !== undefined,
+
     // Performance: Disable expensive source map uploads (reduces build time by ~1-2 minutes)
     // Only upload minimal source maps needed for error tracking
     widenClientFileUpload: false,
+    hideSourceMaps: true,
 
     // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
     // This can increase your server load as well as your hosting bill.
@@ -182,5 +178,9 @@ export default withBundleAnalyzer(
       // https://vercel.com/docs/cron-jobs
       automaticVercelMonitors: true,
     },
-  })
-);
+  });
+
+// ⚡ Performance: Only enable bundle analyzer when explicitly requested
+export default process.env.ANALYZE === 'true'
+  ? withBundleAnalyzer(configWithSentry)
+  : configWithSentry;
