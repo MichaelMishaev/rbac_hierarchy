@@ -804,7 +804,7 @@ export async function getAreaManagers() {
     const whereClause: any = {
       isActive: true,
       user: {
-        isNot: null, // CRITICAL: Only return area managers with valid user relationships
+        isActive: true, // CRITICAL: Only return areas with active (non-soft-deleted) users
       },
     };
 
@@ -871,14 +871,11 @@ export async function getAreaManagers() {
     }
     // else: SUPERADMIN sees all areas (no additional filtering)
 
-    // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
+    // CRITICAL FIX: Soft-deleted users filtered at relation level in whereClause
     const areaManagers = await prisma.areaManager.findMany({
       where: whereClause,
       include: {
         user: {
-          where: {
-            isActive: true, // Only include active users (filters soft-deleted)
-          },
           select: {
             fullName: true,
             email: true,

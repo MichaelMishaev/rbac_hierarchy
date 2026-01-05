@@ -357,7 +357,7 @@ export default function CityModal({
                   options={localAreaManagers}
                   getOptionLabel={(option) => `${option.regionName} - ${option.fullName}`}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
-                  noOptionsText="אין מנהלי אזור זמינים - צור חדש למטה"
+                  noOptionsText="אין אזורים זמינים"
                   fullWidth
                 renderInput={(params) => (
                   <TextField
