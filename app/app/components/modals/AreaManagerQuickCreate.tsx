@@ -97,7 +97,7 @@ export default function AreaManagerQuickCreate({
     }
 
     if (!formData.userId.trim()) {
-      setError('בחירת מנהל מחוז היא שדה חובה');
+      setError('בחירת מנהל לאזור היא שדה חובה');
       return;
     }
 
@@ -207,10 +207,10 @@ export default function AreaManagerQuickCreate({
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: colors.neutral[800] }}>
-              יצירת מנהל מחוז חדש
+              יצירת אזור חדש
             </Typography>
             <Typography variant="caption" sx={{ color: colors.neutral[600] }}>
-              צור מנהל מחוז במהירות ושייך אותו לעיר
+              צור אזור גיאוגרפי חדש ושייך לו מנהל קיים
             </Typography>
           </Box>
         </Box>
@@ -296,17 +296,17 @@ export default function AreaManagerQuickCreate({
             options={availableUsers}
             getOptionLabel={(option) => `${option.fullName} (${option.email})`}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            noOptionsText="אין משתמשים זמינים עם תפקיד מנהל מחוז"
+            noOptionsText="אין משתמשים זמינים עם תפקיד מנהל אזור"
             loading={loadingUsers}
             fullWidth
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="בחר מנהל מחוז *"
+                label="בחר מנהל לאזור *"
                 placeholder="חפש לפי שם או אימייל..."
                 required
                 error={!formData.userId && !!error}
-                helperText="רק משתמשים עם תפקיד 'מנהל מחוז' שטרם שויכו לאזור"
+                helperText="רק משתמשים עם תפקיד 'מנהל אזור' שטרם שויכו לאזור"
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: borderRadius.lg,
@@ -362,7 +362,7 @@ export default function AreaManagerQuickCreate({
           {availableUsers.length === 0 && !loadingUsers && (
             <Alert severity="warning" sx={{ borderRadius: borderRadius.md }}>
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                אין משתמשים זמינים עם תפקיד &quot;מנהל מחוז&quot;. צור משתמש חדש בעמוד המשתמשים תחילה.
+                אין משתמשים זמינים עם תפקיד &quot;מנהל אזור&quot;. צור משתמש חדש בעמוד המשתמשים תחילה.
               </Typography>
             </Alert>
           )}
@@ -419,7 +419,7 @@ export default function AreaManagerQuickCreate({
             transition: 'all 0.2s ease-in-out',
           }}
         >
-          {loading ? <CircularProgress size={24} sx={{ color: colors.neutral[0] }} /> : 'צור מנהל מחוז'}
+          {loading ? <CircularProgress size={24} sx={{ color: colors.neutral[0] }} /> : 'צור אזור'}
         </Button>
       </DialogActions>
     </Dialog>

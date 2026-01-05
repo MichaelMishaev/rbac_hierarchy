@@ -1,13 +1,161 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 41
+**Total Bugs:** 42
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🐛 BUG #42: Confusing Terminology in City/Area Creation - "מנהל מחוז" vs "אזור" (2026-01-05)
+
+**Severity:** MEDIUM (UX Confusion)
+**Impact:** Users confused about creating Areas vs selecting Areas for Cities
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-05
+**Reported By:** User feedback during city creation workflow
+
+### Bug Description
+
+**Multiple terminology inconsistencies causing confusion:**
+
+1. **CityModal** - When creating a city:
+   - ❌ Dropdown label said "מנהל מחוז" (Area Manager - a person)
+   - ✅ Should say "אזור" (Area - a geographic region)
+   - **Confusion:** Label suggested selecting a person, but actually selecting a region
+
+2. **AreaManagerQuickCreate** - "Create New Area Manager" button:
+   - ❌ Title: "יצירת מנהל מחוז חדש" (Create New Area Manager)
+   - ❌ Subtitle: "צור מנהל מחוז במהירות ושייך אותו לעיר"
+   - ❌ Button: "צור מנהל מחוז" (Create Area Manager)
+   - **Confusion:** Dialog title implies creating a new PERSON, but actually creating a new AREA (geographic region) and assigning existing user to it
+
+3. **Dropdown shows users (with emails)**:
+   - Shows existing users with role AREA_MANAGER
+   - But dialog says "Create Area Manager" (sounds like creating a person)
+   - **Actual behavior:** Creating an AREA and linking existing user
+
+### Root Cause
+
+**Terminology overload:**
+- "מנהל מחוז" (Area Manager) has two meanings:
+  1. A USER with role AREA_MANAGER (person)
+  2. An AREA record in database (place/region)
+- UI mixed these concepts inconsistently
+
+**Workflow is:**
+1. Create USER with role AREA_MANAGER → `/users`
+2. Create AREA and assign that user → `/areas` or quick create
+3. Create CITY in that area → `/cities`
+
+But UI made it look like step 2 was creating a person (step 1).
+
+### Fix Applied
+
+**1. CityModal.tsx** (`app/app/components/modals/CityModal.tsx`):
+```diff
+- label="מנהל מחוז"
+- placeholder="חפש לפי אזור, שם או אימייל..."
+- helperText error: 'מנהל מחוז הוא שדה חובה'
+
++ label="אזור *"
++ placeholder="חפש לפי שם אזור, מנהל או אימייל..."
++ helperText: 'בחר את האזור הגיאוגרפי שבו העיר נמצאת'
++ helperText error: 'בחירת אזור היא שדה חובה'
+```
+
+**Button text:**
+```diff
+- יצירת מנהל מחוז חדש
+- אם אין מנהל מחוז מתאים ברשימה
+
++ יצירת אזור חדש
++ אם אין אזור מתאים ברשימה
+```
+
+**2. AreaManagerQuickCreate.tsx** (`app/app/components/modals/AreaManagerQuickCreate.tsx`):
+```diff
+- Title: "יצירת מנהל מחוז חדש"
+- Subtitle: "צור מנהל מחוז במהירות ושייך אותו לעיר"
+- Dropdown label: "בחר מנהל מחוז *"
+- Button: "צור מנהל מחוז"
+- Alert: "אין משתמשים זמינים עם תפקיד 'מנהל מחוז'"
+
++ Title: "יצירת אזור חדש"
++ Subtitle: "צור אזור גיאוגרפי חדש ושייך לו מנהל קיים"
++ Dropdown label: "בחר מנהל לאזור *"
++ Button: "צור אזור"
++ Alert: "אין משתמשים זמינים עם תפקיד 'מנהל אזור'"
++ Error: "בחירת מנהל לאזור היא שדה חובה"
+```
+
+### Files Modified
+
+1. `app/app/components/modals/CityModal.tsx`:
+   - Lines 143-144: Error message
+   - Lines 365-372: Dropdown label and helper text
+   - Lines 439-471: Quick create button text
+
+2. `app/app/components/modals/AreaManagerQuickCreate.tsx`:
+   - Lines 100: Validation error
+   - Lines 209-214: Dialog title and subtitle
+   - Lines 299-309: Dropdown label and helper
+   - Lines 363-367: Alert message
+   - Line 422: Button text
+
+### Prevention Rule
+
+**UX-TERM-001: Terminology Consistency in Hierarchical Systems**
+
+**RULE:**
+- Clearly distinguish between ENTITIES (places/things) and ROLES (people/users)
+- Use consistent terminology throughout the UI
+- Dialog titles should match their actual action (Create X should create X, not Y)
+- Labels should describe what you're selecting, not a related concept
+
+**CHECKLIST for similar features:**
+- [ ] Does the dialog title match what's being created?
+- [ ] Do field labels describe what you're selecting (entity vs role)?
+- [ ] Is terminology consistent between related components?
+- [ ] Would a new user understand the hierarchy without explanation?
+
+**APPLY TO:**
+- All hierarchical creation flows (Area → City → Neighborhood)
+- All role assignment interfaces
+- All quick-create dialogs
+
+**EXAMPLE:**
+```typescript
+// ❌ BAD - Confusing
+<Dialog title="Create Area Manager"> {/* Sounds like creating a person */}
+  <Select label="מנהל מחוז" /> {/* Selecting what? Person or place? */}
+</Dialog>
+
+// ✅ GOOD - Clear
+<Dialog title="Create Area"> {/* Creating a geographic region */}
+  <Select label="אזור" /> {/* Selecting a region */}
+  <Select label="בחר מנהל לאזור" /> {/* Selecting person to manage it */}
+</Dialog>
+```
+
+### Test Cases
+
+**Manual test:**
+1. ✅ Go to `/cities` as SUPERADMIN
+2. ✅ Click "צור עיר חדשה"
+3. ✅ Verify dropdown shows "אזור *" (not "מנהל מחוז")
+4. ✅ Verify helper text: "בחר את האזור הגיאוגרפי שבו העיר נמצאת"
+5. ✅ Click "יצירת אזור חדש" button
+6. ✅ Verify dialog title: "יצירת אזור חדש"
+7. ✅ Verify subtitle: "צור אזור גיאוגרפי חדש ושייך לו מנהל קיים"
+8. ✅ Verify dropdown: "בחר מנהל לאזור *"
+9. ✅ Verify button: "צור אזור"
+
+**Build verified:** ✅ `npm run build` successful
 
 ---
 
@@ -6605,5 +6753,12 @@ AUTHORIZED_DELETE_EMAILS=dima@gmail.com,test@test.com,superadmin@election.test
 - **Before:** LOCKED (all screens locked per CLAUDE.md)
 - **During fix:** UNLOCKED (explicit user permission: "open area, fix and lock again")
 - **After:** LOCKED AGAIN ✅
+
+### Deployment
+
+- **Branch:** `develop`
+- **Commit:** `ca621aa` - fix: add error handling for area deletion failures
+- **Pushed:** 2026-01-05
+- **Railway Auto-Deploy:** Will deploy automatically to production
 
 ---

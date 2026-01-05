@@ -141,7 +141,7 @@ export default function CityModal({
     }
 
     if (mode === 'create' && !formData.areaManagerId.trim()) {
-      newErrors.areaManagerId = 'מנהל מחוז הוא שדה חובה';
+      newErrors.areaManagerId = 'בחירת אזור היא שדה חובה';
     }
 
     setErrors(newErrors);
@@ -362,14 +362,14 @@ export default function CityModal({
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="מנהל מחוז"
-                    placeholder="חפש לפי אזור, שם או אימייל..."
+                    label="אזור *"
+                    placeholder="חפש לפי שם אזור, מנהל או אימייל..."
                     error={!!errors.areaManagerId}
                     helperText={
                       errors.areaManagerId ||
                       (isAreaManager
                         ? 'מנהלי אזור יכולים ליצור ערים רק באזור שלהם'
-                        : undefined)
+                        : 'בחר את האזור הגיאוגרפי שבו העיר נמצאת')
                     }
                     required={mode === 'create'}
                     sx={{
@@ -436,7 +436,7 @@ export default function CityModal({
                 />
               )}
 
-              {/* Quick Create Area Manager Button - SuperAdmin ONLY */}
+              {/* Quick Create Area Button - SuperAdmin ONLY */}
               {mode === 'create' && userRole === 'SUPERADMIN' && (
                 <Box
                   sx={{
@@ -462,10 +462,10 @@ export default function CityModal({
                       },
                     }}
                   >
-                    יצירת מנהל מחוז חדש
+                    יצירת אזור חדש
                   </Button>
                   <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                    אם אין מנהל מחוז מתאים ברשימה
+                    אם אין אזור מתאים ברשימה
                   </Typography>
                 </Box>
               )}
