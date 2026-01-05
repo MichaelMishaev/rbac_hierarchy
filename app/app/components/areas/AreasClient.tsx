@@ -19,6 +19,7 @@ import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
+import toast from 'react-hot-toast';
 import PublicIcon from '@mui/icons-material/Public';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -193,7 +194,12 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
       setAreas((prev) => prev.filter((area) => area.id !== selectedArea.id));
       setDeleteModalOpen(false);
       setSelectedArea(null);
+      toast.success('האזור נמחק בהצלחה');
       router.refresh();
+    } else {
+      // Show error message from server
+      toast.error(result.error || 'שגיאה במחיקת האזור');
+      // Keep modal open so user can see the error and try again or cancel
     }
   };
 

@@ -4853,9 +4853,11 @@ If issues arise, revert by:
 
 **Severity:** CRITICAL
 **Impact:** App crashes on navigation (menu clicks) - users see React error, cannot navigate between pages
-**Status:** ✅ FIXED
-**Fix Date:** 2026-01-01
+**Status:** ✅ FIXED (Re-fixed 2026-01-05 - implementation was incomplete)
+**Fix Date:** 2026-01-01 (original), 2026-01-05 (regression fix)
 **Reported By:** User (Railway development environment)
+
+**⚠️ REGRESSION (2026-01-05):** Bug reappeared due to incomplete fix implementation. Original fix documentation said to use `event.respondWith(fetch(request))`, but actual code just had `return;`. Fixed by implementing the documented solution correctly.
 
 ### Bug Description
 
@@ -5013,6 +5015,47 @@ event.respondWith(caches.match(request) || fetch(request));
 - React Error #418: https://react.dev/errors/418 (Hydration mismatch)
 - Next.js Caching: https://nextjs.org/docs/app/building-your-application/deploying#caching-and-isrs
 - Service Worker Best Practices: https://web.dev/service-worker-caching-and-http-caching/
+
+### Regression Fix (2026-01-05)
+
+**Problem:** Bug reappeared with same symptoms (navigation crashes, `TypeError: Cannot read properties of undefined`)
+
+**Root Cause:** The fix was **incompletely implemented**:
+- Documentation (line 4948) said: `event.respondWith(fetch(request));`
+- Actual code (sw.js:150) had: `return;` (no `event.respondWith`)
+
+**Why `return` alone doesn't work:**
+- Just returning without `event.respondWith()` creates a timing race condition
+- The browser takes over, but there's no explicit promise to wait for
+- Some browsers/timing scenarios can still serve stale cached chunks
+
+**The Correct Fix (sw.js:145-151):**
+```javascript
+// Next.js internal files: NEVER cache (they're versioned with hashes)
+// Caching these causes chunk mismatch errors on navigation
+if (url.pathname.startsWith('/_next/')) {
+  event.respondWith(fetch(request)); // ✅ Explicit fetch
+  return;
+}
+```
+
+**Changes Made:**
+1. Bumped version: `2.1.4` → `2.1.5`
+2. Added `event.respondWith(fetch(request))` before return
+3. Updated comments to match documented fix
+
+**To Clear Old Service Worker (users must do this):**
+```bash
+# Method 1: Hard refresh (clears SW cache)
+Ctrl+Shift+R (Windows/Linux)
+Cmd+Shift+R (Mac)
+
+# Method 2: Manual unregister (if hard refresh doesn't work)
+# Open DevTools > Application > Service Workers > Unregister
+# Then refresh page
+```
+
+**Lesson:** When documenting a fix, **verify the actual implementation matches the documented solution**. Don't assume the code was updated correctly.
 
 
 ## 🔴 CRITICAL BUG #36: Activist Coordinator Neighborhoods Not Saving on Railway (2026-01-01)
@@ -6377,7 +6420,190 @@ user: {
 
 This same pattern should be checked in other pages that include user/coordinator relations:
 - Cities page
-- Neighborhoods page  
+- Neighborhoods page
 - Other pages with soft-delete filtering
+
+---
+
+## [BUG-056] Area Deletion Fails Silently - No Error Feedback to User
+
+**Date:** 2026-01-05
+**Severity:** HIGH (Critical UX issue - users think app is broken)
+**Status:** FIXED ✅
+**Reporter:** User (production environment)
+**Developer:** Claude Sonnet 4.5
+
+### Problem
+
+On production (https://rbachierarchydev-development.up.railway.app/areas), when users try to delete an area:
+1. Click delete button → modal appears
+2. Click confirm → **nothing happens**
+3. Modal stays open, no error message shown
+4. User has no idea why deletion failed
+
+**User Experience:**
+- Silent failure (no feedback)
+- User thinks the app is broken or frozen
+- No indication that deletion was blocked by authorization
+
+### Root Cause Analysis
+
+**Two-layer authorization check without error handling:**
+
+1. **Server-side** (app/actions/areas.ts:396-402):
+   ```typescript
+   const AUTHORIZED_DELETE_EMAILS = ['dima@gmail.com', 'test@test.com'];
+   if (!AUTHORIZED_DELETE_EMAILS.includes(currentUser.email)) {
+     return { success: false, error: 'Only authorized users can delete areas...' };
+   }
+   ```
+
+2. **Client-side** (AreasClient.tsx:99-100, 188-198):
+   ```typescript
+   // Shows delete button if user email matches
+   const canDeleteAreas = isSuperAdmin && AUTHORIZED_DELETE_EMAILS.includes(userEmail);
+
+   // But handleDeleteArea MISSING error handling
+   const handleDeleteArea = async () => {
+     const result = await deleteArea(selectedArea.id);
+     if (result.success) {
+       // Only handles success case ✅
+     }
+     // NO ERROR HANDLING HERE! ❌
+   };
+   ```
+
+**Why this happened:**
+- Production user email (`superadmin@election.test`) is NOT in the authorized list
+- Server correctly rejects deletion
+- Client receives `{ success: false, error: "..." }` but ignores it
+- User sees nothing
+
+### Affected Code
+
+**File:** `app/app/components/areas/AreasClient.tsx`
+- Line 39: Missing `toast` import
+- Lines 188-198: `handleDeleteArea` function with no error handling
+
+### Fix Applied
+
+**1. Added toast import:**
+
+```typescript
+import toast from 'react-hot-toast';
+```
+
+**2. Added error handling with user feedback:**
+
+```typescript
+const handleDeleteArea = async () => {
+  if (!selectedArea) return;
+
+  const result = await deleteArea(selectedArea.id);
+  if (result.success) {
+    setAreas((prev) => prev.filter((area) => area.id !== selectedArea.id));
+    setDeleteModalOpen(false);
+    setSelectedArea(null);
+    toast.success('האזור נמחק בהצלחה'); // Success toast
+    router.refresh();
+  } else {
+    // ✅ NEW: Show error message from server
+    toast.error(result.error || 'שגיאה במחיקת האזור');
+    // Keep modal open so user can read error and try again or cancel
+  }
+};
+```
+
+### UX Improvement
+
+**Before fix:**
+- ❌ Silent failure
+- ❌ Modal stays open with no feedback
+- ❌ User thinks app is broken
+
+**After fix:**
+- ✅ Error toast appears with specific message
+- ✅ Modal stays open (user can retry or cancel)
+- ✅ Clear feedback: "Only authorized users can delete areas..."
+
+### Testing
+
+**Manual Test:**
+1. Log in as non-authorized SuperAdmin
+2. Navigate to `/areas`
+3. Try to delete an area
+4. ✅ Verify error toast appears with authorization message
+5. ✅ Verify modal stays open
+6. ✅ Verify can cancel or retry
+
+**QA Command:**
+```bash
+make qa
+```
+
+### Prevention Rule
+
+**RULE:** Always handle BOTH success AND error cases in async server actions:
+
+```typescript
+// ✅ CORRECT: Handle both cases
+const handleServerAction = async () => {
+  const result = await serverAction();
+  if (result.success) {
+    toast.success('פעולה הצליחה');
+    // ... success logic
+  } else {
+    toast.error(result.error || 'שגיאה בביצוע הפעולה');
+    // Keep UI in state that allows user to retry
+  }
+};
+
+// ❌ WRONG: Only handle success
+const handleServerAction = async () => {
+  const result = await serverAction();
+  if (result.success) {
+    // ... success logic
+  }
+  // Missing error handling!
+};
+```
+
+**Checklist for all server action handlers:**
+- ✅ Import `toast` from `react-hot-toast`
+- ✅ Handle `result.success === true` case
+- ✅ Handle `result.success === false` case
+- ✅ Show `result.error` message to user
+- ✅ Decide whether to close modal/dialog on error
+- ✅ Provide way for user to retry or cancel
+
+### Files Changed
+
+- `app/app/components/areas/AreasClient.tsx:22` (Added toast import)
+- `app/app/components/areas/AreasClient.tsx:189-204` (Added error handling with toast notifications)
+
+### Related Components to Check
+
+Review ALL components that call server actions for similar missing error handling:
+- `app/app/components/cities/CitiesClient.tsx`
+- `app/app/components/neighborhoods/NeighborhoodsClient.tsx`
+- `app/app/components/activists/ActivistsClient.tsx`
+- `app/app/components/users/UsersClient.tsx`
+
+### Configuration Note
+
+**Authorized delete emails** are hardcoded in TWO places:
+1. Client: `AreasClient.tsx:99` (for showing delete button)
+2. Server: `actions/areas.ts:396` (for authorization)
+
+**Future improvement:** Move to environment variable:
+```bash
+AUTHORIZED_DELETE_EMAILS=dima@gmail.com,test@test.com,superadmin@election.test
+```
+
+### Screen Lock Status
+
+- **Before:** LOCKED (all screens locked per CLAUDE.md)
+- **During fix:** UNLOCKED (explicit user permission: "open area, fix and lock again")
+- **After:** LOCKED AGAIN ✅
 
 ---
