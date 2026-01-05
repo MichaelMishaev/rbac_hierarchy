@@ -13,6 +13,11 @@ import {
   Chip,
   Avatar,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations, useLocale } from 'next-intl';
@@ -21,6 +26,7 @@ import { colors, shadows, borderRadius } from '@/lib/design-system';
 import BusinessIcon from '@mui/icons-material/Business';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -33,6 +39,7 @@ import CityModal, { CorporationFormData } from '@/app/components/modals/CityModa
 import {
   createCity,
   updateCity,
+  deleteCity,
   getAreaManagers,
 } from '@/app/actions/cities';
 
@@ -92,6 +99,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const [selectedCorp, setSelectedCorp] = useState<Corporation | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [areaManagers, setAreaManagers] = useState<AreaManager[]>([]); // v1.4: Area Managers list
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // v1.4: Fetch area managers on mount
   useEffect(() => {
@@ -158,6 +166,23 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const handleEditClick = () => {
     setEditModalOpen(true);
     handleMenuClose();
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteConfirmOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedCorp) return;
+
+    const result = await deleteCity(selectedCorp.id);
+    if (result.success) {
+      setCorporations((prev) => prev.filter((corp) => corp.id !== selectedCorp.id));
+      setDeleteConfirmOpen(false);
+      setSelectedCorp(null);
+      router.refresh();
+    }
   };
 
   const handleEditCorporation = async (data: CorporationFormData) => {
@@ -745,6 +770,25 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           <EditIcon sx={{ fontSize: 20, color: colors.pastel.blue }} />
           <Typography sx={{ fontWeight: 500 }}>{tCommon('edit')}</Typography>
         </MenuItem>
+        {/* Delete option - SuperAdmin ONLY */}
+        {userRole === 'SUPERADMIN' && (
+          <MenuItem
+            onClick={handleDeleteClick}
+            sx={{
+              py: 1.5,
+              px: 2,
+              gap: 1.5,
+              '&:hover': {
+                backgroundColor: colors.pastel.redLight,
+              },
+            }}
+          >
+            <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
+            <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>
+              {tCommon('delete')}
+            </Typography>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Create Modal - KEEP */}
@@ -782,6 +826,82 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           onAreaManagerCreated={refetchAreaManagers}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: borderRadius.xl,
+            boxShadow: shadows.large,
+            maxWidth: 450,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            color: colors.neutral[900],
+            pb: 2,
+          }}
+        >
+          מחיקת עיר
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ color: colors.neutral[700] }}>
+            האם אתה בטוח שברצונך למחוק את העיר{' '}
+            <strong>{selectedCorp?.name}</strong>?
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              mt: 2,
+              p: 2,
+              borderRadius: borderRadius.md,
+              backgroundColor: colors.pastel.redLight,
+              color: colors.pastel.red,
+              fontWeight: 600,
+            }}
+          >
+            ⚠️ פעולה זו תמחק גם את כל השכונות והרכזים המשויכים לעיר ולא ניתן לבטל אותה!
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, gap: 2 }}>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: borderRadius.lg,
+              px: 3,
+              fontWeight: 600,
+              borderColor: colors.neutral[300],
+              color: colors.neutral[700],
+              '&:hover': {
+                borderColor: colors.neutral[400],
+                backgroundColor: colors.neutral[50],
+              },
+            }}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            sx={{
+              borderRadius: borderRadius.lg,
+              px: 3,
+              fontWeight: 600,
+              backgroundColor: colors.pastel.red,
+              '&:hover': {
+                backgroundColor: colors.status.error,
+              },
+            }}
+          >
+            מחק עיר
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
