@@ -7,10 +7,8 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "predev": "node scripts/generate-sw.js",
     "dev": "next dev -p 3200",
     "dev:clean": "bash app/dev-clean.sh",
-    "prebuild": "node scripts/generate-sw.js",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
     "lint": "next lint",
@@ -106,7 +104,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.9.3",
     "@types/nprogress": "^0.2.3",
-    "@types/react": "^18.3.12",
+    "@types/react": "18.3.27",
     "@types/react-dom": "^18.3.1",
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
