@@ -76,20 +76,20 @@ railway.json
 railway.toml
 
 # Development scripts (not needed in builds)
-scripts/seed-*.ts
-scripts/check-*.ts
-scripts/railway-*.sh
-scripts/restore-*.ts
-scripts/delete-*.ts
-scripts/cleanup-*.ts
-scripts/add-*.ts
-scripts/soft-*.ts
-scripts/verify-*.sh
+app/scripts/seed-*.ts
+app/scripts/check-*.ts
+app/scripts/railway-*.sh
+app/scripts/restore-*.ts
+app/scripts/delete-*.ts
+app/scripts/cleanup-*.ts
+app/scripts/add-*.ts
+app/scripts/soft-*.ts
+app/scripts/verify-*.sh
+app/scripts/*-prod*.ts
+app/scripts/*-prod*.js
 
-# EXCEPTION: Keep essential build scripts
-!scripts/generate-sw.js
-!scripts/generate-build-id.sh
-!scripts/railway-migrate.js
+# CRITICAL: Essential build scripts MUST be included
+# generate-sw.js, generate-build-id.sh, railway-migrate.js are needed
 
 # Documentation (comprehensive)
 **/*.md

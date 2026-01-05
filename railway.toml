@@ -7,8 +7,8 @@ providers = ["node"]
 [build.nixpacksCommands]
 # Install dependencies
 install = "npm ci"
-# Build the Next.js app
-build = "npx prisma generate && npm run build"
+# Build the Next.js app (generate SW before build)
+build = "npx prisma generate && node scripts/generate-sw.js && npm run build"
 
 [deploy]
 # CRITICAL: Run migrations BEFORE app starts
