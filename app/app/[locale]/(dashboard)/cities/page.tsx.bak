@@ -38,7 +38,7 @@ export default async function CorporationsPage() {
     return (
       <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
         <Typography variant="h5" color="error">
-          גישה נדחתה. רק מנהל על ומנהלי מחוז יכולים לצפות בערים.
+          גישה נדחתה. רק מנהל על ומנהלי אזור יכולים לצפות בערים.
         </Typography>
       </Box>
     );

@@ -639,7 +639,7 @@ export default function LeafletClient() {
                 >
                   <SupervisorAccount sx={{ mr: 2, color: colors.primary }} />
                   <ListItemText
-                    primary={`מנהלי מחוז (${data.areaManagers.length})`}
+                    primary={`מנהלי אזור (${data.areaManagers.length})`}
                     primaryTypographyProps={{ fontWeight: 600 }}
                   />
                   {expandedSections.areaManagers ? <ExpandLess /> : <ExpandMore />}

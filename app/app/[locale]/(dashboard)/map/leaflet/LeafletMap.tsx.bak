@@ -313,7 +313,7 @@ export default function LeafletMap({
       const popupContent = `
         <div style="font-family: 'Roboto', sans-serif; direction: rtl; min-width: 220px;">
           <h3 style="margin: 0 0 8px 0; font-size: 17px; font-weight: 700; color: ${entityColors.area_manager};">
-            👔 מנהל מחוז
+            👔 מנהל אזור
           </h3>
           <p style="margin: 4px 0; font-size: 15px; font-weight: 600;">
             ${am.fullName}
@@ -524,7 +524,7 @@ export default function LeafletMap({
     () => [
       {
         type: 'area_manager',
-        label: 'מנהלי מחוז',
+        label: 'מנהלי אזור',
         emoji: '👔',
         color: '#3B82F6',
         count: areaManagers.length,

@@ -202,7 +202,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
       setAreas((prev) => prev.filter((area) => area.id !== selectedArea.id));
       setDeleteModalOpen(false);
       setSelectedArea(null);
-      toast.success('המחוז נמחק בהצלחה');
+      toast.success('האזור נמחק בהצלחה');
       router.refresh();
     } else {
       // Check if error is due to existing cities
@@ -219,7 +219,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
         });
       } else {
         // Show generic error message from server
-        toast.error(result.error || 'שגיאה במחיקת המחוז');
+        toast.error(result.error || 'שגיאה במחיקת האזור');
       }
       // Keep modal open for non-city errors so user can try again or cancel
     }
@@ -275,7 +275,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
               {stats.active}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              מחוזות פעילים
+              אזורים פעילים
             </Typography>
           </Card>
         </Grid>
@@ -333,7 +333,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
                 mb: 0.5,
               }}
             >
-              רק מנהל המערכת יכול ליצור מחוזות חדשים
+              רק מנהל המערכת יכול ליצור אזורים חדשים
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography
@@ -342,7 +342,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
                   color: colors.neutral[700],
                 }}
               >
-                ליצירת מחוז חדש, פנה ל:
+                ליצירת אזור חדש, פנה ל:
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography
@@ -387,7 +387,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
         }}
       >
         <TextField
-          placeholder="חיפוש לפי שם מחוז, קוד או מנהל..."
+          placeholder="חיפוש לפי שם אזור, קוד או מנהל..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -467,8 +467,8 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
           </Typography>
           <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 3 }}>
             {isSuperAdmin
-              ? 'צור את המחוז הראשון כדי להתחיל לנהל ערים ופעילויות'
-              : 'אין מחוזות להצגה כרגע'}
+              ? 'צור את האזור הראשון כדי להתחיל לנהל ערים ופעילויות'
+              : 'אין אזורים להצגה כרגע'}
           </Typography>
           {isSuperAdmin && (
             <RtlButton
@@ -754,7 +754,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
             setSelectedArea(null);
           }}
           onConfirm={handleDeleteArea}
-          title="מחיקת מחוז"
+          title="מחיקת אזור"
           message={t('deleteConfirm')}
           itemName={selectedArea.regionName}
         />

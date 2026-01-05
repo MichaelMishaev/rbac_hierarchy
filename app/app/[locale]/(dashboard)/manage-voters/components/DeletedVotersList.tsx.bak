@@ -103,7 +103,7 @@ export function DeletedVotersList() {
   const getRoleInHebrew = (role: string) => {
     const roleMap: Record<string, string> = {
       'SUPERADMIN': 'מנהל מערכת',
-      'AREA_MANAGER': 'מנהל מחוז',
+      'AREA_MANAGER': 'מנהל אזור',
       'CITY_COORDINATOR': 'רכז עיר',
       'ACTIVIST_COORDINATOR': 'רכז פעילים',
     };

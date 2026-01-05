@@ -224,7 +224,7 @@ export default function NeighborhoodModal({
       // Normal flow: validate area first, then city
       if (!selectedAreaId) {
         // Add area validation as a city error since area affects city selection
-        newErrors.cityId = 'יש לבחור מחוז תחילה';
+        newErrors.cityId = 'יש לבחור אזור תחילה';
       } else if (!formData.cityId) {
         newErrors.cityId = 'יש לבחור עיר';
       }
@@ -563,7 +563,7 @@ export default function NeighborhoodModal({
                       error={!!errors.cityId && !selectedAreaId}
                     >
                       <MenuItem value="">
-                        <em>בחר מחוז</em>
+                        <em>בחר אזור</em>
                       </MenuItem>
                       {areas.map((area) => (
                         <MenuItem key={area.id} value={area.id}>

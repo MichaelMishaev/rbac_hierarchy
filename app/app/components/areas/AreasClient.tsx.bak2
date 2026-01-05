@@ -342,7 +342,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
                   color: colors.neutral[700],
                 }}
               >
-                ליצירת מחוז חדש, פנה ל:
+                ליצירת אזור חדש, פנה ל:
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography
@@ -387,7 +387,7 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
         }}
       >
         <TextField
-          placeholder="חיפוש לפי שם מחוז, קוד או מנהל..."
+          placeholder="חיפוש לפי שם אזור, קוד או מנהל..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{

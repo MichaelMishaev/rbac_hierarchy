@@ -7122,3 +7122,160 @@ AUTHORIZED_DELETE_EMAILS=dima@gmail.com,test@test.com,superadmin@election.test
 - **Railway Auto-Deploy:** Will deploy automatically to production
 
 ---
+
+---
+
+## Bug #XXX: Area Dropdown Showing Manager Name Instead of Area Name
+**Date:** 2026-01-05  
+**Reporter:** User  
+**Severity:** Medium (UX Issue)  
+**Status:** ✅ FIXED
+
+### Problem
+When creating a new city in `/cities`, the area dropdown was displaying:
+- **Shown:** "מחוז דרום - david" (Area Name - Manager Name)
+- **Expected:** "מחוז דרום" (Area Name only)
+
+Users were confused because they thought they were selecting a person instead of a geographic region.
+
+### Root Cause
+In `app/components/modals/CityModal.tsx` line 358:
+```typescript
+getOptionLabel={(option) => `${option.regionName} - ${option.fullName}`}
+```
+
+The `getOptionLabel` was concatenating the area name with the area manager's name, creating the illusion that users were selecting a person.
+
+### Solution
+1. **Changed main label** (line 358):
+   ```typescript
+   // Before:
+   getOptionLabel={(option) => `${option.regionName} - ${option.fullName}`}
+   
+   // After:
+   getOptionLabel={(option) => option.regionName}
+   ```
+
+2. **Updated dropdown options** (lines 409-414):
+   - Area name shown prominently as the main label
+   - Manager info shown as secondary text below: "מנהל: david • david@gmail.com"
+
+3. **Updated placeholder** (line 366):
+   - Changed from: "חפש לפי שם אזור, מנהל או אימייל..."
+   - To: "חפש לפי שם אזור..."
+
+### Files Changed
+- `app/components/modals/CityModal.tsx` (lines 358, 366, 409-414)
+
+### Prevention Rule
+**When designing dropdowns for organizational hierarchies:**
+- Main label = The entity being selected (area, city, neighborhood)
+- Secondary info = Related metadata (manager, email, stats)
+- Never conflate the entity with its manager/owner in the primary display
+
+**UX Principle:** Dropdowns should clearly show WHAT is being selected, not WHO manages it.
+
+### Testing
+**Manual Test:**
+1. Navigate to `/cities` as SuperAdmin
+2. Click "צור עיר חדשה" (Create New City)
+3. Open the "אזור" (Area) dropdown
+4. ✅ Verify: Dropdown shows only area names (e.g., "מחוז דרום")
+5. ✅ Verify: Manager info appears below as secondary text
+6. ✅ Verify: Search still works for area name, manager name, and email
+
+**Regression Risk:** LOW - Only affects display logic, no data model changes
+
+
+---
+
+## Bug #XXX: Build Failing - Cannot Find generate-sw.js Script
+**Date:** 2026-01-05  
+**Reporter:** Railway Build Failure  
+**Severity:** Critical (Build Blocking)  
+**Status:** ✅ FIXED
+
+### Problem
+Railway build was failing with:
+```
+Error: Cannot find module '/app/app/scripts/generate-sw.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)
+```
+
+The `prebuild` script in `package.json` runs `node scripts/generate-sw.js` before every build, but the file was missing in Docker builds.
+
+### Root Cause
+The `.dockerignore` file had this exclusion pattern:
+```
+scripts/generate-*.js
+```
+
+This was excluding **essential build scripts** from the Docker image:
+- `scripts/generate-sw.js` (required by `prebuild` script)
+- `scripts/generate-build-id.sh` (called by Railway build command)
+- `scripts/railway-migrate.js` (called by preDeployCommand)
+
+**The Conflict:**
+1. `package.json` prebuild says: "Run `generate-sw.js` before building"
+2. `.dockerignore` says: "Don't copy `generate-*.js` to Docker"
+3. Result: File not found → Build fails ❌
+
+### Solution
+Updated `.dockerignore` to remove the overly broad `scripts/generate-*.js` exclusion and added explicit inclusions for essential build scripts:
+
+```dockerignore
+# Development scripts (not needed in builds)
+scripts/seed-*.ts
+scripts/check-*.ts
+scripts/railway-*.sh
+scripts/restore-*.ts
+scripts/delete-*.ts
+scripts/cleanup-*.ts
+scripts/add-*.ts
+scripts/soft-*.ts
+scripts/verify-*.sh
+
+# EXCEPTION: Keep essential build scripts
+!scripts/generate-sw.js
+!scripts/generate-build-id.sh
+!scripts/railway-migrate.js
+```
+
+### Files Changed
+- `.dockerignore` (lines 78-92)
+
+### Prevention Rule
+**When adding .dockerignore exclusions:**
+1. ✅ **Always check npm scripts** - Don't exclude files referenced in `package.json` scripts
+2. ✅ **Check build commands** - Review `railway.json` and Dockerfile for script dependencies
+3. ✅ **Use specific patterns** - Avoid wildcards like `scripts/*.js` that might catch essential files
+4. ✅ **Test builds locally** - Run `npm run build` to verify all scripts are accessible
+
+**Pattern to Follow:**
+- Exclude: `scripts/seed-*.ts`, `scripts/test-*.ts` (development-only)
+- Include: `scripts/generate-*.js`, `scripts/*-migrate.js` (build/deploy essentials)
+
+### Testing
+**Local Build:**
+```bash
+cd app && npm run build
+```
+✅ Verify: `[generate-sw] ✅ Generated sw.js with version 2.1.6`
+✅ Verify: `public/sw.js` is created
+✅ Verify: Build completes successfully
+
+**Railway Build:**
+After pushing to Railway, verify:
+1. Build phase succeeds
+2. No "Cannot find module" errors
+3. Service Worker version is injected correctly
+
+**Related Files:**
+- `app/package.json` - `prebuild` and `predev` scripts
+- `railway.json` - Build command calling `generate-build-id.sh`
+- `app/railway.json` - preDeployCommand calling `railway-migrate.js`
+
+### Impact
+**Build Time:** No change (script already ran before, just now accessible in Docker)
+**Deployment:** Unblocked - Railway builds can now complete successfully
+

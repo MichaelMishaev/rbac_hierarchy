@@ -11,6 +11,7 @@ interface AreaDeletionAlertProps {
   areaId: string;
   areaName: string;
   cityCount: number;
+  cities: Array<{ id: string; name: string; code: string }>;
   onClose: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function AreaDeletionAlert({
   areaId,
   areaName,
   cityCount,
+  cities,
   onClose,
 }: AreaDeletionAlertProps) {
   const router = useRouter();

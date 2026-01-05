@@ -76,14 +76,14 @@ export default function AreaModal({
 
     // Validate region name
     if (!formData.regionName.trim()) {
-      newErrors.regionName = 'שם מחוז הוא שדה חובה';
+      newErrors.regionName = 'שם אזור הוא שדה חובה';
     } else if (formData.regionName.trim().length < 2) {
-      newErrors.regionName = 'שם מחוז חייב להכיל לפחות 2 תווים';
+      newErrors.regionName = 'שם אזור חייב להכיל לפחות 2 תווים';
     }
 
     // Code is auto-generated, just ensure it exists
     if (!formData.regionCode.trim()) {
-      newErrors.regionCode = 'שגיאה ביצירת קוד מחוז';
+      newErrors.regionCode = 'שגיאה ביצירת קוד אזור';
     }
 
     // User selection is OPTIONAL - areas can exist without managers
@@ -113,11 +113,11 @@ export default function AreaModal({
           isActive: true,
         });
       } else {
-        setError(result.error || 'שגיאה בשמירת המחוז');
+        setError(result.error || 'שגיאה בשמירת האזור');
       }
     } catch (err) {
       console.error('Error submitting area:', err);
-      setError('שגיאה בשמירת המחוז. אנא נסה שוב.');
+      setError('שגיאה בשמירת האזור. אנא נסה שוב.');
     } finally {
       setLoading(false);
     }
@@ -206,10 +206,10 @@ export default function AreaModal({
           </Box>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              {mode === 'create' ? t('newArea') : 'עריכת מחוז'}
+              {mode === 'create' ? t('newArea') : 'עריכת אזור'}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-              {mode === 'create' ? 'הוסף מחוז חדש למערכת' : 'ערוך את פרטי המחוז'}
+              {mode === 'create' ? 'הוסף אזור חדש למערכת' : 'ערוך את פרטי האזור'}
             </Typography>
           </Box>
         </Box>
@@ -261,7 +261,7 @@ export default function AreaModal({
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
-                label="שם המחוז"
+                label="שם האזור"
                 value={formData.regionName}
                 onChange={handleChange('regionName')}
                 error={!!errors.regionName}
@@ -269,7 +269,7 @@ export default function AreaModal({
                 fullWidth
                 required
                 autoFocus
-                placeholder="הכנס שם מחוז בעברית"
+                placeholder="הכנס שם אזור בעברית"
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
@@ -300,16 +300,16 @@ export default function AreaModal({
                     fontFamily: 'monospace',
                   }}
                 >
-                  קוד מחוז: {formData.regionCode} (נוצר אוטומטית)
+                  קוד אזור: {formData.regionCode} (נוצר אוטומטית)
                 </Typography>
               )}
               {mode === 'edit' && (
                 <TextField
-                  label="קוד מחוז"
+                  label="קוד אזור"
                   value={formData.regionCode}
                   fullWidth
                   disabled
-                  helperText="לא ניתן לשנות קוד מחוז קיים"
+                  helperText="לא ניתן לשנות קוד אזור קיים"
                   inputProps={{
                     style: { fontFamily: 'monospace' },
                   }}
@@ -384,7 +384,7 @@ export default function AreaModal({
                     label="בחר משתמש (אופציונלי)"
                     placeholder="חפש לפי שם, אימייל או טלפון..."
                     error={!!errors.userId}
-                    helperText={errors.userId || 'מחוז יכול להיות ללא מנהל. רק משתמשים עם תפקיד "מנהל מחוז" זמינים'}
+                    helperText={errors.userId || 'אזור יכול להיות ללא מנהל. רק משתמשים עם תפקיד "מנהל מחוז" זמינים'}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '12px',
@@ -451,7 +451,7 @@ export default function AreaModal({
 
               {availableUsers.length === 0 && (
                 <Alert severity="info" sx={{ mt: 1 }}>
-                  אין משתמשים זמינים עם תפקיד &quot;מנהל מחוז&quot;. המחוז יווצר ללא מנהל ותוכל להקצות מנהל מאוחר יותר.
+                  אין משתמשים זמינים עם תפקיד &quot;מנהל מחוז&quot;. האזור יווצר ללא מנהל ותוכל להקצות מנהל מאוחר יותר.
                 </Alert>
               )}
             </Box>
@@ -501,7 +501,7 @@ export default function AreaModal({
                 fullWidth
                 multiline
                 rows={3}
-                placeholder="תיאור המחוז, אחריות, סמכויות..."
+                placeholder="תיאור האזור, אחריות, סמכויות..."
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
@@ -531,7 +531,7 @@ export default function AreaModal({
                       {tCommon('active')}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      מחוז פעיל זמין לשיוך ערים ופעילות
+                      אזור פעיל זמין לשיוך ערים ופעילות
                     </Typography>
                   </Box>
                 }

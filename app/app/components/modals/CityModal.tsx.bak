@@ -141,7 +141,7 @@ export default function CityModal({
     }
 
     if (mode === 'create' && !formData.areaManagerId.trim()) {
-      newErrors.areaManagerId = 'בחירת מחוז היא שדה חובה';
+      newErrors.areaManagerId = 'בחירת אזור היא שדה חובה';
     }
 
     setErrors(newErrors);
@@ -336,13 +336,13 @@ export default function CityModal({
                   }}
                 >
                   <Typography variant="caption" sx={{ color: colors.pastel.orange, fontWeight: 700, display: 'block', mb: 0.5 }}>
-                    מחוז
+                    אזור
                   </Typography>
                   <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 600 }}>
                     {currentUserAreaManager.regionName}
                   </Typography>
                   <Typography variant="caption" sx={{ color: colors.neutral[600], display: 'block', mt: 1 }}>
-                    העיר תשתייך למחוז שלך אוטומטית
+                    העיר תשתייך לאזור שלך אוטומטית
                   </Typography>
                 </Box>
               ) : (
@@ -357,19 +357,19 @@ export default function CityModal({
                   options={localAreaManagers}
                   getOptionLabel={(option) => option.regionName}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
-                  noOptionsText="אין מחוזות זמינים"
+                  noOptionsText="אין אזורים זמינים"
                   fullWidth
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="מחוז *"
-                    placeholder="חפש לפי שם מחוז..."
+                    label="אזור *"
+                    placeholder="חפש לפי שם אזור..."
                     error={!!errors.areaManagerId}
                     helperText={
                       errors.areaManagerId ||
                       (isAreaManager
-                        ? 'מנהלי מחוז יכולים ליצור ערים רק במחוז שלהם'
-                        : 'בחר את המחוז הגיאוגרפי שבו העיר נמצאת')
+                        ? 'מנהלי אזור יכולים ליצור ערים רק באזור שלהם'
+                        : 'בחר את האזור הגיאוגרפי שבו העיר נמצאת')
                     }
                     required={mode === 'create'}
                     sx={{
@@ -462,10 +462,10 @@ export default function CityModal({
                       },
                     }}
                   >
-                    יצירת מחוז חדש
+                    יצירת אזור חדש
                   </Button>
                   <Typography variant="caption" sx={{ color: colors.neutral[500] }}>
-                    אם אין מחוז מתאים ברשימה
+                    אם אין אזור מתאים ברשימה
                   </Typography>
                 </Box>
               )}

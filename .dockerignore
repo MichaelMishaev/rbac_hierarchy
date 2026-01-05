@@ -79,13 +79,17 @@ railway.toml
 scripts/seed-*.ts
 scripts/check-*.ts
 scripts/railway-*.sh
-scripts/generate-*.js
 scripts/restore-*.ts
 scripts/delete-*.ts
 scripts/cleanup-*.ts
 scripts/add-*.ts
 scripts/soft-*.ts
 scripts/verify-*.sh
+
+# EXCEPTION: Keep essential build scripts
+!scripts/generate-sw.js
+!scripts/generate-build-id.sh
+!scripts/railway-migrate.js
 
 # Documentation (comprehensive)
 **/*.md

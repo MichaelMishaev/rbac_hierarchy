@@ -297,7 +297,7 @@ export default function SpamPreventionModalV2({
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1, justifyContent: 'flex-end' }}>
                 {recipientPreview.breakdown.by_role.area_manager > 0 && (
                   <Chip
-                    label={`מנהלי מחוז ${recipientPreview.breakdown.by_role.area_manager}`}
+                    label={`מנהלי אזור ${recipientPreview.breakdown.by_role.area_manager}`}
                     size="medium"
                     sx={{
                       backgroundColor: '#6161FF',

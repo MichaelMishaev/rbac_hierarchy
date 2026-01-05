@@ -401,7 +401,7 @@ export async function deleteArea(areaId: string) {
       };
     }
 
-    // Get area manager to delete
+    // Get area manager to delete with cities list
     const areaToDelete = await prisma.areaManager.findUnique({
       where: { id: areaId },
       include: {
@@ -409,6 +409,16 @@ export async function deleteArea(areaId: string) {
           select: {
             email: true,
             fullName: true,
+          },
+        },
+        cities: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+          orderBy: {
+            name: 'asc',
           },
         },
         _count: {
@@ -426,13 +436,18 @@ export async function deleteArea(areaId: string) {
       };
     }
 
-    // Warning if area has cities
+    // Warning if area has cities - return full city list
     if (areaToDelete._count.cities > 0) {
       return {
         success: false,
         code: 'CITIES_EXIST',
         cityCount: areaToDelete._count.cities,
         areaName: areaToDelete.regionName,
+        cities: areaToDelete.cities.map(city => ({
+          id: city.id,
+          name: city.name,
+          code: city.code,
+        })),
         error: `לא ניתן למחוק מחוז עם ${areaToDelete._count.cities} ${areaToDelete._count.cities === 1 ? 'עיר פעילה' : 'ערים פעילות'}`,
       };
     }
