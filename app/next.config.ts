@@ -149,9 +149,10 @@ const configWithSentry = withSentryConfig(configWithIntl, {
     // For all available options, see:
     // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-    // ⚡ Performance: COMPLETELY DISABLE source map uploads in Railway builds
-    disableServerWebpackPlugin: process.env.RAILWAY_ENVIRONMENT !== undefined,
-    disableClientWebpackPlugin: process.env.RAILWAY_ENVIRONMENT !== undefined,
+    // ⚡ Performance: COMPLETELY DISABLE webpack plugins in production builds
+    // These add 60-90s to build time and we don't need them
+    disableServerWebpackPlugin: true,
+    disableClientWebpackPlugin: true,
 
     // Performance: Disable expensive source map uploads (reduces build time by ~1-2 minutes)
     // Only upload minimal source maps needed for error tracking
