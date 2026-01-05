@@ -6,15 +6,23 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-store
 
-# Testing
+# Testing (comprehensive)
 .playwright-mcp
 playwright-report
 test-results
 coverage
+tests/
+**/*.spec.ts
+**/*.spec.tsx
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/
 
 # Next.js
 app/.next
 app/out
+**/.next/cache/webpack
+**/.next/cache/swc
 
 # Production
 build
@@ -61,3 +69,24 @@ docs/
 *.db
 prisma/migrations
 backups/
+
+# Railway-specific
+.railway
+railway.json
+railway.toml
+
+# Development scripts (not needed in builds)
+scripts/seed-*.ts
+scripts/check-*.ts
+scripts/railway-*.sh
+scripts/generate-*.js
+scripts/restore-*.ts
+scripts/delete-*.ts
+scripts/cleanup-*.ts
+scripts/add-*.ts
+scripts/soft-*.ts
+scripts/verify-*.sh
+
+# Documentation (comprehensive)
+**/*.md
+!README.md

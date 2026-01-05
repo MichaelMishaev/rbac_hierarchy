@@ -47,6 +47,22 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
     // instrumentationHook is now default in Next.js 15+, no longer needed
+
+    // ⚡ Build Performance: Faster dependency tracing (saves ~10-15s)
+    turbotrace: {
+      logLevel: 'error',
+    },
+
+    // ⚡ Build Performance: Externalize heavy server packages (saves ~5-10s)
+    serverComponentsExternalPackages: [
+      'bcryptjs',
+      'prisma',
+      '@prisma/client',
+      'exceljs',
+      'web-push',
+      'ioredis',
+      'leaflet',
+    ],
   },
   images: {
     remotePatterns: [
