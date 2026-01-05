@@ -15,7 +15,7 @@
  * Version: 2.0.0 - PWA with Offline Support
  */
 
-const SW_VERSION = '2.1.4'; // Fixed Next.js chunk loading failure (Bug #33: bypass SW for /_next/)
+const SW_VERSION = '2.1.6'; // Fixed SW update deadlock (Bug #36: bypass cache for /sw.js itself)
 const CACHE_NAME = `campaign-v${SW_VERSION}`;
 const OFFLINE_PAGE = '/offline.html';
 
@@ -142,11 +142,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Next.js internal files: BYPASS service worker entirely
-  // Let browser fetch directly to avoid chunk mismatch errors after deployments
-  // (fixes Bug #33: "Cannot read properties of undefined (reading 'call')")
+  // Next.js internal files: NEVER cache (they're versioned with hashes)
+  // Caching these causes chunk mismatch errors on navigation
+  // (fixes Bug #35: "Cannot read properties of undefined (reading 'call')")
   if (url.pathname.startsWith('/_next/')) {
-    // Don't intercept - let request bypass service worker
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Service Worker and Manifest: NEVER cache (prevents update deadlock)
+  // SW must always fetch fresh to detect updates
+  // (fixes Bug #36: "Failed to update ServiceWorker - unknown error fetching script")
+  if (url.pathname === '/sw.js' || url.pathname === '/manifest.json') {
+    event.respondWith(
+      fetch(request, {
+        cache: 'no-cache', // Force revalidation
+      })
+    );
     return;
   }
 

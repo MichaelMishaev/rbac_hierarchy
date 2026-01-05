@@ -1,13 +1,176 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 42
+**Total Bugs:** 43
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🐛 BUG #43: Service Worker Update Deadlock - SW Caching Itself (2026-01-05)
+
+**Severity:** HIGH (Production PWA Update Failure)
+**Impact:** Service Worker updates fail in production, users stuck on old version
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-05
+**Reported By:** Production error dashboard - "Failed to update ServiceWorker for scope"
+
+### Bug Description
+
+**Production error:**
+```
+[Client-Side Error] Failed to update a ServiceWorker for scope
+('https://app.rbac.shop/') with script ('https://app.rbac.shop/sw.js'):
+An unknown error occurred when fetching the script.
+```
+
+**What happened:**
+1. Service Worker v2.1.5 is active in production
+2. Developer pushes v2.1.6 to production server
+3. Browser tries to fetch `/sw.js` to check for updates
+4. **The OLD Service Worker intercepts the fetch request**
+5. OLD SW returns cached version of `/sw.js` (itself!)
+6. Browser compares bytes, sees "no change" (because it got the OLD cached version)
+7. Update never happens - **update deadlock**
+
+### Root Cause
+
+**Self-caching Service Worker (lines 154-182 in sw.js):**
+```javascript
+// Static assets (JS, CSS, images): Cache First
+event.respondWith(
+  caches.match(request).then(cached => {
+    if (cached) {
+      return cached; // ❌ Returns cached /sw.js!
+    }
+    return fetch(request); // Never reached for /sw.js
+  })
+);
+```
+
+**Why this is bad:**
+- Service Worker caches ALL static files including `/sw.js` itself
+- When browser checks for updates, SW intercepts and returns stale cached version
+- Browser thinks "no update available" because bytes match
+- **Classic Service Worker anti-pattern**
+
+**Similar issue with `/manifest.json`:**
+- Manifest should also never be cached (contains version info, theme colors, etc.)
+- Stale manifest prevents PWA updates from being detected
+
+### Fix Applied
+
+**1. Added explicit bypass for `/sw.js` and `/manifest.json` (app/public/sw.js:153-163):**
+```javascript
+// Service Worker and Manifest: NEVER cache (prevents update deadlock)
+// SW must always fetch fresh to detect updates
+// (fixes Bug #36: "Failed to update ServiceWorker - unknown error fetching script")
+if (url.pathname === '/sw.js' || url.pathname === '/manifest.json') {
+  event.respondWith(
+    fetch(request, {
+      cache: 'no-cache', // Force revalidation
+    })
+  );
+  return;
+}
+```
+
+**2. Bumped version to force cache invalidation (line 18):**
+```diff
+- const SW_VERSION = '2.1.5';
++ const SW_VERSION = '2.1.6'; // Fixed SW update deadlock (Bug #36: bypass cache for /sw.js itself)
+```
+
+### Files Modified
+
+1. `app/public/sw.js`:
+   - Line 18: Version bump to 2.1.6
+   - Lines 153-163: Added explicit bypass for `/sw.js` and `/manifest.json`
+
+### Prevention Rule
+
+**PWA-SW-001: Service Worker Must Never Cache Itself**
+
+**RULE:**
+- Service Workers must NEVER cache `/sw.js` (themselves)
+- Manifest files (`/manifest.json`) must NEVER be cached
+- These files must ALWAYS bypass cache with `cache: 'no-cache'`
+- Always test Service Worker updates in production-like environment
+
+**CHECKLIST for Service Worker development:**
+- [ ] Does SW explicitly exclude `/sw.js` from caching?
+- [ ] Does SW explicitly exclude `/manifest.json` from caching?
+- [ ] Are updates tested by deploying new version and verifying update detection?
+- [ ] Is version number bumped on every deployment?
+- [ ] Does static asset handler come AFTER critical bypasses?
+
+**WHY THIS MATTERS:**
+- Self-caching creates update deadlock (users stuck on old version forever)
+- No error visible to users - silently fails
+- Forces manual cache clear or unregister (bad UX)
+- Prevents security updates and bug fixes from reaching users
+
+**BEST PRACTICE:**
+```javascript
+// ✅ CORRECT: Bypass SW cache for critical update files
+if (url.pathname === '/sw.js' || url.pathname === '/manifest.json') {
+  event.respondWith(fetch(request, { cache: 'no-cache' }));
+  return;
+}
+
+// ❌ WRONG: Let SW cache itself
+event.respondWith(
+  caches.match(request).then(cached => cached || fetch(request))
+);
+```
+
+**APPLY TO:**
+- All Service Worker implementations
+- All PWA configurations
+- All caching strategies
+
+### Test Cases
+
+**Manual test:**
+1. ✅ Deploy current SW version (2.1.6) to production
+2. ✅ Open app, verify SW registers successfully
+3. ✅ Bump version to 2.1.7, change a comment
+4. ✅ Deploy new version
+5. ✅ Refresh app, check console for "New version available"
+6. ✅ Verify update installs without errors
+7. ✅ Check Network tab: `/sw.js` request should NOT come from SW cache
+
+**Automated test (to be added):**
+```javascript
+// E2E test for SW updates
+test('Service Worker updates when new version deployed', async ({ page }) => {
+  // Deploy v1, register SW
+  // Deploy v2, trigger update check
+  // Verify new SW activates
+});
+```
+
+### Additional Context
+
+**Service Worker Update Lifecycle:**
+1. Browser periodically checks `/sw.js` (or on page load)
+2. Fetches `/sw.js` from network (MUST bypass SW cache!)
+3. Byte-compare with current SW
+4. If different, install new SW (runs `install` event)
+5. New SW waits until all tabs close
+6. New SW activates (runs `activate` event)
+7. New SW takes control of clients
+
+**This bug broke step 2** - browser fetched from SW cache, not network!
+
+### Related Bugs
+
+- Bug #35: Next.js chunk loading failure (also caching issue)
+- Bug #33: Service Worker chunk mismatch (related to caching strategy)
 
 ---
 
