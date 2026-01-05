@@ -712,14 +712,29 @@ export async function deleteNeighborhood(neighborhoodId: string) {
       }
     }
 
-    // Warning if site has data
-    if (neighborhoodToDelete._count.activistCoordinatorAssignments > 0 || neighborhoodToDelete._count.activists > 0) {
-      console.warn(
-        `Deleting site ${neighborhoodToDelete.name} with ${neighborhoodToDelete._count.activistCoordinatorAssignments} supervisors and ${neighborhoodToDelete._count.activists} activists`
-      );
+    // CRITICAL: Block deletion if neighborhood has activists
+    if (neighborhoodToDelete._count.activists > 0) {
+      return {
+        success: false,
+        code: 'ACTIVISTS_EXIST',
+        activistCount: neighborhoodToDelete._count.activists,
+        neighborhoodName: neighborhoodToDelete.name,
+        error: `לא ניתן למחוק שכונה עם ${neighborhoodToDelete._count.activists} ${neighborhoodToDelete._count.activists === 1 ? 'פעיל' : 'פעילים'}`,
+      };
     }
 
-    // Delete site (cascades to activists)
+    // CRITICAL: Block deletion if neighborhood has coordinator assignments
+    if (neighborhoodToDelete._count.activistCoordinatorAssignments > 0) {
+      return {
+        success: false,
+        code: 'COORDINATORS_ASSIGNED',
+        coordinatorCount: neighborhoodToDelete._count.activistCoordinatorAssignments,
+        neighborhoodName: neighborhoodToDelete.name,
+        error: `לא ניתן למחוק שכונה עם ${neighborhoodToDelete._count.activistCoordinatorAssignments} ${neighborhoodToDelete._count.activistCoordinatorAssignments === 1 ? 'רכז מוקצה' : 'רכזים מוקצים'}`,
+      };
+    }
+
+    // Delete site (safe - no data underneath)
     await prisma.neighborhood.delete({
       where: { id: neighborhoodId },
     });
