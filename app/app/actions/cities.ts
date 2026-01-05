@@ -547,14 +547,29 @@ export async function deleteCity(cityId: string) {
       };
     }
 
-    // Warning if corporation has data
-    if (corpToDelete._count.coordinators > 0 || corpToDelete._count.neighborhoods > 0) {
-      console.warn(
-        `Deleting corporation ${corpToDelete.name} with ${corpToDelete._count.coordinators} managers and ${corpToDelete._count.neighborhoods} sites`
-      );
+    // CRITICAL: Block deletion if city has neighborhoods
+    if (corpToDelete._count.neighborhoods > 0) {
+      return {
+        success: false,
+        code: 'NEIGHBORHOODS_EXIST',
+        neighborhoodCount: corpToDelete._count.neighborhoods,
+        cityName: corpToDelete.name,
+        error: `לא ניתן למחוק עיר עם ${corpToDelete._count.neighborhoods} ${corpToDelete._count.neighborhoods === 1 ? 'שכונה פעילה' : 'שכונות פעילות'}`,
+      };
     }
 
-    // Delete corporation (cascades to sites, managers, etc.)
+    // CRITICAL: Block deletion if city has coordinators
+    if (corpToDelete._count.coordinators > 0) {
+      return {
+        success: false,
+        code: 'COORDINATORS_EXIST',
+        coordinatorCount: corpToDelete._count.coordinators,
+        cityName: corpToDelete.name,
+        error: `לא ניתן למחוק עיר עם ${corpToDelete._count.coordinators} ${corpToDelete._count.coordinators === 1 ? 'רכז פעיל' : 'רכזים פעילים'}`,
+      };
+    }
+
+    // Delete corporation (safe - no data underneath)
     await prisma.city.delete({
       where: { id: cityId },
     });

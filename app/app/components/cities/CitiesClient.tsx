@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Alert,
 } from '@mui/material';
 import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations, useLocale } from 'next-intl';
@@ -100,6 +101,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [areaManagers, setAreaManagers] = useState<AreaManager[]>([]); // v1.4: Area Managers list
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>('');
 
   // v1.4: Fetch area managers on mount
   useEffect(() => {
@@ -169,6 +171,7 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   };
 
   const handleDeleteClick = () => {
+    setDeleteError(''); // Clear any previous errors
     setDeleteConfirmOpen(true);
     handleMenuClose();
   };
@@ -176,12 +179,16 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
   const handleDeleteConfirm = async () => {
     if (!selectedCorp) return;
 
+    setDeleteError(''); // Clear previous errors
     const result = await deleteCity(selectedCorp.id);
     if (result.success) {
       setCorporations((prev) => prev.filter((corp) => corp.id !== selectedCorp.id));
       setDeleteConfirmOpen(false);
       setSelectedCorp(null);
       router.refresh();
+    } else {
+      // Show error message in dialog
+      setDeleteError(result.error || 'שגיאה במחיקת העיר');
     }
   };
 
@@ -830,7 +837,10 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
+        onClose={() => {
+          setDeleteError('');
+          setDeleteConfirmOpen(false);
+        }}
         PaperProps={{
           sx: {
             borderRadius: borderRadius.xl,
@@ -866,10 +876,29 @@ export default function CitiesClient({ cities: initialCorporations, userRole, cu
           >
             ⚠️ פעולה זו תמחק גם את כל השכונות והרכזים המשויכים לעיר ולא ניתן לבטל אותה!
           </Typography>
+
+          {/* Show error when deletion is blocked */}
+          {deleteError && (
+            <Alert
+              severity="error"
+              sx={{
+                mt: 2,
+                borderRadius: borderRadius.md,
+                '& .MuiAlert-message': {
+                  fontWeight: 600,
+                },
+              }}
+            >
+              {deleteError}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2, gap: 2 }}>
           <Button
-            onClick={() => setDeleteConfirmOpen(false)}
+            onClick={() => {
+              setDeleteError('');
+              setDeleteConfirmOpen(false);
+            }}
             variant="outlined"
             sx={{
               borderRadius: borderRadius.lg,
