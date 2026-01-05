@@ -765,9 +765,11 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
         open={deletionAlert?.open ?? false}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         sx={{
-          top: '24px !important',
-          maxWidth: '700px',
-          width: '100%',
+          top: { xs: '16px !important', sm: '24px !important' },
+          left: { xs: '8px !important', sm: 'auto !important' },
+          right: { xs: '8px !important', sm: 'auto !important' },
+          maxWidth: { xs: 'calc(100% - 16px)', sm: '700px' },
+          width: { xs: 'calc(100% - 16px)', sm: 'auto' },
         }}
       >
         <div>

@@ -35,34 +35,38 @@ export default function AreaDeletionAlert({
       icon={<WarningAmberRoundedIcon fontSize="large" />}
       data-testid="area-deletion-alert"
       sx={{
-        borderRadius: '20px',
+        borderRadius: { xs: '16px', sm: '20px' },
         backgroundColor: '#FFF4E6', // Soft amber background
         border: '2px solid #FFB84D', // Monday.com amber
         boxShadow: '0 4px 12px rgba(255, 184, 77, 0.15)',
-        padding: '20px 24px',
+        padding: { xs: '16px', sm: '20px 24px' },
+        maxWidth: '100%',
         '& .MuiAlert-icon': {
           color: '#F59E0B',
-          fontSize: '28px',
-          marginInlineEnd: '16px',
+          fontSize: { xs: '24px', sm: '28px' },
+          marginInlineEnd: { xs: '12px', sm: '16px' },
         },
         '& .MuiAlert-message': {
           width: '100%',
           padding: 0,
         },
         '& .MuiAlert-action': {
-          paddingInlineStart: '16px',
+          paddingInlineStart: { xs: '8px', sm: '16px' },
+          alignItems: 'flex-start',
+          paddingTop: '4px',
         },
       }}
     >
       <AlertTitle
         sx={{
-          fontSize: '18px',
+          fontSize: { xs: '16px', sm: '18px' },
           fontWeight: 600,
           color: '#92400E',
-          marginBottom: '12px',
+          marginBottom: { xs: '8px', sm: '12px' },
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
+          lineHeight: 1.4,
         }}
       >
         לא ניתן למחוק את המחוז &quot;{areaName}&quot;
@@ -70,10 +74,10 @@ export default function AreaDeletionAlert({
 
       <Typography
         sx={{
-          fontSize: '15px',
+          fontSize: { xs: '14px', sm: '15px' },
           color: '#78350F',
           lineHeight: 1.6,
-          marginBottom: '16px',
+          marginBottom: { xs: '12px', sm: '16px' },
         }}
       >
         מחוז זה מכיל{' '}
@@ -95,10 +99,10 @@ export default function AreaDeletionAlert({
         component="ul"
         sx={{
           margin: 0,
-          paddingInlineStart: '24px',
-          marginBottom: '20px',
+          paddingInlineStart: { xs: '20px', sm: '24px' },
+          marginBottom: { xs: '16px', sm: '20px' },
           '& li': {
-            fontSize: '15px',
+            fontSize: { xs: '14px', sm: '15px' },
             color: '#78350F',
             lineHeight: 1.8,
             marginBottom: '4px',
@@ -112,24 +116,30 @@ export default function AreaDeletionAlert({
       <Box
         sx={{
           display: 'flex',
-          gap: '12px',
-          flexWrap: 'wrap',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: '10px', sm: '12px' },
+          width: '100%',
         }}
       >
         <Button
           variant="contained"
           onClick={handleViewCities}
-          startIcon={<LocationCityIcon />}
           data-testid="view-cities-button"
           sx={{
             backgroundColor: '#F59E0B',
             color: '#ffffff',
             fontWeight: 600,
-            fontSize: '14px',
-            padding: '10px 20px',
+            fontSize: { xs: '13px', sm: '14px' },
+            padding: { xs: '12px 20px', sm: '10px 20px' },
             borderRadius: '12px',
             textTransform: 'none',
             boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            flex: { xs: '1', sm: '0 1 auto' },
+            minHeight: '44px',
             '&:hover': {
               backgroundColor: '#D97706',
               boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)',
@@ -141,7 +151,10 @@ export default function AreaDeletionAlert({
             transition: 'all 200ms ease-out',
           }}
         >
-          צפה {cityCount === 1 ? 'בעיר' : `בערים (${cityCount})`}
+          <LocationCityIcon sx={{ fontSize: { xs: '18px', sm: '20px' } }} />
+          <Box component="span">
+            צפה {cityCount === 1 ? 'בעיר' : `בערים (${cityCount})`}
+          </Box>
         </Button>
 
         <Button
@@ -152,10 +165,12 @@ export default function AreaDeletionAlert({
             color: '#92400E',
             borderColor: '#FFB84D',
             fontWeight: 600,
-            fontSize: '14px',
-            padding: '10px 20px',
+            fontSize: { xs: '13px', sm: '14px' },
+            padding: { xs: '12px 20px', sm: '10px 20px' },
             borderRadius: '12px',
             textTransform: 'none',
+            flex: { xs: '1', sm: '0 1 auto' },
+            minHeight: '44px',
             '&:hover': {
               borderColor: '#F59E0B',
               backgroundColor: 'rgba(245, 158, 11, 0.08)',
