@@ -14,8 +14,10 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Snackbar,
 } from '@mui/material';
 import RtlButton from '@/app/components/ui/RtlButton';
+import AreaDeletionAlert from '@/app/components/alerts/AreaDeletionAlert';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
@@ -92,6 +94,12 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [deletionAlert, setDeletionAlert] = useState<{
+    open: boolean;
+    areaId: string;
+    areaName: string;
+    cityCount: number;
+  } | null>(null);
 
   // Check if user is SuperAdmin (only SuperAdmin can create/edit areas)
   const isSuperAdmin = userRole === 'SUPERADMIN';
@@ -197,9 +205,23 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
       toast.success('האזור נמחק בהצלחה');
       router.refresh();
     } else {
-      // Show error message from server
-      toast.error(result.error || 'שגיאה במחיקת האזור');
-      // Keep modal open so user can see the error and try again or cancel
+      // Check if error is due to existing cities
+      if (result.code === 'CITIES_EXIST' && result.cityCount) {
+        // Close the delete confirmation modal
+        setDeleteModalOpen(false);
+
+        // Show the custom deletion alert
+        setDeletionAlert({
+          open: true,
+          areaId: selectedArea.id,
+          areaName: result.areaName || selectedArea.regionName,
+          cityCount: result.cityCount,
+        });
+      } else {
+        // Show generic error message from server
+        toast.error(result.error || 'שגיאה במחיקת האזור');
+      }
+      // Keep modal open for non-city errors so user can try again or cancel
     }
   };
 
@@ -737,6 +759,28 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
           itemName={selectedArea.regionName}
         />
       )}
+
+      {/* Area Deletion Alert - Shown when area has cities */}
+      <Snackbar
+        open={deletionAlert?.open ?? false}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{
+          top: '24px !important',
+          maxWidth: '700px',
+          width: '100%',
+        }}
+      >
+        <div>
+          {deletionAlert && (
+            <AreaDeletionAlert
+              areaId={deletionAlert.areaId}
+              areaName={deletionAlert.areaName}
+              cityCount={deletionAlert.cityCount}
+              onClose={() => setDeletionAlert(null)}
+            />
+          )}
+        </div>
+      </Snackbar>
     </Box>
   );
 }

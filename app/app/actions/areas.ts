@@ -430,7 +430,10 @@ export async function deleteArea(areaId: string) {
     if (areaToDelete._count.cities > 0) {
       return {
         success: false,
-        error: `Cannot delete area with ${areaToDelete._count.cities} cities. Please reassign or delete cities first.`,
+        code: 'CITIES_EXIST',
+        cityCount: areaToDelete._count.cities,
+        areaName: areaToDelete.regionName,
+        error: `לא ניתן למחוק מחוז עם ${areaToDelete._count.cities} ${areaToDelete._count.cities === 1 ? 'עיר פעילה' : 'ערים פעילות'}`,
       };
     }
 
