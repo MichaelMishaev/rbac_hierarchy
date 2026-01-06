@@ -998,7 +998,7 @@ export default function ActivistModal({
                     }}
                   >
                     <MenuItem value="">
-                      <em>בחר אזור</em>
+                      <em>בחר מחוז</em>
                     </MenuItem>
                     {areas.map((area) => (
                       <MenuItem key={area.id} value={area.id}>

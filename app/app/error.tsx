@@ -15,6 +15,7 @@
 import { useEffect } from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
+import SessionExpiredError from '@/app/components/errors/SessionExpiredError';
 
 export default function Error({
   error,
@@ -35,6 +36,14 @@ export default function Error({
       });
     });
   }, [error]);
+
+  // Check if this is a SESSION_INVALID error (stale JWT after DB reset)
+  const isSessionError = error.message?.includes('SESSION_INVALID');
+
+  // Show friendly session expired screen for stale JWT tokens
+  if (isSessionError) {
+    return <SessionExpiredError errorMessage={error.message} isRTL={true} />;
+  }
 
   return (
     <Container dir="rtl" lang="he" maxWidth="sm" sx={{ mt: 8 }}>

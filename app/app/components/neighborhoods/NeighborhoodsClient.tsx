@@ -14,6 +14,8 @@ import {
   Avatar,
   Tooltip,
   Autocomplete,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import RtlButton from '@/app/components/ui/RtlButton';
 import { useTranslations, useLocale } from 'next-intl';
@@ -110,6 +112,7 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingSupervisors, setLoadingSupervisors] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>('');
 
   // Filtered sites based on search and corporation filter
   const filteredSites = useMemo(() => {
@@ -243,6 +246,10 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
       setDeleteModalOpen(false);
       setSelectedSite(null);
       router.refresh();
+    } else {
+      // Show error message in snackbar
+      setDeleteError(result.error || 'שגיאה במחיקת השכונה');
+      setDeleteModalOpen(false);
     }
   };
 
@@ -995,6 +1002,26 @@ export default function NeighborhoodsClient({ neighborhoods: initialSites, citie
           itemName={selectedSite.name}
         />
       )}
+
+      {/* Error Snackbar for deletion blocking */}
+      <Snackbar
+        open={!!deleteError}
+        autoHideDuration={6000}
+        onClose={() => setDeleteError('')}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setDeleteError('')}
+          severity="error"
+          sx={{
+            borderRadius: borderRadius.md,
+            fontWeight: 600,
+            fontSize: '1rem',
+          }}
+        >
+          {deleteError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

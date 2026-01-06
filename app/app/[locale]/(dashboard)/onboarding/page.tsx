@@ -92,7 +92,7 @@ export default async function OnboardingPage() {
       ],
     },
     {
-      label: 'שלב 2: עדכון/יצירת מנהלי אזור',
+      label: 'שלב 2: עדכון/יצירת מנהלי מחוז',
       description: 'החלף את פרטי מנהלי האזור או צור חדשים',
       critical: false,
       icon: <VerifiedUserIcon />,
@@ -100,8 +100,8 @@ export default async function OnboardingPage() {
       tasks: [
         'עבור דרך כל מנהל מחוז שתשאיר',
         'החלף אימייל, שם, טלפון בפרטים אמיתיים',
-        'מחק מנהלי אזור שלא צריך (אם שטח קטן)',
-        'צור מנהלי אזור חדשים אם נדרש',
+        'מחק מנהלי מחוז שלא צריך (אם שטח קטן)',
+        'צור מנהלי מחוז חדשים אם נדרש',
       ],
     },
     {
@@ -306,7 +306,7 @@ export default async function OnboardingPage() {
                     {initialState.areaManagers}
                   </Typography>
                   <Typography sx={{ fontSize: '13px', color: colors.neutral[700], fontWeight: 600 }}>
-                    מנהלי אזור
+                    מנהלי מחוז
                   </Typography>
                 </CardContent>
               </Card>

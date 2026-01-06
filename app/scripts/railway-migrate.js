@@ -9,16 +9,44 @@ const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-// Set version from version.json
+// Set version from version.json and record deployment
 try {
   const versionPath = path.join(__dirname, '../version.json');
   if (fs.existsSync(versionPath)) {
     const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
     process.env.NEXT_PUBLIC_APP_VERSION = versionData.version;
     console.log(`📦 App Version: ${versionData.version}`);
+    console.log(`⚙️  SW Version: ${versionData.serviceWorkerVersion}`);
+
+    // Generate BUILD_ID for Railway deployment
+    const buildDate = new Date().toISOString().split('T')[0];
+    const gitSha = process.env.RAILWAY_GIT_COMMIT_SHA?.substring(0, 7) || 'unknown';
+    const buildId = `${buildDate}-${gitSha}`;
+    process.env.NEXT_PUBLIC_BUILD_ID = buildId;
+    console.log(`🏗️  Build ID: ${buildId}`);
+
+    // Record deployment in version.json
+    const deployment = {
+      buildId,
+      appVersion: versionData.version,
+      swVersion: versionData.serviceWorkerVersion,
+      branch: process.env.RAILWAY_GIT_BRANCH || 'unknown',
+      environment: process.env.RAILWAY_ENVIRONMENT || 'production',
+      deployedAt: new Date().toISOString(),
+      gitSha,
+    };
+
+    // Add deployment to history (keep last 20)
+    versionData.deployments = versionData.deployments || [];
+    versionData.deployments.unshift(deployment);
+    versionData.deployments = versionData.deployments.slice(0, 20);
+
+    // Write back to version.json
+    fs.writeFileSync(versionPath, JSON.stringify(versionData, null, 2));
+    console.log('✅ Recorded deployment in version.json');
   }
 } catch (error) {
-  console.log('⚠️  Could not read version.json, using default');
+  console.log('⚠️  Could not update version.json:', error.message);
 }
 
 async function main() {

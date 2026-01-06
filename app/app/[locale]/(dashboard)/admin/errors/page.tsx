@@ -28,6 +28,7 @@ export default async function ErrorsDashboardPage({
   }
 
   // Parse search params
+  const environment = (searchParams.environment as string) || 'development';
   const dateRange = (searchParams.dateRange as '24h' | '7d' | '30d' | 'custom') || '7d';
   const customDateFrom = searchParams.customDateFrom as string | undefined;
   const customDateTo = searchParams.customDateTo as string | undefined;
@@ -43,6 +44,7 @@ export default async function ErrorsDashboardPage({
   try {
     [errorsResult, errorTypes, stats] = await Promise.all([
       listErrors({
+        environment,
         dateRange,
         customDateFrom,
         customDateTo,
@@ -76,6 +78,7 @@ export default async function ErrorsDashboardPage({
       errorTypes={errorTypes}
       stats={stats}
       initialFilters={{
+        environment,
         dateRange,
         customDateFrom,
         customDateTo,

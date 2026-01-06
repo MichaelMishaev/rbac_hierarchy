@@ -176,7 +176,7 @@ export default function SmartAssignmentDialog({
         {!loading && !error && candidates.length === 0 && (
           <Box sx={{ py: 4, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">
-              {isRTL ? 'לא נמצאו פעילים זמינים באזור זה' : 'No available activists found in this area'}
+              {isRTL ? 'לא נמצאו פעילים זמינים במחוז זה' : 'No available activists found in this area'}
             </Typography>
           </Box>
         )}

@@ -38,7 +38,7 @@ export default async function CorporationsPage() {
     return (
       <Box sx={{ p: 4, direction: isRTL ? 'rtl' : 'ltr' }}>
         <Typography variant="h5" color="error">
-          גישה נדחתה. רק מנהל על ומנהלי אזור יכולים לצפות בערים.
+          גישה נדחתה. רק מנהל על ומנהלי מחוז יכולים לצפות בערים.
         </Typography>
       </Box>
     );
@@ -97,19 +97,18 @@ export default async function CorporationsPage() {
   // SUPERADMIN: See all cities (no filter needed)
 
   // v1.4: Fetch cities with areaManager relation
-  // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
+  // CRITICAL FIX: Cannot use where clause on one-to-one relation (Prisma limitation)
+  // Soft-deleted users (isActive = false) are filtered in the transformation below
   const citiesData = await prisma.city.findMany({
     where: whereClause,
     include: {
       areaManager: {
         include: {
           user: {
-            where: {
-              isActive: true, // Only include active users (filters soft-deleted)
-            },
             select: {
               fullName: true,
               email: true,
+              isActive: true, // Include isActive field for filtering
             },
           },
         },
@@ -129,12 +128,16 @@ export default async function CorporationsPage() {
   });
 
   // Transform to match expected type
+  // Filter out soft-deleted users (isActive = false) from area managers
   const cities = citiesData.map(city => ({
     ...city,
     areaManager: city.areaManager ? {
       id: city.areaManager.id,
       regionName: city.areaManager.regionName,
-      user: city.areaManager.user || { fullName: '', email: '' },
+      // Only include user if they are active (not soft-deleted)
+      user: (city.areaManager.user && city.areaManager.user.isActive !== false)
+        ? { fullName: city.areaManager.user.fullName, email: city.areaManager.user.email }
+        : { fullName: '', email: '' },
     } : undefined,
   }));
 
