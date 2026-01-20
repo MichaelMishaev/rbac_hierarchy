@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 46
+**Total Bugs:** 48
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -7717,4 +7717,127 @@ pm2 restart all  # or Railway auto-deploy
 - ✅ Soft-deleted users filtered correctly
 - ✅ No performance impact (filtering in transformation)
 - ✅ No breaking changes to existing logic
+
+
+---
+
+## 🐛 BUG #47: DELETE /api/tasks/undefined Returns 500 - Missing taskId Validation (2026-01-20)
+
+**Severity:** MEDIUM (Causes noisy 500 errors in production logs)
+**Impact:** 5 critical errors per day in production error logs
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-20
+**Reported By:** Production error analysis (Error Dashboard)
+
+### Bug Description
+
+**Symptoms:**
+- Production logs show: `DELETE /api/tasks/undefined 500`
+- Error: `SyntaxError: Cannot convert undefined to BigInt`
+- Occurs when frontend sends DELETE request with undefined task ID
+
+**Expected Behavior:**
+- Should return 400 Bad Request with Hebrew error message
+- Should NOT cause 500 Internal Server Error
+
+### Root Cause
+
+**Missing Input Validation Before BigInt Conversion**
+
+In `app/api/tasks/[taskId]/route.ts` (line 30-31):
+```typescript
+// PROBLEM: No validation before BigInt conversion
+const { taskId: taskIdStr } = await params;
+const taskId = BigInt(taskIdStr);  // CRASH if taskIdStr is "undefined"
+```
+
+When the frontend sends a DELETE request to `/api/tasks/undefined`:
+1. `taskIdStr` = `"undefined"` (string)
+2. `BigInt("undefined")` throws `SyntaxError`
+3. Results in 500 Internal Server Error
+
+### Fix Applied
+
+**Added validation before BigInt conversion:**
+
+**File:** `app/app/api/tasks/[taskId]/route.ts`
+```diff
+    const userId = session.user.id as string;
+    const { taskId: taskIdStr } = await params;
++
++   // Validate taskId before BigInt conversion (prevents "undefined" crash)
++   if (!taskIdStr || taskIdStr === 'undefined') {
++     throw new ValidationError('מזהה משימה לא חוקי');
++   }
++
+    const taskId = BigInt(taskIdStr);
+```
+
+**Also imported ValidationError:**
+```diff
+- import { ForbiddenError, UnauthorizedError, NotFoundError, withErrorHandler } from '@/lib/error-handler';
++ import { ForbiddenError, UnauthorizedError, NotFoundError, ValidationError, withErrorHandler } from '@/lib/error-handler';
+```
+
+### Prevention Rule
+
+**BigInt Parameter Validation:**
+1. Always validate dynamic route parameters before BigInt conversion
+2. Check for falsy values AND string "undefined"
+3. Use ValidationError (400) instead of letting BigInt crash (500)
+
+---
+
+## 🐛 BUG #48: TypeError className.split in Error Tracker - SVG Elements Have Object className (2026-01-20)
+
+**Severity:** LOW (Non-blocking, affects error tracking only)
+**Impact:** Multiple errors when users click on SVG elements (icons)
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-20
+**Reported By:** Production error analysis (Error Dashboard)
+
+### Bug Description
+
+**Symptoms:**
+- Error: `TypeError: target.className.split is not a function`
+- Occurs in `error-tracker.ts` line 238
+- Happens when user clicks on SVG elements (icons, graphics)
+
+**Expected Behavior:**
+- Click tracking should work for ALL elements including SVGs
+- Should gracefully handle non-string className
+
+### Root Cause
+
+**SVG Elements Have SVGAnimatedString, Not String className**
+
+In `app/lib/error-tracker.ts` (line 238):
+```typescript
+// PROBLEM: Assumes className is always a string
+const classes = target.className ? `.${target.className.split(' ').join('.')}` : '';
+```
+
+**Why this fails for SVGs:**
+- HTML elements: `element.className` = `"btn primary"` (string)
+- SVG elements: `element.className` = `SVGAnimatedString { baseVal: "icon", animVal: "icon" }` (object!)
+- Calling `.split()` on an object throws TypeError
+
+### Fix Applied
+
+**Added type check before calling split():**
+
+**File:** `app/app/lib/error-tracker.ts`
+```diff
+- const classes = target.className ? `.${target.className.split(' ').join('.')}` : '';
++ const classes = target.className && typeof target.className === 'string'
++   ? `.${target.className.split(' ').join('.')}`
++   : '';
+```
+
+### Prevention Rule
+
+**DOM Element Type Safety:**
+1. Always check `typeof` before calling string methods on DOM properties
+2. SVG elements have different types for common properties (className, style, etc.)
+3. Consider using `element.classList` which works consistently across HTML/SVG
 

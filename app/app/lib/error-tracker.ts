@@ -235,7 +235,9 @@ class ErrorTracker {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toLowerCase();
       const id = target.id ? `#${target.id}` : '';
-      const classes = target.className ? `.${target.className.split(' ').join('.')}` : '';
+      const classes = target.className && typeof target.className === 'string'
+        ? `.${target.className.split(' ').join('.')}`
+        : '';
 
       this.addBreadcrumb({
         type: 'click',
