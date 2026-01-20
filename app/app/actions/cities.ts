@@ -541,7 +541,6 @@ export async function deleteCity(cityId: string) {
           select: {
             id: true,
             name: true,
-            code: true,
           },
           orderBy: {
             name: 'asc',
@@ -581,7 +580,6 @@ export async function deleteCity(cityId: string) {
         neighborhoods: corpToDelete.neighborhoods.map(neighborhood => ({
           id: neighborhood.id,
           name: neighborhood.name,
-          code: neighborhood.code,
         })),
         error: `לא ניתן למחוק עיר עם ${corpToDelete._count.neighborhoods} ${corpToDelete._count.neighborhoods === 1 ? 'שכונה פעילה' : 'שכונות פעילות'}`,
       };
@@ -942,14 +940,18 @@ export async function getAreaManagers() {
       },
     });
 
+    // CRITICAL FIX (Bug #50): Filter out area managers with null/deleted users
+    // Prisma's relation filter doesn't exclude orphaned foreign keys (deleted users)
+    const validAreaManagers = areaManagers.filter((am) => am.user !== null);
+
     return {
       success: true,
-      areaManagers: areaManagers.map((am) => ({
+      areaManagers: validAreaManagers.map((am) => ({
         id: am.id,
         regionName: am.regionName,
         regionCode: am.regionCode,
-        fullName: am.user!.fullName, // Guaranteed to exist due to whereClause filter
-        email: am.user!.email,       // Guaranteed to exist due to whereClause filter
+        fullName: am.user!.fullName,
+        email: am.user!.email,
         corporationCount: am._count.cities,
       })),
     };
