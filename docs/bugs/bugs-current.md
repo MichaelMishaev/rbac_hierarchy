@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 48
+**Total Bugs:** 49
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -7840,4 +7840,94 @@ const classes = target.className ? `.${target.className.split(' ').join('.')}` :
 1. Always check `typeof` before calling string methods on DOM properties
 2. SVG elements have different types for common properties (className, style, etc.)
 3. Consider using `element.classList` which works consistently across HTML/SVG
+
+
+---
+
+## 🐛 BUG #49: React Hydration Error #418 on Dashboard - next-themes SSR Mismatch (2026-01-20)
+
+**Severity:** MEDIUM (Causes console errors, potential UI flicker)
+**Impact:** Dashboard page throws hydration errors on initial load
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-20
+**Reported By:** Production error analysis (Error Dashboard)
+
+### Bug Description
+
+**Symptoms:**
+- Error: `Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]=`
+- Occurs on dashboard page load
+- Users see: "Hydration failed because the initial UI does not match what was rendered on the server"
+
+**Expected Behavior:**
+- Page should load without hydration errors
+- Server and client should render identical initial HTML
+
+### Root Cause
+
+**next-themes Library Modifies HTML on Client Mount**
+
+The `next-themes` library (`NextThemesProvider`) adds CSS classes to the `<html>` element on client mount for theme detection. This causes:
+
+1. Server renders: `<html lang="he" dir="rtl" ...>` (no theme class)
+2. Client hydrates: `<html lang="he" dir="rtl" class="light" ...>` (theme class added)
+3. React detects mismatch → Error #418
+
+**In `lib/providers.tsx`:**
+```typescript
+// PROBLEM: Theme applied immediately, causing server/client mismatch
+return (
+  <NextThemesProvider attribute="class" defaultTheme="light">
+    <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
+```
+
+### Fix Applied
+
+**Added mounted state guard to ensure consistent SSR/hydration:**
+
+**File:** `app/lib/providers.tsx`
+```diff
+export function Providers({ children }: { children: React.ReactNode }) {
++ const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
++ // Hydration guard: Prevent rendering until client is mounted
++ useEffect(() => {
++   setMounted(true);
++ }, []);
+
+  useEffect(() => {
++   if (!mounted) return;
+    const theme = localStorage.getItem('theme');
+    setIsDark(theme === 'dark');
+- }, []);
++ }, [mounted]);
+
++ // During SSR and initial hydration, render with default light theme
++ const currentTheme = mounted ? (isDark ? darkTheme : lightTheme) : lightTheme;
+
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="light"
++     enableSystem={false}
++     disableTransitionOnChange
+    >
+-     <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
++     <ThemeProvider theme={currentTheme}>
+```
+
+**Key changes:**
+1. Added `mounted` state to guard against hydration mismatch
+2. Theme only changes after client mount (hydration complete)
+3. Added `enableSystem={false}` to prevent system theme detection (Hebrew RTL system - consistent theme)
+4. Added `disableTransitionOnChange` to prevent flash on theme load
+
+### Prevention Rule
+
+**SSR Hydration Safety:**
+1. Always use a `mounted` state guard for client-side-only logic
+2. Never read from `localStorage`/`window` before mount
+3. Libraries that modify `<html>` or `<body>` need extra care
+4. Test with SSR mode enabled to catch hydration mismatches early
 
