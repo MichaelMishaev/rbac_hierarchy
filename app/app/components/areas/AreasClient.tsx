@@ -110,19 +110,23 @@ export default function AreasClient({ areas: initialAreas, userRole, userEmail, 
   const canDeleteAreas = isSuperAdmin && AUTHORIZED_DELETE_EMAILS.includes(userEmail);
 
   // Fetch available users when opening create or edit modal
+  // CRITICAL FIX (Bug #51): Only SuperAdmin can call getAvailableAreaManagerUsers
   useEffect(() => {
-    if (createModalOpen) {
+    if (isSuperAdmin && createModalOpen) {
       fetchAvailableUsers();
     }
-  }, [createModalOpen]);
+  }, [isSuperAdmin, createModalOpen]);
 
   useEffect(() => {
-    if (editModalOpen && selectedArea) {
+    if (isSuperAdmin && editModalOpen && selectedArea) {
       fetchAvailableUsers(selectedArea.id);
     }
-  }, [editModalOpen, selectedArea]);
+  }, [isSuperAdmin, editModalOpen, selectedArea]);
 
   const fetchAvailableUsers = async (currentAreaId?: string) => {
+    // Guard: Only SuperAdmin can fetch available area manager users
+    if (!isSuperAdmin) return;
+
     const result = await getAvailableAreaManagerUsers(currentAreaId);
     if (result.success && result.users) {
       setAvailableUsers(result.users);
