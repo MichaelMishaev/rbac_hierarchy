@@ -81,3 +81,12 @@ SECURITY_*.md
 /*_VERIFICATION.md
 /*_PROCESS.md
 /*_COMPLIANCE.md
+
+# Production admin scripts (local only - DO NOT commit)
+app/scripts/add-prod-superadmin.ts
+app/scripts/check-prod-errors.ts
+app/scripts/cleanup-aggressive.ts
+app/scripts/cleanup-production.ts
+app/scripts/delete-non-super-admin-users.js
+app/scripts/delete-prod-users.js
+app/scripts/restore-local-to-prod.ts
