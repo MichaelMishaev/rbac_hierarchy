@@ -149,15 +149,9 @@ const configWithSentry = withSentryConfig(configWithIntl, {
     // For all available options, see:
     // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-    // ⚡ Performance: COMPLETELY DISABLE webpack plugins in production builds
-    // These add 60-90s to build time and we don't need them
-    disableServerWebpackPlugin: true,
-    disableClientWebpackPlugin: true,
-
     // Performance: Disable expensive source map uploads (reduces build time by ~1-2 minutes)
     // Only upload minimal source maps needed for error tracking
     widenClientFileUpload: false,
-    hideSourceMaps: true,
 
     // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
     // This can increase your server load as well as your hosting bill.

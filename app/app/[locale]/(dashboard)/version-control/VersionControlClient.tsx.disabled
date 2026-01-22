@@ -7,13 +7,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
   Grid,
   Paper,
   Fade,
@@ -21,6 +14,15 @@ import {
   IconButton,
   Collapse,
 } from '@mui/material';
+import {
+  Timeline,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineConnector,
+  TimelineContent,
+  TimelineDot,
+  TimelineOppositeContent,
+} from '@mui/lab';
 import {
   Rocket as RocketIcon,
   Settings as SettingsIcon,
