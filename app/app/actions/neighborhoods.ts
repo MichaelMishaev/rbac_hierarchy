@@ -639,10 +639,11 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
           address: existingNeighborhood.address,
           city: existingNeighborhood.city,
           isActive: existingNeighborhood.isActive,
+          // CRITICAL FIX: Use optional chaining - user may be soft-deleted
           activistCoordinators: existingAssignments.map(a => ({
             id: a.activistCoordinatorId,
-            name: a.activistCoordinator.user.fullName,
-            email: a.activistCoordinator.user.email,
+            name: a.activistCoordinator.user?.fullName ?? 'N/A',
+            email: a.activistCoordinator.user?.email ?? 'N/A',
           })),
         },
         after: {

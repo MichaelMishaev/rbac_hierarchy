@@ -125,7 +125,8 @@ export default async function WorkersPage() {
             cityId: a.neighborhood.cityRelation?.id || '',
             cityRelation: a.neighborhood.cityRelation || undefined,
           } : undefined,
-          activistCoordinator: a.activistCoordinator ? {
+          // CRITICAL FIX: Check both activistCoordinator AND user exist (user may be soft-deleted)
+          activistCoordinator: a.activistCoordinator?.user ? {
             id: a.activistCoordinator.id,
             user: {
               fullName: a.activistCoordinator.user.fullName,

@@ -851,8 +851,12 @@ export async function getAreaManagers() {
 
     const whereClause: any = {
       isActive: true,
+      // CRITICAL FIX (Bug #50 Regression): Filter at DB level to exclude NULL and inactive users
+      userId: {
+        not: null, // Exclude area managers without assigned users
+      },
       user: {
-        isActive: true, // CRITICAL: Only return areas with active (non-soft-deleted) users
+        isActive: true, // Only return areas with active (non-soft-deleted) users
       },
     };
 
@@ -951,8 +955,8 @@ export async function getAreaManagers() {
         id: am.id,
         regionName: am.regionName,
         regionCode: am.regionCode,
-        fullName: am.user!.fullName,
-        email: am.user!.email,
+        fullName: am.user?.fullName ?? 'N/A', // Null-safe access
+        email: am.user?.email ?? 'N/A',       // Null-safe access
         corporationCount: am._count.cities,
       })),
     };
