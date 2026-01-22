@@ -1,7 +1,7 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 49
+**Total Bugs:** 52
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
@@ -7930,4 +7930,237 @@ export function Providers({ children }: { children: React.ReactNode }) {
 2. Never read from `localStorage`/`window` before mount
 3. Libraries that modify `<html>` or `<body>` need extra care
 4. Test with SSR mode enabled to catch hydration mismatches early
+
+
+---
+
+## 🐛 BUG #50: getAreaManagers Crash - Null User After Deletion (2026-01-20)
+
+**Severity:** HIGH (Crashes /cities and /activists pages)
+**Impact:** 13 critical errors, 15+ cascading server component errors
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-20
+**Reported By:** Production error analysis (Error Dashboard)
+**Affected Users:** eg6715139@gmail.com, yoniozery@gmail.com
+
+### Bug Description
+
+**Symptoms:**
+- Error: `TypeError: Cannot read properties of null (reading 'fullName')`
+- Crashes on `/cities` and `/activists` pages
+- Cascading "Server Components render error" messages
+
+**Expected Behavior:**
+- Pages should load even if some area managers have deleted users
+- Orphaned records should be gracefully filtered out
+
+### Root Cause
+
+**Non-Null Assertion on Potentially Null User Relation**
+
+In `app/app/actions/cities.ts` (lines 949-950):
+```typescript
+// PROBLEM: Assumes user always exists, but deleted users have null relation
+areaManagers: areaManagers.map((am) => ({
+  fullName: am.user!.fullName, // 💥 CRASH when am.user is null
+  email: am.user!.email,       // 💥 CRASH when am.user is null
+})),
+```
+
+**Why this happens:**
+1. User A is created and assigned as Area Manager
+2. Area Manager record has foreign key to User A
+3. User A is physically deleted (not soft-deleted)
+4. Area Manager record remains with orphaned `user_id`
+5. Prisma returns `user: null` for orphaned foreign keys
+6. Code assumes user exists → `null.fullName` → crash
+
+**The whereClause filter `user: { isActive: true }` was SUPPOSED to filter these out, but:**
+- Prisma relation filters only check existing relations
+- Orphaned foreign keys (deleted users) return `null`, not filtered
+
+### Fix Applied
+
+**Added explicit null filter before mapping:**
+
+**File:** `app/app/actions/cities.ts`
+```diff
++   // CRITICAL FIX (Bug #50): Filter out area managers with null/deleted users
++   // Prisma's relation filter doesn't exclude orphaned foreign keys (deleted users)
++   const validAreaManagers = areaManagers.filter((am) => am.user !== null);
++
+    return {
+      success: true,
+-     areaManagers: areaManagers.map((am) => ({
++     areaManagers: validAreaManagers.map((am) => ({
+```
+
+### Prevention Rule
+
+**Defensive Null Handling for Relations:**
+1. Never use non-null assertion (`!`) on database relations
+2. Always filter out null relations BEFORE mapping
+3. Consider foreign key constraints may have orphaned references
+4. Add data integrity checks for production data consistency
+
+### Data Integrity Recommendation
+
+Run this query to find orphaned area_manager records:
+```sql
+SELECT am.id, am.region_name, am.user_id 
+FROM area_managers am 
+LEFT JOIN users u ON am.user_id = u.id 
+WHERE u.id IS NULL;
+```
+
+
+---
+
+## 🐛 BUG #51: AreasClient RBAC Error - Non-SuperAdmin Calling SuperAdmin-Only Function (2026-01-20)
+
+**Severity:** MEDIUM (Error logged but page still works)
+**Impact:** 1 error per affected user session
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-20
+**Reported By:** Production error analysis (Error Dashboard)
+**Affected User:** adi.doc@gmail.com
+
+### Bug Description
+
+**Symptoms:**
+- Error: `Forbidden: Insufficient permissions` from `getAvailableAreaManagerUsers`
+- Occurs when AREA_MANAGER opens `/areas` page
+
+**Expected Behavior:**
+- No error should occur
+- AREA_MANAGER should see their areas without errors
+
+### Root Cause
+
+**Missing Role Check Before SuperAdmin-Only API Call**
+
+In `AreasClient.tsx`:
+```typescript
+// PROBLEM: Called without checking if user is SuperAdmin
+useEffect(() => {
+  if (createModalOpen) {
+    fetchAvailableUsers();  // 💥 AREA_MANAGER triggers this
+  }
+}, [createModalOpen]);
+
+// fetchAvailableUsers calls getAvailableAreaManagerUsers which requires SUPERADMIN
+```
+
+**Permission mismatch:**
+- `/areas` page allows: SUPERADMIN + AREA_MANAGER
+- `getAvailableAreaManagerUsers` requires: SUPERADMIN only
+- AREA_MANAGER can trigger the call → permission error
+
+### Fix Applied
+
+**Added isSuperAdmin guard to all calls:**
+
+**File:** `app/app/components/areas/AreasClient.tsx`
+```diff
+  useEffect(() => {
+-   if (createModalOpen) {
++   if (isSuperAdmin && createModalOpen) {
+      fetchAvailableUsers();
+    }
+- }, [createModalOpen]);
++ }, [isSuperAdmin, createModalOpen]);
+
+  useEffect(() => {
+-   if (editModalOpen && selectedArea) {
++   if (isSuperAdmin && editModalOpen && selectedArea) {
+      fetchAvailableUsers(selectedArea.id);
+    }
+- }, [editModalOpen, selectedArea]);
++ }, [isSuperAdmin, editModalOpen, selectedArea]);
+
+  const fetchAvailableUsers = async (currentAreaId?: string) => {
++   // Guard: Only SuperAdmin can fetch available area manager users
++   if (!isSuperAdmin) return;
++
+    const result = await getAvailableAreaManagerUsers(currentAreaId);
+```
+
+### Prevention Rule
+
+**RBAC Consistency:**
+1. Client-side function calls must match server-side permission requirements
+2. When a page allows multiple roles, check role before calling role-specific functions
+3. Add guards at both useEffect trigger AND function level (defense in depth)
+
+
+
+---
+
+## 🐛 BUG #52: getAreaManagers Null Filter Using Strict Equality (2026-01-22)
+
+**Severity:** HIGH (Production crash)
+**Impact:** Activists page fails to load for affected users
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-22
+**Reported By:** Production Error Dashboard (localhost:3855)
+**Affected User:** yoniozery@gmail.com
+
+### Bug Description
+
+**Symptoms:**
+- Error: `TypeError: Cannot read properties of null (reading 'fullName')`
+- Server action failed: `getAreaManagers`
+- Activists page at `https://app.rbac.shop/activists` crashes
+- Stack trace shows error in `Array.map` accessing `.fullName` on null
+
+**Expected Behavior:**
+- `getAreaManagers` should filter out area managers with deleted users
+- No null pointer exceptions when mapping results
+
+### Root Cause
+
+**Strict Equality Filter Doesn't Catch `undefined`**
+
+In `app/app/actions/cities.ts` line 945, Bug #50 fix used strict equality:
+```typescript
+// PROBLEM: !== only catches null, NOT undefined
+const validAreaManagers = areaManagers.filter((am) => am.user !== null);
+```
+
+Then at lines 949-956, using non-null assertion:
+```typescript
+areaManagers: validAreaManagers.map((am) => ({
+  fullName: am.user!.fullName,  // 💥 Crashes if user is undefined
+  email: am.user!.email,
+})),
+```
+
+**The Issue:**
+- In JavaScript: `undefined !== null` is `true` 
+- If Prisma returns `undefined` (not `null`) for missing relation, filter passes it through
+- Non-null assertion then fails when accessing `.fullName`
+
+### Fix Applied
+
+**Use loose equality to catch both null AND undefined:**
+
+**File:** `app/app/actions/cities.ts` (line 945)
+```diff
+- // CRITICAL FIX (Bug #50): Filter out area managers with null/deleted users
+- // Prisma's relation filter doesn't exclude orphaned foreign keys (deleted users)
+- const validAreaManagers = areaManagers.filter((am) => am.user !== null);
++ // CRITICAL FIX (Bug #50 + Bug #52): Filter out area managers with null/deleted users
++ // Prisma's relation filter doesn't exclude orphaned foreign keys (deleted users)
++ // Bug #52: Use loose equality (!=) to catch both null AND undefined
++ const validAreaManagers = areaManagers.filter((am) => am.user != null);
+```
+
+### Prevention Rule
+
+**Null Checking Best Practices:**
+1. Use `!= null` (loose equality) to catch both `null` AND `undefined`
+2. Or use explicit check: `am.user !== null && am.user !== undefined`
+3. Or use truthy check: `areaManagers.filter((am) => am.user)`
+4. Never assume Prisma always returns `null` for missing relations
+5. Avoid non-null assertions (`!`) on database relations - use optional chaining (`?.`) instead
 

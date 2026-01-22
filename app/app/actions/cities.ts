@@ -940,9 +940,10 @@ export async function getAreaManagers() {
       },
     });
 
-    // CRITICAL FIX (Bug #50): Filter out area managers with null/deleted users
+    // CRITICAL FIX (Bug #50 + Bug #52): Filter out area managers with null/deleted users
     // Prisma's relation filter doesn't exclude orphaned foreign keys (deleted users)
-    const validAreaManagers = areaManagers.filter((am) => am.user !== null);
+    // Bug #52: Use loose equality (!=) to catch both null AND undefined
+    const validAreaManagers = areaManagers.filter((am) => am.user != null);
 
     return {
       success: true,
