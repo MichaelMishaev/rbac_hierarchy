@@ -330,8 +330,11 @@ export async function listNeighborhoods(filters: ListNeighborhoodsFilters = {}) 
       where.city = { contains: filters.city, mode: 'insensitive' };
     }
 
+    // Default to showing only active neighborhoods (hide soft-deleted)
     if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
+    } else {
+      where.isActive = true; // Hide soft-deleted neighborhoods by default
     }
 
     // Query neighborhoods
@@ -636,10 +639,11 @@ export async function updateNeighborhood(neighborhoodId: string, data: UpdateNei
           address: existingNeighborhood.address,
           city: existingNeighborhood.city,
           isActive: existingNeighborhood.isActive,
+          // CRITICAL FIX: Use optional chaining - user may be soft-deleted
           activistCoordinators: existingAssignments.map(a => ({
             id: a.activistCoordinatorId,
-            name: a.activistCoordinator.user.fullName,
-            email: a.activistCoordinator.user.email,
+            name: a.activistCoordinator.user?.fullName ?? 'N/A',
+            email: a.activistCoordinator.user?.email ?? 'N/A',
           })),
         },
         after: {
@@ -712,23 +716,40 @@ export async function deleteNeighborhood(neighborhoodId: string) {
       }
     }
 
-    // Warning if site has data
-    if (neighborhoodToDelete._count.activistCoordinatorAssignments > 0 || neighborhoodToDelete._count.activists > 0) {
-      console.warn(
-        `Deleting site ${neighborhoodToDelete.name} with ${neighborhoodToDelete._count.activistCoordinatorAssignments} supervisors and ${neighborhoodToDelete._count.activists} activists`
-      );
+    // CRITICAL: Block deletion if neighborhood has activists
+    if (neighborhoodToDelete._count.activists > 0) {
+      return {
+        success: false,
+        code: 'ACTIVISTS_EXIST',
+        activistCount: neighborhoodToDelete._count.activists,
+        neighborhoodName: neighborhoodToDelete.name,
+        error: `לא ניתן למחוק שכונה עם ${neighborhoodToDelete._count.activists} ${neighborhoodToDelete._count.activists === 1 ? 'פעיל' : 'פעילים'}`,
+      };
     }
 
-    // Delete site (cascades to activists)
-    await prisma.neighborhood.delete({
+    // CRITICAL: Block deletion if neighborhood has coordinator assignments
+    if (neighborhoodToDelete._count.activistCoordinatorAssignments > 0) {
+      return {
+        success: false,
+        code: 'COORDINATORS_ASSIGNED',
+        coordinatorCount: neighborhoodToDelete._count.activistCoordinatorAssignments,
+        neighborhoodName: neighborhoodToDelete.name,
+        error: `לא ניתן למחוק שכונה עם ${neighborhoodToDelete._count.activistCoordinatorAssignments} ${neighborhoodToDelete._count.activistCoordinatorAssignments === 1 ? 'רכז מוקצה' : 'רכזים מוקצים'}`,
+      };
+    }
+
+    // Soft delete neighborhood (set isActive = false)
+    // INV-DATA-001: Preserves historical data for campaign analytics
+    await prisma.neighborhood.update({
       where: { id: neighborhoodId },
+      data: { isActive: false },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_NEIGHBORHOOD',
-        entity: 'Site',
+        action: 'SOFT_DELETE_NEIGHBORHOOD',
+        entity: 'Neighborhood',
         entityId: neighborhoodId,
         userId: currentUser.id,
         userEmail: currentUser.email,
@@ -739,6 +760,10 @@ export async function deleteNeighborhood(neighborhoodId: string) {
           city: neighborhoodToDelete.city,
           supervisorCount: neighborhoodToDelete._count.activistCoordinatorAssignments,
           workerCount: neighborhoodToDelete._count.activists,
+          isActive: true,
+        },
+        after: {
+          isActive: false,
         },
       },
     });

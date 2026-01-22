@@ -11,6 +11,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Box,
   Tabs,
@@ -20,6 +21,7 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -32,8 +34,20 @@ import { VoterDetails } from './components/VoterDetails';
 import { VoterStatistics } from './components/VoterStatistics';
 import { DuplicatesDashboard } from './components/DuplicatesDashboard';
 import { DeletedVotersList } from './components/DeletedVotersList';
-import { ExcelUpload } from './components/ExcelUpload';
 import type { Voter } from '@/lib/voters';
+
+// ⚡ Performance: Lazy load ExcelUpload (22MB ExcelJS library)
+const ExcelUpload = dynamic(
+  () => import('./components/ExcelUpload').then((mod) => ({ default: mod.ExcelUpload })),
+  {
+    loading: () => (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    ),
+    ssr: false,
+  }
+);
 
 type VotersPageClientProps = {
   isSuperAdmin: boolean;

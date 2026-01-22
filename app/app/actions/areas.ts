@@ -392,7 +392,16 @@ export async function deleteArea(areaId: string) {
     // Only SUPERADMIN can delete area managers
     const currentUser = await requireSuperAdmin();
 
-    // Get area manager to delete
+    // CRITICAL: Restrict deletion to specific authorized emails only
+    const AUTHORIZED_DELETE_EMAILS = ['dima@gmail.com', 'test@test.com'];
+    if (!AUTHORIZED_DELETE_EMAILS.includes(currentUser.email)) {
+      return {
+        success: false,
+        error: 'Only authorized users can delete areas. Contact system administrator.',
+      };
+    }
+
+    // Get area manager to delete with active cities list
     const areaToDelete = await prisma.areaManager.findUnique({
       where: { id: areaId },
       include: {
@@ -402,9 +411,26 @@ export async function deleteArea(areaId: string) {
             fullName: true,
           },
         },
+        cities: {
+          where: {
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
         _count: {
           select: {
-            cities: true,
+            cities: {
+              where: {
+                isActive: true,
+              },
+            },
           },
         },
       },
@@ -417,23 +443,33 @@ export async function deleteArea(areaId: string) {
       };
     }
 
-    // Warning if area has cities
+    // Warning if area has cities - return full city list
     if (areaToDelete._count.cities > 0) {
       return {
         success: false,
-        error: `Cannot delete area with ${areaToDelete._count.cities} cities. Please reassign or delete cities first.`,
+        code: 'CITIES_EXIST',
+        cityCount: areaToDelete._count.cities,
+        areaName: areaToDelete.regionName,
+        cities: areaToDelete.cities.map(city => ({
+          id: city.id,
+          name: city.name,
+          code: city.code,
+        })),
+        error: `לא ניתן למחוק מחוז עם ${areaToDelete._count.cities} ${areaToDelete._count.cities === 1 ? 'עיר פעילה' : 'ערים פעילות'}`,
       };
     }
 
-    // Delete area manager
-    await prisma.areaManager.delete({
+    // Soft delete area manager (set isActive = false)
+    // INV-DATA-001: Preserves historical data for campaign analytics
+    await prisma.areaManager.update({
       where: { id: areaId },
+      data: { isActive: false },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_AREA_MANAGER',
+        action: 'SOFT_DELETE_AREA_MANAGER',
         entity: 'AreaManager',
         entityId: areaId,
         userId: currentUser.id,
@@ -446,6 +482,10 @@ export async function deleteArea(areaId: string) {
           userId: areaToDelete.userId,
           userEmail: areaToDelete.user?.email || 'N/A',
           cityCount: areaToDelete._count.cities,
+          isActive: true,
+        },
+        after: {
+          isActive: false,
         },
       },
     });
@@ -546,10 +586,13 @@ export async function listAreas() {
       return { success: false, error: 'לא מחובר למערכת' };
     }
 
-    // Fetch all areas (SuperAdmin sees all, others see only their areas)
+    // Fetch all active areas (SuperAdmin sees all, others see only their areas)
     const areas = await prisma.areaManager.findMany({
-      where: currentUser.isSuperAdmin ? {} : {
+      where: currentUser.isSuperAdmin ? {
+        isActive: true, // Hide soft-deleted areas
+      } : {
         userId: currentUser.id,
+        isActive: true, // Hide soft-deleted areas
       },
       select: {
         id: true,

@@ -228,8 +228,11 @@ export async function listCities(filters: ListCitiesFilters = {}) {
       ];
     }
 
+    // Default to showing only active cities (hide soft-deleted)
     if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
+    } else {
+      where.isActive = true; // Hide soft-deleted cities by default
     }
 
     // Query corporations
@@ -527,14 +530,34 @@ export async function deleteCity(cityId: string) {
     // Only SUPERADMIN can delete corporations
     const currentUser = await requireSuperAdmin();
 
-    // Get corporation to delete
+    // Get corporation to delete with active neighborhoods list
     const corpToDelete = await prisma.city.findUnique({
       where: { id: cityId },
       include: {
+        neighborhoods: {
+          where: {
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
         _count: {
           select: {
-            coordinators: true,
-            neighborhoods: true,
+            coordinators: {
+              where: {
+                isActive: true,
+              },
+            },
+            neighborhoods: {
+              where: {
+                isActive: true,
+              },
+            },
           },
         },
       },
@@ -547,23 +570,44 @@ export async function deleteCity(cityId: string) {
       };
     }
 
-    // Warning if corporation has data
-    if (corpToDelete._count.coordinators > 0 || corpToDelete._count.neighborhoods > 0) {
-      console.warn(
-        `Deleting corporation ${corpToDelete.name} with ${corpToDelete._count.coordinators} managers and ${corpToDelete._count.neighborhoods} sites`
-      );
+    // CRITICAL: Block deletion if city has neighborhoods - return full neighborhood list
+    if (corpToDelete._count.neighborhoods > 0) {
+      return {
+        success: false,
+        code: 'NEIGHBORHOODS_EXIST',
+        neighborhoodCount: corpToDelete._count.neighborhoods,
+        cityName: corpToDelete.name,
+        neighborhoods: corpToDelete.neighborhoods.map(neighborhood => ({
+          id: neighborhood.id,
+          name: neighborhood.name,
+        })),
+        error: `לא ניתן למחוק עיר עם ${corpToDelete._count.neighborhoods} ${corpToDelete._count.neighborhoods === 1 ? 'שכונה פעילה' : 'שכונות פעילות'}`,
+      };
     }
 
-    // Delete corporation (cascades to sites, managers, etc.)
-    await prisma.city.delete({
+    // CRITICAL: Block deletion if city has coordinators
+    if (corpToDelete._count.coordinators > 0) {
+      return {
+        success: false,
+        code: 'COORDINATORS_EXIST',
+        coordinatorCount: corpToDelete._count.coordinators,
+        cityName: corpToDelete.name,
+        error: `לא ניתן למחוק עיר עם ${corpToDelete._count.coordinators} ${corpToDelete._count.coordinators === 1 ? 'רכז פעיל' : 'רכזים פעילים'}`,
+      };
+    }
+
+    // Soft delete city (set isActive = false)
+    // INV-DATA-001: Preserves historical data for campaign analytics
+    await prisma.city.update({
       where: { id: cityId },
+      data: { isActive: false },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        action: 'DELETE_CORPORATION',
-        entity: 'Corporation',
+        action: 'SOFT_DELETE_CITY',
+        entity: 'City',
         entityId: cityId,
         userId: currentUser.id,
         userEmail: currentUser.email,
@@ -574,6 +618,10 @@ export async function deleteCity(cityId: string) {
           code: corpToDelete.code,
           coordinatorCount: corpToDelete._count.coordinators,
           neighborhoodCount: corpToDelete._count.neighborhoods,
+          isActive: true,
+        },
+        after: {
+          isActive: false,
         },
       },
     });
@@ -803,8 +851,12 @@ export async function getAreaManagers() {
 
     const whereClause: any = {
       isActive: true,
+      // CRITICAL FIX (Bug #50 Regression): Filter at DB level to exclude NULL and inactive users
+      userId: {
+        not: null, // Exclude area managers without assigned users
+      },
       user: {
-        isNot: null, // CRITICAL: Only return area managers with valid user relationships
+        isActive: true, // Only return areas with active (non-soft-deleted) users
       },
     };
 
@@ -871,14 +923,11 @@ export async function getAreaManagers() {
     }
     // else: SUPERADMIN sees all areas (no additional filtering)
 
-    // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
+    // CRITICAL FIX: Soft-deleted users filtered at relation level in whereClause
     const areaManagers = await prisma.areaManager.findMany({
       where: whereClause,
       include: {
         user: {
-          where: {
-            isActive: true, // Only include active users (filters soft-deleted)
-          },
           select: {
             fullName: true,
             email: true,
@@ -895,14 +944,19 @@ export async function getAreaManagers() {
       },
     });
 
+    // CRITICAL FIX (Bug #50 + Bug #52): Filter out area managers with null/deleted users
+    // Prisma's relation filter doesn't exclude orphaned foreign keys (deleted users)
+    // Bug #52: Use loose equality (!=) to catch both null AND undefined
+    const validAreaManagers = areaManagers.filter((am) => am.user != null);
+
     return {
       success: true,
-      areaManagers: areaManagers.map((am) => ({
+      areaManagers: validAreaManagers.map((am) => ({
         id: am.id,
         regionName: am.regionName,
         regionCode: am.regionCode,
-        fullName: am.user!.fullName, // Guaranteed to exist due to whereClause filter
-        email: am.user!.email,       // Guaranteed to exist due to whereClause filter
+        fullName: am.user?.fullName ?? 'N/A', // Null-safe access
+        email: am.user?.email ?? 'N/A',       // Null-safe access
         corporationCount: am._count.cities,
       })),
     };

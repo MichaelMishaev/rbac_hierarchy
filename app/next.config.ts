@@ -1,9 +1,13 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { withSentryConfig } from '@sentry/nextjs';
+import bundleAnalyzer from '@next/bundle-analyzer';
 import path from 'path';
 
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -19,6 +23,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // ⚡ Build Performance: Externalize heavy server packages (moved from experimental in Next.js 15+)
+  serverExternalPackages: [
+    'bcryptjs',
+    'prisma',
+    '@prisma/client',
+    'exceljs',
+    'web-push',
+    'ioredis',
+    'leaflet',
+  ],
 
   // ✅ SECURITY FIX (VULN-AUTH-003): Strip dev-only credentials from production
   webpack: (config, { isServer, webpack }) => {
@@ -46,7 +61,10 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    // instrumentationHook is now default in Next.js 15+, no longer needed
+
+    // ⚡ Bundle Size: Optimize tree-shaking for better dead code elimination
+    // NOTE: optimizePackageImports handles modularization automatically in Next.js 15+
+    optimizePackageImports: ['date-fns', 'date-fns-tz', 'lucide-react', 'recharts', '@mui/material', '@mui/icons-material'],
   },
   images: {
     remotePatterns: [
@@ -115,10 +133,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Wrap with Sentry config
-export default withSentryConfig(
-  withNextIntl(nextConfig),
-  {
+// Wrap with Sentry config and Bundle Analyzer
+// ⚡ Performance: Only wrap with bundle analyzer when explicitly requested
+const configWithIntl = withNextIntl(nextConfig);
+const configWithSentry = withSentryConfig(configWithIntl, {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
 
@@ -155,5 +173,9 @@ export default withSentryConfig(
       // https://vercel.com/docs/cron-jobs
       automaticVercelMonitors: true,
     },
-  }
-);
+  });
+
+// ⚡ Performance: Only enable bundle analyzer when explicitly requested
+export default process.env.ANALYZE === 'true'
+  ? withBundleAnalyzer(configWithSentry)
+  : configWithSentry;

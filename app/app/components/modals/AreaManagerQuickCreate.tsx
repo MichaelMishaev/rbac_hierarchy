@@ -87,17 +87,17 @@ export default function AreaManagerQuickCreate({
   const handleSubmit = async () => {
     // Basic validation
     if (!formData.regionName.trim()) {
-      setError('שם אזור הוא שדה חובה');
+      setError('שם מחוז הוא שדה חובה');
       return;
     }
 
     if (!formData.regionCode.trim()) {
-      setError('קוד אזור הוא שדה חובה');
+      setError('קוד מחוז הוא שדה חובה');
       return;
     }
 
     if (!formData.userId.trim()) {
-      setError('בחירת מנהל מחוז היא שדה חובה');
+      setError('בחירת מנהל למחוז היא שדה חובה');
       return;
     }
 
@@ -207,10 +207,10 @@ export default function AreaManagerQuickCreate({
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: colors.neutral[800] }}>
-              יצירת מנהל מחוז חדש
+              יצירת מחוז חדש
             </Typography>
             <Typography variant="caption" sx={{ color: colors.neutral[600] }}>
-              צור מנהל מחוז במהירות ושייך אותו לעיר
+              צור מחוז גיאוגרפי חדש ושייך לו מנהל קיים
             </Typography>
           </Box>
         </Box>
@@ -225,7 +225,7 @@ export default function AreaManagerQuickCreate({
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <TextField
-            label="שם האזור *"
+            label="שם המחוז *"
             value={formData.regionName}
             onChange={(e) => handleRegionNameChange(e.target.value)}
             fullWidth
@@ -258,7 +258,7 @@ export default function AreaManagerQuickCreate({
               }}
             >
               <Typography variant="caption" sx={{ color: colors.pastel.blue, fontWeight: 600 }}>
-                קוד אזור: {formData.regionCode} (נוצר אוטומטית)
+                קוד מחוז: {formData.regionCode} (נוצר אוטומטית)
               </Typography>
             </Box>
           )}
@@ -270,7 +270,7 @@ export default function AreaManagerQuickCreate({
             fullWidth
             multiline
             rows={2}
-            placeholder="תיאור האזור..."
+            placeholder="תיאור המחוז..."
             disabled={loading}
             sx={{
               '& .MuiOutlinedInput-root': {
@@ -302,11 +302,11 @@ export default function AreaManagerQuickCreate({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="בחר מנהל מחוז *"
+                label="בחר מנהל למחוז *"
                 placeholder="חפש לפי שם או אימייל..."
                 required
                 error={!formData.userId && !!error}
-                helperText="רק משתמשים עם תפקיד 'מנהל מחוז' שטרם שויכו לאזור"
+                helperText="רק משתמשים עם תפקיד 'מנהל מחוז' שטרם שויכו למחוז"
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: borderRadius.lg,
@@ -419,7 +419,7 @@ export default function AreaManagerQuickCreate({
             transition: 'all 0.2s ease-in-out',
           }}
         >
-          {loading ? <CircularProgress size={24} sx={{ color: colors.neutral[0] }} /> : 'צור מנהל מחוז'}
+          {loading ? <CircularProgress size={24} sx={{ color: colors.neutral[0] }} /> : 'צור מחוז'}
         </Button>
       </DialogActions>
     </Dialog>

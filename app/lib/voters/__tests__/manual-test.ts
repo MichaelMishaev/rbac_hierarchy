@@ -128,6 +128,7 @@ async function runTests() {
 
     const superAdmin: UserContext = {
       userId: 'super-1',
+      email: 'superadmin@test.com',
       role: 'SUPERADMIN',
       fullName: 'מנהל על',
     };
@@ -154,6 +155,7 @@ async function runTests() {
 
     const user: UserContext = {
       userId: 'user-1',
+      email: 'user1@test.com',
       role: 'ACTIVIST_COORDINATOR',
       fullName: 'רחל',
     };
@@ -186,6 +188,7 @@ async function runTests() {
 
     const user: UserContext = {
       userId: 'user-1',
+      email: 'user1@test.com',
       role: 'ACTIVIST_COORDINATOR',
       fullName: 'רחל',
     };
@@ -265,6 +268,7 @@ async function runTests() {
   await test('Get voter statistics', async () => {
     const viewer: UserContext = {
       userId: 'super-1',
+      email: 'superadmin@test.com',
       role: 'SUPERADMIN',
       fullName: 'מנהל על',
     };

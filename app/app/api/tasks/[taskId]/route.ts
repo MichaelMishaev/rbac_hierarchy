@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logTaskAudit } from '@/lib/tasks';
-import { ForbiddenError, UnauthorizedError, NotFoundError, withErrorHandler } from '@/lib/error-handler';
+import { ForbiddenError, UnauthorizedError, NotFoundError, ValidationError, withErrorHandler } from '@/lib/error-handler';
 import { logger, extractRequestContext, extractSessionContext } from '@/lib/logger';
 
 export const DELETE = withErrorHandler(async (
@@ -28,6 +28,12 @@ export const DELETE = withErrorHandler(async (
 
     const userId = session.user.id as string;
     const { taskId: taskIdStr } = await params;
+
+    // Validate taskId before BigInt conversion (prevents "undefined" crash)
+    if (!taskIdStr || taskIdStr === 'undefined') {
+      throw new ValidationError('מזהה משימה לא חוקי');
+    }
+
     const taskId = BigInt(taskIdStr);
 
     // 2. Check if task exists and user is the sender

@@ -820,7 +820,7 @@ export default function OrganizationalTreeD3({ deepMode = false }: { deepMode?: 
           <Box display="flex" alignItems="center" gap={0.75}>
             <Box sx={{ width: 16, height: 16, borderRadius: '50%', background: '#6366F1' }} />
             <Typography variant="caption" sx={{ fontSize: 11, color: colors.neutral[700] }}>
-              מחוז / אזור
+              מחוז
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" gap={0.75}>

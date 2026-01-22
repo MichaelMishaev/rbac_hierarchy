@@ -14,11 +14,14 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Snackbar,
 } from '@mui/material';
 import RtlButton from '@/app/components/ui/RtlButton';
+import AreaDeletionAlert from '@/app/components/alerts/AreaDeletionAlert';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { colors, shadows, borderRadius } from '@/lib/design-system';
+import toast from 'react-hot-toast';
 import PublicIcon from '@mui/icons-material/Public';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -72,10 +75,11 @@ type Area = {
 type AreasClientProps = {
   areas: Area[];
   userRole: string;
+  userEmail: string;
   superiorUser: { fullName: string; email: string } | null;
 };
 
-export default function AreasClient({ areas: initialAreas, userRole, superiorUser }: AreasClientProps) {
+export default function AreasClient({ areas: initialAreas, userRole, userEmail, superiorUser }: AreasClientProps) {
   const t = useTranslations('areas');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -90,24 +94,39 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [deletionAlert, setDeletionAlert] = useState<{
+    open: boolean;
+    areaId: string;
+    areaName: string;
+    cityCount: number;
+    cities: Array<{ id: string; name: string; code: string }>;
+  } | null>(null);
 
-  // Check if user is SuperAdmin (only SuperAdmin can create/edit/delete areas)
+  // Check if user is SuperAdmin (only SuperAdmin can create/edit areas)
   const isSuperAdmin = userRole === 'SUPERADMIN';
 
+  // CRITICAL: Only specific authorized emails can delete areas
+  const AUTHORIZED_DELETE_EMAILS = ['dima@gmail.com', 'test@test.com'];
+  const canDeleteAreas = isSuperAdmin && AUTHORIZED_DELETE_EMAILS.includes(userEmail);
+
   // Fetch available users when opening create or edit modal
+  // CRITICAL FIX (Bug #51): Only SuperAdmin can call getAvailableAreaManagerUsers
   useEffect(() => {
-    if (createModalOpen) {
+    if (isSuperAdmin && createModalOpen) {
       fetchAvailableUsers();
     }
-  }, [createModalOpen]);
+  }, [isSuperAdmin, createModalOpen]);
 
   useEffect(() => {
-    if (editModalOpen && selectedArea) {
+    if (isSuperAdmin && editModalOpen && selectedArea) {
       fetchAvailableUsers(selectedArea.id);
     }
-  }, [editModalOpen, selectedArea]);
+  }, [isSuperAdmin, editModalOpen, selectedArea]);
 
   const fetchAvailableUsers = async (currentAreaId?: string) => {
+    // Guard: Only SuperAdmin can fetch available area manager users
+    if (!isSuperAdmin) return;
+
     const result = await getAvailableAreaManagerUsers(currentAreaId);
     if (result.success && result.users) {
       setAvailableUsers(result.users);
@@ -188,7 +207,27 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
       setAreas((prev) => prev.filter((area) => area.id !== selectedArea.id));
       setDeleteModalOpen(false);
       setSelectedArea(null);
+      toast.success('המחוז נמחק בהצלחה');
       router.refresh();
+    } else {
+      // Check if error is due to existing cities
+      if (result.code === 'CITIES_EXIST' && result.cityCount && result.cities) {
+        // Close the delete confirmation modal
+        setDeleteModalOpen(false);
+
+        // Show the custom deletion alert
+        setDeletionAlert({
+          open: true,
+          areaId: selectedArea.id,
+          areaName: result.areaName || selectedArea.regionName,
+          cityCount: result.cityCount,
+          cities: result.cities,
+        });
+      } else {
+        // Show generic error message from server
+        toast.error(result.error || 'שגיאה במחיקת המחוז');
+      }
+      // Keep modal open for non-city errors so user can try again or cancel
     }
   };
 
@@ -242,7 +281,7 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
               {stats.active}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              אזורים פעילים
+              מחוזות פעילים
             </Typography>
           </Card>
         </Grid>
@@ -300,7 +339,7 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
                 mb: 0.5,
               }}
             >
-              רק מנהל המערכת יכול ליצור אזורים חדשים
+              רק מנהל המערכת יכול ליצור מחוזות חדשים
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography
@@ -309,7 +348,7 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
                   color: colors.neutral[700],
                 }}
               >
-                ליצירת אזור חדש, פנה ל:
+                ליצירת מחוז חדש, פנה ל:
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography
@@ -354,7 +393,7 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
         }}
       >
         <TextField
-          placeholder="חיפוש לפי שם אזור, קוד או מנהל..."
+          placeholder="חיפוש לפי שם מחוז, קוד או מנהל..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -434,8 +473,8 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
           </Typography>
           <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 3 }}>
             {isSuperAdmin
-              ? 'צור את האזור הראשון כדי להתחיל לנהל ערים ופעילויות'
-              : 'אין אזורים להצגה כרגע'}
+              ? 'צור את המחוז הראשון כדי להתחיל לנהל ערים ופעילויות'
+              : 'אין מחוזות להצגה כרגע'}
           </Typography>
           {isSuperAdmin && (
             <RtlButton
@@ -661,22 +700,25 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
           <EditIcon sx={{ fontSize: 20, color: colors.pastel.blue }} />
           <Typography sx={{ fontWeight: 500 }}>{tCommon('edit')}</Typography>
         </MenuItem>
-        <MenuItem
-          onClick={handleDeleteClick}
-          sx={{
-            py: 1.5,
-            px: 2,
-            gap: 1.5,
-            '&:hover': {
-              backgroundColor: colors.pastel.redLight,
-            },
-          }}
-        >
-          <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
-          <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>
-            {tCommon('delete')}
-          </Typography>
-        </MenuItem>
+        {/* Only specific authorized users can delete areas */}
+        {canDeleteAreas && (
+          <MenuItem
+            onClick={handleDeleteClick}
+            sx={{
+              py: 1.5,
+              px: 2,
+              gap: 1.5,
+              '&:hover': {
+                backgroundColor: colors.pastel.redLight,
+              },
+            }}
+          >
+            <DeleteIcon sx={{ fontSize: 20, color: colors.pastel.red }} />
+            <Typography sx={{ fontWeight: 500, color: colors.pastel.red }}>
+              {tCommon('delete')}
+            </Typography>
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Create Modal */}
@@ -718,11 +760,36 @@ export default function AreasClient({ areas: initialAreas, userRole, superiorUse
             setSelectedArea(null);
           }}
           onConfirm={handleDeleteArea}
-          title="מחיקת אזור"
+          title="מחיקת מחוז"
           message={t('deleteConfirm')}
           itemName={selectedArea.regionName}
         />
       )}
+
+      {/* Area Deletion Alert - Shown when area has cities */}
+      <Snackbar
+        open={deletionAlert?.open ?? false}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{
+          top: { xs: '16px !important', sm: '24px !important' },
+          left: { xs: '8px !important', sm: 'auto !important' },
+          right: { xs: '8px !important', sm: 'auto !important' },
+          maxWidth: { xs: 'calc(100% - 16px)', sm: '700px' },
+          width: { xs: 'calc(100% - 16px)', sm: 'auto' },
+        }}
+      >
+        <div>
+          {deletionAlert && (
+            <AreaDeletionAlert
+              areaId={deletionAlert.areaId}
+              areaName={deletionAlert.areaName}
+              cityCount={deletionAlert.cityCount}
+              cities={deletionAlert.cities}
+              onClose={() => setDeletionAlert(null)}
+            />
+          )}
+        </div>
+      </Snackbar>
     </Box>
   );
 }

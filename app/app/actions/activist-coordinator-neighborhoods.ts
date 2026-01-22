@@ -383,7 +383,8 @@ export async function removeSupervisorFromSite(activistCoordinatorId: string, ne
           activistCoordinatorId,
           neighborhoodId,
           neighborhoodName: neighborhood.name,
-          coordinatorName: assignment.activistCoordinator.user.fullName,
+          // CRITICAL FIX: Use optional chaining - user may be soft-deleted
+          coordinatorName: assignment.activistCoordinator.user?.fullName ?? 'N/A',
         },
       },
     });

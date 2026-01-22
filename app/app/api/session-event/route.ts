@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Get session if authenticated
     const session = await auth();
     const userId = session?.user?.id || null;
-    const cityId = session?.user?.cityId || null;
+    const cityId = session?.user?.activistProfile?.cityId || null;
 
     // Get user agent from headers
     const userAgent = request.headers.get('user-agent') || undefined;

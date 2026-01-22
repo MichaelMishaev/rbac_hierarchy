@@ -72,7 +72,7 @@ export function VoterDetails({ voterId, onEdit }: VoterDetailsProps) {
   const getRoleInHebrew = (role: string) => {
     const roleMap: Record<string, string> = {
       'SUPERADMIN': 'מנהל מערכת',
-      'AREA_MANAGER': 'מנהל אזור',
+      'AREA_MANAGER': 'מנהל מחוז',
       'CITY_COORDINATOR': 'רכז עיר',
       'ACTIVIST_COORDINATOR': 'רכז פעילים',
     };

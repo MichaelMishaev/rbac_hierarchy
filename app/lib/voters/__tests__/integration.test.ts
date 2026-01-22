@@ -122,6 +122,7 @@ describe('Voter System Integration Tests', () => {
 
       const superAdmin: UserContext = {
         userId: 'super-1',
+        email: 'superadmin@test.com',
         role: 'SUPERADMIN',
         fullName: 'מנהל על',
       };
@@ -147,6 +148,7 @@ describe('Voter System Integration Tests', () => {
 
       const user: UserContext = {
         userId: 'user-1',
+        email: 'user1@test.com',
         role: 'ACTIVIST_COORDINATOR',
         fullName: 'רחל',
       };
@@ -172,6 +174,7 @@ describe('Voter System Integration Tests', () => {
 
       const user: UserContext = {
         userId: 'user-1',
+        email: 'user1@test.com',
         role: 'ACTIVIST_COORDINATOR',
         fullName: 'רחל',
       };
@@ -278,6 +281,7 @@ describe('Voter System Integration Tests', () => {
     it('should get statistics for visible voters', async () => {
       const viewer: UserContext = {
         userId: 'super-1',
+        email: 'superadmin@test.com',
         role: 'SUPERADMIN',
         fullName: 'מנהל על',
       };
@@ -293,6 +297,7 @@ describe('Voter System Integration Tests', () => {
     it('should get insertion activity report', async () => {
       const viewer: UserContext = {
         userId: 'super-1',
+        email: 'superadmin@test.com',
         role: 'SUPERADMIN',
         fullName: 'מנהל על',
       };

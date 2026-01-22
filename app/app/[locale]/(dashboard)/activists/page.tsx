@@ -34,18 +34,18 @@ export default async function WorkersPage() {
   ]);
 
   // Fetch activist coordinators (ActivistCoordinator records, not User records!)
-  // CRITICAL FIX: Filter out soft-deleted users (isActive = false)
+  // CRITICAL FIX: Filter out soft-deleted users via AND condition
   const activistCoordinators = await prisma.activistCoordinator.findMany({
     where: {
       isActive: true,
+      user: {
+        isActive: true, // Only include active users (filters soft-deleted)
+      },
     },
     select: {
       id: true,  // ActivistCoordinator record ID
       userId: true,  // Include userId to find current user's coordinator record
       user: {
-        where: {
-          isActive: true, // Only include active users (filters soft-deleted)
-        },
         select: {
           fullName: true,
           email: true,
@@ -125,7 +125,8 @@ export default async function WorkersPage() {
             cityId: a.neighborhood.cityRelation?.id || '',
             cityRelation: a.neighborhood.cityRelation || undefined,
           } : undefined,
-          activistCoordinator: a.activistCoordinator ? {
+          // CRITICAL FIX: Check both activistCoordinator AND user exist (user may be soft-deleted)
+          activistCoordinator: a.activistCoordinator?.user ? {
             id: a.activistCoordinator.id,
             user: {
               fullName: a.activistCoordinator.user.fullName,
