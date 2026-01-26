@@ -1,13 +1,59 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 53
+**Total Bugs:** 54
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🐛 BUG #54: Performance Tests CI Failure - Wrong Password in Test (2026-01-26)
+
+**Severity:** MEDIUM (CI pipeline blocked)
+**Impact:** All performance tests fail with 30s timeout in `beforeEach` hook
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-26
+**Location:** `app/tests/e2e/performance/navigation.performance.spec.ts:25`
+
+### Bug Description
+
+**Symptoms:**
+- "Performance Tests" GitHub Action fails after ~14 minutes
+- All 6 navigation performance tests timeout in `beforeEach` hook
+- Repeated `CredentialsSignin` auth errors in logs
+- `page.waitForURL: Test timeout of 30000ms exceeded`
+
+**Root Cause:**
+
+Password mismatch between test and seed data:
+- `seed.ts` creates users with password: `admin123`
+- Performance test used hardcoded password: `SuperAdmin123!`
+
+**The Fix:**
+
+```typescript
+// BEFORE (wrong)
+await page.fill('input[name="password"]', 'SuperAdmin123!');
+
+// AFTER (correct - matches seed.ts)
+await page.fill('input[name="password"]', 'admin123');
+```
+
+### Prevention Rule
+
+**ALWAYS use the auth fixture or constants for test credentials:**
+```typescript
+// CORRECT: Use shared auth fixture
+import { testUsers } from '../fixtures/auth.fixture';
+await page.fill('input[name="password"]', testUsers.superAdmin.password);
+
+// INCORRECT: Hardcode credentials
+await page.fill('input[name="password"]', 'SomePassword123!');
+```
 
 ---
 
