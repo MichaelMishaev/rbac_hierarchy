@@ -84,3 +84,57 @@ app/scripts/cleanup-production.ts
 app/scripts/delete-non-super-admin-users.js
 app/scripts/delete-prod-users.js
 app/scripts/restore-local-to-prod.ts
+
+# ═══════════════════════════════════════════════════
+# LOCAL-ONLY DOCUMENTATION (Working notes, not for repo)
+# ═══════════════════════════════════════════════════
+
+# Temp documentation in app/ root
+app/*.md
+app/app/docs/
+
+# Backup files
+*.bak*
+
+# Third-party downloads
+docs/3rdParty/
+
+# Local development guides
+docs/localDev/
+
+# Working analysis docs
+docs/syAnalyse/
+docs/ux-issues/
+docs/performance/
+docs/paidFeatures/
+docs/testing/
+docs/schema-exports/
+
+# Infrastructure working docs (keep base/, roles/, qa/ tracked)
+docs/infrastructure/UI/
+docs/infrastructure/*_SUMMARY.md
+docs/infrastructure/*_CHECKLIST.md
+docs/infrastructure/*_QUICK_REFERENCE.md
+docs/infrastructure/*_GUIDE.md
+docs/infrastructure/bugs.md
+docs/infrastructure/infrustructure-hierarchy.md
+docs/infrastructure/service-worker-guidelines.md
+
+# Individual bug reports (prodBugs/ is tracked)
+docs/bugs/BUG-*.md
+docs/bugs/bug-*.md
+docs/bugs/bugs-archive-*.md
+docs/bugs/README.md
+
+# More infrastructure working docs
+docs/infrastructure/README_BUG_PREVENTION.md
+docs/infrastructure/SERVICE_WORKER_QUICK_REF.md
+docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md
+
+# Misc local docs
+docs/CUSTOMER_ONBOARDING_GUIDE.md
+docs/SYNC_PROD_TO_LOCAL.md
+docs/mobile-responsiveness-report.md
+
+# Production test config (local only)
+app/playwright.prod.config.ts
