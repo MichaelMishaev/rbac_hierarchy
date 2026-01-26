@@ -1,8 +1,5 @@
-# Exclude documentation
-docs/
-
 # Production credentials (NEVER COMMIT)
-docs/prod/logInvestigateProd.md
+docs/prod/
 
 # Dependencies
 node_modules/
@@ -68,11 +65,8 @@ test-results/
 # Database backups
 backups/
 
-# Security audit reports (temporary documentation)
-SECURITY_*.md
-**/SECURITY_*.md
-
-# Security/compliance documentation (auto-generated)
+# Security/compliance sensitive files (root level only - docs/mdFiles is tracked)
+/SECURITY_*.md
 /*_PROCEDURES.md
 /*_PROGRAM.md
 /*_DOCUMENTATION.md
