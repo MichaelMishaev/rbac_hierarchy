@@ -526,11 +526,42 @@ grep -r "toLocaleDateString()\|toLocaleString()" app/
 
 ---
 
+## 🛠️ Required Skills
+
+**MUST invoke these skills during validation:**
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| **campaign-rtl** | `/rtl-check all` | Full Hebrew/RTL audit |
+| **campaign-rtl** | `/rtl-check text` | Find English text violations |
+| **campaign-rtl** | `/rtl-check layout` | Check RTL direction |
+| **campaign-rtl** | `/rtl-check css` | Check logical CSS properties |
+| **campaign-invariant** | `/invariant i18n` | Check i18n invariants |
+
+**Validation Workflow:**
+```bash
+# 1. Full Hebrew/RTL audit
+/rtl-check all             # Text, layout, CSS, locale checks
+
+# 2. Specific checks
+/rtl-check text            # Find any English text
+/rtl-check layout          # Missing direction="rtl"
+/rtl-check css             # Physical CSS properties (marginLeft)
+/rtl-check locale          # Date/number formatting
+
+# 3. Check invariants
+/invariant i18n            # INV-I18N-001 to 003
+
+# 4. Audit specific file
+/rtl-check file app/components/ActivistForm.tsx
+```
+
 ## 📚 Reference Documentation
 
 Always read these files before auditing:
 
 - **`/CLAUDE.md`** - Hebrew-ONLY, RTL-ONLY requirements (CRITICAL section)
+- **`/docs/infrastructure/base/baseRules.md`** - Section 10: Hebrew/RTL rules
 - **`/app/lib/theme.ts`** - MUI RTL theme configuration
 - **`/app/i18n.ts`** - next-intl configuration (should be he-ONLY)
 - **`/app/messages/he.json`** - Hebrew translations (ONLY file in messages/)

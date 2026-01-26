@@ -252,6 +252,7 @@ model ActivistCoordinator {
   @@index([userId])
   @@index([isActive])
   @@index([cityId, isActive]) // Performance: Common filtered query
+  @@index([cityId, userId])   // 🚀 PERFORMANCE: Common query pattern for user lookups within city
   @@map("activist_coordinators")
 }
 
@@ -398,6 +399,7 @@ model Activist {
   @@index([userId])
   @@index([cityId, isActive]) // Performance: Common filtered query for city-scoped active activists
   @@index([neighborhoodId, isActive]) // Performance: Common filtered query for neighborhood-scoped active activists
+  @@index([activistCoordinatorId, isActive]) // 🚀 PERFORMANCE: Common query for coordinator's active activists
   @@map("activists")
 }
 
@@ -793,6 +795,7 @@ model Voter {
   @@index([contactStatus])            // For filtering by contact status
   @@index([lastContactedAt])          // For sorting by last contact
   @@index([insertedAt(sort: Desc)])   // For recent voters
+  @@index([insertedByUserId, isActive]) // 🚀 PERFORMANCE: Common query for user's active voters
   @@map("voters")
 }
 

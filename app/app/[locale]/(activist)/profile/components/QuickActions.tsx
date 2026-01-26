@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+// 🚀 PERFORMANCE: Dynamic import of framer-motion saves ~350KB from initial bundle
+import { MotionDiv } from '@/app/components/ui/DynamicMotion';
 import { Box, Button } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CheckIcon from '@mui/icons-material/Check';
@@ -77,7 +78,7 @@ export function QuickActions() {
         const Icon = action.icon;
 
         const buttonContent = (
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1, duration: 0.4 }}
@@ -130,7 +131,7 @@ export function QuickActions() {
             >
               {action.label}
             </Button>
-          </motion.div>
+          </MotionDiv>
         );
 
         // Wrap with Link if href is provided

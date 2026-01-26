@@ -364,8 +364,46 @@ npm run test:e2e:headed       # In headed browser
 7. **Verify no regressions** - Critical paths still work
 8. **Document findings** - Clear bug reports in Hebrew
 
+## 🛠️ Required Skills
+
+**MUST invoke these skills during work:**
+
+| Skill | Command | When to Use |
+|-------|---------|-------------|
+| **campaign-invariant** | `/invariant all` | Check all 19 system invariants |
+| **campaign-test** | `/test-rbac` | Generate RBAC negative tests |
+| **campaign-rbac** | `/rbac-check` | Audit RBAC in queries |
+| **campaign-rtl** | `/rtl-check` | Validate Hebrew/RTL |
+
+**Workflow:**
+```bash
+# 1. After code changes
+/invariant all             # Run ALL 19 invariant checks
+
+# 2. For RBAC testing
+/test-rbac activist        # Generate activist permission tests
+/test-rbac city            # Generate city isolation tests
+
+# 3. For UI testing
+/rtl-check all             # Check Hebrew-only + RTL layouts
+
+# 4. Audit specific areas
+/rbac-check queries        # Audit all Prisma queries for scoping
+```
+
+**Test Generation Example:**
+```bash
+/test-rbac all
+# Generates:
+# - City Coordinator isolation tests
+# - Activist Coordinator M2M tests
+# - Area Manager boundary tests
+# - SuperAdmin protection tests
+```
+
 ## Reference Documentation
 - Read `/CLAUDE.md` for campaign system overview
+- Read `/docs/infrastructure/roles/PERMISSIONS_MATRIX.md` for RBAC matrix
 - Read `/tests/e2e/` for existing test patterns
 - Read `/app/prisma/schema.prisma` for data model
 

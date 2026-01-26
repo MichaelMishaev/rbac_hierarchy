@@ -44,6 +44,8 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import Tooltip from '@mui/material/Tooltip';
 import RtlButton from '@/app/components/ui/RtlButton';
 import UserModal from './UserModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
@@ -51,17 +53,51 @@ import ResetPasswordDialog from './ResetPasswordDialog';
 import { deleteUser, getExistingRegions } from '@/app/actions/users';
 import { useRouter } from 'next/navigation';
 
+// ============================================
+// PHONE FORMATTING UTILITIES
+// ============================================
+
+/**
+ * Format Israeli phone for display (removes +972, adds local format)
+ * +972501234567 → 050-1234567
+ * 0501234567 → 050-1234567
+ */
+function formatPhoneDisplay(phone: string | null): string {
+  if (!phone) return '-';
+  // Remove +972 and normalize
+  const normalized = phone.replace(/^\+972/, '0').replace(/\D/g, '');
+  // Format as 0XX-XXXXXXX
+  if (normalized.length === 10) {
+    return `${normalized.slice(0, 3)}-${normalized.slice(3)}`;
+  }
+  return phone; // Return original if format unknown
+}
+
+/**
+ * Get WhatsApp URL for phone number
+ */
+function getWhatsAppUrl(phone: string | null): string | null {
+  if (!phone) return null;
+  // Normalize to international format for WhatsApp
+  let normalized = phone.replace(/\D/g, '');
+  if (normalized.startsWith('0')) {
+    normalized = '972' + normalized.slice(1);
+  }
+  return `https://wa.me/${normalized}`;
+}
+
 type User = {
   id: string;
   fullName: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   avatarUrl: string | null;
   role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN' | 'ACTIVIST';
   lastLoginAt: Date | null;
-  createdAt: Date;
+  createdAt: Date | null;
   isActive: boolean;
-  // Role-specific relations
+  type?: 'user' | 'activist';
+  // Role-specific relations (for users)
   areaManager?: {
     regionName: string;
     regionCode: string | null;
@@ -79,6 +115,17 @@ type User = {
       city: string | null;
     };
   }[];
+  // Activist-specific fields
+  neighborhood?: {
+    id: string;
+    name: string;
+    city?: { id: string; name: string } | null;
+  } | null;
+  city?: {
+    id: string;
+    name: string;
+  } | null;
+  position?: string | null;
 };
 
 type City = {
@@ -311,6 +358,8 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
         return colors.status.blue;
       case 'ACTIVIST_COORDINATOR':
         return colors.status.green;
+      case 'ACTIVIST':
+        return '#00ACC1'; // Teal/Cyan for activists
       default:
         return colors.neutral[500];
     }
@@ -342,6 +391,16 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
       // Fallback to city if no neighborhoods assigned yet
       if (user.activistCoordinatorOf && user.activistCoordinatorOf.length > 0) {
         return user.activistCoordinatorOf.map(s => s.city.name).join(', ');
+      }
+    }
+
+    // Activist: Show neighborhood name
+    if (user.role === 'ACTIVIST' || user.type === 'activist') {
+      if (user.neighborhood) {
+        return user.neighborhood.name;
+      }
+      if (user.city) {
+        return user.city.name;
       }
     }
 
@@ -779,19 +838,43 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {user.email}
+                        {user.email || '-'}
                       </Typography>
                     </Box>
 
-                    {/* Phone */}
+                    {/* Phone with WhatsApp */}
                     {user.phone && (
                       <Box>
                         <Typography sx={{ fontSize: '12px', color: colors.neutral[500], mb: 0.5 }}>
                           {t('phone')}
                         </Typography>
-                        <Typography sx={{ fontSize: '14px', color: colors.neutral[700] }}>
-                          {user.phone}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography sx={{ fontSize: '14px', color: colors.neutral[700] }}>
+                            {formatPhoneDisplay(user.phone)}
+                          </Typography>
+                          {getWhatsAppUrl(user.phone) && (
+                            <Tooltip title="פתח בוואטסאפ" arrow>
+                              <IconButton
+                                component="a"
+                                href={getWhatsAppUrl(user.phone)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                size="small"
+                                sx={{
+                                  width: 32,
+                                  height: 32,
+                                  color: '#25D366',
+                                  '&:hover': {
+                                    backgroundColor: '#25D36610',
+                                  },
+                                }}
+                              >
+                                <WhatsAppIcon sx={{ fontSize: 20 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
                       </Box>
                     )}
 
@@ -910,15 +993,39 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                     {/* Email */}
                     <TableCell>
                       <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                        {user.email}
+                        {user.email || '-'}
                       </Typography>
                     </TableCell>
 
-                    {/* Phone */}
+                    {/* Phone with WhatsApp */}
                     <TableCell>
-                      <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
-                        {user.phone || '-'}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography sx={{ color: colors.neutral[600], fontSize: '14px' }}>
+                          {formatPhoneDisplay(user.phone)}
+                        </Typography>
+                        {user.phone && getWhatsAppUrl(user.phone) && (
+                          <Tooltip title="פתח בוואטסאפ" arrow>
+                            <IconButton
+                              component="a"
+                              href={getWhatsAppUrl(user.phone)!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              size="small"
+                              sx={{
+                                width: 28,
+                                height: 28,
+                                color: '#25D366',
+                                '&:hover': {
+                                  backgroundColor: '#25D36610',
+                                },
+                              }}
+                            >
+                              <WhatsAppIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
                     </TableCell>
 
                     {/* Role */}
@@ -1109,27 +1216,52 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                       {t('email')}
                     </Typography>
                     <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
-                      {detailsUser.email}
+                      {detailsUser.email || '-'}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
                       {t('phone')}
                     </Typography>
-                    <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
-                      {detailsUser.phone || '-'}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
+                        {formatPhoneDisplay(detailsUser.phone)}
+                      </Typography>
+                      {detailsUser.phone && getWhatsAppUrl(detailsUser.phone) && (
+                        <Tooltip title="פתח בוואטסאפ" arrow>
+                          <IconButton
+                            component="a"
+                            href={getWhatsAppUrl(detailsUser.phone)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="small"
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              color: '#25D366',
+                              '&:hover': {
+                                backgroundColor: '#25D36610',
+                              },
+                            }}
+                          >
+                            <WhatsAppIcon sx={{ fontSize: 22 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
                       {t('joinDate')}
                     </Typography>
                     <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
-                      {new Date(detailsUser.createdAt).toLocaleDateString('he-IL', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
+                      {detailsUser.createdAt
+                        ? new Date(detailsUser.createdAt).toLocaleDateString('he-IL', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })
+                        : '-'}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1155,6 +1287,7 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                   {detailsUser.role === 'CITY_COORDINATOR' && t('assignedCities')}
                   {detailsUser.role === 'ACTIVIST_COORDINATOR' && t('assignedNeighborhoods')}
                   {detailsUser.role === 'SUPERADMIN' && t('fullAccess')}
+                  {detailsUser.role === 'ACTIVIST' && t('neighborhood')}
                 </Typography>
 
                 {detailsUser.role === 'AREA_MANAGER' && detailsUser.areaManager && (
@@ -1225,28 +1358,64 @@ export default function UsersClient({ users, cities, neighborhoods, currentUserR
                     {t('allRegionsAndCities')}
                   </Typography>
                 )}
+
+                {/* Activist-specific display */}
+                {detailsUser.role === 'ACTIVIST' && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {detailsUser.neighborhood && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                        <Chip
+                          label={detailsUser.neighborhood.name}
+                          sx={{
+                            backgroundColor: '#00ACC120',
+                            color: '#00ACC1',
+                            fontWeight: 600,
+                          }}
+                        />
+                        {detailsUser.city && (
+                          <Typography variant="body2" sx={{ color: colors.neutral[500] }}>
+                            ({detailsUser.city.name})
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                    {detailsUser.position && (
+                      <Box>
+                        <Typography variant="body2" sx={{ color: colors.neutral[500], mb: 0.5 }}>
+                          תפקיד
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: colors.neutral[800], fontWeight: 500 }}>
+                          {detailsUser.position}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Box>
 
-              <Divider sx={{ my: 3 }} />
-
-              {/* Section 3: Login History */}
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: colors.neutral[900], mb: 2 }}>
-                  {t('loginHistory')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
-                  {t('lastLogin')}:{' '}
-                  {detailsUser.lastLoginAt
-                    ? new Date(detailsUser.lastLoginAt).toLocaleString('he-IL', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : t('noLoginHistory')}
-                </Typography>
-              </Box>
+              {/* Section 3: Login History (only for users, not activists) */}
+              {detailsUser.role !== 'ACTIVIST' && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: colors.neutral[900], mb: 2 }}>
+                      {t('loginHistory')}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colors.neutral[600] }}>
+                      {t('lastLogin')}:{' '}
+                      {detailsUser.lastLoginAt
+                        ? new Date(detailsUser.lastLoginAt).toLocaleString('he-IL', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : t('noLoginHistory')}
+                    </Typography>
+                  </Box>
+                </>
+              )}
             </DialogContent>
 
             <Divider />

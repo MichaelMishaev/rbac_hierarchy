@@ -185,6 +185,55 @@ class ErrorTracker {
     this.trackVisibility();
   }
 
+  /**
+   * Safely stringify objects with circular references, DOM nodes, and React internals
+   */
+  private safeStringify(obj: any, maxDepth = 3): string {
+    const seen = new WeakSet();
+
+    const stringify = (value: any, depth: number): any => {
+      if (depth > maxDepth) return '[Max Depth]';
+      if (value === null) return null;
+      if (value === undefined) return undefined;
+
+      if (typeof value !== 'object') return value;
+
+      // Handle DOM nodes
+      if (value instanceof HTMLElement) {
+        return `[HTMLElement: ${value.tagName}${value.id ? '#' + value.id : ''}]`;
+      }
+
+      // Handle circular references
+      if (seen.has(value)) return '[Circular]';
+      seen.add(value);
+
+      // Handle arrays
+      if (Array.isArray(value)) {
+        return value.slice(0, 10).map(v => stringify(v, depth + 1));
+      }
+
+      // Handle objects
+      const result: any = {};
+      const keys = Object.keys(value).slice(0, 20);
+      for (const key of keys) {
+        // Skip React internal properties
+        if (key.startsWith('__react') || key.startsWith('_react')) continue;
+        try {
+          result[key] = stringify(value[key], depth + 1);
+        } catch {
+          result[key] = '[Error]';
+        }
+      }
+      return result;
+    };
+
+    try {
+      return JSON.stringify(stringify(obj, 0));
+    } catch {
+      return '[Unserializable]';
+    }
+  }
+
   private interceptConsole() {
     ['log', 'info', 'warn', 'error'].forEach((method) => {
       this.originalConsole[method] = console[method as keyof Console];
@@ -203,7 +252,7 @@ class ErrorTracker {
     const log: ConsoleLog = {
       level,
       message: args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        typeof arg === 'object' ? this.safeStringify(arg) : String(arg)
       ).join(' '),
       args,
       timestamp: Date.now(),

@@ -22,10 +22,10 @@ import { colors, shadows, borderRadius } from '@/lib/design-system';
 import Link from 'next/link';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import SearchIcon from '@mui/icons-material/Search';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { createUser, updateUser } from '@/app/actions/users';
+import { createWorker } from '@/app/actions/activists';
 
 type User = {
   id: string;
@@ -68,10 +68,12 @@ type FormData = {
   email: string;
   phone: string;
   password: string;
-  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN';
+  role: 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR' | 'SUPERADMIN' | 'ACTIVIST';
   cityId: string;
   regionName: string; // For Area Manager
   neighborhoodIds: string[]; // For ActivistCoordinator - multiple neighborhoods
+  neighborhoodId: string; // For ACTIVIST - single neighborhood selection
+  position: string; // For ACTIVIST - optional position/role
 };
 
 export default function UserModal({
@@ -99,6 +101,8 @@ export default function UserModal({
     cityId: user?.cityId || currentUserCityId || '',
     regionName: user?.regionName || '',
     neighborhoodIds: user?.neighborhoodIds || [],
+    neighborhoodId: '', // For ACTIVIST - single neighborhood
+    position: '', // For ACTIVIST - optional position
   });
 
   const [loading, setLoading] = useState(false);
@@ -119,6 +123,8 @@ export default function UserModal({
         cityId: user.cityId || currentUserCityId || '',
         regionName: user.regionName || '',
         neighborhoodIds: user.neighborhoodIds || [],
+        neighborhoodId: '',
+        position: '',
       });
     } else {
       setFormData({
@@ -130,6 +136,8 @@ export default function UserModal({
         cityId: currentUserCityId || '',
         regionName: '',
         neighborhoodIds: [],
+        neighborhoodId: '',
+        position: '',
       });
     }
     setError(null);
@@ -151,6 +159,28 @@ export default function UserModal({
       return false;
     }
 
+    // ACTIVIST role has different validation rules
+    if (formData.role === 'ACTIVIST') {
+      // Email is optional for activists, but if provided, must be valid
+      if (formData.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+          setError('כתובת אימייל לא תקינה');
+          return false;
+        }
+      }
+
+      // Neighborhood is required for activists
+      if (!formData.neighborhoodId) {
+        setError('יש לבחור שכונה עבור פעיל');
+        return false;
+      }
+
+      // No password validation for activists (they don't have login access by default)
+      return true;
+    }
+
+    // Standard validation for other roles (users)
     if (!formData.email.trim()) {
       setError('אימייל הוא שדה חובה');
       return false;
@@ -204,6 +234,28 @@ export default function UserModal({
 
     try {
       let result;
+
+      // Handle ACTIVIST role separately - create activist record, not user
+      if (formData.role === 'ACTIVIST') {
+        result = await createWorker({
+          fullName: formData.name.trim(),
+          email: formData.email?.trim() || undefined,
+          phone: formData.phone?.trim() || undefined,
+          position: formData.position?.trim() || undefined,
+          neighborhoodId: formData.neighborhoodId,
+        });
+
+        if (!result.success) {
+          setError(result.error || 'אירעה שגיאה ביצירת הפעיל');
+          setLoading(false);
+          return;
+        }
+
+        // Success - activists don't have passwords, so close immediately
+        onSuccess();
+        onClose();
+        return;
+      }
 
       // For Activist Coordinators, derive cityId from first selected neighborhood
       let effectiveCityId = formData.cityId;
@@ -313,17 +365,24 @@ export default function UserModal({
           { value: 'AREA_MANAGER', label: t('area_manager') },
           { value: 'CITY_COORDINATOR', label: t('cityCoordinator') },
           { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
+          { value: 'ACTIVIST', label: t('activist') },
         ]
       : currentUserRole === 'AREA_MANAGER'
       ? [
           { value: 'CITY_COORDINATOR', label: t('cityCoordinator') },
           { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
+          { value: 'ACTIVIST', label: t('activist') },
         ]
       : currentUserRole === 'CITY_COORDINATOR'
       ? [
           { value: 'ACTIVIST_COORDINATOR', label: t('activistCoordinator') },
+          { value: 'ACTIVIST', label: t('activist') },
         ]
-      : []; // Activist Coordinators cannot create users via this modal
+      : currentUserRole === 'ACTIVIST_COORDINATOR'
+      ? [
+          { value: 'ACTIVIST', label: t('activist') },
+        ]
+      : []; // Default: no options
 
   return (
     <>
@@ -384,12 +443,12 @@ export default function UserModal({
 
           {/* Email */}
           <TextField
-            label={t('email')}
+            label={formData.role === 'ACTIVIST' ? `${t('email')} (אופציונלי)` : t('email')}
             type="email"
             value={formData.email}
             onChange={handleChange('email')}
             fullWidth
-            required
+            required={formData.role !== 'ACTIVIST'}
             disabled={loading}
             sx={{
               '& .MuiOutlinedInput-root': {
@@ -412,27 +471,29 @@ export default function UserModal({
             }}
           />
 
-          {/* Password */}
-          <TextField
-            label={isEdit ? t('passwordOptional') : t('password')}
-            type="password"
-            value={formData.password}
-            onChange={handleChange('password')}
-            fullWidth
-            required={!isEdit}
-            disabled={loading}
-            autoComplete="new-password"
-            helperText={
-              isEdit
-                ? 'השאר ריק כדי לא לשנות'
-                : 'ברירת מחדל: admin0 (המשתמש יידרש לשנות בכניסה הראשונה)'
-            }
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: borderRadius.md,
-              },
-            }}
-          />
+          {/* Password - Hidden for ACTIVIST role (they don't have login access by default) */}
+          {formData.role !== 'ACTIVIST' && (
+            <TextField
+              label={isEdit ? t('passwordOptional') : t('password')}
+              type="password"
+              value={formData.password}
+              onChange={handleChange('password')}
+              fullWidth
+              required={!isEdit}
+              disabled={loading}
+              autoComplete="new-password"
+              helperText={
+                isEdit
+                  ? 'השאר ריק כדי לא לשנות'
+                  : 'ברירת מחדל: admin0 (המשתמש יידרש לשנות בכניסה הראשונה)'
+              }
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md,
+                },
+              }}
+            />
+          )}
 
           {/* Role */}
           <TextField
@@ -681,6 +742,85 @@ export default function UserModal({
                 data-testid="neighborhoods-autocomplete"
               />
             </Box>
+          )}
+
+          {/* Single Neighborhood dropdown for ACTIVIST role */}
+          {formData.role === 'ACTIVIST' && (
+            <TextField
+              label={t('neighborhood')}
+              select
+              value={formData.neighborhoodId}
+              onChange={handleChange('neighborhoodId')}
+              fullWidth
+              required
+              disabled={loading || neighborhoods.length === 0}
+              name="activist-neighborhood-select"
+              autoComplete="off"
+              helperText="בחר את השכונה בה יפעל הפעיל"
+              inputProps={{
+                autoComplete: 'off',
+                'data-form-type': 'other',
+              }}
+              SelectProps={{
+                native: false,
+                autoComplete: 'off',
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md,
+                },
+              }}
+              data-testid="activist-neighborhood-select"
+            >
+              {neighborhoods.length === 0 ? (
+                <MenuItem value="">אין שכונות זמינות</MenuItem>
+              ) : (
+                // Filter neighborhoods based on current user's role scope
+                (currentUserRole === 'CITY_COORDINATOR' && currentUserCityId
+                  ? neighborhoods.filter((n) => n.cityId === currentUserCityId)
+                  : currentUserRole === 'ACTIVIST_COORDINATOR'
+                  ? neighborhoods // Will be filtered by server action based on assigned neighborhoods
+                  : neighborhoods
+                ).map((n) => {
+                  const city = cities.find((c) => c.id === n.cityId);
+                  return (
+                    <MenuItem key={n.id} value={n.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LocationOnIcon sx={{ fontSize: 16, color: colors.primary.main }} />
+                        <span>{n.name}</span>
+                        {city && (
+                          <Typography
+                            component="span"
+                            sx={{ fontSize: '0.75rem', color: colors.neutral[500], ml: 1 }}
+                          >
+                            ({city.name})
+                          </Typography>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  );
+                })
+              )}
+            </TextField>
+          )}
+
+          {/* Position field for ACTIVIST role (optional) */}
+          {formData.role === 'ACTIVIST' && (
+            <TextField
+              label="תפקיד (אופציונלי)"
+              value={formData.position}
+              onChange={handleChange('position')}
+              fullWidth
+              disabled={loading}
+              placeholder="לדוגמה: אחראי רחוב, מתנדב"
+              helperText="תפקיד או תחום אחריות של הפעיל"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md,
+                },
+              }}
+              data-testid="activist-position-field"
+            />
           )}
         </Box>
       </DialogContent>

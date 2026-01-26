@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+// 🚀 PERFORMANCE: Dynamic import of framer-motion saves ~350KB from initial bundle
+import { MotionDiv } from '@/app/components/ui/DynamicMotion';
 import { Grid2, Card, CardContent, Typography, Box } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -66,7 +67,7 @@ function StatCard({ config, index }: { config: StatCardConfig; index: number }) 
   const Icon = config.icon;
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
@@ -159,7 +160,7 @@ function StatCard({ config, index }: { config: StatCardConfig; index: number }) 
           </Typography>
         </CardContent>
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 }
 

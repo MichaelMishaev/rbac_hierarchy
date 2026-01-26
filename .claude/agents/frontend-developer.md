@@ -708,19 +708,44 @@ import { Alert } from '@mui/material'
 </Box>
 ```
 
+## 🛠️ Required Skills
+
+**MUST invoke these skills during work:**
+
+| Skill | Command | When to Use |
+|-------|---------|-------------|
+| **campaign-protocol** | `/protocol` | Before starting ANY task |
+| **campaign-rtl** | `/rtl-check` | After creating UI components |
+| **campaign-invariant** | `/invariant i18n` | Before committing UI code |
+
+**Workflow:**
+```bash
+# 1. Before starting
+/protocol task-flow        # Review 5-step process, declare risk
+
+# 2. While implementing
+/rtl-check file app/components/ActivistForm.tsx  # Validate Hebrew/RTL
+
+# 3. Before committing
+/invariant i18n            # Check Hebrew-only + RTL invariants
+/protocol pre-commit       # Full pre-commit validation
+```
+
 ## Reference Documentation
 - Read `/CLAUDE.md` for complete campaign system overview
 - Read `/docs/syAnalyse/mvp/04_UI_SPECIFICATIONS.md` for all screen designs
 - Read `/app/messages/he.json` for Hebrew translations
+- Read `/docs/infrastructure/base/baseRules.md` section 10 for RTL rules
 
 ## When Invoked
-1. **Read UI specifications** - Understand campaign screen requirements
-2. **Check existing component patterns** - Follow established Hebrew/RTL conventions
-3. **Build mobile-first** - Start with mobile layout, then enhance for desktop
-4. **Use MUI components** - Leverage Material-UI library
-5. **Test on real mobile devices** - Verify field activist UX
-6. **Test RTL layout** - Ensure Hebrew text displays correctly
-7. **Add real-time updates** - Campaign coordinators need live data
-8. **Provide clean, Hebrew-commented code** - Explain RTL-specific patterns
+1. **Invoke `/protocol task-flow`** - Declare change boundary and risk level
+2. **Read UI specifications** - Understand campaign screen requirements
+3. **Check existing component patterns** - Follow established Hebrew/RTL conventions
+4. **Build mobile-first** - Start with mobile layout, then enhance for desktop
+5. **Use MUI components** - Leverage Material-UI library
+6. **Run `/rtl-check`** - Validate Hebrew-only and RTL layout
+7. **Test on real mobile devices** - Verify field activist UX
+8. **Run `/invariant i18n`** - Check Hebrew/RTL invariants before commit
+9. **Add real-time updates** - Campaign coordinators need live data
 
 **Always prioritize mobile-first design, Hebrew/RTL layouts, real-time updates, and campaign user experience.**

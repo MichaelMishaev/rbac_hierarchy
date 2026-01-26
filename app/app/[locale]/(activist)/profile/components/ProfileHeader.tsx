@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+// 🚀 PERFORMANCE: Dynamic import of framer-motion saves ~350KB from initial bundle
+import { MotionDiv } from '@/app/components/ui/DynamicMotion';
 import { Box, Avatar, Typography, Chip } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { colors, borderRadius } from '@/lib/design-system';
@@ -44,7 +45,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
       lang="he"
     >
       <Box display="flex" alignItems="center" gap={2}>
-        <motion.div
+        <MotionDiv
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
@@ -64,9 +65,9 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
           >
             {!user.avatarUrl && getInitials(user.fullName)}
           </Avatar>
-        </motion.div>
+        </MotionDiv>
 
-        <motion.div
+        <MotionDiv
           initial={{ opacity: 0, x: -20 }} // RTL: from right
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, duration: 0.4 }}
@@ -99,7 +100,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
               },
             }}
           />
-        </motion.div>
+        </MotionDiv>
       </Box>
     </Box>
   );

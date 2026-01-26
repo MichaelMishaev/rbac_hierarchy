@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { listUsers } from '@/app/actions/users';
+import { listUsersWithActivists } from '@/app/actions/users';
 import { listCities } from '@/app/actions/cities';
 import { listNeighborhoods } from '@/app/actions/neighborhoods';
 import { getCurrentUser } from '@/lib/auth';
@@ -27,11 +27,11 @@ export default async function UsersPage() {
     currentUserCityId = currentUser.activistCoordinatorOf[0]?.cityId ?? null;
   }
 
-  // Fetch users, cities, and neighborhoods
-  let usersResult, citiesResult, neighborhoodsResult;
+  // Fetch users with activists, cities, and neighborhoods
+  let usersWithActivistsResult, citiesResult, neighborhoodsResult;
   try {
-    [usersResult, citiesResult, neighborhoodsResult] = await Promise.all([
-      listUsers(),
+    [usersWithActivistsResult, citiesResult, neighborhoodsResult] = await Promise.all([
+      listUsersWithActivists(),
       listCities(),
       listNeighborhoods(),
     ]);
@@ -46,7 +46,7 @@ export default async function UsersPage() {
 
   return (
     <UsersClient
-      users={usersResult.users}
+      users={usersWithActivistsResult.unified || []}
       cities={citiesResult.cities || []}
       neighborhoods={neighborhoodsResult.neighborhoods || []}
       currentUserRole={session.user.role as 'SUPERADMIN' | 'AREA_MANAGER' | 'CITY_COORDINATOR' | 'ACTIVIST_COORDINATOR'}

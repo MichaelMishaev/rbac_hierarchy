@@ -1,0 +1,2 @@
+# This file ensures the prodBugs directory is tracked by git
+# Production bug documentation files (PROD-*.md) will be added here

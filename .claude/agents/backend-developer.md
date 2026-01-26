@@ -564,18 +564,44 @@ const activists = await prisma.activist.findMany({
 })
 ```
 
+## 🛠️ Required Skills
+
+**MUST invoke these skills during work:**
+
+| Skill | Command | When to Use |
+|-------|---------|-------------|
+| **campaign-protocol** | `/protocol` | Before starting ANY task |
+| **campaign-rbac** | `/rbac-check` | After writing Prisma queries |
+| **campaign-invariant** | `/invariant rbac` | Before committing RBAC code |
+
+**Workflow:**
+```bash
+# 1. Before starting
+/protocol task-flow        # Review 5-step process, declare risk
+
+# 2. While implementing
+/rbac-check file app/actions/activists.ts  # Validate city/area scoping
+
+# 3. Before committing
+/invariant rbac            # Check all RBAC invariants
+/protocol pre-commit       # Full pre-commit validation
+```
+
 ## Reference Documentation
 - Read `/CLAUDE.md` for complete campaign system overview
 - Read `/app/prisma/schema.prisma` for exact database schema
+- Read `/docs/infrastructure/roles/PERMISSIONS_MATRIX.md` for RBAC rules
 - Read `/docs/syAnalyse/mvp/02_DATABASE_SCHEMA.md` for schema documentation
 - Read `/docs/syAnalyse/mvp/03_API_DESIGN.md` for all API patterns
 
 ## When Invoked
-1. **Read the relevant documentation files first** - Understand campaign context
-2. **Check existing code patterns** - Follow established conventions
-3. **Implement RBAC first** - Security is paramount
-4. **Test multi-city isolation** - Use Prisma Studio or curl
-5. **Provide clear code examples** - With campaign terminology
-6. **Explain security considerations** - RBAC and data isolation
+1. **Invoke `/protocol task-flow`** - Declare change boundary and risk level
+2. **Read the relevant documentation files** - Understand campaign context
+3. **Check existing code patterns** - Follow established conventions
+4. **Implement RBAC first** - Security is paramount
+5. **Run `/rbac-check`** - Validate city/area scoping
+6. **Test multi-city isolation** - Use Prisma Studio or curl
+7. **Run `/invariant rbac`** - Check RBAC invariants before commit
+8. **Provide clear code examples** - With campaign terminology
 
 **Always prioritize campaign data security, multi-city isolation, RBAC enforcement, and following the established patterns.**

@@ -1130,6 +1130,140 @@ export async function getExistingRegions() {
 }
 
 // ============================================
+// LIST USERS WITH ACTIVISTS
+// ============================================
+
+/**
+ * List users AND activists with proper filtering based on role and hierarchy
+ * Returns a unified list for display in /users page
+ *
+ * HIERARCHY RULES:
+ * - SUPERADMIN: Sees all users (below them) + all activists
+ * - AREA_MANAGER: Sees users in their area + activists in their area's cities
+ * - CITY_COORDINATOR: Sees users in their city + activists in their city
+ * - ACTIVIST_COORDINATOR: Sees only activists in their assigned neighborhoods
+ */
+export async function listUsersWithActivists(filters: ListUsersFilters = {}) {
+  return withServerActionErrorHandler(async () => {
+    const currentUser = await getCurrentUser();
+
+    // Get regular users (excluding ACTIVIST_COORDINATOR who can't see users)
+    let usersResult: any = { success: true, users: [], count: 0 };
+    if (currentUser.role !== 'ACTIVIST_COORDINATOR') {
+      usersResult = await listUsers(filters);
+    }
+
+    // Build activists query based on RBAC
+    const activistWhere: any = {
+      isActive: true,
+    };
+
+    // Apply RBAC filtering for activists
+    const userCorps = getUserCorporations(currentUser);
+
+    if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      // Activist Coordinator: Only sees activists in their assigned neighborhoods
+      const activistCoord = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        include: {
+          neighborhoods: {
+            select: { neighborhoodId: true },
+          },
+        },
+      });
+
+      if (!activistCoord || activistCoord.neighborhoods.length === 0) {
+        return {
+          success: true,
+          users: [],
+          activists: [],
+          unified: [],
+          count: 0,
+        };
+      }
+
+      const neighborhoodIds = activistCoord.neighborhoods.map((n) => n.neighborhoodId);
+      activistWhere.neighborhoodId = { in: neighborhoodIds };
+    } else if (userCorps !== 'all') {
+      // Non-superadmins: filter by their cities
+      activistWhere.cityId = { in: userCorps };
+    }
+
+    // Apply additional filters
+    if (filters.cityId) {
+      activistWhere.cityId = filters.cityId;
+    }
+
+    if (filters.neighborhoodId) {
+      activistWhere.neighborhoodId = filters.neighborhoodId;
+    }
+
+    if (filters.search) {
+      activistWhere.OR = [
+        { fullName: { contains: filters.search, mode: 'insensitive' } },
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { phone: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Query activists
+    const activists = await prisma.activist.findMany({
+      where: activistWhere,
+      include: {
+        neighborhood: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+          },
+        },
+        city: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ fullName: 'asc' }],
+    });
+
+    // Transform activists to unified format
+    const unifiedActivists = activists.map((activist) => ({
+      id: activist.id,
+      type: 'activist' as const,
+      fullName: activist.fullName,
+      email: activist.email,
+      phone: activist.phone,
+      avatarUrl: activist.avatarUrl,
+      role: 'ACTIVIST' as const,
+      isActive: activist.isActive,
+      createdAt: activist.startDate,
+      lastLoginAt: null,
+      neighborhood: activist.neighborhood,
+      city: activist.city,
+      position: activist.position,
+    }));
+
+    // Transform users to unified format
+    const unifiedUsers = (usersResult.users || []).map((user: any) => ({
+      ...user,
+      type: 'user' as const,
+    }));
+
+    // Combine and sort (users first by role hierarchy, then activists)
+    const unified = [...unifiedUsers, ...unifiedActivists];
+
+    return {
+      success: true,
+      users: usersResult.users || [],
+      activists: unifiedActivists,
+      unified,
+      count: unified.length,
+    };
+  }, 'listUsersWithActivists');
+}
+
+// ============================================
 // GET USER STATS
 // ============================================
 

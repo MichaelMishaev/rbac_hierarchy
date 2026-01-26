@@ -18,7 +18,8 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 import {
   Box,
   Table,
@@ -56,6 +57,7 @@ import {
   DeleteSweep as DeleteSweepIcon,
   Close as CloseIcon,
   FileDownload as ExportIcon,
+  WhatsApp as WhatsAppIcon,
 } from '@mui/icons-material';
 import { getVisibleVoters, deleteVoter } from '@/lib/voters/actions/voter-actions';
 import { getVotersWithDuplicates } from '@/app/actions/get-voter-duplicates';
@@ -93,6 +95,12 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
 
   // Export state
   const [exporting, setExporting] = useState(false);
+
+  // 🚀 PERFORMANCE: Debounced search to prevent re-renders on every keystroke
+  const debouncedSetSearchQuery = useDebouncedCallback(
+    (value: string) => setSearchQuery(value),
+    300 // 300ms delay
+  );
 
   useEffect(() => {
     loadVoters();
@@ -229,6 +237,29 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
     return roleMap[role] || role;
   };
 
+  /**
+   * Formats Israeli phone number for WhatsApp deep link
+   * - Removes all non-digit characters
+   * - Converts local format (05x) to international (9725x)
+   * - WhatsApp requires format: 972xxxxxxxxx (no + or spaces)
+   */
+  const formatPhoneForWhatsApp = (phone: string): string => {
+    // Remove all non-digit characters
+    let cleaned = phone.replace(/\D/g, '');
+
+    // Handle Israeli numbers starting with 0
+    if (cleaned.startsWith('0')) {
+      cleaned = '972' + cleaned.slice(1);
+    }
+    // Handle numbers already starting with 972
+    else if (!cleaned.startsWith('972')) {
+      // Assume Israeli number if no country code
+      cleaned = '972' + cleaned;
+    }
+
+    return cleaned;
+  };
+
   const handleExportToExcel = async () => {
     // Export ALL voters (not just current page) - fetch without pagination
     setExporting(true);
@@ -305,14 +336,15 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
     }
   };
 
-  const filteredVoters = voters.filter((voter) => {
+  // 🚀 PERFORMANCE: Memoize filtered voters to prevent recalculating on every render
+  const filteredVoters = useMemo(() => {
     const searchLower = searchQuery.toLowerCase();
-    return (
+    return voters.filter((voter) => (
       voter.fullName.toLowerCase().includes(searchLower) ||
       voter.phone.includes(searchLower) ||
       (voter.email && voter.email.toLowerCase().includes(searchLower))
-    );
-  });
+    ));
+  }, [voters, searchQuery]);
 
   if (loading) {
     return (
@@ -496,8 +528,8 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
       >
         <TextField
           label="חיפוש"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          defaultValue={searchQuery}
+          onChange={(e) => debouncedSetSearchQuery(e.target.value)}
           placeholder="שם, טלפון, אימייל"
           fullWidth
           sx={{
@@ -719,15 +751,54 @@ export function VotersList({ onViewVoter, onEditVoter, refreshKey, isSuperAdmin 
                   </TableCell>
 
                   <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <PhoneIcon sx={{ fontSize: { xs: 16, sm: 18 } }} color="action" />
-                      <Typography
-                        variant="body2"
-                        sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}
+                    <Tooltip title="פתח בווטסאפ">
+                      <Box
+                        component="a"
+                        href={`https://wa.me/${formatPhoneForWhatsApp(voter.phone)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          borderRadius: '8px',
+                          py: 0.5,
+                          px: 1,
+                          mx: -1,
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: 'rgba(37, 211, 102, 0.1)',
+                            color: '#25D366',
+                            '& .whatsapp-icon': {
+                              color: '#25D366',
+                            },
+                          },
+                        }}
+                        data-testid={`whatsapp-link-${voter.id}`}
                       >
-                        {voter.phone}
-                      </Typography>
-                    </Box>
+                        <WhatsAppIcon
+                          className="whatsapp-icon"
+                          sx={{
+                            fontSize: { xs: 18, sm: 20 },
+                            color: '#25D366',
+                            transition: 'color 0.2s ease',
+                          }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                            direction: 'ltr', // Phone numbers should be LTR
+                            unicodeBidi: 'embed',
+                          }}
+                        >
+                          {voter.phone}
+                        </Typography>
+                      </Box>
+                    </Tooltip>
                   </TableCell>
 
                   <TableCell sx={{ py: { xs: 1.5, sm: 2 } }}>

@@ -128,8 +128,6 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   }, [setFocus]);
 
   const handleNext = async () => {
-    console.log('[VoterForm] handleNext called - current activeStep:', activeStep);
-
     // Validate current step fields before proceeding
     const fieldsToValidate = {
       0: ['fullName', 'phone', 'email', 'dateOfBirth', 'gender'],
@@ -138,14 +136,10 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     }[activeStep] as Array<keyof CreateVoterFormData>;
 
     const isValid = await trigger(fieldsToValidate);
-    console.log('[VoterForm] Validation result:', isValid, 'for fields:', fieldsToValidate);
 
     if (isValid && activeStep < steps.length - 1) {
-      console.log('[VoterForm] Moving to next step from', activeStep, 'to', activeStep + 1);
       setLastStepChangeTime(Date.now()); // Record step change time
       setActiveStep((prev) => prev + 1);
-    } else {
-      console.log('[VoterForm] Not moving - isValid:', isValid, 'activeStep:', activeStep, 'steps.length:', steps.length);
     }
   };
 
@@ -155,17 +149,11 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   };
 
   const onSubmit = async (data: CreateVoterFormData) => {
-    console.log('[VoterForm] onSubmit called - activeStep:', activeStep, 'steps.length:', steps.length);
-    console.log('[VoterForm] Data:', data);
-    console.trace('[VoterForm] Stack trace');
-
     // CRITICAL: Only allow submission when user is on the final step
     if (activeStep !== steps.length - 1) {
-      console.warn('[VoterForm] ❌ BLOCKED premature submission at step', activeStep);
       return;
     }
 
-    console.log('[VoterForm] ✅ ALLOWING submission - on final step');
     setIsSubmitting(true);
     setError(null);
     setSuccess(false);
@@ -577,16 +565,10 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
 
   // Prevent form submission unless explicitly via submit button
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    console.log('[VoterForm] handleFormSubmit called');
-    console.log('[VoterForm] Event target:', e.target);
-    console.log('[VoterForm] Event currentTarget:', e.currentTarget);
-    console.log('[VoterForm] nativeEvent submitter:', (e.nativeEvent as SubmitEvent).submitter);
-
     // CRITICAL: Prevent submission if it's too soon after step change
     // This prevents event bubbling from "Next" button click to submit button
     const timeSinceStepChange = Date.now() - lastStepChangeTime;
     if (lastStepChangeTime > 0 && timeSinceStepChange < 500) {
-      console.warn('[VoterForm] ⛔ BLOCKED submission - too soon after step change!', timeSinceStepChange, 'ms');
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -595,13 +577,11 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     // Only allow submission if triggered by the actual submit button
     const submitter = (e.nativeEvent as SubmitEvent).submitter;
     if (!submitter || submitter.getAttribute('type') !== 'submit') {
-      console.warn('[VoterForm] ⛔ BLOCKED submission - not from submit button!');
       e.preventDefault();
       e.stopPropagation();
       return;
     }
 
-    console.log('[VoterForm] ✅ Submission from submit button - proceeding');
     handleSubmit(onSubmit)(e);
   };
 

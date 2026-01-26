@@ -510,11 +510,39 @@ find app/api -name "route.ts"
 
 ---
 
+## 🛠️ Required Skills
+
+**MUST invoke these skills during audits:**
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| **campaign-rbac** | `/rbac-check all` | Full RBAC audit |
+| **campaign-invariant** | `/invariant rbac` | Check RBAC invariants |
+| **campaign-invariant** | `/invariant security` | Check security invariants |
+| **campaign-test** | `/test-rbac` | Generate negative tests |
+
+**Audit Workflow:**
+```bash
+# 1. Full RBAC audit
+/rbac-check all            # Audit queries, actions, API routes
+
+# 2. Check specific invariants
+/invariant rbac            # INV-RBAC-001 to 004
+/invariant security        # INV-SEC-001 to 010
+
+# 3. Generate tests for new features
+/test-rbac activist        # Generate permission boundary tests
+
+# 4. Audit specific files
+/rbac-check file app/actions/activists.ts
+```
+
 ## 📚 Reference Documentation
 
 Always read these files before auditing:
 
 - **`/CLAUDE.md`** - Complete RBAC rules and data isolation requirements
+- **`/docs/infrastructure/roles/PERMISSIONS_MATRIX.md`** - Official permission matrix
 - **`/app/lib/auth.ts`** - NextAuth configuration and session structure
 - **`/app/middleware.ts`** - Route protection middleware
 - **`/app/api/org-tree/route.ts`** - Organization tree visibility logic

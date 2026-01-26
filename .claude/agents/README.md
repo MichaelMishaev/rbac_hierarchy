@@ -2,6 +2,20 @@
 
 This directory contains specialized AI agents for developing the Election Campaign Management System for politicians and campaign managers.
 
+## 🛠️ Skills Integration
+
+All agents now use **campaign-specific skills** from `.claude/skills/`:
+
+| Skill | Command | Used By |
+|-------|---------|---------|
+| **campaign-protocol** | `/protocol` | All agents (before ANY task) |
+| **campaign-invariant** | `/invariant` | QA, RBAC Guard (check 19 invariants) |
+| **campaign-rbac** | `/rbac-check` | Backend, RBAC Guard (validate scoping) |
+| **campaign-rtl** | `/rtl-check` | Frontend, Hebrew Specialist (Hebrew/RTL) |
+| **campaign-test** | `/test-rbac` | QA (generate negative tests) |
+
+**See `.claude/skills/README.md` for full skill documentation.**
+
 ## 🎨 Color-Coded Agent System
 
 Each agent has a unique color for easy identification:

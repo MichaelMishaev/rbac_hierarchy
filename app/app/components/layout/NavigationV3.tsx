@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, memo, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Box,
   List,
@@ -603,16 +604,17 @@ function NavigationV3Component({ role, userEmail, roleDescription, stats }: Navi
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: colors.neutral[100],
+                position: 'relative',
               }}
             >
-              <img
+              <Image
                 src="/logo.png"
                 alt="מערכת ניהול"
+                width={44}
+                height={44}
+                priority
                 style={{
-                  width: '100%',
-                  height: '100%',
                   objectFit: 'cover',
-                  display: 'block'
                 }}
               />
             </Box>
@@ -893,16 +895,17 @@ function NavigationV3Component({ role, userEmail, roleDescription, stats }: Navi
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: colors.neutral[100],
+                  position: 'relative',
                 }}
               >
-                <img
+                <Image
                   src="/logo.png"
                   alt="מערכת ניהול"
+                  width={36}
+                  height={36}
+                  priority
                   style={{
-                    width: '100%',
-                    height: '100%',
                     objectFit: 'cover',
-                    display: 'block'
                   }}
                 />
               </Box>

@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+// 🚀 PERFORMANCE: Dynamic import of framer-motion saves ~350KB from initial bundle
+import { MotionDiv } from '@/app/components/ui/DynamicMotion';
 import { Box, Card, CardContent, Typography, Avatar, Divider } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -57,7 +58,7 @@ function ActivityItem({ activity, index }: { activity: Activity; index: number }
   });
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, x: 20 }} // RTL: from left
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.3 }}
@@ -140,7 +141,7 @@ function ActivityItem({ activity, index }: { activity: Activity; index: number }
           </Box>
         </CardContent>
       </Card>
-    </motion.div>
+    </MotionDiv>
   );
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { Box } from '@mui/material';
-import { motion } from 'framer-motion';
+// 🚀 PERFORMANCE: Dynamic import of framer-motion saves ~350KB from initial bundle
+import { MotionDiv, staggerTransition } from '@/app/components/ui/DynamicMotion';
 import { ProfileHeader } from './components/ProfileHeader';
 import { StatsGrid } from './components/StatsGrid';
 import { QuickActions } from './components/QuickActions';
@@ -40,11 +41,7 @@ const pageVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.4, 0, 0.2, 1],
-      staggerChildren: 0.1,
-    },
+    transition: staggerTransition,
   },
 };
 
@@ -59,7 +56,7 @@ export default function ProfileClient({ user, stats, recentActivity }: ProfileCl
     : { initial: 'initial', animate: 'animate', variants: pageVariants };
 
   return (
-    <motion.div {...animationProps}>
+    <MotionDiv {...animationProps}>
       <Box dir="rtl" lang="he">
         {/* Header with glassmorphism */}
         <ProfileHeader user={user} />
@@ -79,6 +76,6 @@ export default function ProfileClient({ user, stats, recentActivity }: ProfileCl
           <ActivityTimeline activities={recentActivity} />
         </Box>
       </Box>
-    </motion.div>
+    </MotionDiv>
   );
 }
