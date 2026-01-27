@@ -33,19 +33,45 @@ No stack trace available
 ```
 
 ## Root Cause Analysis
-<!-- TO BE FILLED BY AI -->
-[Pending investigation]
+
+The `handleFormSubmit` function in VoterForm.tsx was accessing `e.nativeEvent.submitter` directly,
+which is an HTMLInputElement DOM node. DOM nodes contain React Fiber internal properties
+(`__reactFiber$...`) that have circular references (`stateNode` -> fiber -> `stateNode`).
+
+When this DOM element was referenced anywhere that might serialize it (error tracking, logging,
+or form state management), `JSON.stringify` would throw the circular structure error.
 
 ## Fix Applied
-<!-- TO BE FILLED BY AI -->
-[Pending fix]
+
+Modified `handleFormSubmit` to extract only the primitive `type` attribute string from the
+submitter element, rather than holding a reference to the DOM element itself.
+
+**Before (problematic):**
+```typescript
+const submitter = (e.nativeEvent as SubmitEvent).submitter;
+if (!submitter || submitter.getAttribute('type') !== 'submit') { ... }
+```
+
+**After (safe):**
+```typescript
+const nativeEvent = e.nativeEvent as SubmitEvent;
+const submitterType = nativeEvent.submitter?.getAttribute('type');
+const isValidSubmit = submitterType === 'submit';
+if (!isValidSubmit) { ... }
+```
 
 ## Files Modified
-<!-- TO BE FILLED BY AI -->
-- [No files modified yet]
 
-## Status: 🔄 PENDING
+- `app/app/[locale]/(dashboard)/manage-voters/components/VoterForm.tsx` (lines 567-593)
+
+## Prevention Rule
+
+**FORM-DOM-001:** Never store or pass DOM elements (HTMLElement, Event.target, nativeEvent.submitter)
+to functions that might serialize them. Always extract only the primitive data you need
+(strings, numbers, booleans).
+
+## Status: ✅ FIXED
 
 **Created:** 2026-01-26
-**Fixed Date:** -
-**Commit:** -
+**Fixed Date:** 2026-01-27
+**Commit:** (pending commit)

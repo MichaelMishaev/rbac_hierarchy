@@ -564,6 +564,8 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
   };
 
   // Prevent form submission unless explicitly via submit button
+  // FIX: Avoid serializing DOM elements to prevent "Converting circular structure to JSON" error
+  // Bug refs: PROD-Error-4e7ef615, PROD-Error-8a2f9add, PROD-Error-3dfdbd41, PROD-Error-ac8defa9
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     // CRITICAL: Prevent submission if it's too soon after step change
     // This prevents event bubbling from "Next" button click to submit button
@@ -575,13 +577,21 @@ export function VoterForm({ voter, onSuccess, onCancel }: VoterFormProps) {
     }
 
     // Only allow submission if triggered by the actual submit button
-    const submitter = (e.nativeEvent as SubmitEvent).submitter;
-    if (!submitter || submitter.getAttribute('type') !== 'submit') {
+    // SAFE: Extract only the primitive data we need (button type as string)
+    // DO NOT store or log the submitter element itself - it contains React Fiber
+    // circular references that break JSON.stringify
+    const nativeEvent = e.nativeEvent as SubmitEvent;
+    const submitterType = nativeEvent.submitter?.getAttribute('type');
+    const isValidSubmit = submitterType === 'submit';
+
+    if (!isValidSubmit) {
       e.preventDefault();
       e.stopPropagation();
       return;
     }
 
+    // Pass event to React Hook Form's handleSubmit
+    // Note: handleSubmit only extracts form data, it doesn't serialize the event
     handleSubmit(onSubmit)(e);
   };
 

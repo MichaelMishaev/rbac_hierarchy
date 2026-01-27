@@ -31,19 +31,44 @@ No stack trace available
 ```
 
 ## Root Cause Analysis
-<!-- TO BE FILLED BY AI -->
-[Pending investigation]
+
+The Service Worker was caching itself (`/sw.js`), creating an update deadlock:
+1. Old SW is active in production
+2. New version deployed to server
+3. Browser requests update check for `/sw.js`
+4. Old SW intercepts the request and returns its cached version (itself)
+5. Browser sees no change - update never happens
 
 ## Fix Applied
-<!-- TO BE FILLED BY AI -->
-[Pending fix]
+
+Added explicit cache bypass for `/sw.js` and `/manifest.json` in the service worker.
+
+**File:** `app/public/sw.js` (lines 153-163)
+```javascript
+// Service Worker and Manifest: NEVER cache (prevents update deadlock)
+if (url.pathname === '/sw.js' || url.pathname === '/manifest.json') {
+  event.respondWith(
+    fetch(request, {
+      cache: 'no-cache', // Force revalidation
+    })
+  );
+  return;
+}
+```
+
+Version bumped to 2.1.6 to force cache invalidation.
 
 ## Files Modified
-<!-- TO BE FILLED BY AI -->
-- [No files modified yet]
 
-## Status: 🔄 PENDING
+- `app/public/sw.js` (lines 153-163, version 2.1.6)
+
+## Prevention Rule
+
+**PWA-SW-001:** Service Workers must NEVER cache `/sw.js` or `/manifest.json`.
+These files must always be fetched fresh to allow updates.
+
+## Status: ✅ FIXED
 
 **Created:** 2026-01-24
-**Fixed Date:** -
-**Commit:** -
+**Fixed Date:** 2026-01-05 (Bug #43)
+**Commit:** SW version 2.1.6

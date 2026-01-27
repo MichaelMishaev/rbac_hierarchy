@@ -33,19 +33,24 @@ No stack trace available
 ```
 
 ## Root Cause Analysis
-<!-- TO BE FILLED BY AI -->
-[Pending investigation]
+
+**Same root cause as PROD-Error-4e7ef615** - different React Fiber ID from different user session.
+
+The `handleFormSubmit` function in VoterForm.tsx was accessing `e.nativeEvent.submitter` directly,
+which contains circular React Fiber references that break JSON.stringify.
 
 ## Fix Applied
-<!-- TO BE FILLED BY AI -->
-[Pending fix]
+
+See PROD-Error-4e7ef615.md for full fix details.
+
+Modified `handleFormSubmit` to extract only primitive attribute strings instead of DOM element references.
 
 ## Files Modified
-<!-- TO BE FILLED BY AI -->
-- [No files modified yet]
 
-## Status: 🔄 PENDING
+- `app/app/[locale]/(dashboard)/manage-voters/components/VoterForm.tsx` (lines 567-593)
+
+## Status: ✅ FIXED
 
 **Created:** 2026-01-26
-**Fixed Date:** -
-**Commit:** -
+**Fixed Date:** 2026-01-27
+**Commit:** (pending commit)

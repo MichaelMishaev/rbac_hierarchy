@@ -1,13 +1,80 @@
 # Bug Tracking Log (Current)
 
 **Period:** 2025-12-22 onwards
-**Total Bugs:** 54
+**Total Bugs:** 55
 **Archive:** See `bugs-archive-2025-12-22.md` for bugs #1-16
 
 **IMPORTANT:** This file tracks individual bug fixes. For systematic prevention strategies, see:
 - **Bug Prevention Strategy** (comprehensive): `/docs/infrastructure/WIKI_BUG_PREVENTION_STRATEGY.md`
 - **Executive Summary** (for leadership): `/docs/infrastructure/BUG_PREVENTION_EXECUTIVE_SUMMARY.md`
 - **Quick Reference Card** (for developers): `/docs/infrastructure/BUG_PREVENTION_QUICK_REFERENCE.md`
+
+---
+
+## 🐛 BUG #55: Circular JSON Serialization Error on Manage Voters Page (2026-01-27)
+
+**Severity:** HIGH (User-facing crash)
+**Impact:** Users on `/manage-voters` page encounter "Converting circular structure to JSON" error
+**Status:** ✅ FIXED
+**Fix Date:** 2026-01-27
+**Location:** `app/app/[locale]/(dashboard)/manage-voters/components/VoterForm.tsx:567-593`
+**Production Bug Refs:** PROD-Error-4e7ef615, PROD-Error-8a2f9add, PROD-Error-3dfdbd41, PROD-Error-ac8defa9
+
+### Bug Description
+
+**Symptoms:**
+- 4 production errors logged on 2026-01-26 with "Converting circular structure to JSON"
+- All errors occurred on `/manage-voters` page during form submission
+- Error message shows HTMLInputElement with React Fiber circular references
+
+**Error Pattern:**
+```
+TypeError: Converting circular structure to JSON
+    --> starting at object with constructor 'HTMLInputElement'
+    |     property '__reactFiber$...' -> object with constructor 'rn'
+    --- property 'stateNode' closes the circle
+```
+
+**Root Cause:**
+
+The `handleFormSubmit` function was storing a reference to `e.nativeEvent.submitter`,
+which is an HTMLInputElement DOM node. DOM nodes contain React Fiber internal properties
+(`__reactFiber$...`) that have circular references. When the error tracker or any logging
+attempted to serialize this object, `JSON.stringify` would fail.
+
+**The Fix:**
+
+Extract only the primitive attribute string, not the DOM element reference:
+
+```typescript
+// BEFORE (problematic - stores DOM element reference)
+const submitter = (e.nativeEvent as SubmitEvent).submitter;
+if (!submitter || submitter.getAttribute('type') !== 'submit') { ... }
+
+// AFTER (safe - extracts only primitive string)
+const nativeEvent = e.nativeEvent as SubmitEvent;
+const submitterType = nativeEvent.submitter?.getAttribute('type');
+const isValidSubmit = submitterType === 'submit';
+if (!isValidSubmit) { ... }
+```
+
+### Prevention Rule
+
+**FORM-DOM-001:** Never store or pass DOM elements (HTMLElement, Event.target, nativeEvent.submitter)
+to functions that might serialize them. Always extract only the primitive data you need
+(strings, numbers, booleans).
+
+**Code Pattern to Avoid:**
+```typescript
+// ❌ BAD - stores DOM element
+const element = e.target;
+const submitter = e.nativeEvent.submitter;
+console.log({ element, submitter }); // Will fail if logged/serialized
+
+// ✅ GOOD - extracts only primitive data
+const value = (e.target as HTMLInputElement).value;
+const submitterType = (e.nativeEvent as SubmitEvent).submitter?.getAttribute('type');
+```
 
 ---
 

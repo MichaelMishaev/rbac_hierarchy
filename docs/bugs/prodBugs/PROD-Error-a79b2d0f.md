@@ -30,19 +30,44 @@ No stack trace available
 ```
 
 ## Root Cause Analysis
-<!-- TO BE FILLED BY AI -->
-[Pending investigation]
+
+The error was caused by the `urlBase64ToUint8Array()` function in push-notifications.ts:
+
+1. The `VAPID_PUBLIC_KEY` environment variable was undefined or empty
+2. This undefined/empty string was passed to `urlBase64ToUint8Array()`
+3. `window.atob()` called on invalid input throws "Invalid string length"
+
+The error occurred on `/login` because push notifications were attempting to initialize
+during page load via the `usePushNotifications` hook.
 
 ## Fix Applied
-<!-- TO BE FILLED BY AI -->
-[Pending fix]
+
+Added validation to check if VAPID key exists before attempting base64 conversion.
+
+**File:** `app/lib/push-notifications.ts` (lines 149-158)
+```typescript
+if (!vapidPublicKey) {
+  console.error('[Push] VAPID public key not found in env config');
+  throw new Error('VAPID public key not configured...');
+}
+// Only call urlBase64ToUint8Array after validation
+applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+```
+
+Also changed environment variable reading to use validated env module instead of
+direct `process.env` access.
 
 ## Files Modified
-<!-- TO BE FILLED BY AI -->
-- [No files modified yet]
 
-## Status: 🔄 PENDING
+- `app/lib/push-notifications.ts` (VAPID key validation)
+
+## Prevention Rule
+
+**ENV-VAL-001:** Always validate environment variables before using them in operations
+that can throw errors (base64 decode, URL parsing, etc.).
+
+## Status: ✅ FIXED
 
 **Created:** 2026-01-24
-**Fixed Date:** -
-**Commit:** -
+**Fixed Date:** 2026-01-24 (commit 6bad332)
+**Commit:** 6bad332, fe4bddb, d006579, 8cfcfef
