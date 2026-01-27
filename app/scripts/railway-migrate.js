@@ -113,6 +113,25 @@ async function main() {
       console.log('✅ session_events table already exists, skipping');
     }
 
+    // Performance optimization indexes (2026-01-27)
+    console.log('📊 Applying performance optimization indexes...');
+    const performanceIndexes = [
+      // Index for Activist queries filtered by coordinator and neighborhood
+      'CREATE INDEX IF NOT EXISTS "activists_coordinator_neighborhood_idx" ON "activists"("activist_coordinator_id", "neighborhood_id")',
+      // Index for AttendanceRecord queries filtered by neighborhood, date, and status
+      'CREATE INDEX IF NOT EXISTS "attendance_records_neighborhood_date_status_idx" ON "attendance_records"("neighborhood_id", "date", "status")',
+    ];
+
+    for (const indexSql of performanceIndexes) {
+      try {
+        await prisma.$executeRawUnsafe(indexSql);
+      } catch (err) {
+        // Index might already exist, that's fine
+        console.log(`  Index already exists or skipped: ${err.message}`);
+      }
+    }
+    console.log('✅ Performance indexes applied');
+
     await prisma.$disconnect();
     console.log('✅ All migrations completed');
     process.exit(0);
