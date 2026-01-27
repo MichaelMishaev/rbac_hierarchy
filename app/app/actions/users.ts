@@ -75,6 +75,8 @@ export type ListUsersFilters = {
   search?: string;
   isActive?: boolean;
   neighborhoodId?: string;
+  skip?: number; // Pagination offset
+  take?: number; // Pagination limit (default: 50, max: 100)
 };
 
 // ============================================
@@ -413,47 +415,67 @@ export async function listUsers(filters: ListUsersFilters = {}) {
       ];
     }
 
-    // Query users
-    const users = await prisma.user.findMany({
-      where,
-      include: {
-        areaManager: {
-          include: {
-            cities: true,
-          },
-        },
-        coordinatorOf: {
-          include: {
-            city: true,
-          },
-        },
-        activistCoordinatorOf: {
-          include: {
-            city: true,
-          },
-        },
-        activistCoordinatorNeighborhoods: {
-          include: {
-            neighborhood: {
-              select: {
-                id: true,
-                name: true,
-                city: true,
+    // Apply pagination with sensible defaults
+    const skip = filters.skip ?? 0;
+    const take = Math.min(filters.take ?? 50, 100); // Default 50, max 100
+
+    // Query users with pagination and optimized includes
+    // OPTIMIZED: Only include essential nested data, exclude heavy relations
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          areaManager: {
+            select: {
+              id: true,
+              regionName: true,
+              // Only include city count, not full city objects
+              _count: {
+                select: { cities: true },
               },
             },
           },
-        },
-        _count: {
-          select: {
-            invitationsSent: true,
+          coordinatorOf: {
+            select: {
+              id: true,
+              cityId: true,
+              city: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          activistCoordinatorOf: {
+            select: {
+              id: true,
+              cityId: true,
+              city: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          // Only count neighborhoods, don't load full objects
+          _count: {
+            select: {
+              activistCoordinatorNeighborhoods: true,
+              invitationsSent: true,
+            },
           },
         },
-      },
-      orderBy: [
-        { role: 'asc' },
-        { createdAt: 'desc' },
-      ],
-    });
+        orderBy: [
+          { role: 'asc' },
+          { createdAt: 'desc' },
+        ],
+      }),
+      prisma.user.count({ where }),
+    ]);
 
     // Remove password from response
     const sanitizedUsers = users.map((user) => {
@@ -465,6 +487,14 @@ export async function listUsers(filters: ListUsersFilters = {}) {
       success: true,
       users: sanitizedUsers,
       count: sanitizedUsers.length,
+      totalCount, // Total matching users (for pagination UI)
+      hasMore: skip + take < totalCount,
+      pagination: {
+        skip,
+        take,
+        totalPages: Math.ceil(totalCount / take),
+        currentPage: Math.floor(skip / take) + 1,
+      },
     };
   }, 'listUsers');
 }

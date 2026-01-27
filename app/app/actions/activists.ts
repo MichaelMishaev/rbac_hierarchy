@@ -1154,29 +1154,217 @@ export async function toggleWorkerStatus(activistId: string) {
 
 /**
  * Create multiple workers at once (for CSV import)
+ * OPTIMIZED: Uses batch validation and transaction instead of N+1
  *
  * Permissions:
  * - Same as createWorker for each worker
  */
 export async function bulkCreateWorkers(activists: CreateWorkerInput[]) {
   return withServerActionErrorHandler(async () => {
+    const currentUser = await getCurrentUser();
+
+    // Only authorized roles can create activists
+    if (
+      currentUser.role !== 'SUPERADMIN' &&
+      currentUser.role !== 'AREA_MANAGER' &&
+      currentUser.role !== 'CITY_COORDINATOR' &&
+      currentUser.role !== 'ACTIVIST_COORDINATOR'
+    ) {
+      return {
+        success: false,
+        error: 'Only SuperAdmin, Area Managers, City Coordinators, and Activist Coordinators can create activists.',
+      };
+    }
+
     const results = {
       success: [] as any[],
       failed: [] as { activist: CreateWorkerInput; error: string }[],
     };
 
-    for (const workerData of activists) {
-      const result = await createWorker(workerData);
+    // Phase 1: Pre-fetch all neighborhoods in one query
+    const neighborhoodIds = [...new Set(activists.map(a => a.neighborhoodId))];
+    const neighborhoods = await prisma.neighborhood.findMany({
+      where: { id: { in: neighborhoodIds } },
+      include: {
+        cityRelation: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            areaManagerId: true,
+          },
+        },
+      },
+    });
 
-      if (result.success && result.activist) {
-        results.success.push(result.activist);
-      } else {
+    const neighborhoodMap = new Map(neighborhoods.map(n => [n.id, n]));
+
+    // Phase 2: Pre-fetch role-specific data for validation
+    let userAreaManagerId: string | null = null;
+    let userCityId: string | null = null;
+    let assignedNeighborhoodIds: string[] = [];
+
+    if (currentUser.role === 'AREA_MANAGER') {
+      const areaManager = await prisma.areaManager.findFirst({
+        where: { userId: currentUser.id },
+      });
+      userAreaManagerId = areaManager?.id || null;
+    } else if (currentUser.role === 'CITY_COORDINATOR') {
+      const cityCoordinator = await prisma.cityCoordinator.findFirst({
+        where: { userId: currentUser.id },
+      });
+      userCityId = cityCoordinator?.cityId || null;
+    } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+      const activistCoordinator = await prisma.activistCoordinator.findFirst({
+        where: { userId: currentUser.id },
+        include: {
+          neighborhoodAssignments: {
+            select: { neighborhoodId: true },
+          },
+        },
+      });
+      assignedNeighborhoodIds = activistCoordinator?.neighborhoodAssignments.map(n => n.neighborhoodId) || [];
+    }
+
+    // Phase 3: Validate and collect valid activists
+    const validActivists: Array<{
+      data: CreateWorkerInput;
+      neighborhood: typeof neighborhoods[0];
+    }> = [];
+
+    for (const workerData of activists) {
+      const neighborhood = neighborhoodMap.get(workerData.neighborhoodId);
+
+      if (!neighborhood) {
         results.failed.push({
           activist: workerData,
-          error: result.error || 'Unknown error',
+          error: 'Neighborhood not found',
         });
+        continue;
+      }
+
+      // RBAC validation based on role
+      let isValid = true;
+      let validationError = '';
+
+      if (currentUser.role === 'AREA_MANAGER') {
+        if (!userAreaManagerId || neighborhood.cityRelation.areaManagerId !== userAreaManagerId) {
+          isValid = false;
+          validationError = 'Area Managers can only create activists in neighborhoods within their area.';
+        }
+      } else if (currentUser.role === 'CITY_COORDINATOR') {
+        if (!userCityId || neighborhood.cityId !== userCityId) {
+          isValid = false;
+          validationError = 'City Coordinators can only create activists in neighborhoods within their city.';
+        }
+      } else if (currentUser.role === 'ACTIVIST_COORDINATOR') {
+        if (!assignedNeighborhoodIds.includes(workerData.neighborhoodId)) {
+          isValid = false;
+          validationError = 'Activist Coordinators can only create activists in neighborhoods assigned to them.';
+        }
+      }
+
+      if (!isValid) {
+        results.failed.push({
+          activist: workerData,
+          error: validationError,
+        });
+        continue;
+      }
+
+      validActivists.push({ data: workerData, neighborhood });
+    }
+
+    // Phase 4: Batch create valid activists in transaction
+    if (validActivists.length > 0) {
+      const BATCH_SIZE = 50; // Process in batches to avoid memory issues
+
+      for (let batchStart = 0; batchStart < validActivists.length; batchStart += BATCH_SIZE) {
+        const batch = validActivists.slice(batchStart, batchStart + BATCH_SIZE);
+
+        try {
+          const createdActivists = await prisma.$transaction(async (tx) => {
+            const created = [];
+
+            for (const { data, neighborhood } of batch) {
+              const activist = await tx.activist.create({
+                data: {
+                  fullName: data.fullName,
+                  phone: data.phone ?? null,
+                  email: data.email ?? null,
+                  position: data.position ?? null,
+                  avatarUrl: data.avatarUrl ?? null,
+                  startDate: data.startDate ?? null,
+                  endDate: data.endDate ?? null,
+                  notes: data.notes ?? null,
+                  tags: data.tags ?? [],
+                  cityId: neighborhood.cityId,
+                  neighborhoodId: data.neighborhoodId,
+                  activistCoordinatorId: data.activistCoordinatorId || null,
+                  isActive: data.isActive ?? true,
+                },
+                include: {
+                  neighborhood: {
+                    include: {
+                      cityRelation: {
+                        select: {
+                          id: true,
+                          name: true,
+                          code: true,
+                          areaManagerId: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              });
+
+              created.push(activist);
+            }
+
+            // Batch create audit logs
+            const auditLogs = created.map((activist) => ({
+              action: 'CREATE_WORKER',
+              entity: 'Worker',
+              entityId: activist.id,
+              userId: currentUser.id,
+              userEmail: currentUser.email,
+              userRole: currentUser.role,
+              after: {
+                id: activist.id,
+                fullName: activist.fullName,
+                position: activist.position,
+                neighborhoodId: activist.neighborhoodId,
+                activistCoordinatorId: activist.activistCoordinatorId,
+                isActive: activist.isActive,
+                importSource: 'bulk_import',
+              },
+            }));
+
+            await tx.auditLog.createMany({ data: auditLogs });
+
+            return created;
+          });
+
+          results.success.push(...createdActivists);
+          console.log(
+            `[bulkCreateWorkers] Batch ${Math.floor(batchStart / BATCH_SIZE) + 1}: Created ${createdActivists.length} activists`
+          );
+        } catch (error) {
+          // If batch fails, mark all in batch as failed
+          for (const { data } of batch) {
+            results.failed.push({
+              activist: data,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+          console.error(`[bulkCreateWorkers] Batch error:`, error);
+        }
       }
     }
+
+    // Targeted cache invalidation
+    revalidatePath('/activists');
 
     return {
       success: true,

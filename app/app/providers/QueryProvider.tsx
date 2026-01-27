@@ -20,8 +20,9 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
             // This keeps data fresh without disrupting user interactions
             refetchInterval: 30 * 1000, // Refetch every 30 seconds
             refetchIntervalInBackground: false, // Don't refetch when tab is hidden
-            // Prevent refetch on mount if data is still fresh
-            refetchOnMount: 'always',
+            // OPTIMIZED: Only refetch on mount if data is stale (not fresh)
+            // Was 'always' which caused unnecessary refetches on every mount
+            refetchOnMount: 'stale',
             // Retry failed requests
             retry: 1,
           },

@@ -11,7 +11,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLiveFeed } from './useLiveFeed';
 
 export interface RealtimeStats {
@@ -37,16 +37,22 @@ const DEFAULT_STATS: RealtimeStats = {
   lastUpdated: new Date(),
 };
 
+const BASE_POLL_INTERVAL = 30000; // 30 seconds
+const MAX_POLL_INTERVAL = 5 * 60 * 1000; // 5 minutes max backoff
+
 export function useRealtimeStats(): UseRealtimeStatsReturn {
   const [stats, setStats] = useState<RealtimeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { events } = useLiveFeed();
 
+  // OPTIMIZED: Track consecutive errors for exponential backoff
+  const consecutiveErrorsRef = useRef(0);
+  const currentIntervalRef = useRef(BASE_POLL_INTERVAL);
+
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const response = await fetch('/api/dashboard/realtime-stats');
 
@@ -63,9 +69,25 @@ export function useRealtimeStats(): UseRealtimeStatsReturn {
         completedTasksToday: data.completedTasksToday || 0,
         lastUpdated: new Date(),
       });
+
+      // Reset backoff on success
+      consecutiveErrorsRef.current = 0;
+      currentIntervalRef.current = BASE_POLL_INTERVAL;
+      setError(null);
     } catch (err) {
       console.error('[RealtimeStats] Error fetching stats:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
+
+      // OPTIMIZED: Exponential backoff on consecutive errors
+      consecutiveErrorsRef.current += 1;
+      currentIntervalRef.current = Math.min(
+        BASE_POLL_INTERVAL * Math.pow(2, consecutiveErrorsRef.current),
+        MAX_POLL_INTERVAL
+      );
+
+      console.warn(
+        `[RealtimeStats] Error #${consecutiveErrorsRef.current}, next poll in ${currentIntervalRef.current / 1000}s`
+      );
 
       // Set default stats on error to prevent UI breaks
       if (!stats) {
@@ -81,13 +103,22 @@ export function useRealtimeStats(): UseRealtimeStatsReturn {
     fetchStats();
   }, [fetchStats]);
 
-  // Poll every 30 seconds
+  // OPTIMIZED: Poll with exponential backoff on errors
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchStats();
-    }, 30000);
+    let timeoutId: NodeJS.Timeout;
 
-    return () => clearInterval(interval);
+    const scheduleNextPoll = () => {
+      timeoutId = setTimeout(() => {
+        fetchStats().then(() => {
+          // Schedule next poll with potentially updated interval
+          scheduleNextPoll();
+        });
+      }, currentIntervalRef.current);
+    };
+
+    scheduleNextPoll();
+
+    return () => clearTimeout(timeoutId);
   }, [fetchStats]);
 
   // Refetch on window focus (user returns to tab)

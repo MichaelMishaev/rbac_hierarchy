@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -23,6 +23,19 @@ import {
 } from '@mui/icons-material';
 import { Tree, TreeNode } from 'react-organizational-chart';
 import { colors, borderRadius, shadows } from '@/lib/design-system';
+
+// OPTIMIZED: Pre-computed color map instead of function calls per render
+const NODE_COLORS: Record<OrgNode['type'], string> = {
+  superadmin: colors.pastel.purple,
+  corporation: colors.pastel.blue,
+  site: colors.pastel.orange,
+};
+
+const NODE_ICONS: Record<OrgNode['type'], React.ReactNode> = {
+  superadmin: <SupervisorIcon />,
+  corporation: <BusinessIcon />,
+  site: <LocationOnIcon />,
+};
 
 interface OrgNode {
   id: string;
@@ -183,8 +196,8 @@ export default function OrganizationalTree() {
   );
 }
 
-// Recursive tree node
-function OrgTreeNode({ node, expanded, onToggle }: {
+// OPTIMIZED: Memoized recursive tree node to prevent unnecessary re-renders
+const OrgTreeNode = memo(function OrgTreeNode({ node, expanded, onToggle }: {
   node: OrgNode;
   expanded: Set<string>;
   onToggle: (id: string) => void;
@@ -213,42 +226,25 @@ function OrgTreeNode({ node, expanded, onToggle }: {
       ))}
     </TreeNode>
   );
-}
+});
 
-// Individual node card
-function OrgNodeCard({ node, onToggle, expanded, hasChildren }: {
+// OPTIMIZED: Memoized individual node card with pre-computed colors/icons
+const OrgNodeCard = memo(function OrgNodeCard({ node, onToggle, expanded, hasChildren }: {
   node: OrgNode;
   onToggle: (id: string) => void;
   expanded: boolean;
   hasChildren?: boolean;
 }) {
-  const getNodeColor = (type: OrgNode['type']) => {
-    switch (type) {
-      case 'superadmin':
-        return colors.pastel.purple; // Pastel purple
-      case 'corporation':
-        return colors.pastel.blue; // Pastel blue
-      case 'site':
-        return colors.pastel.orange; // Pastel orange
-      default:
-        return colors.neutral[300];
-    }
-  };
+  // Use pre-computed constants instead of calling functions on every render
+  const color = NODE_COLORS[node.type] || colors.neutral[300];
+  const icon = NODE_ICONS[node.type] || <AccountTreeIcon />;
 
-  const getNodeIcon = (type: OrgNode['type']) => {
-    switch (type) {
-      case 'superadmin':
-        return <SupervisorIcon />;
-      case 'corporation':
-        return <BusinessIcon />;
-      case 'site':
-        return <LocationOnIcon />;
-      default:
-        return <AccountTreeIcon />;
+  // Memoize click handler to prevent child re-renders
+  const handleClick = useCallback(() => {
+    if (hasChildren) {
+      onToggle(node.id);
     }
-  };
-
-  const color = getNodeColor(node.type);
+  }, [hasChildren, onToggle, node.id]);
 
   return (
     <Card
@@ -268,7 +264,7 @@ function OrgNodeCard({ node, onToggle, expanded, hasChildren }: {
             }
           : {},
       }}
-      onClick={() => hasChildren && onToggle(node.id)}
+      onClick={handleClick}
     >
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         {/* Header */}
@@ -281,7 +277,7 @@ function OrgNodeCard({ node, onToggle, expanded, hasChildren }: {
               color: 'white',
             }}
           >
-            {getNodeIcon(node.type)}
+            {icon}
           </Avatar>
 
           {hasChildren && (
@@ -366,4 +362,4 @@ function OrgNodeCard({ node, onToggle, expanded, hasChildren }: {
       </CardContent>
     </Card>
   );
-}
+});

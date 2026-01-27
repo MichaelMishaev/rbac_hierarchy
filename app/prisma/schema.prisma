@@ -400,6 +400,7 @@ model Activist {
   @@index([cityId, isActive]) // Performance: Common filtered query for city-scoped active activists
   @@index([neighborhoodId, isActive]) // Performance: Common filtered query for neighborhood-scoped active activists
   @@index([activistCoordinatorId, isActive]) // 🚀 PERFORMANCE: Common query for coordinator's active activists
+  @@index([activistCoordinatorId, neighborhoodId]) // 🚀 PERFORMANCE: Composite for coordinator+neighborhood queries
   @@map("activists")
 }
 
@@ -724,6 +725,7 @@ model AttendanceRecord {
   @@index([date]) // Fast lookup: all attendance on date
   @@index([lastEditedAt]) // For audit queries
   @@index([isWithinGeofence]) // Phase 5: GPS analytics
+  @@index([neighborhoodId, date, status]) // 🚀 PERFORMANCE: Composite for filtered attendance queries
   @@map("attendance_records")
 }
 

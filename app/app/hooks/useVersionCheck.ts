@@ -120,31 +120,29 @@ export function useVersionCheck(options?: {
     };
   }, [checkVersion, enabled, pollInterval]);
 
-  // Check on visibility change (tab focus)
+  // OPTIMIZED: Merged visibility and focus handlers into single effect
+  // This prevents duplicate API calls when both events fire
   useEffect(() => {
     if (!enabled) return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+    let lastCheckTime = 0;
+    const DEBOUNCE_MS = 1000; // Prevent multiple checks within 1 second
+
+    const handleVisibilityOrFocus = () => {
+      // Only check if tab is visible and debounce rapid events
+      const now = Date.now();
+      if (document.visibilityState === 'visible' && now - lastCheckTime > DEBOUNCE_MS) {
+        lastCheckTime = now;
         checkVersion();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [checkVersion, enabled]);
-
-  // Check on focus
-  useEffect(() => {
-    if (!enabled) return;
-
-    window.addEventListener('focus', checkVersion);
-
-    return () => {
-      window.removeEventListener('focus', checkVersion);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
     };
   }, [checkVersion, enabled]);
 

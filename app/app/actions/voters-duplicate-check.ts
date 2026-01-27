@@ -70,10 +70,10 @@ export async function checkExcelDuplicates(
       }
     }
 
-    // Step 2: Get visible voters for current user (RBAC-filtered)
-    const visibleVoters = await getVisibleVotersForUser(viewer);
+    // Step 2: Build unique phone+email pairs from Excel (for batch DB query)
+    // OPTIMIZED: Instead of loading ALL visible voters, query only matching pairs
+    const uniquePairs = new Map<string, { rowNumber: number; phone: string; email: string }[]>();
 
-    // Step 3: Check Excel rows against visible voters in DB
     for (let i = 0; i < voters.length; i++) {
       const row = voters[i];
       const rowNumber = i + 2;
@@ -82,25 +82,51 @@ export async function checkExcelDuplicates(
 
       if (!phone || !email) continue;
 
-      // Find matching voter in visible voters (phone AND email match)
-      const matchingVoter = visibleVoters.find(
-        (v) => v.phone === phone && v.email === email
-      );
+      const key = `${phone}|${email}`;
+      if (!uniquePairs.has(key)) {
+        uniquePairs.set(key, []);
+      }
+      uniquePairs.get(key)!.push({ rowNumber, phone, email });
+    }
 
-      if (matchingVoter) {
-        duplicates.push({
-          row: rowNumber,
-          phone,
-          email,
-          existingVoter: {
-            id: matchingVoter.id,
-            fullName: matchingVoter.fullName,
-            insertedByUserName: matchingVoter.insertedByUserName,
-            insertedByUserRole: matchingVoter.insertedByUserRole,
-            createdAt: matchingVoter.createdAt,
-          },
-          type: 'in_database',
-        });
+    // Step 3: Batch query DB for matching voters (RBAC-filtered)
+    // OPTIMIZED: Query only for phones/emails that exist in Excel
+    if (uniquePairs.size > 0) {
+      const phones = [...new Set([...uniquePairs.keys()].map(k => k.split('|')[0]))];
+      const emails = [...new Set([...uniquePairs.keys()].map(k => k.split('|')[1]))];
+
+      const visibleVoters = await getVisibleVotersForUserOptimized(viewer, phones, emails);
+
+      // Create a lookup map for O(1) access
+      const voterLookup = new Map<string, typeof visibleVoters[0]>();
+      for (const v of visibleVoters) {
+        const key = `${v.phone}|${v.email}`;
+        // Keep the first match (oldest, for better duplicate reporting)
+        if (!voterLookup.has(key)) {
+          voterLookup.set(key, v);
+        }
+      }
+
+      // Check each Excel row against the lookup map
+      for (const [key, rows] of uniquePairs) {
+        const matchingVoter = voterLookup.get(key);
+        if (matchingVoter) {
+          for (const { rowNumber, phone, email } of rows) {
+            duplicates.push({
+              row: rowNumber,
+              phone,
+              email,
+              existingVoter: {
+                id: matchingVoter.id,
+                fullName: matchingVoter.fullName,
+                insertedByUserName: matchingVoter.insertedByUserName,
+                insertedByUserRole: matchingVoter.insertedByUserRole,
+                createdAt: matchingVoter.createdAt,
+              },
+              type: 'in_database',
+            });
+          }
+        }
       }
     }
 
@@ -111,68 +137,69 @@ export async function checkExcelDuplicates(
 }
 
 /**
- * Get voters visible to current user based on RBAC hierarchy
+ * OPTIMIZED: Get voters matching specific phones/emails with RBAC filtering
+ * Instead of loading ALL visible voters, queries only matching ones
  */
-async function getVisibleVotersForUser(viewer: Awaited<ReturnType<typeof getUserContext>>) {
+async function getVisibleVotersForUserOptimized(
+  viewer: Awaited<ReturnType<typeof getUserContext>>,
+  phones: string[],
+  emails: string[]
+) {
   const { role, userId, cityId, areaManagerId } = viewer;
 
-  let whereClause: any = { isActive: true };
+  // Base filter: only active voters with matching phone AND email
+  let whereClause: any = {
+    isActive: true,
+    phone: { in: phones },
+    email: { in: emails },
+  };
 
+  // Add RBAC filter based on role - using nested relations to avoid N+1
   if (role === 'SUPERADMIN') {
-    // SuperAdmin sees ALL voters
-    whereClause = { isActive: true };
+    // SuperAdmin sees ALL matching voters - no additional filter
   } else if (role === 'AREA_MANAGER') {
-    // Area Manager sees voters uploaded by him + his subordinates (City/Activist Coordinators)
-    // Get all cities under this area manager
-    const cities = await prisma.city.findMany({
-      where: { areaManagerId: areaManagerId },
-      select: { id: true },
-    });
-    const cityIds = cities.map((c) => c.id);
-
-    // Get all users under this area (City Coordinators + Activist Coordinators in these cities)
-    const subordinateUsers = await prisma.user.findMany({
-      where: {
+    // OPTIMIZED: Use nested relation query instead of separate queries
+    whereClause = {
+      ...whereClause,
+      insertedByUser: {
         OR: [
           { id: userId }, // Area Manager himself
           {
             coordinatorOf: {
-              some: { cityId: { in: cityIds } },
+              some: {
+                city: { areaManagerId },
+              },
             },
           },
           {
             activistCoordinatorOf: {
-              some: { cityId: { in: cityIds } },
+              some: {
+                city: { areaManagerId },
+              },
             },
           },
         ],
       },
-      select: { id: true },
-    });
-
-    const userIds = subordinateUsers.map((u) => u.id);
-
-    whereClause = {
-      isActive: true,
-      insertedByUserId: { in: userIds },
     };
   } else if (role === 'CITY_COORDINATOR') {
-    // City Coordinator sees voters uploaded by him + his Activist Coordinators
-    const activistCoordinators = await prisma.activistCoordinator.findMany({
-      where: { cityId },
-      select: { userId: true },
-    });
-
-    const userIds = [userId, ...activistCoordinators.map((ac) => ac.userId)];
-
+    // OPTIMIZED: Use nested relation query
     whereClause = {
-      isActive: true,
-      insertedByUserId: { in: userIds },
+      ...whereClause,
+      insertedByUser: {
+        OR: [
+          { id: userId }, // City Coordinator himself
+          {
+            activistCoordinatorOf: {
+              some: { cityId },
+            },
+          },
+        ],
+      },
     };
   } else if (role === 'ACTIVIST_COORDINATOR') {
     // Activist Coordinator sees ONLY voters he uploaded himself
     whereClause = {
-      isActive: true,
+      ...whereClause,
       insertedByUserId: userId,
     };
   }
@@ -188,6 +215,9 @@ async function getVisibleVotersForUser(viewer: Awaited<ReturnType<typeof getUser
       insertedByUserName: true,
       insertedByUserRole: true,
       insertedAt: true,
+    },
+    orderBy: {
+      insertedAt: 'asc', // Oldest first for better duplicate detection
     },
   });
 

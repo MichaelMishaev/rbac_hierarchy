@@ -12,9 +12,11 @@
 import IORedis from 'ioredis';
 
 // Cache TTL constants (in seconds)
+// OPTIMIZED: Increased DASHBOARD_STATS from 30s to 60s for better cache hit ratio
+// Dashboard data doesn't change frequently enough to warrant 30s polling
 export const CACHE_TTL = {
   PERMISSIONS: 300,    // 5 minutes - permission hierarchies change infrequently
-  DASHBOARD_STATS: 30, // 30 seconds - balance between freshness and performance
+  DASHBOARD_STATS: 60, // 60 seconds - balance between freshness and performance (was 30s)
   SESSION: 3600,       // 1 hour - session data
   USER_PROFILE: 60,    // 1 minute - user profile data
 } as const;

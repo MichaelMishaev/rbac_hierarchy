@@ -23,6 +23,7 @@ type VoterDuplicate = {
 /**
  * Get all duplicates for a specific voter (same phone + email)
  * Filtered by RBAC - user only sees duplicates they have permission to see
+ * OPTIMIZED: Consolidated N+1 queries into single query with JOIN
  */
 export async function getVoterDuplicates(
   voterId: string
@@ -43,7 +44,7 @@ export async function getVoterDuplicates(
       return { success: false, error: 'Voter not found' };
     }
 
-    // Build RBAC where clause
+    // Build RBAC where clause - OPTIMIZED: Single query approach
     const { role, userId, cityId, areaManagerId } = viewer;
     let whereClause: any = {
       isActive: true,
@@ -53,47 +54,47 @@ export async function getVoterDuplicates(
     };
 
     if (role === 'SUPERADMIN') {
-      // SuperAdmin sees ALL duplicates
+      // SuperAdmin sees ALL duplicates - no additional filter
+    } else if (role === 'AREA_MANAGER') {
+      // OPTIMIZED: Use nested relation query instead of 2 separate queries
+      // Area Manager sees duplicates uploaded by users in their area's cities
       whereClause = {
         ...whereClause,
-      };
-    } else if (role === 'AREA_MANAGER') {
-      // Area Manager sees duplicates uploaded by him + his subordinates
-      const cities = await prisma.city.findMany({
-        where: { areaManagerId },
-        select: { id: true },
-      });
-      const cityIds = cities.map((c) => c.id);
-
-      const subordinateUsers = await prisma.user.findMany({
-        where: {
+        insertedByUser: {
           OR: [
-            { id: userId },
-            { coordinatorOf: { some: { cityId: { in: cityIds } } } },
-            { activistCoordinatorOf: { some: { cityId: { in: cityIds } } } },
+            { id: userId }, // Area Manager himself
+            {
+              coordinatorOf: {
+                some: {
+                  city: { areaManagerId },
+                },
+              },
+            },
+            {
+              activistCoordinatorOf: {
+                some: {
+                  city: { areaManagerId },
+                },
+              },
+            },
           ],
         },
-        select: { id: true },
-      });
-
-      const userIds = subordinateUsers.map((u) => u.id);
-
-      whereClause = {
-        ...whereClause,
-        insertedByUserId: { in: userIds },
       };
     } else if (role === 'CITY_COORDINATOR') {
-      // City Coordinator sees duplicates uploaded by him + his Activist Coordinators
-      const activistCoordinators = await prisma.activistCoordinator.findMany({
-        where: { cityId },
-        select: { userId: true },
-      });
-
-      const userIds = [userId, ...activistCoordinators.map((ac) => ac.userId)];
-
+      // OPTIMIZED: Use nested relation query instead of separate query
+      // City Coordinator sees duplicates uploaded by him + Activist Coordinators in their city
       whereClause = {
         ...whereClause,
-        insertedByUserId: { in: userIds },
+        insertedByUser: {
+          OR: [
+            { id: userId }, // City Coordinator himself
+            {
+              activistCoordinatorOf: {
+                some: { cityId },
+              },
+            },
+          ],
+        },
       };
     } else if (role === 'ACTIVIST_COORDINATOR') {
       // Activist Coordinator sees ONLY duplicates he uploaded himself
@@ -103,7 +104,7 @@ export async function getVoterDuplicates(
       };
     }
 
-    // Find all duplicates
+    // Find all duplicates - single optimized query
     const duplicates = await prisma.voter.findMany({
       where: whereClause,
       select: {
